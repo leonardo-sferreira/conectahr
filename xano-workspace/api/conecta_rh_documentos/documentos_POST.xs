@@ -2,6 +2,8 @@
 // RH e ADMIN podem cadastrar para qualquer colaborador.
 // Outros usuarios podem cadastrar somente documentos proprios.
 // Pelo menos uma imagem ou arquivo_url deve ser informado.
+// Quando documento_substituido_id e informado, o documento anterior
+// (aprovado ou vencido) e marcado como substituido nesta mesma operacao.
 query documentos verb=POST {
   api_group = "ConectaRH - Documentos"
   auth = "user"
@@ -18,6 +20,7 @@ query documentos verb=POST {
     image? imagem_verso?
     text arquivo_url? filters=trim|min:10|max:2000
     text observacao? filters=trim|max:1000
+    int documento_substituido_id?
   }
 
   stack {
@@ -152,24 +155,64 @@ query documentos verb=POST {
       }
     }
   
-    // Cadastra o documento.
-    db.add documento {
-      data = {
-        colaborador_id   : $colaborador_destino.id
-        tipo             : $input.tipo
-        nome_documento   : $input.nome_documento
-        numero_documento : $input.numero_documento
-        estado_de_emissao: $input.estado_de_emissao
-        data_emissao     : $input.data_emissao
-        data_validade    : $input.data_validade
-        imagem_frente    : $imagem_frente_final
-        imagem_verso     : $imagem_verso_final
-        arquivo_url      : $input.arquivo_url
-        observacao       : $input.observacao
-        ativo            : true
-        updated_at       : "now"
+    // Valida o documento substituido, quando informado.
+    conditional {
+      if ($input.documento_substituido_id != null) {
+        db.get documento {
+          field_name = "id"
+          field_value = $input.documento_substituido_id
+        } as $documento_anterior
+
+        precondition ($documento_anterior != null) {
+          error_type = "notfound"
+          error = "Documento a ser substituido nao encontrado."
+        }
+
+        precondition ($documento_anterior.colaborador_id == $colaborador_destino.id) {
+          error_type = "inputerror"
+          error = "O documento a ser substituido nao pertence a este colaborador."
+        }
+
+        precondition ($documento_anterior.status == "aprovado" || $documento_anterior.status == "vencido") {
+          error_type = "inputerror"
+          error = "Somente documentos aprovados ou vencidos podem ser substituidos."
+        }
       }
-    } as $documento_criado
+    }
+
+    // Cadastra o documento e, quando aplicavel, encerra o anterior na mesma transacao.
+    db.transaction {
+      stack {
+        db.add documento {
+          data = {
+            colaborador_id           : $colaborador_destino.id
+            tipo                     : $input.tipo
+            nome_documento           : $input.nome_documento
+            numero_documento         : $input.numero_documento
+            estado_de_emissao        : $input.estado_de_emissao
+            data_emissao             : $input.data_emissao
+            data_validade            : $input.data_validade
+            imagem_frente            : $imagem_frente_final
+            imagem_verso             : $imagem_verso_final
+            arquivo_url              : $input.arquivo_url
+            observacao               : $input.observacao
+            documento_substituido_id : $input.documento_substituido_id
+            ativo                    : true
+            updated_at               : "now"
+          }
+        } as $documento_criado
+
+        conditional {
+          if ($input.documento_substituido_id != null) {
+            db.edit documento {
+              field_name = "id"
+              field_value = $input.documento_substituido_id
+              data = {status: "substituido", updated_at: "now"}
+            } as $documento_substituido_atualizado
+          }
+        }
+      }
+    }
   }
 
   response = {

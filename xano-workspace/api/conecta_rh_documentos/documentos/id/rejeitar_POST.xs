@@ -1,13 +1,14 @@
-// Altera o status logico de um documento.
-// Somente RH ou ADMIN podem arquivar ou reativar.
-// O documento nao e excluido fisicamente.
-query "documentos/{id}/status" verb=PATCH {
+// Rejeita um documento em analise.
+// Operacao permitida somente para RH ou ADMIN.
+// A justificativa da rejeicao e obrigatoria.
+// Somente documentos pendente_analise podem ser rejeitados.
+query "documentos/{id}/rejeitar" verb=POST {
   api_group = "ConectaRH - Documentos"
   auth = "user"
 
   input {
     int id
-    bool ativo
+    text observacao filters=trim|min:5|max:1000
   }
 
   stack {
@@ -16,64 +17,63 @@ query "documentos/{id}/status" verb=PATCH {
       field_name = "id"
       field_value = $auth.id
     } as $usuario_autenticado
-  
+
     precondition ($usuario_autenticado != null) {
       error_type = "unauthorized"
       error = "Usuario autenticado nao encontrado."
     }
-  
+
     // Bloqueia contas inativas.
     precondition ($usuario_autenticado.ativo) {
       error_type = "unauthorized"
       error = "Usuario inativo."
     }
-  
-    // Normaliza o perfil.
+
+    // Normaliza o perfil autenticado.
     var $perfil_autenticado {
       value = $usuario_autenticado.perfil|trim|to_upper
     }
-  
-    // Somente RH ou ADMIN podem alterar o status.
+
+    // Somente RH ou ADMIN podem rejeitar documentos.
     precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Somente RH ou ADMIN podem alterar o status de documentos."
+      error = "Somente RH ou ADMIN podem rejeitar documentos."
     }
-  
+
     // Localiza o documento.
     db.get documento {
       field_name = "id"
       field_value = $input.id
     } as $documento_atual
-  
+
     precondition ($documento_atual != null) {
       error_type = "notfound"
       error = "Documento nao encontrado."
     }
-  
-    // Confirma que o colaborador proprietario ainda existe.
-    db.get colaborador {
-      field_name = "id"
-      field_value = $documento_atual.colaborador_id
-    } as $colaborador_proprietario
-  
-    precondition ($colaborador_proprietario != null) {
-      error_type = "notfound"
-      error = "Colaborador proprietario do documento nao encontrado."
+
+    // Somente documentos pendentes de analise podem ser rejeitados.
+    precondition ($documento_atual.status == "pendente_analise") {
+      error_type = "inputerror"
+      error = "Somente documentos com status pendente_analise podem ser rejeitados."
     }
-  
-    // Altera somente ativo e updated_at.
+
+    // Rejeita o documento e registra a justificativa.
     db.edit documento {
       field_name = "id"
       field_value = $documento_atual.id
-      data = {ativo: $input.ativo, updated_at: "now"}
-    } as $documento_atualizado
+      data = {
+        status    : "rejeitado"
+        observacao: $input.observacao
+        updated_at: "now"
+      }
+    } as $documento_rejeitado
   }
 
   response = {
     sucesso  : true
-    mensagem : "Status do documento alterado com sucesso."
-    documento: $documento_atualizado
+    mensagem : "Documento rejeitado com sucesso."
+    documento: $documento_rejeitado
   }
 
-  guid = "l2o_sVoRRPe_gXqT8_GKziegrO8"
+  guid = "conectahr-documentos-rejeitar-0001"
 }

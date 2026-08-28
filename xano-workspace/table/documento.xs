@@ -16,8 +16,10 @@ table documento {
       values = [
         "rg"
         "cpf"
+        "cin"
         "cnh"
         "ctps"
+        "aso_admissional"
         "laudo_deficiencia"
         "certificado_profissional"
         "comprovante_residencia"
@@ -26,13 +28,13 @@ table documento {
         "documentacao_migratoria"
         "certificado_reservista"
         "documentacao_responsavel_legal"
-        "Outros"
+        "outro"
       ]
     }
-  
+
     text nome_documento filters=trim|max:120
     text numero_documento? filters=trim|max:50
-    text estado_de_emissao filters=trim
+    text? estado_de_emissao filters=trim
     date? data_emissao?
     date? data_validade?
     text observacao? filters=trim|max:500
