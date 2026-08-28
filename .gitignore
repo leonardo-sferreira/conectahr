@@ -1,0 +1,18 @@
+# Reflex (frontend)
+.web/
+*.db
+.states/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Ambiente
+.env
+.env.local
+
+# Editor / SO
+.DS_Store
+Thumbs.db
