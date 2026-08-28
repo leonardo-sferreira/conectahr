@@ -47,4 +47,5 @@ table instrumento_normativo {
     {type: "btree", field: [{name: "data_inicio", op: "desc"}]}
     {type: "btree", field: [{name: "data_fim", op: "asc"}]}
   ]
+  guid = "3dGjNyPNwcLdH9wgs1dFkEarDr0"
 }

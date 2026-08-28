@@ -59,4 +59,5 @@ table regra_override {
     {type: "btree", field: [{name: "status", op: "asc"}]}
     {type: "btree", field: [{name: "data_inicio", op: "desc"}]}
   ]
+  guid = "kSOKm5NDOalwZeecfZ2_WeMq9HQ"
 }

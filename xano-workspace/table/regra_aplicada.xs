@@ -31,4 +31,5 @@ table regra_aplicada {
     {type: "btree", field: [{name: "processo_tipo", op: "asc"}]}
     {type: "btree", field: [{name: "data_calculo", op: "desc"}]}
   ]
+  guid = "6sdv7ke43LZtUINgLkGdL3TmilA"
 }

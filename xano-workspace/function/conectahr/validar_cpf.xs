@@ -8,9 +8,30 @@ function "ConectaHR/validar_cpf" {
   }
 
   stack {
-    // Remove tudo que nao for digito.
+    // Remove tudo que nao for digito, caractere por caractere
+    // (regex_replace nao esta disponivel de forma confiavel neste workspace).
+    var $caracteres_entrada {
+      value = $input.cpf|split:""
+    }
+
     var $cpf_normalizado {
-      value = $input.cpf|regex_replace:"[^0-9]":""
+      value = ""
+    }
+
+    foreach ($caracteres_entrada) {
+      each as $caractere {
+        var $eh_digito {
+          value = ($caractere == "0" || $caractere == "1" || $caractere == "2" || $caractere == "3" || $caractere == "4" || $caractere == "5" || $caractere == "6" || $caractere == "7" || $caractere == "8" || $caractere == "9")
+        }
+
+        conditional {
+          if ($eh_digito) {
+            var.update $cpf_normalizado {
+              value = $cpf_normalizado ~ $caractere
+            }
+          }
+        }
+      }
     }
 
     var $valido {
@@ -23,7 +44,7 @@ function "ConectaHR/validar_cpf" {
 
     // Precisa ter exatamente onze digitos.
     conditional {
-      if ($cpf_normalizado|strlen != 11) {
+      if (($cpf_normalizado|strlen) != 11) {
         var.update $valido {
           value = false
         }
@@ -67,13 +88,13 @@ function "ConectaHR/validar_cpf" {
     conditional {
       if ($valido) {
         foreach ($pesos_dv1) {
-          each as peso {
+          each as $peso {
             var $digito_dv1 {
               value = ($cpf_normalizado|substr:$indice_dv1:1)|to_int
             }
 
             var.update $soma_dv1 {
-              value = $soma_dv1 + ($digito_dv1 * peso)
+              value = $soma_dv1 + ($digito_dv1 * $peso)
             }
 
             var.update $indice_dv1 {
@@ -124,13 +145,13 @@ function "ConectaHR/validar_cpf" {
     conditional {
       if ($valido) {
         foreach ($pesos_dv2) {
-          each as peso {
+          each as $peso {
             var $digito_dv2 {
               value = ($cpf_normalizado|substr:$indice_dv2:1)|to_int
             }
 
             var.update $soma_dv2 {
-              value = $soma_dv2 + ($digito_dv2 * peso)
+              value = $soma_dv2 + ($digito_dv2 * $peso)
             }
 
             var.update $indice_dv2 {

@@ -28,4 +28,5 @@ table auditoria {
     {type: "btree", field: [{name: "recurso", op: "asc"}]}
     {type: "btree", field: [{name: "rastreamento_id", op: "asc"}]}
   ]
+  guid = "zUdWeR5DozvmoZf_hl5wUhjtQVE"
 }

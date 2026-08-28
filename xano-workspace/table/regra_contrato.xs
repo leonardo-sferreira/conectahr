@@ -44,4 +44,5 @@ table regra_contrato {
     {type: "btree", field: [{name: "data_fim", op: "asc"}]}
     {type: "btree", field: [{name: "ativo", op: "asc"}]}
   ]
+  guid = "JNcQIBppdEmMxFSmfmVhPMJ0Ocw"
 }
