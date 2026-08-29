@@ -13,6 +13,15 @@ venv/
 .env
 .env.local
 
+# Nunca versionar variaveis de ambiente exportadas do Xano (segredos)
+xano-workspace/env/
+xano-workspace/*.env.xs
+
+# Segredos que nao devem ser versionados
+key.txt
+*.key.txt
+
 # Editor / SO
 .DS_Store
 Thumbs.db
+desktop.ini

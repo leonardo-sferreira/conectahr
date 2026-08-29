@@ -16,6 +16,19 @@ table user {
     }
   
     bool senha_primeiro_acesso?=true
+    text? otp_codigo filters=trim|max:6 {
+      sensitive = true
+      visibility = "private"
+    }
+
+    timestamp? otp_expira_em {
+      visibility = "private"
+    }
+
+    int? otp_tentativas?=0 {
+      visibility = "private"
+    }
+
     text nome filters=trim|min:2|max:100
     enum perfil?=Colaborador {
       values = ["Admin", "RH", "Colaborador", "Gestor"]

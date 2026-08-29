@@ -1,45 +1,35 @@
-// Autenticação de usuário do ConectaRH
-// Autentica um usuário ativo e retorna o token e a situação do primeiro acesso.
-query "auth/login" verb=POST {
+// Reenvia um novo codigo OTP por e-mail, substituindo o anterior.
+// Uso quando o codigo expirou ou o e-mail nao chegou.
+query "auth/otp/reenviar" verb=POST {
   api_group = "ConectaRH — Autenticação"
 
   input {
     email email filters=trim|lower
-    text password
   }
 
   stack {
-    // Carrega o usuário completo, incluindo a senha protegida.
     db.get user {
       field_name = "email"
       field_value = $input.email
     } as $user
-  
-    // Não revela se o e-mail existe.
+
+    // Nao revela se o e-mail existe.
     precondition ($user != null) {
       error_type = "accessdenied"
-      error = "E-mail ou senha inválidos."
+      error = "Nao foi possivel reenviar o codigo."
     }
-  
-    // Bloqueia contas desativadas.
+
     precondition ($user.ativo) {
       error_type = "accessdenied"
-      error = "E-mail ou senha inválidos."
+      error = "Nao foi possivel reenviar o codigo."
     }
-  
-    // Compara a senha informada com o hash armazenado.
-    security.check_password {
-      text_password = $input.password
-      hash_password = $user.senha
-    } as $pass_result
-  
-    precondition ($pass_result) {
+
+    // So reenvia quando ha um desafio de OTP pendente (login com senha ja validado).
+    precondition ($user.otp_codigo != null) {
       error_type = "accessdenied"
-      error = "E-mail ou senha inválidos."
+      error = "Nao foi possivel reenviar o codigo."
     }
-  
-    // Gera e envia o codigo de acesso de 6 digitos por e-mail (OTP).
-    // Substitui o token TOTP como segundo fator do ConectaRH.
+
     security.random_number {
       min = 100000
       max = 999999
@@ -58,7 +48,7 @@ query "auth/login" verb=POST {
         otp_tentativas: 0
         updated_at    : "now"
       }
-    } as $user_com_otp
+    } as $user_com_novo_otp
 
     api.request {
       url = "https://api.sendgrid.com/v3/mail/send"
@@ -71,11 +61,11 @@ query "auth/login" verb=POST {
           }
         ]
         from: {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-        subject: "Seu codigo de acesso ConectaRH"
+        subject: "Seu novo codigo de acesso ConectaRH"
         content: [
           {
             type : "text/plain"
-            value: "Ola, " ~ $user.nome ~ ". Seu codigo de acesso ao ConectaRH e " ~ $codigo_texto ~ ". Ele expira em 5 minutos. Se voce nao tentou entrar no ConectaRH, ignore este e-mail."
+            value: "Ola, " ~ $user.nome ~ ". Seu novo codigo de acesso ao ConectaRH e " ~ $codigo_texto ~ ". Ele expira em 5 minutos. Se voce nao tentou entrar no ConectaRH, ignore este e-mail."
           }
         ]
       }
@@ -93,9 +83,8 @@ query "auth/login" verb=POST {
 
   response = {
     aguardando_otp: true
-    mensagem      : "Senha valida. Enviamos um codigo de 6 digitos para o seu e-mail cadastrado."
-    email         : $user.email
+    mensagem      : "Enviamos um novo codigo de 6 digitos para o seu e-mail cadastrado."
   }
 
-  guid = "ODyvwjfBqn40N51ETK1huleI1CM"
+  guid = "conectahr-auth-otp-reenviar-0001"
 }

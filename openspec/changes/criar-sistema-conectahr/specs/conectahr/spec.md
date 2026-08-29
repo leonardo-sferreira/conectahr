@@ -15,16 +15,20 @@ O sistema SHALL autenticar usuarios por credencial e emitir token de acesso com 
 - **WHEN** uma requisicao usa token expirado, revogado ou invalido
 - **THEN** o sistema rejeita a requisicao e exige nova autenticacao
 
-### Requirement: Primeiro acesso, redefinicao e 2FA
-O sistema SHALL permitir que somente Admin ou RH cadastrem usuarios. O sistema SHALL marcar credenciais temporarias, obrigar a troca antes de liberar o uso normal e permitir redefinicao iniciada na tela de login. O sistema SHALL suportar segundo fator TOTP quando habilitado e exigir o desafio configurado no login.
+### Requirement: Primeiro acesso, redefinicao e segundo fator por e-mail
+O sistema SHALL permitir que somente Admin ou RH cadastrem usuarios. O sistema SHALL marcar credenciais temporarias, obrigar a troca antes de liberar o uso normal e permitir redefinicao iniciada na tela de login. Apos validar e-mail e senha, o sistema SHALL exigir um segundo fator obrigatorio: um codigo numerico de 6 digitos enviado por e-mail, valido por 5 minutos, antes de emitir a sessao. O sistema SHALL bloquear a validacao do codigo apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo, e SHALL permitir reenviar um novo codigo que substitui o anterior.
 
 #### Scenario: Primeiro acesso com senha temporaria
 - **WHEN** o usuario autentica com senha temporaria
 - **THEN** o sistema libera somente a troca de senha e nao permite acessar os modulos ate a conclusao
 
-#### Scenario: Usuario com 2FA habilitado
-- **WHEN** o usuario informa credencial valida e possui TOTP habilitado
-- **THEN** o sistema solicita um codigo TOTP valido antes de criar a sessao
+#### Scenario: Login exige codigo por e-mail
+- **WHEN** o usuario informa e-mail e senha validos
+- **THEN** o sistema envia um codigo de 6 digitos por e-mail e so emite a sessao apos o codigo correto ser informado
+
+#### Scenario: Codigo expirado ou com tentativas esgotadas
+- **WHEN** o codigo informado esta expirado ou o usuario ja errou 5 vezes
+- **THEN** o sistema recusa a validacao sem revelar qual condicao falhou e exige um novo login para gerar outro codigo
 
 #### Scenario: Redefinicao solicitada no login
 - **WHEN** o usuario solicita redefinicao para um e-mail cadastrado e ativo

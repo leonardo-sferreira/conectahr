@@ -26,7 +26,9 @@ O produto deve demonstrar backend avancado com Xano e Script Xano, desenvolvimen
 
 ### Identidade e seguranca
 
-Usar sessoes com access token de curta duracao, expiracao fixa de uma hora e registro server-side de sessoes revogadas para suportar logout imediato. Senhas devem ser armazenadas somente com hash adaptativo; tokens de redefinicao e TOTP devem ser tratados como segredos, com expiracao, uso unico e protecao contra enumeracao de contas. Alternativas consideradas: sessoes longas sem revogacao, rejeitadas por dificultarem logout e aumentarem o impacto de vazamentos; SMS como segundo fator, rejeitado como padrao por depender de operadora e ter protecao inferior ao TOTP.
+Usar sessoes com access token de curta duracao, expiracao fixa de uma hora e registro server-side de sessoes revogadas para suportar logout imediato. Senhas devem ser armazenadas somente com hash adaptativo; tokens de redefinicao e codigos de segundo fator devem ser tratados como segredos, com expiracao, uso unico e protecao contra enumeracao de contas. Alternativas consideradas: sessoes longas sem revogacao, rejeitadas por dificultarem logout e aumentarem o impacto de vazamentos.
+
+O segundo fator do ConectaRH e um codigo numerico de 6 digitos enviado por e-mail via SendGrid a cada login, obrigatorio para todas as contas (nao e opcional por usuario). O codigo expira em 5 minutos, e a validacao bloqueia apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo. Alternativas consideradas: TOTP via aplicativo autenticador, rejeitado por exigir instalar e configurar um app antes do primeiro uso, adicionando friccao logo no onboarding; SMS, rejeitado como no design original por depender de operadora. Trade-off aceito conscientemente: um codigo por e-mail depende da seguranca da propria caixa de entrada do usuario, uma protecao mais fraca que TOTP contra um invasor que ja comprometeu o e-mail — aceitavel para o escopo atual do projeto, podendo evoluir para TOTP opcional no futuro.
 
 A troca de senha temporaria sera uma etapa de estado da sessao. O backend deve rejeitar qualquer rota funcional enquanto a flag de primeiro acesso estiver ativa. Codigos de recuperacao de 2FA devem ser armazenados de forma protegida e seu uso auditado.
 
@@ -88,7 +90,7 @@ Publicar eventos de dominio em uma fila/outbox transacional. Um trabalhador de e
 
 ### Privacidade
 
-Aplicar minimizacao de dados, logs sem senha, token, codigo TOTP ou conteudo de documento, controle de acesso por recurso e criptografia em transito e em repouso. Feedback privado nao deve aparecer em listagens publicas ou notificacoes detalhadas.
+Aplicar minimizacao de dados, logs sem senha, token, codigo de acesso (OTP) ou conteudo de documento, controle de acesso por recurso e criptografia em transito e em repouso. Feedback privado nao deve aparecer em listagens publicas ou notificacoes detalhadas.
 
 ### Processo de desenvolvimento e entrega
 
