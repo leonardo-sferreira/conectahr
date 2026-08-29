@@ -60,6 +60,7 @@ query "auth/login" verb=POST {
       }
     } as $user_com_otp
 
+    // Usa o Dynamic Template do SendGrid (email-templates/02-codigo-verificacao.html).
     api.request {
       url = "https://api.sendgrid.com/v3/mail/send"
       method = "POST"
@@ -67,17 +68,20 @@ query "auth/login" verb=POST {
       params = {
         personalizations: [
           {
-            to: [{email: $user.email, name: $user.nome}]
+            to                    : [{email: $user.email, name: $user.nome}]
+            dynamic_template_data : {
+              first_name         : $user.nome
+              verification_code  : $codigo_texto
+              expires_in_minutes : "5"
+              logo_url           : ""
+              preheader_text     : "Seu codigo de acesso ConectaRH"
+              unsubscribe_url    : "#"
+              preferences_url    : "#"
+            }
           }
         ]
-        from: {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-        subject: "Seu codigo de acesso ConectaRH"
-        content: [
-          {
-            type : "text/plain"
-            value: "Ola, " ~ $user.nome ~ ". Seu codigo de acesso ao ConectaRH e " ~ $codigo_texto ~ ". Ele expira em 5 minutos. Se voce nao tentou entrar no ConectaRH, ignore este e-mail."
-          }
-        ]
+        from       : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
+        template_id: "d-c595a07353ae46e18d9f9476f2420f5a"
       }
     } as $resposta_sendgrid
 
