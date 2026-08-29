@@ -58,6 +58,7 @@ query solicitacoes_desligamento verb=GET {
     // As mais antigas aparecem primeiro.
     db.query solicitacao_desligamento {
       where = $db.solicitacao_desligamento.status == $status_normalizado
+      sort = {solicitacao_desligamento.created_at: "asc"}
       return = {type: "list"}
     } as $solicitacoes
   

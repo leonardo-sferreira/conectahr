@@ -44,6 +44,7 @@ query listar_cargos verb=GET {
   
     // Lista todos os cargos em ordem alfabética.
     db.query cargo {
+      sort = {cargo.nome: "asc"}
       return = {type: "list"}
     } as $cargos
   }

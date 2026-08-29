@@ -1,5 +1,5 @@
 // Bloqueia a exclusao fisica de documentos.
-// Documentos devem ser arquivados pelo campo ativo.
+// Documentos devem ser arquivados via documentos/{id}/arquivar.
 // Nenhum perfil possui permissao para excluir registros.
 query "documentos/{id}" verb=DELETE {
   api_group = "ConectaRH - Documentos"
@@ -46,7 +46,7 @@ query "documentos/{id}" verb=DELETE {
     // Bloqueia permanentemente a exclusao.
     precondition (false) {
       error_type = "accessdenied"
-      error = "Documentos nao podem ser excluidos. Utilize a alteracao de status para arquivar o registro."
+      error = "Documentos nao podem ser excluidos. Utilize documentos/{id}/arquivar para arquivar o registro."
     }
   }
 

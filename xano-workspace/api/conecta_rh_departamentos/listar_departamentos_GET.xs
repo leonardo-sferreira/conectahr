@@ -43,6 +43,7 @@ query listar_departamentos verb=GET {
   
     // Lista os departamentos em ordem alfabética.
     db.query departamento {
+      sort = {departamento.nome: "asc"}
       return = {type: "list"}
     } as $departamentos
   }

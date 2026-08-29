@@ -75,7 +75,7 @@ query "usuarios/{id}" verb=GET {
       {
         id: $usuario_consultado.id
         created_at: $usuario_consultado.created_at
-        name: $usuario_consultado.name
+        nome: $usuario_consultado.nome
         email: $usuario_consultado.email
         perfil: $perfil_consultado
         ativo: $usuario_consultado.ativo
