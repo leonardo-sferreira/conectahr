@@ -93,7 +93,7 @@ query usuarios verb=POST {
             email                       : $input.email
             senha                       : $input.senha_temporaria
             ativo                       : true
-            trocar_senha_primeiro_acesso: true
+            senha_primeiro_acesso: true
           }
         } as $novo_usuario
       
@@ -115,7 +115,7 @@ query usuarios verb=POST {
         "email"
         "perfil"
         "ativo"
-        "trocar_senha_primeiro_acesso"
+        "senha_primeiro_acesso"
       ]
     } as $usuario_criado
   }
@@ -131,7 +131,7 @@ query usuarios verb=POST {
         perfil: $usuario_criado.perfil
         ativo: $usuario_criado.ativo
         colaborador_id: $colaborador.id
-        trocar_senha_primeiro_acesso: $usuario_criado.trocar_senha_primeiro_acesso
+        senha_primeiro_acesso: $usuario_criado.senha_primeiro_acesso
       }
       ```
   }
