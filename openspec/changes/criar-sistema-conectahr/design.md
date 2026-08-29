@@ -26,11 +26,11 @@ O produto deve demonstrar backend avancado com Xano e Script Xano, desenvolvimen
 
 ### Identidade e seguranca
 
-Usar sessoes com access token de curta duracao, expiracao fixa de uma hora e registro server-side de sessoes revogadas para suportar logout imediato. Senhas devem ser armazenadas somente com hash adaptativo; tokens de redefinicao e codigos de segundo fator devem ser tratados como segredos, com expiracao, uso unico e protecao contra enumeracao de contas. Alternativas consideradas: sessoes longas sem revogacao, rejeitadas por dificultarem logout e aumentarem o impacto de vazamentos.
+Usar sessoes com access token de curta duracao, expiracao fixa de uma hora e registro server-side de sessoes revogadas para suportar logout imediato. Senhas devem ser armazenadas somente com hash adaptativo; tokens de redefinicao e codigos de acesso devem ser tratados como segredos, com expiracao, uso unico e protecao contra enumeracao de contas. Alternativas consideradas: sessoes longas sem revogacao, rejeitadas por dificultarem logout e aumentarem o impacto de vazamentos.
 
-O segundo fator do ConectaRH e um codigo numerico de 6 digitos enviado por e-mail via SendGrid a cada login, obrigatorio para todas as contas (nao e opcional por usuario). O codigo expira em 5 minutos, e a validacao bloqueia apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo. Alternativas consideradas: TOTP via aplicativo autenticador, rejeitado por exigir instalar e configurar um app antes do primeiro uso, adicionando friccao logo no onboarding; SMS, rejeitado como no design original por depender de operadora. Trade-off aceito conscientemente: um codigo por e-mail depende da seguranca da propria caixa de entrada do usuario, uma protecao mais fraca que TOTP contra um invasor que ja comprometeu o e-mail — aceitavel para o escopo atual do projeto, podendo evoluir para TOTP opcional no futuro.
+A validacao padrao de login do ConectaRH e um codigo numerico de 6 digitos enviado por e-mail via SendGrid a cada login, obrigatorio para todas as contas. O codigo expira em 5 minutos, e a validacao bloqueia apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo. Alternativa considerada: TOTP via aplicativo autenticador, rejeitado por exigir instalar e configurar um app antes do primeiro uso, adicionando friccao logo no onboarding, alem de o time ja ter familiaridade operacional com SendGrid. Trade-off aceito conscientemente: um codigo por e-mail depende da seguranca da propria caixa de entrada do usuario — aceitavel para o escopo atual do projeto.
 
-A troca de senha temporaria sera uma etapa de estado da sessao. O backend deve rejeitar qualquer rota funcional enquanto a flag de primeiro acesso estiver ativa. Codigos de recuperacao de 2FA devem ser armazenados de forma protegida e seu uso auditado.
+A troca de senha temporaria sera uma etapa de estado da sessao. O backend deve rejeitar qualquer rota funcional enquanto a flag de primeiro acesso estiver ativa.
 
 ### Autorizacao
 
@@ -115,5 +115,5 @@ O Figma sera a fonte de verdade visual antes do desenvolvimento das telas. O des
 
 ## Migration Plan
 
-Como nao existem dados de producao no repositorio, iniciar com schema versionado e banco vazio, sem carga dos registros das imagens. Implantar primeiro tabelas, restricoes e auditoria; depois habilitar os modulos por feature flag. Fazer smoke tests com dados sinteticos, validar fluxos de recuperacao e 2FA em ambiente controlado e somente entao liberar os papeis progressivamente. Rollback deve desabilitar a flag e reverter a versao da aplicacao sem apagar evidencias de auditoria; migracoes destrutivas nao devem ser usadas no MVP.
+Como nao existem dados de producao no repositorio, iniciar com schema versionado e banco vazio, sem carga dos registros das imagens. Implantar primeiro tabelas, restricoes e auditoria; depois habilitar os modulos por feature flag. Fazer smoke tests com dados sinteticos, validar fluxos de recuperacao de senha e de codigo de acesso por e-mail em ambiente controlado e somente entao liberar os papeis progressivamente. Rollback deve desabilitar a flag e reverter a versao da aplicacao sem apagar evidencias de auditoria; migracoes destrutivas nao devem ser usadas no MVP.
 

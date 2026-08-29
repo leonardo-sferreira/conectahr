@@ -39,7 +39,7 @@ query "auth/login" verb=POST {
     }
   
     // Gera e envia o codigo de acesso de 6 digitos por e-mail (OTP).
-    // Substitui o token TOTP como segundo fator do ConectaRH.
+    // Validacao padrao de login do ConectaRH.
     security.random_number {
       min = 100000
       max = 999999

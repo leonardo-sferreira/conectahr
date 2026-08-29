@@ -15,8 +15,8 @@ O sistema SHALL autenticar usuarios por credencial e emitir token de acesso com 
 - **WHEN** uma requisicao usa token expirado, revogado ou invalido
 - **THEN** o sistema rejeita a requisicao e exige nova autenticacao
 
-### Requirement: Primeiro acesso, redefinicao e segundo fator por e-mail
-O sistema SHALL permitir que somente Admin ou RH cadastrem usuarios. O sistema SHALL marcar credenciais temporarias, obrigar a troca antes de liberar o uso normal e permitir redefinicao iniciada na tela de login. Apos validar e-mail e senha, o sistema SHALL exigir um segundo fator obrigatorio: um codigo numerico de 6 digitos enviado por e-mail, valido por 5 minutos, antes de emitir a sessao. O sistema SHALL bloquear a validacao do codigo apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo, e SHALL permitir reenviar um novo codigo que substitui o anterior.
+### Requirement: Primeiro acesso, redefinicao e validacao de login por e-mail
+O sistema SHALL permitir que somente Admin ou RH cadastrem usuarios. O sistema SHALL marcar credenciais temporarias, obrigar a troca antes de liberar o uso normal e permitir redefinicao iniciada na tela de login. A validacao padrao de todo login, apos e-mail e senha corretos, SHALL ser um codigo numerico de 6 digitos enviado por e-mail, valido por 5 minutos, exigido antes de emitir a sessao. O sistema SHALL bloquear a validacao do codigo apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo, e SHALL permitir reenviar um novo codigo que substitui o anterior.
 
 #### Scenario: Primeiro acesso com senha temporaria
 - **WHEN** o usuario autentica com senha temporaria
@@ -231,7 +231,7 @@ O sistema SHALL informar previamente criterios de avaliacao, impedir criterios d
 - **THEN** o sistema abre revisao humana sem alterar retroativamente a avaliacao original
 
 ### Requirement: Auditoria obrigatoria
-O sistema SHALL auditar autenticacao, logout, troca e redefinicao de senha, 2FA, usuarios, alteracoes contratuais, ponto e ajustes, decisoes, documentos, regras trabalhistas, exportacoes e alteracoes em avaliacoes concluidas, incluindo responsavel, data, justificativa e valores anterior e novo. O sistema SHALL negar por padrao, preservar historicos e nunca apagar evidencias silenciosamente.
+O sistema SHALL auditar autenticacao, logout, troca e redefinicao de senha, codigo de acesso de login, usuarios, alteracoes contratuais, ponto e ajustes, decisoes, documentos, regras trabalhistas, exportacoes e alteracoes em avaliacoes concluidas, incluindo responsavel, data, justificativa e valores anterior e novo. O sistema SHALL negar por padrao, preservar historicos e nunca apagar evidencias silenciosamente.
 
 #### Scenario: Operacao sensivel auditada
 - **WHEN** ocorre uma alteracao de regra, documento, contrato, ponto ou avaliacao
@@ -313,7 +313,7 @@ O sistema SHALL registrar eventos sensiveis, incluindo autenticacao, alteracoes 
 - **THEN** o sistema preserva a pendencia, registra a falha e permite reprocessamento sem duplicar a decisao
 
 ### Requirement: Central de tarefas e pendencias
-O sistema SHALL apresentar uma central personalizada por perfil com documentos aguardando envio ou analise, ferias e correcoes de ponto pendentes, avaliacoes nao respondidas, metas e PDIs atrasados e pendencias de senha temporaria ou 2FA.
+O sistema SHALL apresentar uma central personalizada por perfil com documentos aguardando envio ou analise, ferias e correcoes de ponto pendentes, avaliacoes nao respondidas, metas e PDIs atrasados e pendencia de senha temporaria.
 
 #### Scenario: Central do colaborador
 - **WHEN** um colaborador acessa sua central
@@ -324,7 +324,7 @@ O sistema SHALL apresentar uma central personalizada por perfil com documentos a
 - **THEN** o sistema exibe pendencias sob seu escopo e tarefas de aprovacao ou analise correspondentes
 
 ### Requirement: Onboarding de colaborador
-O sistema SHALL oferecer checklist de admissao com dados pessoais, acesso, troca de senha, 2FA, documentos obrigatorios, aprovacoes, gestor, departamento, contrato, jornada, metas iniciais e acompanhamentos de 30, 60 e 90 dias.
+O sistema SHALL oferecer checklist de admissao com dados pessoais, acesso, troca de senha, documentos obrigatorios, aprovacoes, gestor, departamento, contrato, jornada, metas iniciais e acompanhamentos de 30, 60 e 90 dias.
 
 #### Scenario: Onboarding acompanhado
 - **WHEN** RH inicia o onboarding de um colaborador

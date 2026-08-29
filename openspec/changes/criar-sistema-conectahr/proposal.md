@@ -7,7 +7,7 @@ O planejamento precisa produzir um MVP demonstravel, documentado e implantavel, 
 ## What Changes
 
 - Criar autenticacao com token de acesso valido por uma hora, encerramento explicito de sessao, redefinicao de senha e senha temporaria obrigatoria no primeiro acesso.
-- Adicionar autenticacao de dois fatores por TOTP e controles para habilitacao, desafio e recuperacao.
+- Adicionar validacao de login por codigo de acesso de 6 digitos enviado por e-mail (SendGrid), obrigatoria em todo login, com reenvio e bloqueio apos tentativas invalidas.
 - Implementar autorizacao por perfil e escopo organizacional, incluindo vinculo de colaborador com gestor e gestor com departamento.
 - Criar gestao de colaboradores, cargos, departamentos e historico profissional, respeitando os tipos de contrato, niveis e status definidos no dominio.
 - Permitir registro de ponto, acompanhamento da jornada e solicitacoes de correcao com aprovacao ou recusa pelos responsaveis autorizados.
@@ -42,7 +42,7 @@ Nenhuma. O workspace ainda nao possui especificacoes existentes.
 - Novos modulos de dominio, API e interface para os fluxos de RH descritos.
 - Persistencia para usuarios, colaboradores, cargos, departamentos, historico profissional, ponto, documentos, ferias, ausencias e avaliacao.
 - Servico de e-mail para notificacoes e pendencias, alem de armazenamento protegido para anexos.
-- Integracao com biblioteca ou servico de TOTP e mecanismo seguro de hash de senhas e tokens.
+- Integracao com o SendGrid para o codigo de acesso de login e mecanismo seguro de hash de senhas e tokens.
 - Auditoria e autorizacao devem proteger dados pessoais, documentos e feedbacks privados.
 - O projeto integrador deve incluir repositorio GitHub, documentacao de setup e decisoes, backend em Xano/Script Xano, frontend em Reflex, integracao por API, deploy e validacao inicial de mercado.
 - O frontend adotara Reflex e os e-mails transacionais usarao SendGrid.
