@@ -6,7 +6,8 @@ table historico_profissional {
     timestamp created_at?=now {
       visibility = "private"
     }
-  
+
+    timestamp? updated_at?
     int colaborador_id {
       table = "colaborador"
     }

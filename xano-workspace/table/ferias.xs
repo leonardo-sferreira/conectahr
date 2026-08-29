@@ -7,7 +7,7 @@ table ferias {
       visibility = "private"
     }
   
-    timestamp? Updated_at?
+    timestamp? updated_at?
     int colaborador_id {
       table = "colaborador"
     }

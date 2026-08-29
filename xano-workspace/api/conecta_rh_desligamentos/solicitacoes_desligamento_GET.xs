@@ -49,9 +49,9 @@ query solicitacoes_desligamento verb=GET {
     }
   
     // Valida os valores configurados no Enum.
-    precondition ($status_normalizado == "pendente" || $status_normalizado == "aprovado" || $status_normalizado == "rejeitado" || $status_normalizado == "cancelado" || $status_normalizado == "agendado" || $status_normalizado == "concluido") {
+    precondition ($status_normalizado == "pendente" || $status_normalizado == "em_analise" || $status_normalizado == "agendado" || $status_normalizado == "rejeitada" || $status_normalizado == "cancelada" || $status_normalizado == "concluido") {
       error_type = "inputerror"
-      error = "Status inválido. Use pendente, aprovado, rejeitado, cancelado, agendado ou concluido."
+      error = "Status inválido. Use pendente, em_analise, agendado, rejeitada, cancelada ou concluido."
     }
   
     // Consulta as solicitações do status informado.

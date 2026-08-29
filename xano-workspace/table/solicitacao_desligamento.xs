@@ -49,6 +49,7 @@ table solicitacao_desligamento {
     }
   
     timestamp? data_decisao?
+    text? motivo_decisao filters=trim|max:1000
     int cancelado_por_user_id? {
       table = "user"
     }

@@ -73,19 +73,19 @@ query "usuarios/{id}/perfil" verb=PATCH {
     }
   
     // Converte para os valores exatos configurados no Enum:
-    // admin, RH, colaborador e Gestor.
+    // Admin, RH, Colaborador e Gestor.
     var $perfil_valor_banco {
       value = ```
           (
             $perfil_novo == "ADMIN"
-            ? "admin"
+            ? "Admin"
             : (
               $perfil_novo == "RH"
               ? "RH"
               : (
                 $perfil_novo == "GESTOR"
                 ? "Gestor"
-                : "colaborador"
+                : "Colaborador"
               )
             )
           )
