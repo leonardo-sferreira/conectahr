@@ -25,6 +25,11 @@ query documentos verb=GET {
       error_type = "unauthorized"
       error = "Usuario inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil autenticado.
     var $perfil_autenticado {

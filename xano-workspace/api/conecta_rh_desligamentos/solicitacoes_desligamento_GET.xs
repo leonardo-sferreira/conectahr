@@ -26,6 +26,11 @@ query solicitacoes_desligamento verb=GET {
       error_type = "unauthorized"
       error = "Usuário inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil.
     var $perfil_autenticado {

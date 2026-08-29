@@ -26,6 +26,11 @@ query meu_ponto verb=GET {
       error = "Usuario inativo."
     }
 
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
+
     // Localiza o colaborador vinculado a conta autenticada.
     db.get colaborador {
       field_name = "user_id"

@@ -26,6 +26,11 @@ query "ferias/{id}/aprovar" verb=POST {
       error_type = "unauthorized"
       error = "Usuario inativo."
     }
+
+    precondition ($usuario_decisor.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil.
     var $perfil_decisor {

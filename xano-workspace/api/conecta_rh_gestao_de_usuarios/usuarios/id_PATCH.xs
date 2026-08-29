@@ -27,6 +27,11 @@ query "usuarios/{id}" verb=PATCH {
       error_type = "unauthorized"
       error = "Usuário inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil de quem está realizando a operação.
     var $perfil_autenticado {

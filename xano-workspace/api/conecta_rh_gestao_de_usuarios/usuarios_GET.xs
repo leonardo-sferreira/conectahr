@@ -25,6 +25,11 @@ query usuarios verb=GET {
       error_type = "unauthorized"
       error = "Usuário inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Remove espaços e converte o perfil para maiúsculas.
     var $perfil_normalizado {

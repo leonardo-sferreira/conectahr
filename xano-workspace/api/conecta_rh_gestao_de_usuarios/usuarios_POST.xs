@@ -26,6 +26,11 @@ query usuarios verb=POST {
       error_type = "unauthorized"
       error = "Usuário inativo."
     }
+
+    precondition ($usuario_rh.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil do usuário autenticado.
     var $perfil_rh {

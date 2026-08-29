@@ -38,6 +38,11 @@ query colaboradores verb=POST {
       error_type = "unauthorized"
       error = "Usuario inativo."
     }
+
+    precondition ($usuario_rh.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil do usuario autenticado.
     var $perfil_rh {

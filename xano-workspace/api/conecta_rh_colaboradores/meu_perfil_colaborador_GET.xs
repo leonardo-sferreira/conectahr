@@ -26,6 +26,11 @@ query meu_perfil_colaborador verb=GET {
       error_type = "unauthorized"
       error = "Usuario inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Localiza o colaborador pelo vinculo da conta.
     db.get colaborador {

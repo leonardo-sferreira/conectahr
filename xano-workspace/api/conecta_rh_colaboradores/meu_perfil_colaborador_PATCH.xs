@@ -35,6 +35,11 @@ query meu_perfil_colaborador verb=PATCH {
       error_type = "unauthorized"
       error = "Usuário inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Localiza o colaborador vinculado ao usuário autenticado.
     db.get colaborador {

@@ -26,6 +26,11 @@ query "ausencias/{id}" verb=DELETE {
       error_type = "unauthorized"
       error = "Usuario inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Localiza o registro apenas para fornecer uma resposta adequada.
     db.get ausencia {

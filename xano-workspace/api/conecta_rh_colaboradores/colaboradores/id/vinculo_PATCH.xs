@@ -36,6 +36,11 @@ query "colaboradores/{id}/vinculo" verb=PATCH {
       error_type = "unauthorized"
       error = "Usuario inativo."
     }
+
+    precondition ($usuario_rh.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil.
     var $perfil_rh {

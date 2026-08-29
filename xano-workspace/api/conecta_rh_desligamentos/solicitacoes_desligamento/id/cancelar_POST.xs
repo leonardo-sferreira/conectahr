@@ -27,6 +27,11 @@ query "solicitacoes_desligamento/{id}/cancelar" verb=POST {
       error_type = "unauthorized"
       error = "Usuário inativo."
     }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
   
     // Normaliza o perfil.
     var $perfil_autenticado {

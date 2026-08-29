@@ -29,6 +29,11 @@ query "documentos/{id}/rejeitar" verb=POST {
       error = "Usuario inativo."
     }
 
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
+
     // Normaliza o perfil autenticado.
     var $perfil_autenticado {
       value = $usuario_autenticado.perfil|trim|to_upper
