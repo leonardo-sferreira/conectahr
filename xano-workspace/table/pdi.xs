@@ -29,7 +29,7 @@ table pdi {
     enum status?=planejado {
       values = ["planejado", "em_andamento", "concluido", "cancelado"]
     }
-  
+
     text evidencia? filters=trim|max:2000
   }
 
