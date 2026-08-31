@@ -37,10 +37,10 @@ query usuarios verb=POST {
       value = $usuario_rh.perfil|trim|to_upper
     }
   
-    // Somente RH pode criar acessos.
-    precondition ($perfil_rh == "RH") {
+    // Somente Admin ou RH podem criar acessos.
+    precondition ($perfil_rh == "RH" || $perfil_rh == "ADMIN") {
       error_type = "accessdenied"
-      error = "Somente o RH pode criar contas de acesso."
+      error = "Somente Admin ou RH podem criar contas de acesso."
     }
   
     // Localiza o colaborador.
@@ -67,11 +67,26 @@ query usuarios verb=POST {
     }
   
     // Verifica se o user_id aponta para uma conta que realmente existe.
-    db.get user {
-      field_name = "id"
-      field_value = $colaborador.user_id
-    } as $usuario_ja_vinculado
-  
+    // db.get com field_value nulo falha com "Missing param: field_value"
+    // (nao retorna null graciosamente) — so consulta quando ha um
+    // user_id de fato vinculado.
+    var $usuario_ja_vinculado {
+      value = null
+    }
+
+    conditional {
+      if ($colaborador.user_id != null) {
+        db.get user {
+          field_name = "id"
+          field_value = $colaborador.user_id
+        } as $usuario_encontrado
+
+        var.update $usuario_ja_vinculado {
+          value = $usuario_encontrado
+        }
+      }
+    }
+
     // Só bloqueia quando uma conta vinculada realmente foi encontrada.
     precondition ($usuario_ja_vinculado == null) {
       error_type = "inputerror"

@@ -103,6 +103,19 @@ query "usuarios/{id}/perfil" verb=PATCH {
     var $perfil_resposta {
       value = $usuario_atualizado.perfil|trim|to_upper
     }
+
+    // Auditoria: alteracao de perfil de acesso.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "alterar_perfil_usuario"
+        recurso       : "user"
+        registro_id   : $usuario_alvo.id
+        valor_anterior: $usuario_alvo.perfil
+        valor_novo    : $perfil_valor_banco
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

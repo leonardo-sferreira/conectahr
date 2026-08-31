@@ -78,6 +78,19 @@ query "usuarios/{id}/status" verb=PATCH {
       field_value = $usuario_alvo.id
       data = {ativo: $input.ativo}
     } as $usuario_atualizado
+
+    // Auditoria: ativacao/desativacao de conta.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "alterar_status_usuario"
+        recurso       : "user"
+        registro_id   : $usuario_alvo.id
+        valor_anterior: ($usuario_alvo.ativo|to_text)
+        valor_novo    : ($input.ativo|to_text)
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
