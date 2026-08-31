@@ -1,0 +1,9 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1200, "h": 1000 },
+    { "file": "Palette.dc.html", "x": 1280, "y": 0, "w": 1200, "h": 650 },
+    { "file": "Typography.dc.html", "x": 1280, "y": 730, "w": 1200, "h": 730 },
+    { "file": "Mockup.dc.html", "x": 2560, "y": 0, "w": 1200, "h": 920 }
+  ],
+  "launch": { "view": "focused", "file": "Main.dc.html" }
+}

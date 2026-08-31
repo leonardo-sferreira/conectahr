@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Manrope', system-ui, sans-serif; }
+    .cap { font-family: 'Manrope', system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #8A8598; }
+    .word { font-family: 'Sora', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+    .card { border: 1px solid #ECEAF5; border-radius: 20px; padding: 32px; background: #FBFAFF; }
+    .row { display: flex; align-items: baseline; gap: 16px; border-bottom: 1px solid #ECEAF5; padding: 14px 0; }
+    .row:last-child { border-bottom: none; }
+    .wlabel { width: 90px; flex-shrink: 0; font-size: 12px; color: #A6A1B3; font-family: 'Sora', monospace; }
+  </style>
+</helmet>
+<div style="width: 1200px; min-height: 700px; background: #FFFFFF; padding: 56px 64px; box-sizing: border-box; display: flex; flex-direction: column; gap: 36px;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <div class="word" style="font-size: 24px; color: #0B0B14;">Tipografia</div>
+    <div class="cap">conectaRH &mdash; par tipogr&aacute;fico</div>
+  </div>
+
+  <div style="display: flex; gap: 24px;">
+
+    <div class="card" style="flex: 1;">
+      <div class="cap" style="margin-bottom: 16px;">T&iacute;tulos &mdash; Sora</div>
+      <div class="word" style="font-size: 64px; color: #0B0B14; line-height: 1;">Aa</div>
+      <div class="word" style="font-size: 28px; color: #0B0B14; margin-top: 20px; line-height: 1.2;">Conectando pessoas e oportunidades</div>
+      <div style="margin-top: 24px;">
+        <div class="row"><div class="wlabel">800</div><div style="font-family: 'Sora'; font-weight: 800; font-size: 18px; color: #0B0B14;">ExtraBold &mdash; destaques</div></div>
+        <div class="row"><div class="wlabel">700</div><div style="font-family: 'Sora'; font-weight: 700; font-size: 18px; color: #0B0B14;">Bold &mdash; t&iacute;tulos</div></div>
+        <div class="row"><div class="wlabel">600</div><div style="font-family: 'Sora'; font-weight: 600; font-size: 18px; color: #0B0B14;">SemiBold &mdash; subt&iacute;tulos</div></div>
+        <div class="row"><div class="wlabel">500</div><div style="font-family: 'Sora'; font-weight: 500; font-size: 18px; color: #0B0B14;">Medium &mdash; r&oacute;tulos</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="flex: 1;">
+      <div class="cap" style="margin-bottom: 16px;">Texto &mdash; Manrope</div>
+      <div style="font-size: 64px; font-weight: 400; color: #0B0B14; line-height: 1;">Aa</div>
+      <div style="font-family: 'Manrope'; font-size: 15px; color: #5B5568; margin-top: 20px; line-height: 1.6;">O conectaRH aproxima empresas e talentos com processos de recrutamento mais simples, r&aacute;pidos e humanos. Esta &eacute; a fonte usada em par&aacute;grafos, formul&aacute;rios e e-mails.</div>
+      <div style="margin-top: 24px;">
+        <div class="row"><div class="wlabel">700</div><div style="font-family: 'Manrope'; font-weight: 700; font-size: 16px; color: #0B0B14;">Bold &mdash; &ecirc;nfase</div></div>
+        <div class="row"><div class="wlabel">600</div><div style="font-family: 'Manrope'; font-weight: 600; font-size: 16px; color: #0B0B14;">SemiBold &mdash; bot&otilde;es</div></div>
+        <div class="row"><div class="wlabel">500</div><div style="font-family: 'Manrope'; font-weight: 500; font-size: 16px; color: #0B0B14;">Medium &mdash; navega&ccedil;&atilde;o</div></div>
+        <div class="row"><div class="wlabel">400</div><div style="font-family: 'Manrope'; font-weight: 400; font-size: 16px; color: #0B0B14;">Regular &mdash; corpo de texto</div></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
