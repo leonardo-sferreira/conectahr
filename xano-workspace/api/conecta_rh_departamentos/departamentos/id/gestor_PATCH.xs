@@ -115,16 +115,66 @@ query "departamentos/{id}/gestor" verb=PATCH {
       error_type = "inputerror"
       error = "A conta vinculada ao colaborador precisa possuir o perfil Gestor."
     }
-  
-    // Registra o gestor no departamento.
-    db.edit departamento {
-      field_name = "id"
-      field_value = $departamento_alvo.id
-      data = {
-        gestor_colaborador_id: $colaborador_selecionado.id
-        updated_at           : "now"
+
+    // Evita substituicao redundante pelo mesmo gestor ja vigente.
+    precondition ($departamento_alvo.gestor_colaborador_id != $colaborador_selecionado.id) {
+      error_type = "inputerror"
+      error = "Este colaborador ja e o gestor vigente deste departamento."
+    }
+
+    // Localiza o vinculo de gestor ainda aberto, se existir, para encerra-lo.
+    db.query historico_gestor_departamento {
+      where = $db.historico_gestor_departamento.departamento_id == $departamento_alvo.id && $db.historico_gestor_departamento.data_fim == null
+      return = {type: "single"}
+    } as $vinculo_atual
+
+    // Registra o gestor no departamento e preserva o historico na mesma transacao.
+    db.transaction {
+      stack {
+        db.edit departamento {
+          field_name = "id"
+          field_value = $departamento_alvo.id
+          data = {
+            gestor_colaborador_id: $colaborador_selecionado.id
+            updated_at           : "now"
+          }
+        } as $departamento_atualizado
+
+        conditional {
+          if ($vinculo_atual != null) {
+            db.edit historico_gestor_departamento {
+              field_name = "id"
+              field_value = $vinculo_atual.id
+              data = {data_fim: "now", updated_at: "now"}
+            } as $vinculo_encerrado
+          }
+        }
+
+        db.add historico_gestor_departamento {
+          data = {
+            departamento_id      : $departamento_alvo.id
+            colaborador_id        : $colaborador_selecionado.id
+            data_inicio           : "now"
+            data_fim               : null
+            definido_por_user_id  : $usuario_autenticado.id
+            updated_at             : "now"
+          }
+        } as $vinculo_criado
+
+        // Auditoria: troca de gestor do departamento.
+        db.add auditoria {
+          data = {
+            user_id       : $usuario_autenticado.id
+            acao          : "definir_gestor_departamento"
+            recurso       : "departamento"
+            registro_id   : $departamento_alvo.id
+            valor_anterior: ($departamento_alvo.gestor_colaborador_id|to_text)
+            valor_novo    : ($colaborador_selecionado.id|to_text)
+            resultado     : "sucesso"
+          }
+        } as $evento_auditoria
       }
-    } as $departamento_atualizado
+    }
   }
 
   response = {

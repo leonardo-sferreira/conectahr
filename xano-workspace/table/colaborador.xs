@@ -45,11 +45,19 @@ table colaborador {
   
     decimal salario
     decimal carga_horaria_semanal
-    enum status {
+    enum status?=Ativo {
       values = ["Ativo", "Ferias", "Afastado", "Desligado"]
     }
-  
+
     bool ativo?=true
+
+    text? banco filters=trim|max:100
+    text? agencia filters=trim|max:10
+    text? conta filters=trim|max:20
+    text? digito filters=trim|max:2
+    enum? tipo_conta {
+      values = ["corrente", "poupanca"]
+    }
   }
 
   index = [

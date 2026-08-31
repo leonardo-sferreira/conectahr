@@ -9,10 +9,16 @@ query colaboradores verb=POST {
 
   input {
     text nome filters=trim|min:2|max:100
-    text cpf filters=trim|min:11|max:11
+    // max:14 aceita CPF com mascara (XXX.XXX.XXX-XX); validar_cpf
+    // normaliza e confere os digitos verificadores logo abaixo.
+    text cpf filters=trim|min:11|max:14
     email email_pessoal filters=trim|lower
     date data_nascimento
     date data_admissao
+    text telefone filters=trim
+    text logradouro filters=trim
+    text numero filters=trim
+    text bairro filters=trim
     int cargo_id
     int departamento_id
     text tipo_contrato filters=trim
@@ -55,12 +61,23 @@ query colaboradores verb=POST {
       error = "Somente o RH pode cadastrar colaboradores."
     }
   
-    // Verifica se o CPF ja esta cadastrado.
+    // Valida o CPF localmente (digitos verificadores) antes de qualquer
+    // outra checagem — nao consulta servico externo (item 1.8).
+    function.run "ConectaHR/validar_cpf" {
+      input = {cpf: $input.cpf}
+    } as $resultado_cpf
+
+    precondition ($resultado_cpf.valido) {
+      error_type = "inputerror"
+      error = $resultado_cpf.motivo
+    }
+
+    // Verifica se o CPF ja esta cadastrado (usando a forma normalizada).
     db.get colaborador {
       field_name = "cpf"
-      field_value = $input.cpf
+      field_value = $resultado_cpf.cpf_normalizado
     } as $colaborador_cpf_existente
-  
+
     precondition ($colaborador_cpf_existente == null) {
       error_type = "inputerror"
       error = "Ja existe um colaborador cadastrado com este CPF."
@@ -135,10 +152,14 @@ query colaboradores verb=POST {
     db.add colaborador {
       data = {
         nome                 : $input.nome
-        cpf                  : $input.cpf
+        cpf                  : $resultado_cpf.cpf_normalizado
         email_pessoal        : $input.email_pessoal
         data_nascimento      : $input.data_nascimento
         data_admissao        : $input.data_admissao
+        telefone             : $input.telefone
+        logradouro           : $input.logradouro
+        numero               : $input.numero
+        bairro               : $input.bairro
         cargo_id             : $cargo.id
         departamento_id      : $departamento.id
         tipo_contrato        : $tipo_contrato
@@ -146,6 +167,7 @@ query colaboradores verb=POST {
         nivel_desde          : $input.data_admissao
         salario              : $input.salario
         carga_horaria_semanal: $input.carga_horaria_semanal
+        status               : "Ativo"
         ativo                : true
         updated_at           : "now"
       }

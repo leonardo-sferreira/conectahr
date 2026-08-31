@@ -54,15 +54,39 @@ query meu_perfil_colaborador verb=GET {
       field_name = "id"
       field_value = $colaborador.departamento_id
     } as $departamento
+
+    // Tempo de empresa, calculado a partir da data de admissao.
+    var $tempo_empresa_dias {
+      value = null
+    }
+
+    conditional {
+      if ($colaborador.data_admissao != null) {
+        // data_admissao e um campo "date" (string), nao aritmetizavel
+        // diretamente — precisa converter para timestamp primeiro.
+        var $data_admissao_ts {
+          value = ($colaborador.data_admissao|to_timestamp)
+        }
+
+        var $agora_tempo_empresa {
+          value = now
+        }
+
+        var.update $tempo_empresa_dias {
+          value = ((($agora_tempo_empresa - $data_admissao_ts) / 86400000)|to_int)
+        }
+      }
+    }
   }
 
   response = {
-    sucesso     : true
-    colaborador : $colaborador
-    cargo       : $cargo
-    departamento: $departamento
-    nivel       : $colaborador.nivel
-    nivel_desde : $colaborador.nivel_desde
+    sucesso           : true
+    colaborador       : $colaborador
+    cargo             : $cargo
+    departamento      : $departamento
+    nivel             : $colaborador.nivel
+    nivel_desde       : $colaborador.nivel_desde
+    tempo_empresa_dias: $tempo_empresa_dias
   }
 
   guid = "sV1L1lUu87he5PMLraux1bcnRRY"

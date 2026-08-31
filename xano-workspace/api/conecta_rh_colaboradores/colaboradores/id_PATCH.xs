@@ -8,7 +8,9 @@ query "colaboradores/{id}" verb=PATCH {
   input {
     int id
     text nome filters=trim|min:2|max:100
-    text cpf filters=trim|min:11|max:11
+    // max:14 aceita CPF com mascara (XXX.XXX.XXX-XX); validar_cpf
+    // normaliza e confere os digitos verificadores logo abaixo.
+    text cpf filters=trim|min:11|max:14
     email email_pessoal filters=trim|lower
     date data_nascimento
     text telefone filters=trim|max:20
@@ -66,12 +68,22 @@ query "colaboradores/{id}" verb=PATCH {
       error = "Colaborador não encontrado."
     }
   
+    // Valida o CPF localmente (digitos verificadores) — item 1.8.
+    function.run "ConectaHR/validar_cpf" {
+      input = {cpf: $input.cpf}
+    } as $resultado_cpf
+
+    precondition ($resultado_cpf.valido) {
+      error_type = "inputerror"
+      error = $resultado_cpf.motivo
+    }
+
     // Verifica se o CPF pertence a outro colaborador.
     db.get colaborador {
       field_name = "cpf"
-      field_value = $input.cpf
+      field_value = $resultado_cpf.cpf_normalizado
     } as $colaborador_mesmo_cpf
-  
+
     precondition ($colaborador_mesmo_cpf == null || $colaborador_mesmo_cpf.id == $colaborador_atual.id) {
       error_type = "inputerror"
       error = "Este CPF já pertence a outro colaborador."
@@ -99,7 +111,7 @@ query "colaboradores/{id}" verb=PATCH {
       field_value = $colaborador_atual.id
       data = {
         nome           : $input.nome
-        cpf            : $input.cpf
+        cpf            : $resultado_cpf.cpf_normalizado
         email_pessoal  : $input.email_pessoal
         data_nascimento: $input.data_nascimento
         telefone       : $input.telefone
@@ -113,6 +125,17 @@ query "colaboradores/{id}" verb=PATCH {
         updated_at     : "now"
       }
     } as $colaborador_atualizado
+
+    // Auditoria: alteracao cadastral pelo RH.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_rh.id
+        acao          : "alterar_cadastro_colaborador"
+        recurso       : "colaborador"
+        registro_id   : $colaborador_atual.id
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

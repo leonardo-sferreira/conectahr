@@ -189,7 +189,60 @@ query "colaboradores/{id}/vinculo" verb=PATCH {
         }
       }
     }
-  
+
+    // Admissao CLT: inicializa o rastreio de eSocial/CTPS Digital (item
+    // 3.5). Sao integracoes futuras (design.md) — o MVP so registra o
+    // estado que o RH confirma manualmente, sem chamar servico externo.
+    // Prazos: eSocial ate a vespera da admissao; CTPS em ate 5 dias
+    // (aproximacao em dias corridos, nao uteis).
+    var $eh_admissao_clt {
+      value = ($tipo_historico == "admissao" && $tipo_contrato_normalizado == "CLT")
+    }
+
+    var $esocial_status_inicial {
+      value = ($eh_admissao_clt ? "pendente" : null)
+    }
+
+    var $ctps_status_inicial {
+      value = ($eh_admissao_clt ? "pendente" : null)
+    }
+
+    // data_inicio e um campo "date" (string) — precisa de |to_timestamp
+    // antes de aritmetica, e o resultado precisa voltar para o formato
+    // "date" via format_timestamp antes de gravar (ver
+    // conectahr-xano-platform-quirks, achado 13).
+    var $esocial_prazo_inicial {
+      value = null
+    }
+
+    var $ctps_prazo_inicial {
+      value = null
+    }
+
+    conditional {
+      if ($eh_admissao_clt) {
+        var $data_inicio_ts {
+          value = ($input.data_inicio|to_timestamp)
+        }
+
+        var $esocial_prazo_ts {
+          value = ($data_inicio_ts - 86400000)
+        }
+
+        var $ctps_prazo_ts {
+          value = ($data_inicio_ts + 432000000)
+        }
+
+        var.update $esocial_prazo_inicial {
+          value = ($esocial_prazo_ts|format_timestamp:"Y-m-d":"UTC")
+        }
+
+        var.update $ctps_prazo_inicial {
+          value = ($ctps_prazo_ts|format_timestamp:"Y-m-d":"UTC")
+        }
+      }
+    }
+
     // Atualiza o colaborador e o historico como uma unica operacao.
     db.transaction {
       stack {
@@ -239,9 +292,27 @@ query "colaboradores/{id}/vinculo" verb=PATCH {
             tipo_alteracao       : $tipo_historico
             motivo_alteracao     : $input.motivo_alteracao
             user_id              : $usuario_rh.id
+            esocial_status       : $esocial_status_inicial
+            esocial_prazo        : $esocial_prazo_inicial
+            ctps_status          : $ctps_status_inicial
+            ctps_prazo           : $ctps_prazo_inicial
             updated_at           : "now"
           }
         } as $historico_criado
+
+        // Auditoria: alteracao de vinculo profissional (cargo, departamento, contrato, salario).
+        db.add auditoria {
+          data = {
+            user_id       : $usuario_rh.id
+            acao          : $tipo_historico
+            recurso       : "colaborador"
+            registro_id   : $colaborador_atual.id
+            valor_anterior: ("cargo_id=" ~ (($colaborador_atual.cargo_id)|to_text) ~ "; departamento_id=" ~ (($colaborador_atual.departamento_id)|to_text) ~ "; salario=" ~ (($colaborador_atual.salario)|to_text))
+            valor_novo    : ("cargo_id=" ~ (($cargo.id)|to_text) ~ "; departamento_id=" ~ (($departamento.id)|to_text) ~ "; salario=" ~ (($input.salario)|to_text))
+            justificativa : $input.motivo_alteracao
+            resultado     : "sucesso"
+          }
+        } as $evento_auditoria
       }
     }
   }
