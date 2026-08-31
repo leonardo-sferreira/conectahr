@@ -33,7 +33,7 @@ table reconhecimento {
     int moderado_por_user_id? {
       table = "user"
     }
-  
+
     text motivo_moderacao? filters=trim|max:1000
   }
 
