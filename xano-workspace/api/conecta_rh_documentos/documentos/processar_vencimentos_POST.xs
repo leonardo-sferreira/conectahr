@@ -84,8 +84,12 @@ query "documentos/processar_vencimentos" verb=POST {
         }
 
         // Limiar de proximidade (30/15/7 dias) quando ainda nao venceu.
+        // -1 (nao null) marca "nenhum limiar atingido": nesta plataforma
+        // Xano, 0 e tratado como igual a null em comparacoes == / != (ver
+        // conectahr-xano-platform-quirks), e o limiar "venceu hoje" e
+        // exatamente 0 — usar null aqui quebraria essa distincao.
         var $limiar_atingido {
-          value = null
+          value = -1
         }
 
         conditional {
@@ -135,9 +139,20 @@ query "documentos/processar_vencimentos" verb=POST {
         }
 
         // So alerta quando ha um limiar novo, ainda nao coberto pelo
-        // ultimo alerta enviado para este documento.
+        // ultimo alerta enviado para este documento. ultimo_alerta_dias
+        // pode legitimamente ser 0 (ja alertado no dia do vencimento) —
+        // "== null" direto trataria esse 0 como null (mesmo quirk acima),
+        // entao a checagem de "nunca alertou" passa por |to_text.
+        var $ultimo_alerta_texto {
+          value = ($documento_item.ultimo_alerta_dias|to_text)
+        }
+
+        var $nunca_alertou {
+          value = ($ultimo_alerta_texto == "")
+        }
+
         var $deve_alertar {
-          value = ($limiar_alerta != null && ($documento_item.ultimo_alerta_dias == null || $documento_item.ultimo_alerta_dias > $limiar_alerta))
+          value = ($limiar_alerta >= 0 && ($nunca_alertou || $documento_item.ultimo_alerta_dias > $limiar_alerta))
         }
 
         conditional {

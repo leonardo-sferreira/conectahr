@@ -39,8 +39,15 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
       error = "Pesquisa de clima nao encontrada."
     }
 
+    // "!= null" trata 0 como igual a null nesta plataforma (ver
+    // conectahr-xano-platform-quirks) — comparar como texto preserva a
+    // distincao entre "ordem 0" (valida) e "nao informado".
+    var $ordem_texto {
+      value = ($input.ordem|to_text)
+    }
+
     var $ordem_final {
-      value = ($input.ordem != null ? $input.ordem : 1)
+      value = ($ordem_texto != "" ? $input.ordem : 1)
     }
 
     db.add pergunta_clima {
