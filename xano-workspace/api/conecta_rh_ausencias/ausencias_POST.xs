@@ -11,7 +11,7 @@ query ausencias verb=POST {
     date data_fim
     text motivo filters=trim|min:5|max:1000
     attachment? comprovante?
-    text observacao? filters=trim|max:1000
+    text? observacao? filters=trim|max:1000
   }
 
   stack {

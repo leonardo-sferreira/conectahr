@@ -86,6 +86,18 @@ query "ausencias/{id}/rejeitar" verb=POST {
         updated_at: "now"
       }
     } as $ausencia_rejeitada
+
+    // Auditoria: decisao de rejeicao de ausencia.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "rejeitar_ausencia"
+        recurso       : "ausencia"
+        registro_id   : $ausencia_atual.id
+        justificativa : $input.observacao
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

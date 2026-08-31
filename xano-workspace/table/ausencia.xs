@@ -23,7 +23,7 @@ table ausencia {
     enum status {
       values = ["Pendente", "Aprovada", "Rejeitada", "Registrado"]
     }
-  
+
     text observacao? filters=trim|max:500
   }
 

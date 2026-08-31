@@ -7,7 +7,7 @@ query "ausencias/{id}/registrar" verb=POST {
 
   input {
     int id
-    text observacao? filters=trim|max:1000
+    text? observacao? filters=trim|max:1000
   }
 
   stack {
@@ -100,6 +100,17 @@ query "ausencias/{id}/registrar" verb=POST {
         updated_at: "now"
       }
     } as $ausencia_registrada
+
+    // Auditoria: confirmacao do registro administrativo da ausencia.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "registrar_ausencia"
+        recurso       : "ausencia"
+        registro_id   : $ausencia_atual.id
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
