@@ -27,6 +27,14 @@ table ferias {
     }
   
     timestamp? data_decisao?
+
+    // Fonte normativa aplicada na validacao da solicitacao (item 4.4) —
+    // qual linha da matriz regra_contrato (e, por ela, qual
+    // instrumento_normativo, quando houver) fundamentou os limites
+    // checados nesta solicitacao.
+    int? regra_contrato_id {
+      table = "regra_contrato"
+    }
   }
 
   index = [

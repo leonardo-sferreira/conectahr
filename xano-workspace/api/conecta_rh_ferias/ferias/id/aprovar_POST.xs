@@ -97,6 +97,53 @@ query "ferias/{id}/aprovar" verb=POST {
         updated_at          : "now"
       }
     } as $solicitacao_aprovada
+
+    // Auditoria: decisao de aprovacao de ferias.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_decisor.id
+        acao          : "aprovar_ferias"
+        recurso       : "ferias"
+        registro_id   : $solicitacao.id
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
+
+    // Notificacao interna + outbox de e-mail (itens 5.5/5.6/5.11) —
+    // criadas juntas, no mesmo evento que dispara o aviso ao colaborador.
+    conditional {
+      if ($colaborador.user_id != null) {
+        db.get user {
+          field_name = "id"
+          field_value = $colaborador.user_id
+        } as $conta_colaborador_notificar
+
+        conditional {
+          if ($conta_colaborador_notificar != null) {
+            db.add notificacao_interna {
+              data = {
+                destinatario_user_id: $conta_colaborador_notificar.id
+                tipo                : "ferias_aprovada"
+                titulo              : "Ferias aprovadas"
+                mensagem            : "Sua solicitacao de ferias foi aprovada. Consulte o periodo no sistema."
+                recurso             : "ferias"
+                registro_id         : $solicitacao.id
+              }
+            } as $notificacao_criada
+
+            db.add email_outbox {
+              data = {
+                destinatario_email   : $conta_colaborador_notificar.email
+                destinatario_nome    : $conta_colaborador_notificar.nome
+                assunto              : "ConectaRH - Ferias aprovadas"
+                corpo                : "Ola " ~ $conta_colaborador_notificar.nome ~ ",\n\nSua solicitacao de ferias foi aprovada. Acesse o ConectaRH para ver o periodo.\n\nEste e um aviso automatico."
+                chave_idempotencia   : ("ferias_aprovada_" ~ ($solicitacao.id|to_text))
+              }
+            } as $outbox_criado
+          }
+        }
+      }
+    }
   }
 
   response = {

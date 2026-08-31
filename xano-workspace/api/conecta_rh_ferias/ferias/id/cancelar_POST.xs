@@ -92,6 +92,17 @@ query "ferias/{id}/cancelar" verb=POST {
         updated_at          : "now"
       }
     } as $solicitacao_cancelada
+
+    // Auditoria: cancelamento da solicitacao de ferias.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "cancelar_ferias"
+        recurso       : "ferias"
+        registro_id   : $solicitacao.id
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

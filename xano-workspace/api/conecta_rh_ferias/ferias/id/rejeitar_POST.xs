@@ -87,6 +87,17 @@ query "ferias/{id}/rejeitar" verb=POST {
         updated_at          : "now"
       }
     } as $solicitacao_rejeitada
+
+    // Auditoria: decisao de rejeicao de ferias.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_decisor.id
+        acao          : "rejeitar_ferias"
+        recurso       : "ferias"
+        registro_id   : $solicitacao.id
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
