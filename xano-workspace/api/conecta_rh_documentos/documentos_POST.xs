@@ -238,6 +238,14 @@ query documentos verb=POST {
       }
     }
 
+    // Quarentena de arquivos (item 5.7): confere extensao, tamanho e tipo
+    // declarado antes de liberar o anexo. Imagens (imagem_frente/verso) ja
+    // sao validadas pelo proprio Xano no upload, entao ficam liberadas por
+    // construcao — so arquivo_url passa pela verificacao.
+    function.run "ConectaHR/verificar_arquivo_documento" {
+      input = {arquivo_url: $input.arquivo_url}
+    } as $verificacao_arquivo
+
     // Localiza uma pendencia aberta deste tipo, para encerra-la automaticamente.
     db.query pendencia_documento {
       where = $db.pendencia_documento.colaborador_id == $colaborador_destino.id && $db.pendencia_documento.tipo_documento == $input.tipo && $db.pendencia_documento.status == "pendente"
@@ -261,6 +269,8 @@ query documentos verb=POST {
             imagem_verso             : $imagem_verso_final
             arquivo_url              : $input.arquivo_url
             hash_arquivo             : $hash_arquivo_calculado
+            estado_verificacao       : $verificacao_arquivo.estado_verificacao
+            motivo_bloqueio          : $verificacao_arquivo.motivo_bloqueio
             observacao               : $input.observacao
             documento_substituido_id : $input.documento_substituido_id
             ativo                    : true

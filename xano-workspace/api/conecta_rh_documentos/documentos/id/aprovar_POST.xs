@@ -61,6 +61,13 @@ query "documentos/{id}/aprovar" verb=POST {
       error = "Somente documentos com status pendente_analise podem ser aprovados."
     }
 
+    // Quarentena de arquivos (item 5.7): um arquivo bloqueado na
+    // verificacao nao pode ser aprovado ate que um novo seja enviado.
+    precondition ($documento_atual.estado_verificacao != "bloqueado") {
+      error_type = "accessdenied"
+      error = ("Este documento esta bloqueado na verificacao de arquivo e nao pode ser aprovado. Motivo: " ~ ($documento_atual.motivo_bloqueio != null ? $documento_atual.motivo_bloqueio : "nao especificado") ~ ".")
+    }
+
     // Preserva a observacao existente por padrao.
     var $observacao_final {
       value = $documento_atual.observacao

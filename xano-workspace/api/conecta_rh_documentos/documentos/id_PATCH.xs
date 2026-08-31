@@ -166,12 +166,34 @@ query "documentos/{id}" verb=PATCH {
     var $arquivo_url_final {
       value = $documento_atual.arquivo_url
     }
-  
-    // Substitui o link quando um novo for enviado.
+
+    // Preserva o estado de verificacao atual por padrao.
+    var $estado_verificacao_final {
+      value = $documento_atual.estado_verificacao
+    }
+
+    var $motivo_bloqueio_final {
+      value = $documento_atual.motivo_bloqueio
+    }
+
+    // Substitui o link quando um novo for enviado, e reprocessa a
+    // quarentena de arquivos (item 5.7) para o novo link.
     conditional {
       if ($input.arquivo_url != null) {
         var.update $arquivo_url_final {
           value = $input.arquivo_url
+        }
+
+        function.run "ConectaHR/verificar_arquivo_documento" {
+          input = {arquivo_url: $input.arquivo_url}
+        } as $verificacao_arquivo_patch
+
+        var.update $estado_verificacao_final {
+          value = $verificacao_arquivo_patch.estado_verificacao
+        }
+
+        var.update $motivo_bloqueio_final {
+          value = $verificacao_arquivo_patch.motivo_bloqueio
         }
       }
     }
@@ -226,6 +248,8 @@ query "documentos/{id}" verb=PATCH {
         imagem_frente    : $imagem_frente_final
         imagem_verso     : $imagem_verso_final
         arquivo_url      : $arquivo_url_final
+        estado_verificacao: $estado_verificacao_final
+        motivo_bloqueio   : $motivo_bloqueio_final
         observacao       : $observacao_final
         updated_at       : "now"
       }
