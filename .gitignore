@@ -21,6 +21,13 @@ xano-workspace/*.env.xs
 key.txt
 *.key.txt
 
+# Assets de design e e-mail (nao versionados, mantidos so localmente)
+email-signature/
+email-templates/
+email-assets/
+imagens/
+canvas.json
+
 # Editor / SO
 .DS_Store
 Thumbs.db
