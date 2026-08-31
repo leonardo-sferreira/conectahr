@@ -10,14 +10,14 @@ query "documentos/{id}" verb=PATCH {
     int id
     text tipo filters=trim
     text nome_documento filters=trim|min:2|max:150
-    text numero_documento? filters=trim|max:100
-    text estado_de_emissao? filters=trim|max:50
-    date data_emissao?
-    date data_validade?
+    text? numero_documento? filters=trim|max:100
+    text? estado_de_emissao? filters=trim|max:50
+    date? data_emissao?
+    date? data_validade?
     image? imagem_frente?
     image? imagem_verso?
-    text arquivo_url? filters=trim|min:10|max:2000
-    text observacao? filters=trim|max:1000
+    text? arquivo_url? filters=trim|min:10|max:2000
+    text? observacao? filters=trim|max:1000
   }
 
   stack {
@@ -59,12 +59,6 @@ query "documentos/{id}" verb=PATCH {
       error = "Documento nao encontrado."
     }
   
-    // Somente documentos ativos podem ser atualizados.
-    precondition ($documento_atual.ativo) {
-      error_type = "inputerror"
-      error = "Documento inativo nao pode ser atualizado."
-    }
-  
     // Localiza o colaborador proprietario.
     db.get colaborador {
       field_name = "id"
@@ -102,12 +96,20 @@ query "documentos/{id}" verb=PATCH {
       }
     }
   
-    // Autoriza acesso administrativo ou por propriedade.
+    // Autoriza acesso administrativo ou por propriedade — checado antes de
+    // qualquer estado do documento, para nao revelar esse estado a quem
+    // nao tem permissao de acessar o registro.
     precondition ($acesso_administrativo || $acesso_proprietario) {
       error_type = "accessdenied"
       error = "Voce nao possui permissao para atualizar este documento."
     }
-  
+
+    // Somente documentos ativos podem ser atualizados.
+    precondition ($documento_atual.ativo) {
+      error_type = "inputerror"
+      error = "Documento inativo nao pode ser atualizado."
+    }
+
     // Valida o tipo exato do Enum.
     precondition ($input.tipo == "rg" || $input.tipo == "cpf" || $input.tipo == "cin" || $input.tipo == "cnh" || $input.tipo == "ctps" || $input.tipo == "aso_admissional" || $input.tipo == "laudo_deficiencia" || $input.tipo == "certificado_profissional" || $input.tipo == "comprovante_residencia" || $input.tipo == "comprovante_escolaridade" || $input.tipo == "registro_profissional" || $input.tipo == "documentacao_migratoria" || $input.tipo == "certificado_reservista" || $input.tipo == "documentacao_responsavel_legal" || $input.tipo == "outro") {
       error_type = "inputerror"
@@ -178,6 +180,22 @@ query "documentos/{id}" verb=PATCH {
     var $observacao_final {
       value = $documento_atual.observacao
     }
+
+    // A coluna documento.estado_de_emissao tem uma restricao NOT NULL na
+    // tabela real que a declaracao `?` no schema nao remove (quirk da
+    // plataforma) — preserva o valor atual em vez de sobrescrever com
+    // null quando omitido, evitando "SQL Error: 23502, NOT NULL VIOLATION".
+    var $estado_de_emissao_final {
+      value = $documento_atual.estado_de_emissao
+    }
+
+    conditional {
+      if ($input.estado_de_emissao != null) {
+        var.update $estado_de_emissao_final {
+          value = $input.estado_de_emissao
+        }
+      }
+    }
   
     // Substitui a observacao quando uma nova for enviada.
     conditional {
@@ -202,7 +220,7 @@ query "documentos/{id}" verb=PATCH {
         tipo             : $input.tipo
         nome_documento   : $input.nome_documento
         numero_documento : $input.numero_documento
-        estado_de_emissao: $input.estado_de_emissao
+        estado_de_emissao: $estado_de_emissao_final
         data_emissao     : $input.data_emissao
         data_validade    : $input.data_validade
         imagem_frente    : $imagem_frente_final

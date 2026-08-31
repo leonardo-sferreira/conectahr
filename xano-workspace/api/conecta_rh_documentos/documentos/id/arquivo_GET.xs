@@ -49,22 +49,6 @@ query "documentos/{id}/arquivo" verb=GET {
       error = "Documento nao encontrado."
     }
   
-    // Confirma que existe um link cadastrado.
-    precondition ($documento.arquivo_url != null) {
-      error_type = "notfound"
-      error = "Este documento nao possui um arquivo vinculado."
-    }
-  
-    // Confirma que o link nao esta vazio.
-    var $arquivo_url_normalizado {
-      value = $documento.arquivo_url|trim
-    }
-  
-    precondition ($arquivo_url_normalizado != "") {
-      error_type = "notfound"
-      error = "Este documento nao possui um arquivo vinculado."
-    }
-  
     // Define permissao administrativa.
     var $acesso_administrativo {
       value = false
@@ -117,10 +101,28 @@ query "documentos/{id}/arquivo" verb=GET {
       }
     }
   
-    // Autoriza acesso administrativo ou por propriedade.
+    // Autoriza acesso administrativo ou por propriedade — checado antes de
+    // revelar se o documento tem ou nao um arquivo vinculado, para nao
+    // vazar esse dado a quem nao tem permissao de acessar o registro.
     precondition ($acesso_administrativo || $acesso_proprietario) {
       error_type = "accessdenied"
       error = "Voce nao possui permissao para acessar este arquivo."
+    }
+
+    // Confirma que existe um link cadastrado.
+    precondition ($documento.arquivo_url != null) {
+      error_type = "notfound"
+      error = "Este documento nao possui um arquivo vinculado."
+    }
+
+    // Confirma que o link nao esta vazio.
+    var $arquivo_url_normalizado {
+      value = $documento.arquivo_url|trim
+    }
+
+    precondition ($arquivo_url_normalizado != "") {
+      error_type = "notfound"
+      error = "Este documento nao possui um arquivo vinculado."
     }
   }
 

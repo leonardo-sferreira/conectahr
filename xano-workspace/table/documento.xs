@@ -29,6 +29,8 @@ table documento {
         "certificado_reservista"
         "documentacao_responsavel_legal"
         "outro"
+        "holerite"
+        "informe_rendimentos"
       ]
     }
 
@@ -44,6 +46,7 @@ table documento {
     enum estado_verificacao?=enviado {
       values = ["enviado", "em_verificacao", "liberado", "bloqueado"]
     }
+    int? ultimo_alerta_dias
     text? hash_arquivo filters=trim|max:128
     int? documento_substituido_id {
       table = "documento"

@@ -72,6 +72,18 @@ query "documentos/{id}/rejeitar" verb=POST {
         updated_at: "now"
       }
     } as $documento_rejeitado
+
+    // Auditoria: decisao de rejeicao de documento.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "rejeitar_documento"
+        recurso       : "documento"
+        registro_id   : $documento_atual.id
+        justificativa : $input.observacao
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

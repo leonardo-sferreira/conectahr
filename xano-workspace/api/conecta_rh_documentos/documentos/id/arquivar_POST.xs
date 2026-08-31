@@ -7,7 +7,7 @@ query "documentos/{id}/arquivar" verb=POST {
 
   input {
     int id
-    text observacao? filters=trim|max:1000
+    text? observacao? filters=trim|max:1000
   }
 
   stack {

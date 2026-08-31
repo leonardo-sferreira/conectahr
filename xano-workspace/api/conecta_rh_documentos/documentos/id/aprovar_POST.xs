@@ -7,7 +7,7 @@ query "documentos/{id}/aprovar" verb=POST {
 
   input {
     int id
-    text observacao? filters=trim|max:1000
+    text? observacao? filters=trim|max:1000
   }
 
   stack {
@@ -85,6 +85,17 @@ query "documentos/{id}/aprovar" verb=POST {
         updated_at: "now"
       }
     } as $documento_aprovado
+
+    // Auditoria: decisao de aprovacao de documento.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "aprovar_documento"
+        recurso       : "documento"
+        registro_id   : $documento_atual.id
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

@@ -48,6 +48,22 @@ table historico_profissional {
     int user_id {
       table = "user"
     }
+
+    // Estado das integracoes eSocial e CTPS Digital — so relevante para
+    // tipo_alteracao=="admissao" com tipo_contrato=="CLT" (item 3.5).
+    // Sao integracoes futuras (design.md): o MVP rastreia manualmente o
+    // estado que o RH confirma, sem chamar servico externo, sem mascarar
+    // indisponibilidade.
+    enum? esocial_status?=pendente {
+      values = ["pendente", "comunicado", "confirmado", "indisponivel"]
+    }
+
+    date? esocial_prazo
+    enum? ctps_status?=pendente {
+      values = ["pendente", "comunicado", "confirmado", "indisponivel"]
+    }
+
+    date? ctps_prazo
   }
 
   index = [
