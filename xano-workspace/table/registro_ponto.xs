@@ -22,7 +22,7 @@ table registro_ponto {
     enum status {
       values = ["Aberto", "Completo", "Incompleto", "Ajustado"]
     }
-  
+
     text observacao? filters=trim|max:500
   }
 
