@@ -98,12 +98,20 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
       field_name = "id"
       field_value = $colaborador_alvo.user_id
     } as $conta_colaborador
-  
+
     precondition ($conta_colaborador != null) {
       error_type = "notfound"
       error = "A conta de acesso do colaborador não foi encontrada."
     }
-  
+
+    // Localiza o registro de historico profissional mais recente,
+    // para encerra-lo quando o desligamento imediato for concluido.
+    db.query historico_profissional {
+      where = $db.historico_profissional.colaborador_id == $colaborador_alvo.id
+      sort = {historico_profissional.data_inicio: "desc"}
+      return = {type: "single"}
+    } as $historico_atual
+
     // Normaliza o tipo da solicitação.
     var $tipo_desligamento {
       value = $solicitacao.tipo_desligamento|trim|to_lower
@@ -151,6 +159,52 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
               field_value = $conta_colaborador.id
               data = {ativo: false, updated_at: "now"}
             } as $conta_desativada
+
+            // Encerra o historico profissional aberto, se existir.
+            conditional {
+              if ($historico_atual != null) {
+                conditional {
+                  if ($historico_atual.data_fim == null) {
+                    db.edit historico_profissional {
+                      field_name = "id"
+                      field_value = $historico_atual.id
+                      data = {data_fim: $input.data_efetiva, updated_at: "now"}
+                    } as $historico_encerrado
+                  }
+                }
+              }
+            }
+
+            // Registra o desligamento no historico profissional.
+            db.add historico_profissional {
+              data = {
+                colaborador_id       : $colaborador_alvo.id
+                cargo_id              : $colaborador_alvo.cargo_id
+                departamento_id       : $colaborador_alvo.departamento_id
+                tipo_contrato         : $colaborador_alvo.tipo_contrato
+                nivel                 : $colaborador_alvo.nivel
+                salario               : $colaborador_alvo.salario
+                carga_horaria_semanal : $colaborador_alvo.carga_horaria_semanal
+                data_inicio           : $input.data_efetiva
+                data_fim              : null
+                tipo_alteracao        : "desligamento"
+                motivo_alteracao      : $input.motivo_decisao
+                user_id               : $usuario_rh.id
+                updated_at            : "now"
+              }
+            } as $historico_desligamento
+
+            // Auditoria: aprovacao e conclusao imediata do desligamento.
+            db.add auditoria {
+              data = {
+                user_id       : $usuario_rh.id
+                acao          : "aprovar_desligamento_imediato"
+                recurso       : "solicitacao_desligamento"
+                registro_id   : $solicitacao.id
+                justificativa : $input.motivo_decisao
+                resultado     : "sucesso"
+              }
+            } as $evento_auditoria
           }
         }
       }
@@ -172,6 +226,18 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
                 updated_at          : "now"
               }
             } as $solicitacao_agendada
+
+            // Auditoria: aprovacao com agendamento do desligamento.
+            db.add auditoria {
+              data = {
+                user_id       : $usuario_rh.id
+                acao          : "aprovar_desligamento_agendado"
+                recurso       : "solicitacao_desligamento"
+                registro_id   : $solicitacao.id
+                justificativa : $input.motivo_decisao
+                resultado     : "sucesso"
+              }
+            } as $evento_auditoria
           }
         }
       }

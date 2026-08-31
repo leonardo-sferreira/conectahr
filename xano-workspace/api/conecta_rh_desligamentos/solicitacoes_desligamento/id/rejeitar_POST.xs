@@ -90,6 +90,18 @@ query "solicitacoes_desligamento/{id}/rejeitar" verb=POST {
         updated_at          : "now"
       }
     } as $solicitacao_rejeitada
+
+    // Auditoria: decisao de rejeicao do desligamento.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_rh.id
+        acao          : "rejeitar_desligamento"
+        recurso       : "solicitacao_desligamento"
+        registro_id   : $solicitacao.id
+        justificativa : $input.motivo_decisao
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

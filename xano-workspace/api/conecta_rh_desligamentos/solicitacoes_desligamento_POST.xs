@@ -79,40 +79,42 @@ query solicitacoes_desligamento verb=POST {
       error = "Colaborador informado não encontrado."
     }
   
-    // O colaborador-alvo precisa estar ativo.
-    var $status_colaborador_alvo {
-      value = $colaborador_alvo.status|trim|to_upper
-    }
-  
-    precondition ($status_colaborador_alvo == "ATIVO") {
-      error_type = "inputerror"
-      error = "Só é possível solicitar o desligamento de um colaborador ativo."
-    }
-  
-    // Colaborador comum só pode solicitar o próprio desligamento.
+    // Colaborador comum só pode solicitar o próprio desligamento — checado
+    // antes de qualquer estado do colaborador-alvo, para não revelar esse
+    // estado a quem não tem escopo sobre o registro.
     precondition ($perfil_solicitante == "GESTOR" || $colaborador_alvo.id == $colaborador_solicitante.id) {
       error_type = "accessdenied"
       error = "O colaborador só pode solicitar o próprio desligamento."
     }
-  
+
     // Localiza o departamento do colaborador-alvo.
     db.get departamento {
       field_name = "id"
       field_value = $colaborador_alvo.departamento_id
     } as $departamento_alvo
-  
+
     precondition ($departamento_alvo != null) {
       error_type = "notfound"
       error = "O departamento do colaborador não foi encontrado."
     }
-  
+
     // Gestor só pode solicitar desligamento em departamento
     // pelo qual seja responsável.
     precondition ($perfil_solicitante != "GESTOR" || $departamento_alvo.gestor_colaborador_id == $colaborador_solicitante.id) {
       error_type = "accessdenied"
       error = "O gestor só pode solicitar desligamentos de colaboradores do próprio departamento."
     }
-  
+
+    // O colaborador-alvo precisa estar ativo.
+    var $status_colaborador_alvo {
+      value = $colaborador_alvo.status|trim|to_upper
+    }
+
+    precondition ($status_colaborador_alvo == "ATIVO") {
+      error_type = "inputerror"
+      error = "Só é possível solicitar o desligamento de um colaborador ativo."
+    }
+
     // Normaliza o tipo de desligamento.
     var $tipo_desligamento_normalizado {
       value = $input.tipo_desligamento|trim|to_lower

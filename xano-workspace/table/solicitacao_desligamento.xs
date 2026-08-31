@@ -42,18 +42,18 @@ table solicitacao_desligamento {
     int responsavel_rh_user_id? {
       table = "user"
     }
-  
+
     timestamp? data_inicio_analise?
     int decidido_por_user_id? {
       table = "user"
     }
-  
+
     timestamp? data_decisao?
     text? motivo_decisao filters=trim|max:1000
     int cancelado_por_user_id? {
       table = "user"
     }
-  
+
     timestamp? data_cancelamento?
     text motivo_cancelamento? filters=trim|max:500
     timestamp? data_conclusao?

@@ -96,6 +96,18 @@ query "solicitacoes_desligamento/{id}/cancelar" verb=POST {
         updated_at           : "now"
       }
     } as $solicitacao_cancelada
+
+    // Auditoria: cancelamento da solicitacao de desligamento.
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "cancelar_desligamento"
+        recurso       : "solicitacao_desligamento"
+        registro_id   : $solicitacao.id
+        justificativa : $input.motivo_cancelamento
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
