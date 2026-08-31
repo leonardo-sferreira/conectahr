@@ -20,15 +20,28 @@ table user {
       sensitive = true
       visibility = "private"
     }
-
+  
     timestamp? otp_expira_em {
       visibility = "private"
     }
-
+  
     int? otp_tentativas?=0 {
       visibility = "private"
     }
-
+  
+    text? reset_senha_codigo filters=trim|max:6 {
+      sensitive = true
+      visibility = "private"
+    }
+  
+    timestamp? reset_senha_expira_em {
+      visibility = "private"
+    }
+  
+    int? reset_senha_tentativas?=0 {
+      visibility = "private"
+    }
+  
     text nome filters=trim|min:2|max:100
     enum perfil?=Colaborador {
       values = ["Admin", "RH", "Colaborador", "Gestor"]

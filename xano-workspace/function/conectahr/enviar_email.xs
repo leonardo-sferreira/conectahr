@@ -1,4 +1,6 @@
-// Envia um e-mail transacional via SendGrid.
+// Envia um e-mail transacional via Brevo (ate 2026-08-31 usava
+// SendGrid; migrado porque a assinatura paga do SendGrid expirou —
+// Brevo tem nivel gratuito permanente de 300 e-mails/dia).
 // Uso sincrono (chamador espera o resultado) - adequado para fluxos
 // onde o usuario esta aguardando ativamente. Notificacoes assincronas
 // (decisoes de ferias, ausencia, etc.) devem usar o padrao de outbox
@@ -24,32 +26,26 @@ function "ConectaHR/enviar_email" {
     }
 
     api.request {
-      url = "https://api.sendgrid.com/v3/mail/send"
+      url = "https://api.brevo.com/v3/smtp/email"
       method = "POST"
-      headers = ["Content-Type: application/json", "Authorization: Bearer " ~ $env.SENDGRID_API_KEY]
+      headers = ["Content-Type: application/json", "api-key: " ~ $env.BREVO_API_KEY]
       params = {
-        personalizations: [
-          {
-            to: [{email: $input.destinatario, name: $nome_final}]
-          }
-        ]
-        from: {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-        subject: $input.assunto
-        content: [
-          {type: "text/plain", value: $input.corpo_texto}
-        ]
+        sender     : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
+        to         : [{email: $input.destinatario, name: $nome_final}]
+        subject    : $input.assunto
+        textContent: $input.corpo_texto
       }
-    } as $resposta_sendgrid
+    } as $resposta_brevo
 
     var $sucesso {
-      value = ($resposta_sendgrid.response.status >= 200 && $resposta_sendgrid.response.status < 300)
+      value = ($resposta_brevo.response.status >= 200 && $resposta_brevo.response.status < 300)
     }
   }
 
   response = {
     sucesso    : $sucesso
-    status_code: $resposta_sendgrid.response.status
-    corpo      : $resposta_sendgrid.response.result
+    status_code: $resposta_brevo.response.status
+    corpo      : $resposta_brevo.response.result
   }
 
   tags = ["conectahr"]

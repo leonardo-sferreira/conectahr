@@ -50,33 +50,24 @@ query "auth/otp/reenviar" verb=POST {
       }
     } as $user_com_novo_otp
 
-    // Usa o Dynamic Template do SendGrid (email-templates/02-codigo-verificacao.html).
+    // Envio via Brevo, conteudo direto (sem template dedicado — a conta
+    // Brevo nao tem um template equivalente ao Dynamic Template do
+    // SendGrid; mesmo padrao de conteudo direto ja usado em
+    // auth/senha/esqueci).
     api.request {
-      url = "https://api.sendgrid.com/v3/mail/send"
+      url = "https://api.brevo.com/v3/smtp/email"
       method = "POST"
-      headers = ["Content-Type: application/json", "Authorization: Bearer " ~ $env.SENDGRID_API_KEY]
+      headers = ["Content-Type: application/json", "api-key: " ~ $env.BREVO_API_KEY]
       params = {
-        personalizations: [
-          {
-            to                    : [{email: $user.email, name: $user.nome}]
-            dynamic_template_data : {
-              first_name         : $user.nome
-              verification_code  : $codigo_texto
-              expires_in_minutes : "5"
-              logo_url           : ""
-              preheader_text     : "Seu novo codigo de acesso ConectaRH"
-              unsubscribe_url    : "#"
-              preferences_url    : "#"
-            }
-          }
-        ]
-        from       : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-        template_id: "d-c595a07353ae46e18d9f9476f2420f5a"
+        sender     : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
+        to         : [{email: $user.email, name: $user.nome}]
+        subject    : "Seu novo codigo de acesso ConectaRH"
+        textContent: "Ola " ~ $user.nome ~ ",\n\nSeu novo codigo de acesso e: " ~ $codigo_texto ~ "\n\nEle expira em 5 minutos.\n\nSe voce nao solicitou este codigo, ignore este e-mail."
       }
-    } as $resposta_sendgrid
+    } as $resposta_brevo
 
     var $email_enviado {
-      value = ($resposta_sendgrid.response.status >= 200 && $resposta_sendgrid.response.status < 300)
+      value = ($resposta_brevo.response.status >= 200 && $resposta_brevo.response.status < 300)
     }
 
     precondition ($email_enviado) {

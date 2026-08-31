@@ -63,6 +63,17 @@ query "auth/senha" verb=PATCH {
       field_value = $user.id
       data = {senha: $input.nova_senha, senha_primeiro_acesso: false}
     } as $user_atualizado
+
+    // Auditoria: troca de senha (nunca a senha em si).
+    db.add auditoria {
+      data = {
+        user_id    : $user.id
+        acao       : "troca_senha"
+        recurso    : "user"
+        registro_id: $user.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

@@ -56,6 +56,17 @@ query "auth/otp/validar" verb=POST {
           data = {otp_tentativas: $user.otp_tentativas + 1, updated_at: "now"}
         } as $user_tentativa_invalida
 
+        // Auditoria: tentativa de login com codigo invalido (nunca o codigo).
+        db.add auditoria {
+          data = {
+            user_id    : $user.id
+            acao       : "login_codigo_invalido"
+            recurso    : "user"
+            registro_id: $user.id
+            resultado  : "falha"
+          }
+        } as $evento_auditoria_falha
+
         precondition (false) {
           error_type = "accessdenied"
           error = "Codigo invalido ou expirado."
@@ -89,6 +100,27 @@ query "auth/otp/validar" verb=POST {
       expiration = 3600
       id = $user.id
     } as $auth_token
+
+    // Registra a sessao para consulta e encerramento posterior
+    // (item 2.2 / requisito "Sessoes e dispositivos").
+    db.add sessao {
+      data = {
+        user_id  : $user.id
+        expira_em: now|add_secs_to_timestamp:3600
+        ativa    : true
+      }
+    } as $sessao_criada
+
+    // Auditoria: login concluido com sucesso.
+    db.add auditoria {
+      data = {
+        user_id    : $user.id
+        acao       : "login_sucesso"
+        recurso    : "user"
+        registro_id: $user.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
