@@ -92,6 +92,35 @@ query "auth/login" verb=POST {
       error = "E-mail ou senha inválidos."
     }
 
+    // Alerta de acesso suspeito (item 7.9): login bem-sucedido logo apos
+    // varias tentativas de senha invalida sugere uma tentativa de forca
+    // bruta que acabou acertando — notifica o titular por e-mail via
+    // outbox assincrono (nao atrasa nem falha o login em si).
+    conditional {
+      if ($user.senha_tentativas_invalidas != null && $user.senha_tentativas_invalidas >= 3) {
+        db.add email_outbox {
+          data = {
+            destinatario_email: $user.email
+            destinatario_nome : $user.nome
+            assunto           : "ConectaRH - Alerta de seguranca na sua conta"
+            corpo             : "Ola " ~ $user.nome ~ ",\n\nDetectamos " ~ ($user.senha_tentativas_invalidas|to_text) ~ " tentativas de acesso com senha incorreta na sua conta, seguidas de um login bem-sucedido agora. Se foi voce, pode ignorar este aviso. Se nao reconhece essa atividade, troque sua senha imediatamente e contate o RH.\n\nEste e um aviso automatico de seguranca."
+            chave_idempotencia: ("alerta_acesso_suspeito_" ~ ($user.id|to_text) ~ "_" ~ (now|to_text))
+          }
+        } as $alerta_seguranca_criado
+
+        db.add auditoria {
+          data = {
+            user_id    : $user.id
+            acao       : "alerta_acesso_suspeito"
+            recurso    : "user"
+            registro_id: $user.id
+            justificativa: (($user.senha_tentativas_invalidas|to_text) ~ " tentativas de senha invalida antes do login bem-sucedido")
+            resultado  : "sucesso"
+          }
+        } as $evento_auditoria_alerta
+      }
+    }
+
     // Senha correta: zera o contador de tentativas invalidas.
     conditional {
       if ($user.senha_tentativas_invalidas != null && $user.senha_tentativas_invalidas > 0) {
