@@ -172,6 +172,17 @@ query colaboradores verb=POST {
         updated_at           : "now"
       }
     } as $colaborador_criado
+
+    // Auditoria: cadastro de colaborador (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_rh.id
+        acao       : "cadastrar_colaborador"
+        recurso    : "colaborador"
+        registro_id: $colaborador_criado.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

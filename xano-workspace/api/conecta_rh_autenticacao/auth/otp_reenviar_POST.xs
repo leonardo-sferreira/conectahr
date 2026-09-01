@@ -74,6 +74,17 @@ query "auth/otp/reenviar" verb=POST {
       error_type = "standard"
       error = "Nao foi possivel enviar o codigo de acesso. Tente novamente em instantes."
     }
+
+    // Auditoria: reenvio do codigo de acesso (nunca o codigo em si).
+    db.add auditoria {
+      data = {
+        user_id    : $user.id
+        acao       : "codigo_acesso_reenviado"
+        recurso    : "user"
+        registro_id: $user.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

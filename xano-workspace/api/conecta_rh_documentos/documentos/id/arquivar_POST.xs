@@ -86,6 +86,19 @@ query "documentos/{id}/arquivar" verb=POST {
         updated_at: "now"
       }
     } as $documento_arquivado
+
+    // Auditoria: arquivamento de documento (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "arquivar_documento"
+        recurso       : "documento"
+        registro_id   : $documento_atual.id
+        valor_anterior: $documento_atual.status
+        valor_novo    : "arquivado"
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

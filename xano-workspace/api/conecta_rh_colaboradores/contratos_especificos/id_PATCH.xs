@@ -173,6 +173,17 @@ query "contratos_especificos/{id}" verb=PATCH {
         updated_at                                                         : "now"
       }
     } as $contrato_atualizado
+
+    // Auditoria: atualizacao de contrato especifico (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_rh.id
+        acao       : "atualizar_contrato_especifico"
+        recurso    : "contrato_especifico"
+        registro_id: $contrato_atual.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

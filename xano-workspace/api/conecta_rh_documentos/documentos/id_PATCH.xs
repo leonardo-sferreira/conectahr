@@ -254,6 +254,17 @@ query "documentos/{id}" verb=PATCH {
         updated_at       : "now"
       }
     } as $documento_atualizado
+
+    // Auditoria: atualizacao de documento (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "atualizar_documento"
+        recurso    : "documento"
+        registro_id: $documento_atual.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

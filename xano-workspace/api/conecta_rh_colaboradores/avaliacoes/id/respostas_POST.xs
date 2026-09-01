@@ -99,6 +99,18 @@ query "avaliacoes/{id}/respostas" verb=POST {
         } as $avaliacao_atualizada
       }
     }
+
+    // Auditoria: registro de resposta de avaliacao (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "registrar_resposta_avaliacao"
+        recurso    : "resposta_avaliacao"
+        registro_id: $resposta_criada.id
+        valor_novo : ("competencia_id=" ~ ($competencia.id|to_text) ~ "; nota=" ~ ($input.nota|to_text))
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

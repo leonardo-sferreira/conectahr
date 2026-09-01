@@ -138,6 +138,18 @@ query usuarios verb=POST {
         "senha_primeiro_acesso"
       ]
     } as $usuario_criado
+
+    // Auditoria: criacao de conta de acesso (item 7.11). Nunca a senha em si.
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_rh.id
+        acao       : "criar_conta_acesso"
+        recurso    : "user"
+        registro_id: $usuario_criado.id
+        valor_novo : ("colaborador_id=" ~ ($colaborador.id|to_text) ~ "; email=" ~ $usuario_criado.email)
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

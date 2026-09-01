@@ -47,6 +47,19 @@ query "regras_override/{id}/enviar_aprovacao" verb=POST {
       field_value = $override_atual.id
       data = {status: "pendente_aprovacao", updated_at: "now"}
     } as $override_atualizado
+
+    // Auditoria: envio de regra de override para aprovacao (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "enviar_regra_override_aprovacao"
+        recurso       : "regra_override"
+        registro_id   : $override_atual.id
+        valor_anterior: "rascunho"
+        valor_novo    : "pendente_aprovacao"
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

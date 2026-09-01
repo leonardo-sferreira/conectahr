@@ -278,6 +278,18 @@ query documentos verb=POST {
           }
         } as $documento_criado
 
+        // Auditoria: cadastro de documento (item 7.11).
+        db.add auditoria {
+          data = {
+            user_id    : $usuario_autenticado.id
+            acao       : "cadastrar_documento"
+            recurso    : "documento"
+            registro_id: $documento_criado.id
+            valor_novo : ("tipo=" ~ $input.tipo ~ "; estado_verificacao=" ~ $verificacao_arquivo.estado_verificacao)
+            resultado  : "sucesso"
+          }
+        } as $evento_auditoria
+
         conditional {
           if ($input.documento_substituido_id != null) {
             db.edit documento {

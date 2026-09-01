@@ -95,6 +95,11 @@ query "ponto/marcar" verb=POST {
       value = 0
     }
 
+    // Guarda qual marcador foi registrado nesta chamada, para a auditoria.
+    var $marcador_registrado {
+      value = ""
+    }
+
     // Ramo 1: primeira marcacao do dia, registra a entrada.
     conditional {
       if ($registro_hoje == null) {
@@ -111,6 +116,10 @@ query "ponto/marcar" verb=POST {
         var.update $registro_ponto_id {
           value = $registro_criado.id
         }
+
+        var.update $marcador_registrado {
+          value = "entrada"
+        }
       }
     }
 
@@ -125,6 +134,10 @@ query "ponto/marcar" verb=POST {
 
         var.update $registro_ponto_id {
           value = $registro_intervalo_iniciado.id
+        }
+
+        var.update $marcador_registrado {
+          value = "inicio_intervalo"
         }
       }
     }
@@ -172,6 +185,10 @@ query "ponto/marcar" verb=POST {
 
         var.update $registro_ponto_id {
           value = $registro_intervalo_finalizado.id
+        }
+
+        var.update $marcador_registrado {
+          value = "fim_intervalo"
         }
       }
     }
@@ -256,6 +273,10 @@ query "ponto/marcar" verb=POST {
         var.update $registro_ponto_id {
           value = $registro_finalizado.id
         }
+
+        var.update $marcador_registrado {
+          value = "saida"
+        }
       }
     }
 
@@ -274,6 +295,17 @@ query "ponto/marcar" verb=POST {
       field_name = "id"
       field_value = $registro_ponto_id
     } as $registro_atualizado
+
+    // Auditoria: marcacao de ponto (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "marcar_ponto_" ~ $marcador_registrado
+        recurso    : "registro_ponto"
+        registro_id: $registro_ponto_id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

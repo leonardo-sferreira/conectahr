@@ -83,12 +83,25 @@ query "usuarios/{id}" verb=PATCH {
       field_value = $usuario_alvo.id
       data = {nome: $input.nome, email: $input.email}
     } as $usuario_atualizado
-  
+
     // Localiza o colaborador vinculado à conta.
     db.get colaborador {
       field_name = "user_id"
       field_value = $usuario_atualizado.id
     } as $colaborador
+
+    // Auditoria: atualizacao de conta de usuario (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "atualizar_usuario"
+        recurso       : "user"
+        registro_id   : $usuario_alvo.id
+        valor_anterior: ("nome=" ~ $usuario_alvo.nome ~ "; email=" ~ $usuario_alvo.email)
+        valor_novo    : ("nome=" ~ $usuario_atualizado.nome ~ "; email=" ~ $usuario_atualizado.email)
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

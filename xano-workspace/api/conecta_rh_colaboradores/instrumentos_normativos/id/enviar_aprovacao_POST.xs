@@ -47,6 +47,19 @@ query "instrumentos_normativos/{id}/enviar_aprovacao" verb=POST {
       field_value = $instrumento_atual.id
       data = {status: "pendente_aprovacao", updated_at: "now"}
     } as $instrumento_atualizado
+
+    // Auditoria: envio de instrumento normativo para aprovacao (item 7.11).
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "enviar_instrumento_normativo_aprovacao"
+        recurso       : "instrumento_normativo"
+        registro_id   : $instrumento_atual.id
+        valor_anterior: "rascunho"
+        valor_novo    : "pendente_aprovacao"
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
