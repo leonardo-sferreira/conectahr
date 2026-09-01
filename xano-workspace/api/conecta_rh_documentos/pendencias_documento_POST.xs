@@ -111,15 +111,16 @@ query "pendencias_documento" verb=POST {
     // Notifica o colaborador por e-mail (melhor esforco).
     conditional {
       if ($colaborador_alvo.email_pessoal != null) {
+        // Template transacional "conectahr_documento_pendente" (id 5 —
+        // ver docs/emails-templates.md).
         api.request {
           url = "https://api.brevo.com/v3/smtp/email"
           method = "POST"
           headers = ["Content-Type: application/json", "api-key: " ~ $env.BREVO_API_KEY]
           params = {
-            sender     : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-            to         : [{email: $colaborador_alvo.email_pessoal, name: $colaborador_alvo.nome}]
-            subject    : "Documento pendente: " ~ $input.tipo_documento
-            textContent: "O RH solicitou o envio do documento " ~ $input.tipo_documento ~ ". Prazo para envio: " ~ ($input.prazo|format_timestamp:"d/m/Y":"UTC") ~ "."
+            to        : [{email: $colaborador_alvo.email_pessoal, name: $colaborador_alvo.nome}]
+            templateId: 5
+            params    : {nome: $colaborador_alvo.nome, tipo_documento: $input.tipo_documento, prazo: ($input.prazo|format_timestamp:"d/m/Y":"UTC")}
           }
         } as $envio_notificacao
       }

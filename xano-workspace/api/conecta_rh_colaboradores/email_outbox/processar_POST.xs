@@ -73,15 +73,19 @@ query "email_outbox/processar" verb=POST {
 
         conditional {
           if ($item_outbox.tentativas < $item_outbox.max_tentativas) {
+            // Template transacional "conectahr_outbox_generico" (id 1 —
+            // ver docs/emails-templates.md), compartilhado por todos os
+            // eventos assincronos deste outbox: assunto/corpo continuam
+            // montados no produtor de cada evento, so o envio em si
+            // passou a usar template em vez de texto puro.
             api.request {
               url = "https://api.brevo.com/v3/smtp/email"
               method = "POST"
               headers = ["Content-Type: application/json", "api-key: " ~ $env.BREVO_API_KEY]
               params = {
-                sender     : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-                to         : [{email: $item_outbox.destinatario_email, name: $item_outbox.destinatario_nome}]
-                subject    : $item_outbox.assunto
-                textContent: $item_outbox.corpo
+                to        : [{email: $item_outbox.destinatario_email, name: $item_outbox.destinatario_nome}]
+                templateId: 1
+                params    : {nome: $item_outbox.destinatario_nome, titulo: $item_outbox.assunto, mensagem: $item_outbox.corpo}
               }
             } as $resposta_envio
 

@@ -50,19 +50,16 @@ query "auth/otp/reenviar" verb=POST {
       }
     } as $user_com_novo_otp
 
-    // Envio via Brevo, conteudo direto (sem template dedicado — a conta
-    // Brevo nao tem um template equivalente ao Dynamic Template do
-    // SendGrid; mesmo padrao de conteudo direto ja usado em
-    // auth/senha/esqueci).
+    // Envio via Brevo usando o template transacional
+    // "conectahr_codigo_acesso_reenvio" (id 3 — ver docs/emails-templates.md).
     api.request {
       url = "https://api.brevo.com/v3/smtp/email"
       method = "POST"
       headers = ["Content-Type: application/json", "api-key: " ~ $env.BREVO_API_KEY]
       params = {
-        sender     : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-        to         : [{email: $user.email, name: $user.nome}]
-        subject    : "Seu novo codigo de acesso ConectaRH"
-        textContent: "Ola " ~ $user.nome ~ ",\n\nSeu novo codigo de acesso e: " ~ $codigo_texto ~ "\n\nEle expira em 5 minutos.\n\nSe voce nao solicitou este codigo, ignore este e-mail."
+        to        : [{email: $user.email, name: $user.nome}]
+        templateId: 3
+        params    : {nome: $user.nome, codigo: $codigo_texto}
       }
     } as $resposta_brevo
 

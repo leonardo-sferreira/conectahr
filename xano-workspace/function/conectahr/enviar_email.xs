@@ -25,15 +25,17 @@ function "ConectaHR/enviar_email" {
       value = ($input.nome_destinatario != null ? $input.nome_destinatario : $input.destinatario)
     }
 
+    // Template transacional "conectahr_outbox_generico" (id 1 — ver
+    // docs/emails-templates.md), mesmo template reutilizado pelo
+    // processador de email_outbox.
     api.request {
       url = "https://api.brevo.com/v3/smtp/email"
       method = "POST"
       headers = ["Content-Type: application/json", "api-key: " ~ $env.BREVO_API_KEY]
       params = {
-        sender     : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-        to         : [{email: $input.destinatario, name: $nome_final}]
-        subject    : $input.assunto
-        textContent: $input.corpo_texto
+        to        : [{email: $input.destinatario, name: $nome_final}]
+        templateId: 1
+        params    : {nome: $nome_final, titulo: $input.assunto, mensagem: $input.corpo_texto}
       }
     } as $resposta_brevo
 

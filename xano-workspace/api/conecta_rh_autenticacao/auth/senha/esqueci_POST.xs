@@ -41,15 +41,15 @@ query "auth/senha/esqueci" verb=POST {
           }
         } as $user_com_reset
       
-        // Envio direto via Brevo (reaproveita a mesma conta do login).
+        // Envio via Brevo usando o template transacional
+        // "conectahr_redefinicao_senha" (id 4 — ver docs/emails-templates.md).
         api.request {
           url = "https://api.brevo.com/v3/smtp/email"
           method = "POST"
           params = {
-            sender     : {email: "conecta.rh.retorno@gmail.com", name: "ConectaRH"}
-            to         : [{email: $user.email, name: $user.nome}]
-            subject    : "Redefinicao de senha - ConectaRH"
-            textContent: "Ola " ~ $user.nome ~ ",\n\nUse o codigo abaixo para redefinir sua senha no ConectaRH. Ele expira em 15 minutos e so pode ser usado uma vez.\n\nCodigo: " ~ $codigo_texto ~ "\n\nSe voce nao solicitou esta redefinicao, ignore este e-mail."
+            to        : [{email: $user.email, name: $user.nome}]
+            templateId: 4
+            params    : {nome: $user.nome, codigo: $codigo_texto}
           }
 
           headers = [
