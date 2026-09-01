@@ -16,6 +16,14 @@ table user {
     }
   
     bool senha_primeiro_acesso?=true
+    int? senha_tentativas_invalidas?=0 {
+      visibility = "private"
+    }
+
+    timestamp? senha_bloqueada_ate {
+      visibility = "private"
+    }
+
     text? otp_codigo filters=trim|max:6 {
       sensitive = true
       visibility = "private"

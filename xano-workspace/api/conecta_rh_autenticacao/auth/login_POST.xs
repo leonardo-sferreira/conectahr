@@ -26,18 +26,86 @@ query "auth/login" verb=POST {
       error_type = "accessdenied"
       error = "E-mail ou senha inválidos."
     }
-  
+
+    // Bloqueio temporario por tentativas invalidas de senha (mesmo padrao
+    // ja usado para OTP e redefinicao de senha). Mesmo trade-off de design
+    // ja aceito em auth/senha/redefinir: a mensagem especifica revela que
+    // ha uma conta com tentativas recentes, mas isso ja e o comportamento
+    // padrao deste projeto para bloqueio por tentativas.
+    precondition ($user.senha_bloqueada_ate == null || $user.senha_bloqueada_ate < now) {
+      error_type = "toomanyrequests"
+      error = "Muitas tentativas invalidas. Tente novamente em alguns minutos."
+    }
+
     // Compara a senha informada com o hash armazenado.
     security.check_password {
       text_password = $input.password
       hash_password = $user.senha
     } as $pass_result
-  
+
+    // Senha errada: registra a tentativa e bloqueia temporariamente apos
+    // 5 tentativas invalidas seguidas (15 minutos, mesma janela usada na
+    // redefinicao de senha).
+    conditional {
+      if ($pass_result == false) {
+        var $tentativas_atuais {
+          value = ($user.senha_tentativas_invalidas != null ? $user.senha_tentativas_invalidas : 0)
+        }
+
+        var $nova_tentativa {
+          value = ($tentativas_atuais + 1)
+        }
+
+        var $deve_bloquear {
+          value = ($nova_tentativa >= 5)
+        }
+
+        var $bloqueio_ate {
+          value = ($deve_bloquear ? (now|add_secs_to_timestamp:900) : null)
+        }
+
+        db.edit user {
+          field_name = "id"
+          field_value = $user.id
+          data = {
+            senha_tentativas_invalidas: $nova_tentativa
+            senha_bloqueada_ate       : $bloqueio_ate
+            updated_at                : "now"
+          }
+        } as $user_tentativa_invalida
+
+        // Auditoria: tentativa de login com senha invalida.
+        db.add auditoria {
+          data = {
+            user_id    : $user.id
+            acao       : "login_senha_invalida"
+            recurso    : "user"
+            registro_id: $user.id
+            resultado  : "falha"
+          }
+        } as $evento_auditoria_senha_invalida
+      }
+    }
+
     precondition ($pass_result) {
       error_type = "accessdenied"
       error = "E-mail ou senha inválidos."
     }
-  
+
+    // Senha correta: zera o contador de tentativas invalidas.
+    conditional {
+      if ($user.senha_tentativas_invalidas != null && $user.senha_tentativas_invalidas > 0) {
+        db.edit user {
+          field_name = "id"
+          field_value = $user.id
+          data = {
+            senha_tentativas_invalidas: 0
+            senha_bloqueada_ate       : null
+          }
+        } as $user_tentativas_zeradas
+      }
+    }
+
     // Gera e envia o codigo de acesso de 6 digitos por e-mail (OTP).
     // Validacao padrao de login do ConectaRH.
     security.random_number {
