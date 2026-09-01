@@ -131,15 +131,31 @@ query "ferias/{id}/aprovar" verb=POST {
               }
             } as $notificacao_criada
 
-            db.add email_outbox {
-              data = {
-                destinatario_email   : $conta_colaborador_notificar.email
-                destinatario_nome    : $conta_colaborador_notificar.nome
-                assunto              : "ConectaRH - Ferias aprovadas"
-                corpo                : "Ola " ~ $conta_colaborador_notificar.nome ~ ",\n\nSua solicitacao de ferias foi aprovada. Acesse o ConectaRH para ver o periodo.\n\nEste e um aviso automatico."
-                chave_idempotencia   : ("ferias_aprovada_" ~ ($solicitacao.id|to_text))
+            // Preferencia de notificacao (item 7.8): notificacao interna
+            // acima e sempre criada; o e-mail respeita a preferencia de
+            // canal do colaborador, com padrao ativo quando nunca configurada.
+            db.query preferencia_notificacao {
+              where = $db.preferencia_notificacao.user_id == $conta_colaborador_notificar.id && $db.preferencia_notificacao.tipo_evento == "ferias_aprovada"
+              return = {type: "single"}
+            } as $preferencia_ferias_aprovada
+
+            var $enviar_email_ferias_aprovada {
+              value = ($preferencia_ferias_aprovada != null ? $preferencia_ferias_aprovada.canal_email : true)
+            }
+
+            conditional {
+              if ($enviar_email_ferias_aprovada) {
+                db.add email_outbox {
+                  data = {
+                    destinatario_email   : $conta_colaborador_notificar.email
+                    destinatario_nome    : $conta_colaborador_notificar.nome
+                    assunto              : "ConectaRH - Ferias aprovadas"
+                    corpo                : "Ola " ~ $conta_colaborador_notificar.nome ~ ",\n\nSua solicitacao de ferias foi aprovada. Acesse o ConectaRH para ver o periodo.\n\nEste e um aviso automatico."
+                    chave_idempotencia   : ("ferias_aprovada_" ~ ($solicitacao.id|to_text))
+                  }
+                } as $outbox_criado
               }
-            } as $outbox_criado
+            }
           }
         }
       }

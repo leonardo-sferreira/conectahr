@@ -113,15 +113,31 @@ query avaliacoes verb=POST {
       }
     } as $notificacao_avaliacao_criada
 
-    db.add email_outbox {
-      data = {
-        destinatario_email : $usuario_avaliador.email
-        destinatario_nome  : $usuario_avaliador.nome
-        assunto            : "ConectaRH - Avaliacao disponivel"
-        corpo              : "Ola " ~ $usuario_avaliador.nome ~ ",\n\nUma avaliacao foi atribuida a voce no ConectaRH. Acesse o sistema para preenche-la.\n\nEste e um aviso automatico."
-        chave_idempotencia : ("avaliacao_disponivel_" ~ ($avaliacao_criada.id|to_text))
+    // Preferencia de notificacao (item 7.8): notificacao interna acima e
+    // sempre criada; o e-mail respeita a preferencia de canal do
+    // avaliador, com padrao ativo quando nunca configurada.
+    db.query preferencia_notificacao {
+      where = $db.preferencia_notificacao.user_id == $usuario_avaliador.id && $db.preferencia_notificacao.tipo_evento == "avaliacao_disponivel"
+      return = {type: "single"}
+    } as $preferencia_avaliacao_disponivel
+
+    var $enviar_email_avaliacao_disponivel {
+      value = ($preferencia_avaliacao_disponivel != null ? $preferencia_avaliacao_disponivel.canal_email : true)
+    }
+
+    conditional {
+      if ($enviar_email_avaliacao_disponivel) {
+        db.add email_outbox {
+          data = {
+            destinatario_email : $usuario_avaliador.email
+            destinatario_nome  : $usuario_avaliador.nome
+            assunto            : "ConectaRH - Avaliacao disponivel"
+            corpo              : "Ola " ~ $usuario_avaliador.nome ~ ",\n\nUma avaliacao foi atribuida a voce no ConectaRH. Acesse o sistema para preenche-la.\n\nEste e um aviso automatico."
+            chave_idempotencia : ("avaliacao_disponivel_" ~ ($avaliacao_criada.id|to_text))
+          }
+        } as $outbox_avaliacao_criado
       }
-    } as $outbox_avaliacao_criado
+    }
   }
 
   response = {
