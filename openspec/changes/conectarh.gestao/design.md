@@ -28,7 +28,7 @@ O produto deve demonstrar backend avancado com Xano e Script Xano, desenvolvimen
 
 Usar sessoes com access token de curta duracao, expiracao fixa de uma hora e registro server-side de sessoes revogadas para suportar logout imediato. Senhas devem ser armazenadas somente com hash adaptativo; tokens de redefinicao e codigos de acesso devem ser tratados como segredos, com expiracao, uso unico e protecao contra enumeracao de contas. Alternativas consideradas: sessoes longas sem revogacao, rejeitadas por dificultarem logout e aumentarem o impacto de vazamentos.
 
-A validacao padrao de login do ConectaRH e um codigo numerico de 6 digitos enviado por e-mail via SendGrid a cada login, obrigatorio para todas as contas. O codigo expira em 5 minutos, e a validacao bloqueia apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo. Alternativa considerada: TOTP via aplicativo autenticador, rejeitado por exigir instalar e configurar um app antes do primeiro uso, adicionando friccao logo no onboarding, alem de o time ja ter familiaridade operacional com SendGrid. Trade-off aceito conscientemente: um codigo por e-mail depende da seguranca da propria caixa de entrada do usuario — aceitavel para o escopo atual do projeto.
+A validacao padrao de login do ConectaRH e um codigo numerico de 6 digitos enviado por e-mail via Brevo a cada login, obrigatorio para todas as contas. O codigo expira em 5 minutos, e a validacao bloqueia apos 5 tentativas invalidas, exigindo novo login para gerar outro codigo. Alternativa considerada: TOTP via aplicativo autenticador, rejeitado por exigir instalar e configurar um app antes do primeiro uso, adicionando friccao logo no onboarding. Trade-off aceito conscientemente: um codigo por e-mail depende da seguranca da propria caixa de entrada do usuario — aceitavel para o escopo atual do projeto.
 
 A troca de senha temporaria sera uma etapa de estado da sessao. O backend deve rejeitar qualquer rota funcional enquanto a flag de primeiro acesso estiver ativa.
 
@@ -106,7 +106,7 @@ A `visibilidade` sera determinada pela relacao entre remetente e destinatario, n
 
 ### Notificacoes
 
-Publicar eventos de dominio em uma fila/outbox transacional. Um trabalhador de e-mail consumira eventos com tentativas, backoff e chave de idempotencia, usando SendGrid como provedor. Alternativas consideradas: envio sincrono durante a requisicao, rejeitado porque falhas externas fariam operacoes validas parecerem falhas e aumentariam a latencia; outro provedor, adiado porque SendGrid foi definido para o projeto.
+Publicar eventos de dominio em uma fila/outbox transacional. Um trabalhador de e-mail consumira eventos com tentativas, backoff e chave de idempotencia, usando Brevo como provedor. Alternativas consideradas: envio sincrono durante a requisicao, rejeitado porque falhas externas fariam operacoes validas parecerem falhas e aumentariam a latencia; outro provedor, adiado porque Brevo foi definido para o projeto.
 
 ### Privacidade
 
@@ -128,7 +128,7 @@ Uma nova entidade `solicitacao_rh` registra pedidos do colaborador dos tipos `al
 
 ### Notificacoes internas
 
-Alem do envio por e-mail via outbox/SendGrid, cada evento notificavel (ferias aprovada, documento vencendo, avaliacao disponivel, solicitacao respondida) cria tambem um registro de notificacao interna vinculado ao usuario, marcavel como lida. A notificacao interna nao substitui o e-mail nem depende dele — ambos sao gerados a partir do mesmo evento de dominio.
+Alem do envio por e-mail via outbox/Brevo, cada evento notificavel (ferias aprovada, documento vencendo, avaliacao disponivel, solicitacao respondida) cria tambem um registro de notificacao interna vinculado ao usuario, marcavel como lida. A notificacao interna nao substitui o e-mail nem depende dele — ambos sao gerados a partir do mesmo evento de dominio.
 
 ### Experiencia e produtividade
 

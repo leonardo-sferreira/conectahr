@@ -7,7 +7,7 @@ O planejamento precisa produzir um MVP demonstravel, documentado e implantavel, 
 ## What Changes
 
 - Criar autenticacao com token de acesso valido por uma hora, encerramento explicito de sessao, redefinicao de senha e senha temporaria obrigatoria no primeiro acesso.
-- Adicionar validacao de login por codigo de acesso de 6 digitos enviado por e-mail (SendGrid), obrigatoria em todo login, com reenvio e bloqueio apos tentativas invalidas.
+- Adicionar validacao de login por codigo de acesso de 6 digitos enviado por e-mail (Brevo), obrigatoria em todo login, com reenvio e bloqueio apos tentativas invalidas.
 - Implementar autorizacao por perfil e escopo organizacional, incluindo vinculo de colaborador com gestor e gestor com departamento.
 - Criar gestao de colaboradores, cargos, departamentos e historico profissional, respeitando os tipos de contrato, niveis e status definidos no dominio.
 - Permitir que o colaborador cadastre e atualize os proprios dados bancarios (banco, agencia, conta e tipo), para consulta do RH na realizacao de pagamentos, sem acesso do Gestor a essa informacao.
@@ -20,7 +20,7 @@ O planejamento precisa produzir um MVP demonstravel, documentado e implantavel, 
 - Nao importar nem incluir registros de teste apresentados nas imagens; os enums e a estrutura relacional informados serao usados como referencia de dominio.
 - Implementar o fluxo completo de solicitacao, analise e decisao de desligamento (imediato ou aviso previo) como parte do MVP, incluindo aprovacao exclusiva do RH, desativacao do acesso, registro no historico profissional e conclusao automatica dos desligamentos agendados quando a data efetiva chegar.
 - Organizar o desenvolvimento colaborativo em entregas incrementais, com validacao parcial, testes, documentacao e apresentacao final.
-- Adotar Streamlit no frontend, SendGrid para disparo de e-mails e regras parametrizadas de jornada e ferias conforme o tipo de contrato.
+- Adotar Streamlit no frontend, Brevo para disparo de e-mails e regras parametrizadas de jornada e ferias conforme o tipo de contrato.
 - Adicionar estados de documento `pendente_analise`, `aprovado`, `rejeitado`, `vencido`, `substituido` e `arquivado`, com vencimento automatico diario e retencao do arquivo vencido.
 - Incluir no MVP uma central de tarefas e pendencias (incluindo dashboard do gestor e alertas de cadastro incompleto e ponto nao finalizado), onboarding de colaboradores, painel de auditoria (com indicadores de headcount, turnover, admissoes, desligamentos e absenteismo), matriz administrativa de regras por contrato e excecoes individuais auditadas.
 - Implementar central de solicitacoes do colaborador ao RH (alteracao cadastral, declaracao, documento avulso e outras demandas), com decisao do RH e sem alterar o cadastro automaticamente na aprovacao.
@@ -51,10 +51,10 @@ Nenhuma. O workspace ainda nao possui especificacoes existentes.
 - Novos modulos de dominio, API e interface para os fluxos de RH descritos.
 - Persistencia para usuarios, colaboradores, cargos, departamentos, historico profissional, ponto, documentos, ferias, ausencias e avaliacao.
 - Servico de e-mail para notificacoes e pendencias, alem de armazenamento protegido para anexos.
-- Integracao com o SendGrid para o codigo de acesso de login e mecanismo seguro de hash de senhas e tokens.
+- Integracao com o Brevo para o codigo de acesso de login e mecanismo seguro de hash de senhas e tokens.
 - Auditoria e autorizacao devem proteger dados pessoais, documentos e feedbacks privados.
 - O projeto integrador deve incluir repositorio GitHub, documentacao de setup e decisoes, backend em Xano/Script Xano, frontend em Streamlit, integracao por API, deploy e validacao inicial de mercado.
-- O frontend adotara Streamlit e os e-mails transacionais usarao SendGrid.
+- O frontend adotara Streamlit e os e-mails transacionais usarao Brevo.
 - O design system devera documentar cores, tipografia, espacamentos, componentes, estados, acessibilidade, responsividade e handoff para o frontend.
 - A rotina diaria do Xano marcara documentos aprovados com validade encerrada como vencidos, sem apagar o registro ou desativar o colaborador.
 - A resolucao de regras seguira a matriz contratual, normas vigentes, instrumentos coletivos, regras de cargo/departamento e excecao individual, sem decidir automaticamente conflitos juridicos.
