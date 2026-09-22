@@ -1,8 +1,9 @@
 # Regras de Negócio — ConectaRH
 
-**Data do levantamento:** 2026-08-30
+**Data do levantamento:** 2026-08-30; **revisado em:** 2026-09-22 (seções 1, 9, 13 corrigidas e seções 14-17 adicionadas — ver nota abaixo).
 **Fonte de verdade:** código publicado em `xano-workspace/` (tabelas em `xano-workspace/table/*.xs`, endpoints em `xano-workspace/api/**/*.xs`). Cada regra abaixo referencia o arquivo de origem para conferência direta.
 **Natureza deste documento:** é um retrato do estado do código na data acima, não um documento vivo sincronizado automaticamente. Recomenda-se revisá-lo após mudanças relevantes no backend. Lacunas conhecidas são marcadas explicitamente como "não mapeado" em vez de omitidas.
+**Nota da revisão de 2026-09-22:** entre o levantamento original (2026-08-30/31) e esta revisão, 24 commits implementaram a maior parte do backend do MVP (sessões, banco de horas, documentos, férias/ausências, desligamento, instrumentos normativos e regras de override, avaliação, metas/PDI/reconhecimento/clima, central de solicitações, auditoria, indicadores e mais). Esta revisão: (1) corrigiu a seção 9 — o motor de resolução de regras contratuais, antes marcado como sem endpoint, está implementado; (2) atualizou a seção 1 com bloqueio de senha por tentativas, alerta de acesso suspeito, fluxo "esqueci minha senha" e a migração de e-mail para Brevo; (3) atualizou a seção 13 com o endpoint de consulta de auditoria e o fechamento de várias lacunas pela tarefa 7.11; (4) adicionou as seções 14-17 para funcionalidade nova ainda não documentada. Não foi uma reauditoria linha a linha de todo o código — priorizou as áreas com maior volume de mudança.
 
 ## Índice
 
@@ -19,6 +20,10 @@
 11. [Metas, PDI, reconhecimento e pesquisa de clima](#11-metas-pdi-reconhecimento-e-pesquisa-de-clima)
 12. [Central de solicitações, comunicados, FAQ, calendário e catálogos](#12-central-de-solicitações-comunicados-faq-calendário-e-catálogos)
 13. [Auditoria](#13-auditoria)
+14. [Central de tarefas, pendências e produtividade](#14-central-de-tarefas-pendências-e-produtividade)
+15. [Indicadores, exportações e preferências de notificação](#15-indicadores-exportações-e-preferências-de-notificação)
+16. [Contratos específicos e compliance documental](#16-contratos-específicos-e-compliance-documental)
+17. [Experiência e produtividade](#17-experiência-e-produtividade)
 
 ---
 
@@ -26,7 +31,7 @@
 
 ### 1.1 Entidades e campos-chave
 
-- `user`: `id`, `email` (único, trim|lower), `senha` (sensível/privado), `senha_primeiro_acesso` (bool, default true), `otp_codigo` (máx. 6, privado), `otp_expira_em` (privado), `otp_tentativas` (default 0, privado), `nome`, `perfil` (enum: `Admin`/`RH`/`Colaborador`/`Gestor`, default `Colaborador`), `ativo`, `ultimo_acesso` (`xano-workspace/table/user.xs`).
+- `user`: `id`, `email` (único, trim|lower), `senha` (sensível/privado), `senha_primeiro_acesso` (bool, default true), `otp_codigo` (máx. 6, privado), `otp_expira_em` (privado), `otp_tentativas` (default 0, privado), `senha_tentativas_invalidas` (default 0, privado), `senha_bloqueada_ate` (privado), `reset_senha_codigo`/`reset_senha_expira_em`/`reset_senha_tentativas` (privados, fluxo "esqueci minha senha"), `nome`, `perfil` (enum: `Admin`/`RH`/`Colaborador`/`Gestor`, default `Colaborador`), `ativo`, `ultimo_acesso` (`xano-workspace/table/user.xs`).
 - `colaborador`: vinculado via `user_id` (índice único); relevantes aqui `nivel`, `nivel_desde`, `departamento_id`, `status` (`xano-workspace/table/colaborador.xs`).
 - `sessao`: `id`, `user_id`, `expira_em`, `revogada_em`, `dispositivo`, `endereco_ip`, `ativa` (default true); índices em `user_id` e `(user_id, ativa)` (`xano-workspace/table/sessao.xs`).
 
@@ -36,15 +41,18 @@
 - `auth/otp/validar`: `email` (trim|lower) e `codigo` (trim, máx. 6) obrigatórios (`xano-workspace/api/conecta_rh_autenticacao/auth/otp_validar_POST.xs`).
 - `auth/otp/reenviar`: `email` apenas; exige desafio OTP pendente (`otp_codigo != null`) (`xano-workspace/api/conecta_rh_autenticacao/auth/otp_reenviar_POST.xs`).
 - `auth/senha` (PATCH): `senha_atual`, `nova_senha` e `confirmar_senha` (8-64 caracteres); devem coincidir entre si, `senha_atual` deve bater via `security.check_password`, e a nova senha deve ser diferente da atual (`xano-workspace/api/conecta_rh_autenticacao/auth/senha_PATCH.xs`).
+- `auth/senha/esqueci` (POST): só `email`; nunca revela se a conta existe — resposta idêntica em qualquer caso (`xano-workspace/api/conecta_rh_autenticacao/auth/senha/esqueci_POST.xs`).
+- `auth/senha/redefinir` (POST): `email`, `codigo` (máx. 6), `nova_senha`/`confirmar_senha` (8-64); confirmação validada antes de qualquer consulta ao banco, para não vazar por timing se o desafio existe (`xano-workspace/api/conecta_rh_autenticacao/auth/senha/redefinir_POST.xs`).
 - `auth/sessoes/{id}/encerrar`: a sessão deve pertencer ao chamador (`sessao.user_id == auth.id`) e estar `ativa` (`xano-workspace/api/conecta_rh_autenticacao/auth/sessoes/id/encerrar_POST.xs`).
 - Todos os endpoints autenticados exigem `auth = "user"` e revalidam que o usuário ainda existe e está `ativo == true` (`xano-workspace/api/conecta_rh_autenticacao/auth/me_GET.xs`, `logout_POST.xs`, `minhas_sessoes_GET.xs`, `senha_PATCH.xs`).
 
 ### 1.3 Máquina de estados (login → OTP → token)
 
-1. **`POST auth/login`**: busca `user` por e-mail; retorna erro genérico "E-mail ou senha inválidos" se usuário nulo ou `ativo == false` (sem enumeração de usuários); valida senha via `security.check_password` (mesmo erro genérico em caso de divergência). Em sucesso, gera OTP de 6 dígitos (`security.random_number` 100000-999999), grava em `user.otp_codigo` com `otp_expira_em = now+300s` e zera `otp_tentativas`; envia o código via template dinâmico SendGrid; se o envio falhar, retorna erro `standard` e não prossegue; audita `codigo_acesso_gerado` (nunca grava o código) (`xano-workspace/api/conecta_rh_autenticacao/auth/login_POST.xs`).
+1. **`POST auth/login`**: busca `user` por e-mail; retorna erro genérico "E-mail ou senha inválidos" se usuário nulo ou `ativo == false` (sem enumeração de usuários). **Bloqueio por tentativas** (antes de checar a senha): se `senha_bloqueada_ate` estiver no futuro, rejeita com `toomanyrequests` sem nem comparar a senha. Valida senha via `security.check_password`; se errada, incrementa `senha_tentativas_invalidas`, audita `login_senha_invalida` (falha) e, na 5ª tentativa seguida, grava `senha_bloqueada_ate = now+900s` (bloqueio de 15 min, mesma janela usada em OTP e redefinição de senha); em qualquer caso de senha errada retorna o mesmo erro genérico. **Alerta de acesso suspeito**: se a senha acertar mas `senha_tentativas_invalidas >= 3` (ou seja, login válido logo após múltiplas tentativas erradas), envia e-mail de aviso ao titular via `email_outbox` (best-effort, não bloqueia o login) e audita `alerta_acesso_suspeito` com a contagem na justificativa. Em sucesso, zera `senha_tentativas_invalidas`/`senha_bloqueada_ate`, gera OTP de 6 dígitos (`security.random_number` 100000-999999), grava em `user.otp_codigo` com `otp_expira_em = now+300s` e zera `otp_tentativas`; envia o código via template transacional Brevo (`templateId 2`); se o envio falhar, retorna erro `standard` e não prossegue; audita `codigo_acesso_gerado` (nunca grava o código) (`xano-workspace/api/conecta_rh_autenticacao/auth/login_POST.xs`).
 2. **`POST auth/otp/reenviar`**: exige `otp_codigo != null`; regenera código/expiração/tentativas e reenvia (`xano-workspace/api/conecta_rh_autenticacao/auth/otp_reenviar_POST.xs`).
 3. **`POST auth/otp/validar`**: exige usuário ativo e desafio pendente; bloqueia após 5 tentativas falhas (`otp_tentativas < 5`, senão `toomanyrequests`, forçando novo login); bloqueia código expirado (`otp_expira_em > now`); em código errado incrementa `otp_tentativas` e audita `login_codigo_invalido` (falha). Em sucesso: limpa `otp_codigo`/`otp_expira_em`/`otp_tentativas`, atualiza `ultimo_acesso`, emite token (`security.create_auth_token`, `extras={perfil}`, `expiration=3600`), cria `sessao` (`expira_em=now+3600s`, `ativa=true`), audita `login_sucesso` (`xano-workspace/api/conecta_rh_autenticacao/auth/otp_validar_POST.xs`).
 4. **`PATCH auth/senha`**: grava nova senha e `senha_primeiro_acesso=false`; audita `troca_senha`. Vários endpoints de negócio (ex.: `ferias/aprovar`, `minhas_ferias`) exigem adicionalmente `senha_primeiro_acesso == false` antes de permitir a ação (`xano-workspace/api/conecta_rh_autenticacao/auth/senha_PATCH.xs`, `xano-workspace/api/conecta_rh_ferias/ferias/id/aprovar_POST.xs`).
+5. **"Esqueci minha senha"** — `POST auth/senha/esqueci`: só gera e envia o código (6 dígitos, uso único, expira em 15 min) se a conta existir e estiver ativa, mas a resposta é sempre a mesma genérica ("se o e-mail estiver cadastrado, enviamos um código"), sem enumerar contas; envio via Brevo (`templateId 4`); audita `solicitar_redefinicao_senha` só quando o e-mail é elegível. **`POST auth/senha/redefinir`**: exige desafio pendente (`reset_senha_codigo != null`), bloqueia após 5 tentativas inválidas (`toomanyrequests`) e código expirado; código errado incrementa `reset_senha_tentativas` e audita `redefinicao_senha_codigo_invalido` (falha), sempre com a mesma mensagem genérica "Código inválido ou expirado" (não distingue conta inexistente de código errado); nova senha não pode repetir a atual; em sucesso grava a senha, conclui `senha_primeiro_acesso=false`, zera os campos de reset (uso único garantido) e audita `redefinir_senha_sucesso` (`xano-workspace/api/conecta_rh_autenticacao/auth/senha/esqueci_POST.xs`, `redefinir_POST.xs`).
 
 ### 1.4 Sessões — ciclo de vida
 
@@ -56,7 +64,11 @@
 
 ### 1.5 O que é auditado
 
-`codigo_acesso_gerado`, `login_codigo_invalido`, `login_sucesso`, `troca_senha`, `logout`, `encerrar_sessao`, `encerrar_outras_sessoes` (fontes acima). **Não auditado:** reenvio de OTP (`otp_reenviar_POST.xs` não grava em `auditoria`) — não mapeado.
+`codigo_acesso_gerado`, `login_codigo_invalido`, `login_sucesso`, `troca_senha`, `logout`, `encerrar_sessao`, `encerrar_outras_sessoes`, `login_senha_invalida` (falha), `alerta_acesso_suspeito`, `solicitar_redefinicao_senha`, `redefinicao_senha_codigo_invalido` (falha), `redefinir_senha_sucesso`, `reenviar_codigo_acesso` (fontes acima; reenvio de OTP passou a auditar na tarefa 7.11).
+
+### 1.6 Status operacional (monitoramento)
+
+`GET status_operacional` (RH/ADMIN): reporta, numa única consulta, a fila de e-mail por status (`email_outbox` pendente/falhou/enviado), tarefas manuais pendentes que substituem rotinas automáticas não suportadas por este plano Xano (desligamentos agendados com `data_efetiva` já vencida e ainda não concluídos manualmente; documentos aprovados com `data_validade` vencida ainda não reprocessados) e a contagem de contas atualmente bloqueadas por tentativas de senha (`senha_bloqueada_ate` no futuro). Não audita a própria consulta. Backups e recuperação de desastres são responsabilidade da infraestrutura do Xano — não há filtro/API em XanoScript para acioná-los a partir do código da aplicação, então não há nada implementado nesta camada para isso (`xano-workspace/api/conecta_rh_autenticacao/status_operacional_GET.xs`).
 
 ---
 
@@ -380,7 +392,7 @@ Não há estados no banco de horas — cada lançamento é imutável desde a cri
 
 - **instrumento_normativo**: `tipo` (enum incl. `acordo_coletivo`, `convencao_coletiva`, `termo_aditivo`, `regime_especial`, `norma_legal`, `decisao_judicial`, `acordo_individual_autorizado`), `titulo`, `abrangencia_territorial`, `numero_solicitacao_mediador?`, `numero_registro_mte?`, `numero_processo_mte?`, `data_registro?`, `data_inicio`, `data_fim?`, `documento_url`, `hash_documento`, `status` (enum default `rascunho`: `rascunho`/`pendente_aprovacao`/`vigente`/`suspenso`/`expirado`/`revogado`/`rejeitado`), `criado_por_user_id`, `aprovado_por_user_id?`, `data_aprovacao?`, `instrumento_principal_id?` (`xano-workspace/table/instrumento_normativo.xs`).
 - **regra_override**: `instrumento_normativo_id`, `parametro` (enum de parâmetros protegidos), `valor_anterior?`, `valor_novo`, `prioridade`, `abrangencia` (enum `empresa`/`estabelecimento`/`estado`/`municipio`/`departamento`/`cargo`/`tipo_contrato`/`categoria_profissional`/`colaborador`), escopo (`departamento_id?`/`cargo_id?`/`colaborador_id?`/`tipo_contrato?`/`estado?`/`municipio?`/`categoria_profissional?`), `data_inicio`, `data_fim?`, `tipo_aplicacao` (`futura`/`retroativa`, default `futura`), `versao?=1`, `ativo?=false`, `status` (enum default `rascunho`: `rascunho`/`pendente_aprovacao`/`aprovada`/`vigente`/`encerrada`/`suspensa`/`revogada`/`rejeitada`) (`xano-workspace/table/regra_override.xs`).
-- `regra_contrato` e `regra_aplicada` existem como tabelas (parâmetros por `tipo_contrato`, e registro de aplicação de regra por processo), mas **não têm nenhum endpoint de API correspondente** em `xano-workspace/api/` — o motor de resolução de regras (aplicar override + regra de contrato a um colaborador/processo) não está exposto via API; isso é consistente com o Non-Goal registrado em `openspec/changes/conectarh.gestao/design.md` sobre as tarefas 4.11-4.13/4.17 ainda pendentes (`xano-workspace/table/regra_contrato.xs`, `xano-workspace/table/regra_aplicada.xs`).
+- `regra_contrato` (parâmetros-base por `tipo_contrato`) e `regra_aplicada` (registro de qual regra foi aplicada a um processo — origem, versão, parâmetros e data do cálculo) existem como tabelas e agora **têm o motor de resolução exposto via API** — ver 9.6 (`xano-workspace/table/regra_contrato.xs`, `xano-workspace/table/regra_aplicada.xs`).
 
 ### 9.2 Regras de validação
 
@@ -406,10 +418,21 @@ Não há estados no banco de horas — cada lançamento é imutável desde a cri
 | Cadastrar/enviar/aprovar/rejeitar/suspender/revogar instrumento normativo | Somente RH ou ADMIN |
 | Criar/enviar/aprovar regra_override | Somente RH ou ADMIN |
 | Listar instrumentos/overrides | Qualquer usuário autenticado, sem filtro de perfil |
+| Consultar resolução de um parâmetro (`regras_override/resolver`) | RH, ADMIN, ou o próprio colaborador |
+| Aplicar e persistir regra resolvida (`regras_override/aplicar`) | Somente RH ou ADMIN |
+| Simular impacto de um override antes de publicar (`regras_override/{id}/simular`) | Somente RH ou ADMIN |
 
 ### 9.5 O que é auditado
 
-Cadastro, aprovação, rejeição, suspensão e revogação de `instrumento_normativo` (com `justificativa` nas três últimas). **Exceção:** `enviar_aprovacao` de instrumento não grava auditoria. Para override: criação e aprovação são auditadas (aprovação registra `valor_anterior`/`valor_novo`); `enviar_aprovacao` de override também não audita.
+Cadastro, aprovação, rejeição, suspensão e revogação de `instrumento_normativo` (com `justificativa` nas três últimas). **Exceção:** `enviar_aprovacao` de instrumento não grava auditoria. Para override: criação e aprovação são auditadas (aprovação registra `valor_anterior`/`valor_novo`); `enviar_aprovacao` de override também não audita. Resolução de regra: `aplicar_regra_resolvida` (ao persistir em `regra_aplicada`) e `simular_impacto_regra_override` são auditados; a consulta de resolução (`resolver`, GET) não audita.
+
+### 9.6 Motor de resolução de regras (`resolver` / `aplicar` / `simular`)
+
+- **`regras_override/resolver`** (GET): dado `colaborador_id` e `parametro` (validado contra os 15 parâmetros protegidos existentes), resolve o valor efetivo considerando, em ordem de especificidade: exceção individual (nível 5) → regra de cargo/departamento (nível 4) → instrumento coletivo — acordo/convenção coletiva/termo aditivo (nível 3) → demais escopos com override vigente (empresa/estabelecimento/estado/município/tipo_contrato/categoria_profissional, tratados como "norma vigente", nível 2) → só a matriz `regra_contrato`, sem override (nível 1). Acesso: RH/ADMIN ou o próprio colaborador (`xano-workspace/function/conectahr/resolver_regra.xs`, `xano-workspace/api/conecta_rh_colaboradores/regras_override/resolver_GET.xs`).
+- **Conflito**: quando há mais de uma `regra_override` vigente aplicável no nível mais específico encontrado, com valores diferentes e prioridade empatada, a resolução retorna `conflito=true` e não decide automaticamente — cabe a RH decidir manualmente. `regras_override/aplicar` bloqueia com `accessdenied` quando `conflito=true`, consistente com a restrição do projeto de não decidir conflitos jurídicos automaticamente.
+- **`regras_override/aplicar`** (POST, RH/ADMIN): roda a mesma resolução e persiste o resultado em `regra_aplicada` (origem — `regra_contrato`/`regra_override`/`instrumento_normativo` —, versão aplicada, parâmetros resolvidos e `processo_tipo`/`processo_id` do processo de negócio que consumiu a regra, ex.: uma solicitação de férias). Audita `aplicar_regra_resolvida` (`xano-workspace/api/conecta_rh_colaboradores/regras_override/aplicar_POST.xs`).
+- **`regras_override/{id}/simular`** (GET, RH/ADMIN): antes de publicar um override, lista os colaboradores afetados pela `abrangencia` da regra e, para cada um, compara o valor atualmente resolvido com o valor proposto (`representa_mudanca`), sem alterar nenhuma regra vigente nem gravar `regra_aplicada`. Audita `simular_impacto_regra_override` (`xano-workspace/api/conecta_rh_colaboradores/regras_override/id/simular_GET.xs`).
+- **Simplificações assumidas** (documentadas no cabeçalho da function, porque `colaborador` não tem os campos correspondentes no cadastro): abrangência `estabelecimento` é tratada como equivalente a `empresa`; abrangência `categoria_profissional` nunca resolve população (não há esse campo em `colaborador`); abrangências `estado`/`município` comparam contra o endereço pessoal do colaborador (`colaborador.estado`/`colaborador.cidade`), não um local de trabalho dedicado — esse conceito não existe no modelo atual (`xano-workspace/function/conectahr/resolver_regra.xs`).
 
 ---
 
@@ -593,34 +616,105 @@ Ambos **estão implementados**:
 
 | Domínio | Ações auditadas |
 |---|---|
-| Auth | `codigo_acesso_gerado`, `login_codigo_invalido`, `login_sucesso`, `troca_senha`, `logout`, `encerrar_sessao`, `encerrar_outras_sessoes` |
-| Colaboradores/cadastro | `alterar_cadastro_colaborador`, vínculo (`acao` dinâmico = `tipo_historico`), `atualizar_dados_bancarios` (com diff), `iniciar_onboarding`, `concluir_item_onboarding` |
+| Auth | `codigo_acesso_gerado`, `login_codigo_invalido`, `login_sucesso`, `troca_senha`, `logout`, `encerrar_sessao`, `encerrar_outras_sessoes`, `login_senha_invalida`, `alerta_acesso_suspeito`, `solicitar_redefinicao_senha`, `redefinicao_senha_codigo_invalido`, `redefinir_senha_sucesso` |
+| Colaboradores/cadastro | `alterar_cadastro_colaborador`, vínculo (`acao` dinâmico = `tipo_historico`), `atualizar_dados_bancarios` (com diff), `iniciar_onboarding`, `concluir_item_onboarding`, `cadastrar_colaborador` (criação, 7.11), `atualizar_contrato_especifico` (7.11) |
 | Férias | `aprovar_ferias`, `rejeitar_ferias`, `cancelar_ferias` |
 | Ausências | `registrar_ausencia`, `aprovar_ausencia`, `rejeitar_ausencia` |
 | Desligamento | `aprovar_desligamento_imediato`, `aprovar_desligamento_agendado`, `rejeitar_desligamento`, `cancelar_desligamento`, `concluir_desligamento_agendado` |
-| Documentos | `aprovar_documento`, `rejeitar_documento`, `registrar_evento_sst`, `solicitar_documento_pendente` |
-| Ponto / banco de horas | `lancar_banco_horas` (com diff), `aprovar_correcao_ponto` (com diff completo), `rejeitar_correcao_ponto`, `solicitar_correcao_ponto` |
-| Instrumentos/override | `cadastrar_instrumento_normativo`, `aprovar_instrumento_normativo`, `rejeitar_instrumento_normativo`, `suspender_instrumento_normativo`, `revogar_instrumento_normativo`, `criar_regra_override`, `aprovar_regra_override` |
-| Avaliação | `atribuir_avaliacao`, `enviar_avaliacao`, `contestar_avaliacao`, `revisar_contestacao_avaliacao`, `moderar_reconhecimento` |
-| Comunicados/FAQ/Solicitações/Delegações/Usuários/Departamentos | `publicar_comunicado`, `criar_solicitacao_rh`, `atender_solicitacao_rh`, `indeferir_solicitacao_rh`, `criar_delegacao_aprovacao`, `cancelar_delegacao_aprovacao`, `definir_gestor_departamento`, `alterar_status_usuario` (com diff), `alterar_perfil_usuario` (com diff) |
+| Documentos | `aprovar_documento`, `rejeitar_documento`, `registrar_evento_sst`, `solicitar_documento_pendente`, `cadastrar_documento`, `atualizar_documento`, `arquivar_documento` (7.11) |
+| Ponto / banco de horas | `lancar_banco_horas` (com diff), `aprovar_correcao_ponto` (com diff completo), `rejeitar_correcao_ponto`, `solicitar_correcao_ponto`, `marcar_ponto` (distingue qual dos 4 marcadores, 7.11) |
+| Instrumentos/override | `cadastrar_instrumento_normativo`, `aprovar_instrumento_normativo`, `rejeitar_instrumento_normativo`, `suspender_instrumento_normativo`, `revogar_instrumento_normativo`, `criar_regra_override`, `aprovar_regra_override`, `enviar_aprovacao` de instrumento e de override (7.11), `aplicar_regra_resolvida`, `simular_impacto_regra_override` |
+| Avaliação | `atribuir_avaliacao`, `enviar_avaliacao`, `contestar_avaliacao`, `revisar_contestacao_avaliacao`, `moderar_reconhecimento`, `responder_avaliacao` (nota por competência, 7.11) |
+| Comunicados/FAQ/Solicitações/Delegações/Usuários/Departamentos | `publicar_comunicado`, `criar_solicitacao_rh`, `atender_solicitacao_rh`, `indeferir_solicitacao_rh`, `criar_delegacao_aprovacao`, `cancelar_delegacao_aprovacao`, `definir_gestor_departamento`, `alterar_status_usuario` (com diff), `alterar_perfil_usuario` (com diff), `criar_usuario` (7.11), `reenviar_codigo_acesso` (otp/reenviar, 7.11) |
+| Central de tarefas/indicadores | `escalonar_pendencia`, `consultar_indicadores`, `exportar_indicadores_csv`, `atualizar_preferencia_notificacao` |
 | Parâmetros protegidos | Nenhum — só existe endpoint de leitura (`parametros_protegidos_GET.xs`); não há endpoint de mutação para auditar |
 
-(fontes: ver seções 1-12 acima, cada uma citando o arquivo específico por ação)
+(fontes: ver seções 1-12 e 14-15 acima, cada uma citando o arquivo específico por ação)
 
-### 13.3 Lacunas identificadas
+### 13.3 Consulta de auditoria (`GET auditoria`)
 
-Endpoints que alteram estado mas **não** gravam em `auditoria`:
+RH/ADMIN, com filtros opcionais combináveis (`recurso`, `registro_id`, `user_id`, `acao`, `resultado`); sem filtro, retorna os eventos mais recentes primeiro. Não audita a própria consulta. Antes deste endpoint (adicionado na tarefa 7.11), os eventos já eram gravados mas não havia nenhuma forma de lê-los pela API — gap encontrado durante os testes de segurança (`xano-workspace/api/conecta_rh_colaboradores/auditoria_GET.xs`).
 
-- **Documentos**: exclusão (`documentos/id_DELETE.xs`), arquivamento (`documentos/id/arquivar_POST.xs`), criação (`documentos_POST.xs`), atualização (`documentos/id_PATCH.xs`), `processar_vencimentos_POST.xs` (job de vencimento em lote).
+### 13.4 Lacunas identificadas
+
+Levantamento sistemático (tarefa 7.11) encontrou 42 endpoints de ação sem auditoria em ~102 no total; 12 foram cobertos naquela rodada (ver tabela acima). Endpoints que **ainda** alteram estado sem gravar em `auditoria`:
+
+- **Documentos**: exclusão (`documentos/id_DELETE.xs`), `processar_vencimentos_POST.xs` (job de vencimento em lote).
 - **Férias/Ausências**: `ausencias/id_DELETE.xs`, `ausencias/id_PATCH.xs`, `ferias/id_PATCH.xs`, `ferias/solicitacoes_POST.xs` (criação).
 - **Desligamento**: `solicitacoes_desligamento_POST.xs` (criação), `.../id/iniciar_analise_POST.xs`.
 - **Cargos**: todo o domínio — `cargos_POST.xs`, `cargos/id_PATCH.xs`, `cargos/id/status_PATCH.xs`.
 - **Departamentos**: `departamentos_POST.xs`, `departamentos/id_PATCH.xs`, `departamentos/id/status_PATCH.xs` (só `gestor_PATCH.xs` é auditado).
-- **Gestão de usuários**: `usuarios_POST.xs` (criação), `usuarios/id_PATCH.xs` (só alteração de status/perfil é auditada).
-- **Colaboradores**: `colaboradores_POST.xs` (criação), `meu_perfil_colaborador_PATCH.xs` (autoedição).
-- **Avaliação/desenvolvimento**: `ciclos_avaliacao_POST.xs`, `avaliacoes/id/respostas_POST.xs`, todo o domínio de metas (`metas_POST.xs`, `checkin_POST.xs`, `concluir_POST.xs`), todo o domínio de PDI (`pdi_POST.xs`, `progresso_POST.xs`), `reconhecimentos_POST.xs` (criação — só a moderação é auditada), `enviar_aprovacao_POST.xs` de instrumento e de override.
-- **Ponto**: `ponto/marcar_POST.xs` (a própria marcação de ponto).
+- **Colaboradores**: `meu_perfil_colaborador_PATCH.xs` (autoedição).
+- **Avaliação/desenvolvimento**: `ciclos_avaliacao_POST.xs`, todo o domínio de metas (`metas_POST.xs`, `checkin_POST.xs`, `concluir_POST.xs`), todo o domínio de PDI (`pdi_POST.xs`, `progresso_POST.xs`), `reconhecimentos_POST.xs` (criação — só a moderação é auditada).
 - **Comunicados/FAQ**: `artigos_faq_POST.xs` (ao contrário de `comunicados_POST.xs`).
+- **Exportações**: cobertas (`consultar_indicadores`/`exportar_indicadores_csv`, ver 15.1-15.2) — não é mais lacuna.
+- Domínios não revisados na tarefa 7.11, com controle de permissão já testado (7.2/7.3) mas sem registro formal de evento: pesquisa de clima, feriados, notificações internas, `email_outbox`.
+
+---
+
+## 14. Central de tarefas, pendências e produtividade
+
+### 14.1 Central de tarefas (`GET central_de_tarefas`)
+
+Consulta única (qualquer usuário autenticado ativo) que agrega: **pendências pessoais** (se houver `colaborador` vinculado) — `senha_primeiro_acesso`, cadastro incompleto (`data_nascimento`, `cep` ou `banco` nulos), status do próprio ponto hoje, próprias férias `Pendente`; **fila de decisão** para RH/ADMIN (todas) ou GESTOR (restrita ao departamento que gerencia, via o mesmo lookup de dois saltos por `gestor_colaborador_id` usado em outros domínios) — férias `Pendente`, documentos `pendente_analise`, desligamentos `pendente`/`em_analise`; **dashboard do gestor** (só quando há departamento gerenciado) — tamanho da equipe, férias aprovadas futuras da equipe, ausências aprovadas da equipe, contagem de ponto do dia por status (completo/aberto/sem registro). Não audita a própria consulta. Gap consciente documentado no código: correção de ponto e avaliações/metas/PDI ainda não entram na fila (`xano-workspace/api/conecta_rh_colaboradores/central_de_tarefas_GET.xs`).
+
+### 14.2 Escalonamento de pendências atrasadas (`POST pendencias_atrasadas/escalonar`)
+
+RH/ADMIN aciona manualmente (sem Background Tasks neste plano Xano) informando `prazo_dias`; varre férias, ausências, desligamentos, solicitações ao RH e correções de ponto pendentes há mais que o prazo informado. Escalonamento = grava um evento `escalonar_pendencia` em auditoria por registro (idempotente: não duplica se já escalonado antes) com os dias de atraso na justificativa; não há canal de notificação dedicado (depende da central de notificações internas e do outbox de e-mail já existentes, mas não conectados aqui) (`xano-workspace/api/conecta_rh_colaboradores/pendencias_atrasadas/escalonar_POST.xs`).
+
+### 14.3 Auditado
+
+`escalonar_pendencia` (por recurso: `ferias`, `ausencia`, `solicitacao_desligamento`, `solicitacao_rh`, `correcao_ponto`).
+
+---
+
+## 15. Indicadores, exportações e preferências de notificação
+
+### 15.1 Painel de indicadores (`GET indicadores`)
+
+RH/ADMIN, com filtro opcional de período (`data_inicio`/`data_fim`, padrão últimos 12 meses). Cálculo delegado à function `ConectaHR/calcular_indicadores` (reaproveitada também pela exportação CSV, evitando duplicar lógica): headcount (ativos/total), turnover (admissões/desligamentos/percentual), absenteísmo, distribuição de colaboradores ativos por departamento, horas extras somadas no período, e contagem por status/resultado de ponto, férias, ausências, documentos, auditoria, avaliações, metas e PDIs — via `db.query { return: {type: "count"} }` (agregação nativa, sem carregar listas inteiras). Audita `consultar_indicadores` (`xano-workspace/api/conecta_rh_colaboradores/indicadores_GET.xs`, `xano-workspace/function/conectahr/calcular_indicadores.xs`).
+
+### 15.2 Exportação CSV (`GET indicadores/exportar_csv`)
+
+Mesmos dados do painel, formatados como texto CSV. Audita `exportar_indicadores_csv`. **Gap consciente:** exportação em PDF não implementada — XanoScript nesta plataforma não tem filtro/primitiva nativa de renderização de PDF; exigiria serviço externo via `api.request`, fora do escopo até aqui (`xano-workspace/api/conecta_rh_colaboradores/indicadores/exportar_csv_GET.xs`).
+
+### 15.3 Preferências de notificação
+
+Entidade `preferencia_notificacao`: `user_id`, `tipo_evento` (enum fechado: `documento_vencendo`/`solicitacao_respondida`/`avaliacao_disponivel`/`ferias_aprovada`/`documento_pendente`), `canal_email` (bool, default true), `frequencia` (enum `imediato`/`resumo_diario`/`resumo_semanal`, default `imediato`); índice único `(user_id, tipo_evento)` (`xano-workspace/table/preferencia_notificacao.xs`).
+
+- **Garantia estrutural, não só de runtime**: alertas obrigatórios de segurança (código de acesso de login, redefinição de senha, alerta de acesso suspeito) **não existem como valor do enum** `tipo_evento` — não há como configurá-los por este endpoint, bloqueado pelo domínio do dado. O `PATCH` também rejeita explicitamente qualquer tentativa de usar um `tipo_evento` fora da lista.
+- `canal_email` e `frequencia` são **obrigatórios no input** (não opcionais), decisão deliberada para evitar o comportamento desta plataforma onde `false`/`""` são coagidos para `null` em comparações — um PATCH opcional para desativar e-mail poderia ser silenciosamente ignorado.
+- `GET`/`PATCH minhas_preferencias_notificacao`: cria ou atualiza a preferência do próprio usuário (upsert por `user_id`+`tipo_evento`). Audita `atualizar_preferencia_notificacao`.
+- **Conectado parcialmente**: a checagem de `canal_email` antes de criar um `email_outbox` está implementada em 2 dos 6 pontos de disparo do projeto (`ferias/{id}/aprovar` e `avaliações POST`); os outros 4 (vencimento de documento, resposta de solicitação, documento pendente) ainda não checam a preferência — gap consciente, mesmo padrão replicável.
+- `frequencia` `resumo_diario`/`resumo_semanal` é armazenada e retornada, mas a agregação/batching real não está implementada (mesma limitação de rotina automática recorrente do restante do projeto — sem Background Tasks neste plano Xano); todo envio continua imediato (`xano-workspace/api/conecta_rh_colaboradores/minhas_preferencias_notificacao_GET.xs`, `minhas_preferencias_notificacao_PATCH.xs`).
+
+---
+
+## 16. Contratos específicos e compliance documental
+
+### 16.1 Contrato específico (não-CLT)
+
+Entidade `contrato_especifico`: um registro por colaborador (índice único em `colaborador_id`), com blocos de campos específicos por `tipo_contrato` (`ESTAGIO`/`APRENDIZ`/`TEMPORARIO`/`PJ`) — ex. estágio: instituição de ensino, curso, termo de compromisso, jornada máxima, recesso; PJ: número do contrato, entregas, vigência, condições comerciais (sem gerar jornada/ponto/férias/subordinação automaticamente). CLT não usa esta tabela — usa os campos padrão de `colaborador`/`historico_profissional` mais o rastreio eSocial/CTPS (16.2). `status` (`rascunho`/`ativo`). CRUD via `contratos_especificos_POST`/`id_PATCH`/`id/ativar_POST`, auditado como `atualizar_contrato_especifico` (`xano-workspace/table/contrato_especifico.xs`).
+
+### 16.2 Compliance eSocial / CTPS Digital (admissão CLT)
+
+`PATCH historico_profissional/{id}/compliance_admissao` (RH/ADMIN): registra o estado que o RH confirmou manualmente para `esocial_status`/`ctps_status` de uma admissão CLT — não chama nenhum serviço externo (integração real fica como evolução futura, por decisão de `design.md`). `GET admissoes_pendentes_esocial_ctps` (RH/ADMIN): lista admissões CLT cujo eSocial ou CTPS Digital ainda não foi confirmado, com o prazo aplicável — só sinaliza a pendência, mesma limitação de não integrar com serviço externo (`xano-workspace/api/conecta_rh_colaboradores/historico_profissional/id/compliance_admissao_PATCH.xs`, `admissoes_pendentes_esocial_ctps_GET.xs`).
+
+### 16.3 Matriz de documentos obrigatórios
+
+Entidade `documento_obrigatorio_regra`: regra configurável por `tipo_documento` + combinação opcional de `tipo_contrato`/`cargo_id`/`departamento_id`/`idade_minima`/`idade_maxima` (campo nulo = sem restrição nessa dimensão = aplica a todos); também guarda `nacionalidade`/`condicao_profissional` (armazenados, mas **nunca avaliados automaticamente** — `colaborador` não tem esses campos para casar, mesmo gap de simplificação documentado em 9.6 para `categoria_profissional`) e uma política de retenção (`retencao_finalidade`/`base_legal`/`prazo_dias`/`evento_inicial`/`tratamento`: anonimizar/eliminar automático/revisão manual/bloqueio de processo). `GET colaboradores/{id}/documentos_pendentes_obrigatorios` (RH/ADMIN ou o próprio colaborador): casa as regras ativas contra o colaborador (contrato, cargo, departamento, idade calculada a partir de `data_nascimento`) e retorna os tipos de documento obrigatórios sem um `documento` `aprovado` correspondente; regras com `nacionalidade`/`condicao_profissional` preenchidas entram na lista com `aplicabilidade_incerta: true` (`xano-workspace/table/documento_obrigatorio_regra.xs`, `xano-workspace/api/conecta_rh_colaboradores/colaboradores/id/documentos_pendentes_obrigatorios_GET.xs`).
+
+---
+
+## 17. Experiência e produtividade
+
+Conjunto de consultas somente-leitura, construídas sobre dados já existentes (nenhuma entidade nova de domínio além de `reuniao_individual`).
+
+- **Aniversariantes do mês** (`GET colaboradores/aniversariantes`): qualquer usuário autenticado; retorna só nome e dia/mês dos colaboradores ativos — nunca o ano de nascimento, para não revelar idade.
+- **Timeline do colaborador** (`GET colaboradores/{id}/timeline`): reúne em ordem cronológica os eventos de `historico_profissional` (admissão, promoções, alterações, desligamento) e férias concluídas. Avaliações concluídas ainda não entram (dependem de dados que a timeline não consulta). Acesso: RH/ADMIN (qualquer colaborador), o próprio colaborador, ou o Gestor do departamento.
+- **Plano de carreira** (`GET colaboradores/{id}/plano_carreira`): nível atual, próximo nível, competências esperadas para o próximo nível (lacunas a desenvolver), metas ativas, PDI ativo e histórico de evolução de cargo — **nunca promove automaticamente**, é só exibição. Acesso: o próprio colaborador, RH/ADMIN, ou o Gestor da equipe.
+- **Reuniões individuais (1:1)**: entidade `reuniao_individual` — `colaborador_id`, `gestor_user_id`, `data_reuniao`, `assuntos`, `acordos?`, `acoes?`, `responsavel_acoes_user_id?`, `prazo_acoes?`, `proxima_reunião?`, `visibilidade` (enum `privado`/`compartilhado_rh`, default `privado`). Criada via `reunioes_individuais_POST`; listada por colaborador via `colaboradores/{id}/reunioes_individuais_GET` (`xano-workspace/table/reuniao_individual.xs`).
+- **Mural de reconhecimento** (`GET mural_reconhecimento`): retorna só registros de `reconhecimento` com `visibilidade=publico` e `status=ativo` — feedback privado (gestor→colaborador) nunca aparece aqui, consistente com a regra de visibilidade automática da seção 11.5.
 
 ---
 
@@ -628,7 +722,6 @@ Endpoints que alteram estado mas **não** gravam em `auditoria`:
 
 Por decisão registrada em `design.md` deste change, este documento cobre apenas domínios com backend já implementado. Ficam explicitamente fora, por não terem endpoints de API publicados:
 
-- **Motor de resolução de regras contratuais** (tarefas 4.11-4.13/4.17 do change `conectarh.gestao`): as tabelas `regra_contrato` e `regra_aplicada` existem, mas não há endpoint que as consuma — ver seção 9.1.
 - **Cancelamento de pendência de documento**: a tabela `pendencia_documento` tem status `cancelada` no enum, mas nenhum endpoint de cancelamento foi encontrado — ver seção 7.3.
 - **Consumo efetivo de `delegacao_aprovacao`** nos fluxos de aprovação de terceiros (férias, correção de ponto etc.): só CRUD da delegação em si foi encontrado, nenhum fluxo de aprovação faz lookup nela — ver seção 8.4.
 - **Conclusão de `onboarding`**: a transição do `onboarding.status` para `concluido` ao concluir o último item não foi encontrada — ver seção 12.7.
