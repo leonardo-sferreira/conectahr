@@ -2,7 +2,7 @@
 
 A proposta introduz uma plataforma nova e ainda nao ha codigo ou especificacoes existentes no repositorio. O modelo de referencia contem usuarios, colaboradores, cargos, departamentos, historico profissional, ponto, documentos, ferias, ausencias e entidades de avaliacao. Os registros mostrados nas imagens sao dados de teste e nao devem ser migrados.
 
-O produto deve demonstrar backend avancado com Xano e Script Xano, desenvolvimento web com Reflex, especificacao com OpenSpec, colaboracao via GitHub, integracao frontend-backend, deploy e validacao de mercado.
+O produto deve demonstrar backend avancado com Xano e Script Xano, desenvolvimento web com Streamlit, especificacao com OpenSpec, colaboracao via GitHub, integracao frontend-backend, deploy e validacao de mercado.
 
 ## Goals / Non-Goals
 
@@ -20,7 +20,7 @@ O produto deve demonstrar backend avancado com Xano e Script Xano, desenvolvimen
 
 - Importar os registros de exemplo das telas.
 - Implementar folha de pagamento, beneficios, recrutamento ou integracoes externas de ponto nesta mudanca.
-- Implementar Streamlit; o frontend escolhido para o projeto e exclusivamente Reflex.
+- Implementar Reflex; o frontend escolhido para o projeto e exclusivamente Streamlit.
 
 ## Decisions
 
@@ -116,11 +116,11 @@ Aplicar minimizacao de dados, logs sem senha, token, codigo de acesso (OTP) ou c
 
 Manter o GitHub como fonte de verdade para codigo, documentacao e artefatos OpenSpec, usando branches e pull requests para o trabalho colaborativo. Cada incremento deve passar por especificacao, implementacao, revisao, teste e registro de decisao. A entrega deve incluir MVP demonstravel, README, arquitetura, especificacoes, evidencias de testes, deploy e resultados de validacao de mercado.
 
-O frontend sera implementado exclusivamente com Reflex. As APIs serao versionadas sob `/api/v1/` e cada requisicao tera um identificador de rastreamento compartilhado por API, logs, auditoria, e-mail, erros e tarefas assincronas.
+O frontend sera implementado exclusivamente com Streamlit. As APIs serao versionadas sob `/api/v1/` e cada requisicao tera um identificador de rastreamento compartilhado por API, logs, auditoria, e-mail, erros e tarefas assincronas.
 
 ### Design system e prototipacao
 
-O Figma sera a fonte de verdade visual antes do desenvolvimento das telas. O design system devera definir tokens de cor, tipografia, espacamento, grid, responsividade, acessibilidade e componentes reutilizaveis com estados de carregamento, erro, vazio, sucesso, bloqueio e permissao. Os prototipos deverao cobrir os fluxos principais por perfil e servir de referencia para o handoff da implementacao em Reflex.
+O Figma sera a fonte de verdade visual antes do desenvolvimento das telas. O design system devera definir tokens de cor, tipografia, espacamento, grid, responsividade, acessibilidade e componentes reutilizaveis com estados de carregamento, erro, vazio, sucesso, bloqueio e permissao. Os prototipos deverao cobrir os fluxos principais por perfil e servir de referencia para o handoff da implementacao em Streamlit.
 
 ### Central de solicitacoes do colaborador
 

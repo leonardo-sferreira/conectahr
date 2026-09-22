@@ -2,7 +2,7 @@
 
 O ConectaRH precisa centralizar rotinas de RH que hoje ficam dispersas: controle de jornada, cadastro de colaboradores, documentos, ferias, ausencias e desenvolvimento. A mudanca cria uma base funcional unica, com autenticacao forte e regras de acesso compativeis com os papeis de Admin, RH, Gestor e Colaborador.
 
-O planejamento precisa produzir um MVP demonstravel, documentado e implantavel, alinhado ao uso de Xano, Script Xano, Reflex, GitHub e OpenSpec.
+O planejamento precisa produzir um MVP demonstravel, documentado e implantavel, alinhado ao uso de Xano, Script Xano, Streamlit, GitHub e OpenSpec.
 
 ## What Changes
 
@@ -20,7 +20,7 @@ O planejamento precisa produzir um MVP demonstravel, documentado e implantavel, 
 - Nao importar nem incluir registros de teste apresentados nas imagens; os enums e a estrutura relacional informados serao usados como referencia de dominio.
 - Implementar o fluxo completo de solicitacao, analise e decisao de desligamento (imediato ou aviso previo) como parte do MVP, incluindo aprovacao exclusiva do RH, desativacao do acesso, registro no historico profissional e conclusao automatica dos desligamentos agendados quando a data efetiva chegar.
 - Organizar o desenvolvimento colaborativo em entregas incrementais, com validacao parcial, testes, documentacao e apresentacao final.
-- Adotar Reflex no frontend, SendGrid para disparo de e-mails e regras parametrizadas de jornada e ferias conforme o tipo de contrato.
+- Adotar Streamlit no frontend, SendGrid para disparo de e-mails e regras parametrizadas de jornada e ferias conforme o tipo de contrato.
 - Adicionar estados de documento `pendente_analise`, `aprovado`, `rejeitado`, `vencido`, `substituido` e `arquivado`, com vencimento automatico diario e retencao do arquivo vencido.
 - Incluir no MVP uma central de tarefas e pendencias (incluindo dashboard do gestor e alertas de cadastro incompleto e ponto nao finalizado), onboarding de colaboradores, painel de auditoria (com indicadores de headcount, turnover, admissoes, desligamentos e absenteismo), matriz administrativa de regras por contrato e excecoes individuais auditadas.
 - Implementar central de solicitacoes do colaborador ao RH (alteracao cadastral, declaracao, documento avulso e outras demandas), com decisao do RH e sem alterar o cadastro automaticamente na aprovacao.
@@ -31,10 +31,10 @@ O planejamento precisa produzir um MVP demonstravel, documentado e implantavel, 
 - Implementar delegacao temporaria de aprovacao com expiracao automatica, controle de prazos com escalonamento de pendencias atrasadas e calendario organizacional com deteccao de conflitos de ferias.
 - Implementar consulta e encerramento de sessoes/dispositivos com alerta de acesso suspeito, matriz de documentos obrigatorios, quarentena de arquivos antes da liberacao e politica de retencao parametrizada por tipo de documento.
 - Implementar reunioes individuais, check-ins de metas, reconhecimento publico exclusivamente positivo, feedback corretivo privado, pesquisa anonima de clima, matriz de competencias e plano de carreira sem promocao automatica.
-- Implementar indicadores, exportacoes CSV/PDF, preferencias de notificacao, versionamento de API sob `/api/v1/` com identificador de rastreamento por requisicao, monitoramento operacional, backup/recuperacao e acessibilidade do frontend Reflex.
+- Implementar indicadores, exportacoes CSV/PDF, preferencias de notificacao, versionamento de API sob `/api/v1/` com identificador de rastreamento por requisicao, monitoramento operacional, backup/recuperacao e acessibilidade do frontend Streamlit.
 - Formalizar regras de contrato por meio de `instrumento_normativo` e `regra_override`, com documento de origem, abrangencia, vigencia, prioridade, aprovacao, versionamento e simulacao antes da publicacao.
 - Utilizar validacao local de CPF por calculo dos digitos verificadores, sem integracao externa.
-- Utilizar Figma para criar o design system, prototipos e especificacoes visuais antes da implementacao das telas em Reflex.
+- Utilizar Figma para criar o design system, prototipos e especificacoes visuais antes da implementacao das telas em Streamlit.
 
 ## Capabilities
 
@@ -53,8 +53,8 @@ Nenhuma. O workspace ainda nao possui especificacoes existentes.
 - Servico de e-mail para notificacoes e pendencias, alem de armazenamento protegido para anexos.
 - Integracao com o SendGrid para o codigo de acesso de login e mecanismo seguro de hash de senhas e tokens.
 - Auditoria e autorizacao devem proteger dados pessoais, documentos e feedbacks privados.
-- O projeto integrador deve incluir repositorio GitHub, documentacao de setup e decisoes, backend em Xano/Script Xano, frontend em Reflex, integracao por API, deploy e validacao inicial de mercado.
-- O frontend adotara Reflex e os e-mails transacionais usarao SendGrid.
+- O projeto integrador deve incluir repositorio GitHub, documentacao de setup e decisoes, backend em Xano/Script Xano, frontend em Streamlit, integracao por API, deploy e validacao inicial de mercado.
+- O frontend adotara Streamlit e os e-mails transacionais usarao SendGrid.
 - O design system devera documentar cores, tipografia, espacamentos, componentes, estados, acessibilidade, responsividade e handoff para o frontend.
 - A rotina diaria do Xano marcara documentos aprovados com validade encerrada como vencidos, sem apagar o registro ou desativar o colaborador.
 - A resolucao de regras seguira a matriz contratual, normas vigentes, instrumentos coletivos, regras de cargo/departamento e excecao individual, sem decidir automaticamente conflitos juridicos.
