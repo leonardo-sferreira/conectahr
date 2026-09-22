@@ -18,9 +18,7 @@ O produto deve demonstrar backend avancado com Xano e Script Xano, desenvolvimen
 
 **Non-Goals:**
 
-- Importar os registros de exemplo das telas.
 - Implementar folha de pagamento, beneficios, recrutamento ou integracoes externas de ponto nesta mudanca.
-- Implementar Reflex; o frontend escolhido para o projeto e exclusivamente Streamlit.
 
 ## Decisions
 
