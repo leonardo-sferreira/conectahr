@@ -1,32 +1,56 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: ConectaRH — plataforma integrada de RH (ver docs/project-overview.md e
+  docs/domain-model.md para contexto completo).
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Domain: identidade e autorizacao por perfil (Admin, RH, Gestor, Colaborador), estrutura
+  organizacional, jornada e ponto, documentos, ferias, ausencias, desligamento e
+  desenvolvimento de colaboradores. Um pilar do dominio e o motor de resolucao de regras
+  contratuais (matriz por tipo de contrato, sobrescrita por norma legal, instrumento coletivo
+  ou excecao individual), sempre com historico auditavel.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Tech stack: Xano + XanoScript no backend (xano-workspace/), Streamlit no frontend, Brevo para
+  e-mail transacional, Figma para design system e prototipos, OpenSpec para planejamento.
+
+  Architecture: o backend e responsavel por regras de negocio, autorizacao e persistencia — o
+  frontend nunca e mecanismo de seguranca. Autorizacao e sempre por perfil x escopo
+  (departamento via gestor_colaborador_id, ou propriedade do registro), verificada a cada
+  endpoint. Exclusao fisica e evitada para entidades com trilha de auditoria (documentos,
+  ausencias) — o padrao e arquivamento. Reutilizar padroes ja estabelecidos no codigo existente
+  em vez de introduzir um padrao novo para o mesmo problema.
+
+  Security: dados pessoais e sensiveis seguem a LGPD (minimizacao, finalidade, acesso por
+  necessidade, retencao controlada). Dados bancarios do colaborador sao visiveis so a ele e ao
+  RH, nunca ao Gestor. CPF e validado localmente pelos digitos verificadores, sem API externa.
+  Acoes sensiveis (aprovacoes, rejeicoes, alteracoes de cadastro, aplicacao de regra) devem ser
+  auditaveis com responsavel e justificativa.
+
+  Development: o projeto e desenvolvido incrementalmente via OpenSpec (Explore -> Propose ->
+  Review -> Apply -> Archive). Mudancas funcionais relevantes sao especificadas antes da
+  implementacao; mudancas puramente documentais podem declarar skip_specs: true.
+
+  Language: escrever a documentacao do projeto e os artefatos OpenSpec em portugues brasileiro.
+
+rules:
+  proposal:
+    - Explicitar claramente o problema, o objetivo e o escopo da mudanca.
+    - Identificar o que fica fora do escopo (non-goals) quando houver risco de ambiguidade.
+  specs:
+    - Escrever requisitos verificaveis, evitando afirmacoes vagas.
+    - Utilizar cenarios (Given/When/Then ou equivalente) para comportamentos relevantes,
+      especialmente maquinas de estado e regras de autorizacao.
+  tasks:
+    - Dividir a implementacao em tarefas pequenas e verificaveis, numeradas de forma
+      referenciavel em commits (ex.: "7.8").
+
+operations:
+  apply:
+    guidance:
+      - Verificar o comportamento implementado no workspace Xano (ou nos testes documentados
+        em docs/testes-integracao.md / docs/testes-seguranca.md) antes de concluir uma tarefa.
+  archive:
+    guidance:
+      - Confirmar que a implementacao corresponde a especificacao antes de arquivar.
+      - Atualizar docs/regras-de-negocio.md quando a mudanca alterar ou criar regra de negocio
+        relevante para esse documento.
