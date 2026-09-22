@@ -41,8 +41,7 @@ rules:
     - Utilizar cenarios (Given/When/Then ou equivalente) para comportamentos relevantes,
       especialmente maquinas de estado e regras de autorizacao.
   tasks:
-    - Dividir a implementacao em tarefas pequenas e verificaveis, numeradas de forma
-      referenciavel em commits (ex.: "7.8").
+    - 'Dividir a implementacao em tarefas pequenas e verificaveis, numeradas de forma referenciavel em commits (ex.: "7.8").'
 
 operations:
   apply:
