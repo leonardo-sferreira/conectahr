@@ -22,11 +22,20 @@ key.txt
 *.key.txt
 
 # Assets de design e e-mail (nao versionados, mantidos so localmente)
-email-signature/
-email-templates/
-email-assets/
-imagens/
-canvas.json
+email/
+design/
+
+# Skills/ferramentas de IA pessoais, nao pertencem ao projeto
+.agents/
+
+# Estado local de ferramenta, nao deve ser versionado
+.claude/scheduled_tasks.lock
+
+# Docs internos (auditoria, testes, modelos de e-mail) - mantidos so localmente
+docs/auditoria.md
+docs/testes-integracao.md
+docs/testes-seguranca.md
+docs/emails-templates.md
 
 # Editor / SO
 .DS_Store
