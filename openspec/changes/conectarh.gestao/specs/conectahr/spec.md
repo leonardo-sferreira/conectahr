@@ -4,6 +4,8 @@ Define o comportamento funcional e as regras de seguranca da plataforma ConectaR
 
 ## ADDED Requirements
 
+**1. Identidade, Autenticação e Sessões**
+
 ### Requirement: Autenticacao e ciclo de sessao
 O sistema SHALL autenticar usuarios por credencial e emitir token de acesso com validade de uma hora. O sistema SHALL invalidar a sessao no logout, exigir nova autenticacao apos a saida e impedir o acesso com token expirado, revogado ou adulterado.
 
@@ -34,6 +36,15 @@ O sistema SHALL permitir que somente Admin ou RH cadastrem usuarios. O sistema S
 - **WHEN** o usuario solicita redefinicao para um e-mail cadastrado e ativo
 - **THEN** o sistema envia um fluxo de redefinicao com token de uso unico e prazo limitado sem revelar se o e-mail existe
 
+### Requirement: Sessoes e dispositivos
+O sistema SHALL permitir consultar sessoes ativas, ultimo acesso, dispositivo ou navegador, tentativas recentes e encerrar uma sessao ou todas as demais. O sistema SHALL alertar acessos suspeitos.
+
+#### Scenario: Encerramento de dispositivo
+- **WHEN** o usuario encerra uma sessao especifica
+- **THEN** o token daquela sessao e revogado sem encerrar as demais
+
+**2. Autorização e Estrutura Organizacional**
+
 ### Requirement: Autorizacao por perfil e estrutura organizacional
 O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, restringindo dados conforme o escopo do usuario. O sistema SHALL permitir vincular cada colaborador a um gestor e cada gestor a uma unica area/departamento, impedindo acesso fora do escopo autorizado.
 
@@ -48,6 +59,22 @@ O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, 
 #### Scenario: Acesso administrativo
 - **WHEN** Admin ou RH acessa a gestao organizacional
 - **THEN** o sistema permite as operacoes administrativas conforme suas permissoes e registra a acao
+
+### Requirement: Organograma da empresa
+O sistema SHALL apresentar uma visualizacao hierarquica da estrutura organizacional, reunindo departamentos, gestores e colaboradores vinculados, a partir dos dados ja mantidos de cargo, departamento e vinculo gestor-colaborador. O sistema SHALL restringir a visualizacao a nome, cargo e departamento de cada pessoa, sem expor dados sensiveis.
+
+#### Scenario: Consulta do organograma
+- **WHEN** um usuario autenticado acessa o organograma
+- **THEN** o sistema exibe departamentos, gestores e colaboradores em estrutura hierarquica, mostrando apenas nome, cargo e departamento de cada pessoa
+
+### Requirement: Pesquisa global de colaboradores
+O sistema SHALL permitir buscar colaboradores por nome, CPF, matricula (id), cargo ou departamento, retornando somente os registros dentro do escopo de acesso do usuario que pesquisa.
+
+#### Scenario: Busca dentro do escopo
+- **WHEN** um Gestor pesquisa colaboradores
+- **THEN** o sistema retorna apenas resultados da sua equipe; RH e Admin recebem resultados de qualquer colaborador ativo
+
+**3. Cadastro, Histórico Profissional e Desligamento**
 
 ### Requirement: Cadastro e historico profissional
 O sistema SHALL manter usuarios, colaboradores, cargos, departamentos e historico profissional, incluindo admissao, promocoes, alteracoes de departamento, salario, cargo, contrato e desligamento. O sistema SHALL validar os dominios informados: contratos CLT, PJ, ESTAGIO, APRENDIZ, TEMPORARIO e OUTRO; status Ativo, Ferias, Afastado e Desligado; e niveis l1 a l5.
@@ -77,6 +104,64 @@ O sistema SHALL permitir que o colaborador cadastre e atualize seus proprios dad
 #### Scenario: Gestor sem acesso aos dados bancarios
 - **WHEN** um Gestor consulta os dados de um colaborador da sua equipe
 - **THEN** o sistema oculta os dados bancarios, visiveis somente ao proprio colaborador, RH e Admin
+
+### Requirement: Validação local de CPF
+O sistema SHALL normalizar o CPF removendo caracteres não numéricos, exigir onze dígitos, rejeitar sequências com o mesmo dígito e validar os dois dígitos verificadores sem consultar serviço externo.
+
+#### Scenario: CPF com máscara válido
+- **WHEN** o usuário informa um CPF formatado com pontos e hífen que passa nos dígitos verificadores
+- **THEN** o sistema normaliza o valor e aceita o CPF após a validação local
+
+#### Scenario: CPF repetido ou inválido
+- **WHEN** o CPF possui sequência repetida, quantidade incorreta ou dígitos verificadores inválidos
+- **THEN** o sistema rejeita o valor sem chamar o serviço externo
+
+### Requirement: Admissao e contrato CLT
+O sistema SHALL exigir cadastro contratual completo para colaborador CLT, incluindo cargo, salario, jornada, departamento e data de admissao, validar CPF e datas e impedir inicio operacional antes do registro exigido. Alteracoes contratuais SHALL gerar historico, vigencia e responsavel. Integracoes com eSocial e CTPS Digital SHALL registrar estado da comunicacao e prazos aplicaveis sem mascarar indisponibilidade externa.
+
+#### Scenario: CLT sem registro
+- **WHEN** uma admissao CLT nao possui registro confirmado ou estado de comunicacao valido
+- **THEN** o sistema impede o inicio operacional e sinaliza a pendencia para RH
+
+#### Scenario: Alteracao contratual
+- **WHEN** RH altera cargo, salario, jornada, contrato ou departamento
+- **THEN** o sistema cria nova vigencia, preserva o historico anterior e registra o responsavel
+
+### Requirement: Desligamento de colaborador
+O sistema SHALL permitir que Colaborador ou Gestor solicitem o desligamento de um colaborador dentro do proprio escopo (a si mesmo ou a colaboradores do departamento sob sua gestao), com decisao exclusiva do RH. O sistema SHALL suportar desligamento `imediato` e `aviso_previo`, bloquear nova solicitacao enquanto existir uma pendente, em analise ou agendada para o mesmo colaborador, e permitir que RH conclua os desligamentos agendados assim que a data efetiva for atingida.
+
+#### Scenario: Solicitacao dentro do escopo
+- **WHEN** um Colaborador solicita o proprio desligamento ou um Gestor solicita o desligamento de um colaborador do seu departamento
+- **THEN** o sistema cria a solicitacao como `pendente` e impede solicitacao para colaborador fora do escopo do solicitante
+
+#### Scenario: Aprovacao exclusiva do RH
+- **WHEN** RH aprova uma solicitacao em analise
+- **THEN** o sistema conclui o desligamento imediato ou agenda a data efetiva para aviso previo, conforme o tipo da solicitacao
+
+#### Scenario: Conclusao do desligamento
+- **WHEN** um desligamento imediato e aprovado ou RH conclui manualmente um desligamento agendado cuja data efetiva ja foi atingida
+- **THEN** o sistema atualiza o status do colaborador para Desligado, desativa o acesso do usuario vinculado e registra o evento no historico profissional
+
+#### Scenario: Solicitacao duplicada
+- **WHEN** ja existe uma solicitacao pendente, em analise ou agendada para o colaborador
+- **THEN** o sistema rejeita a criacao de uma nova solicitacao para o mesmo colaborador
+
+### Requirement: Informacoes derivadas do cadastro
+O sistema SHALL calcular e exibir, a partir dos dados ja cadastrados, o tempo de empresa de cada colaborador desde a `data_admissao` e a lista de aniversariantes do mes corrente com base em `data_nascimento`, respeitando o escopo de acesso do usuario. O sistema SHALL apresentar uma timeline do colaborador reunindo, em ordem cronologica, os eventos de `historico_profissional` (admissao, promocoes, alteracoes de cargo, departamento ou contrato, desligamento), ferias concluidas e avaliacoes concluidas.
+
+#### Scenario: Tempo de empresa exibido
+- **WHEN** colaborador ou RH consulta o cadastro
+- **THEN** o sistema exibe o tempo de empresa calculado a partir da data de admissao
+
+#### Scenario: Aniversariantes do mes
+- **WHEN** um usuario autenticado acessa o painel de aniversariantes
+- **THEN** o sistema lista os colaboradores ativos que fazem aniversario no mes corrente, respeitando o escopo de acesso
+
+#### Scenario: Timeline consultada
+- **WHEN** colaborador ou gestor autorizado consulta a timeline de um colaborador
+- **THEN** o sistema exibe os eventos do historico profissional, ferias concluidas e avaliacoes concluidas em ordem cronologica
+
+**4. Jornada, Ponto e Contratos Especiais**
 
 ### Requirement: Regras de jornada e ferias por contrato
 O sistema SHALL aplicar regras de jornada e ferias conforme o tipo de contrato do colaborador, incluindo CLT, PJ, ESTAGIO, APRENDIZ, TEMPORARIO e OUTRO. A configuracao SHALL ser parametrizavel e o sistema SHALL validar o contrato antes de calcular jornada, horas extras, elegibilidade ou periodo de ferias.
@@ -109,6 +194,67 @@ As regras deverao aceitar ajustes autorizados para contrato, acordo ou norma apl
 #### Scenario: Contrato OUTRO configurado manualmente
 - **WHEN** RH configura os parametros de um colaborador com contrato OUTRO
 - **THEN** o sistema usa os valores manuais para jornada, elegibilidade, proporcionalidade, solicitacao e fracionamento
+
+### Requirement: Jornada, intervalos e banco de horas CLT
+O sistema SHALL respeitar os limites configurados e formalmente aprovados para jornada CLT, incluindo ate 8 horas diarias, ate 44 semanais, horas extras, adicional minimo aplicavel, descanso entre jornadas, repouso semanal, trabalho noturno e intervalos. Jornada acima de 6 horas SHALL exigir intervalo configurado normalmente de ao menos 1 hora; jornada acima de 4 e ate 6 horas SHALL considerar 15 minutos pela regra geral. O sistema nao SHALL preencher intervalo como realizado sem marcacao. Banco de horas SHALL exigir fundamento, origem, limites, compensacao e tratamento de saldo.
+
+#### Scenario: Intervalo nao marcado
+- **WHEN** uma jornada exige intervalo mas nao possui marcacao de saida e retorno
+- **THEN** o sistema nao inventa o intervalo e sinaliza a inconsistência para tratamento autorizado
+
+#### Scenario: Banco sem fundamento
+- **WHEN** alguem tenta habilitar banco de horas sem instrumento aplicavel aprovado
+- **THEN** o sistema bloqueia a ativacao e solicita fundamento normativo
+
+### Requirement: Estagio, aprendizagem, trabalho temporario e PJ
+O sistema SHALL exigir termo de compromisso para estagio e manter estudante, instituicao de ensino, jornada, recesso e proporcionalidade sem classificar o estagiario como CLT. O sistema SHALL limitar aprendiz conforme contrato e programa, somar atividades praticas e teoricas, impedir horas extras ou compensacao indevida e aplicar protecoes de menor. Trabalho temporario SHALL exigir contrato escrito, empresa, tomadora, motivo, prazo e prorrogacoes. PJ SHALL nao receber automaticamente jornada, ponto, ferias ou subordinacao de empregado e SHALL manter contrato, entregas, vigencia e condicoes comerciais.
+
+#### Scenario: Cadastro de estagio sem termo
+- **WHEN** RH tenta ativar estagio sem termo de compromisso valido
+- **THEN** o sistema bloqueia a ativacao e exibe a pendencia documental
+
+#### Scenario: Jornada de aprendiz excedente
+- **WHEN** uma jornada de aprendiz excede o limite aplicavel sem fundamento permitido
+- **THEN** o sistema rejeita o registro e informa a regra violada
+
+#### Scenario: PJ com férias trabalhistas
+- **WHEN** alguem tenta criar ferias trabalhistas para prestador PJ sem regra contratual especifica
+- **THEN** o sistema bloqueia a operação e direciona para o contrato comercial
+
+### Requirement: Ponto experimental e conformidade futura
+O sistema SHALL identificar o registro de ponto do MVP como controle interno experimental, preservar marcacoes originais, separar ajustes, disponibilizar espelho ao trabalhador e registrar solicitante, aprovador e justificativa. O sistema nao SHALL declarar conformidade como REP-P, REP-A ou REP-C sem implementacao e validacao especificas da Portaria nº 671/2021.
+
+#### Scenario: Marcacao preservada
+- **WHEN** uma correcao de ponto e solicitada ou aprovada
+- **THEN** a marcacao original permanece imutavel e o ajuste fica em registro separado
+
+#### Scenario: Espelho do trabalhador
+- **WHEN** o colaborador consulta seu ponto
+- **THEN** o sistema disponibiliza o espelho e diferencia marcacoes originais, ajustes e decisoes
+
+### Requirement: Registro de ponto e correcao
+O sistema SHALL permitir registrar entrada, inicio e fim de intervalo e saida, acompanhar a jornada e calcular horas trabalhadas e extras quando aplicavel. O registro SHALL usar os status ABERTO, COMPLETO, INCOMPLETO ou AJUSTADO. O colaborador SHALL poder solicitar correcao, e o responsavel autorizado SHALL poder aprovar ou recusar com justificativa.
+
+#### Scenario: Jornada concluida
+- **WHEN** o colaborador registra os marcadores necessarios do dia
+- **THEN** o sistema calcula a jornada e marca o registro como COMPLETO
+
+#### Scenario: Correcao aprovada
+- **WHEN** o responsavel com permissao aprova uma solicitacao de correcao
+- **THEN** o sistema ajusta o registro, preserva o valor original, registra a decisao e marca o registro como AJUSTADO
+
+### Requirement: Regras contratuais e excecoes individuais
+O sistema SHALL permitir que regras de jornada e ferias sejam administradas por tipo de contrato com horas diarias, horas semanais, periodo aquisitivo, dias, proporcionalidade, fracionamento, limite de periodos, antecedencia, obrigatoriedade de ponto, habilitacao de solicitacao e vigencia inicial e final. O sistema SHALL permitir excecoes individuais auditadas com jornada, escala, horas, ferias, vigencia, justificativa e autorizador.
+
+#### Scenario: Regra vigente aplicada
+- **WHEN** o sistema calcula jornada ou valida ferias
+- **THEN** usa a regra contratual vigente na data do evento, sem alterar calculos historicos
+
+#### Scenario: Excecao individual aplicada
+- **WHEN** RH autoriza uma excecao para um colaborador dentro de sua vigencia
+- **THEN** o sistema aplica a excecao, preserva a regra original e registra justificativa e autorizador
+
+**5. Instrumentos Normativos e Regras Override**
 
 ### Requirement: Instrumentos normativos e regras override
 O sistema SHALL manter a entidade `instrumento_normativo` com tipo `acordo_coletivo`, `convencao_coletiva`, `termo_aditivo`, `regime_especial`, `norma_legal`, `decisao_judicial` ou `acordo_individual_autorizado`; titulo, descricao, entidade responsavel, categoria profissional, abrangencia territorial, vigencia, documento, hash, observacao, status e responsaveis. O status SHALL ser `rascunho`, `pendente_aprovacao`, `vigente`, `suspenso`, `expirado`, `revogado` ou `rejeitado`.
@@ -167,108 +313,35 @@ O sistema SHALL permitir simular um override antes da publicação, exibindo col
 - **WHEN** a vigência de um instrumento termina
 - **THEN** o sistema marca-o como `expirado` e deixa de usá-lo em novos cálculos sem alterar registros anteriores
 
-### Requirement: Validação local de CPF
-O sistema SHALL normalizar o CPF removendo caracteres não numéricos, exigir onze dígitos, rejeitar sequências com o mesmo dígito e validar os dois dígitos verificadores sem consultar serviço externo.
+**6. Férias, Ausências e Delegação**
 
-#### Scenario: CPF com máscara válido
-- **WHEN** o usuário informa um CPF formatado com pontos e hífen que passa nos dígitos verificadores
-- **THEN** o sistema normaliza o valor e aceita o CPF após a validação local
+### Requirement: Ferias e ausencias
+O sistema SHALL permitir solicitar ferias e registrar ausencias com acompanhamento de status. Ferias SHALL usar Pendente, Aprovada, Rejeitada, Cancelada ou Concluida. Ausencias SHALL usar Falta, Atestado, Afastamento, Licenca ou Outro e status Pendente, Aprovada, Rejeitada ou Registrado. RH e Gestor SHALL decidir ferias conforme o escopo, mantendo justificativa e responsavel.
 
-#### Scenario: CPF repetido ou inválido
-- **WHEN** o CPF possui sequência repetida, quantidade incorreta ou dígitos verificadores inválidos
-- **THEN** o sistema rejeita o valor sem chamar o serviço externo
+#### Scenario: Ferias aprovadas
+- **WHEN** RH ou Gestor autorizado aprova uma solicitacao pendente
+- **THEN** o sistema valida o periodo, registra a decisao e altera o status para Aprovada
 
-### Requirement: Admissao e contrato CLT
-O sistema SHALL exigir cadastro contratual completo para colaborador CLT, incluindo cargo, salario, jornada, departamento e data de admissao, validar CPF e datas e impedir inicio operacional antes do registro exigido. Alteracoes contratuais SHALL gerar historico, vigencia e responsavel. Integracoes com eSocial e CTPS Digital SHALL registrar estado da comunicacao e prazos aplicaveis sem mascarar indisponibilidade externa.
+#### Scenario: Ausencia registrada
+- **WHEN** uma ausencia e criada com tipo permitido e periodo valido
+- **THEN** o sistema registra o evento e apresenta seu status conforme o fluxo aplicavel
 
-#### Scenario: CLT sem registro
-- **WHEN** uma admissao CLT nao possui registro confirmado ou estado de comunicacao valido
-- **THEN** o sistema impede o inicio operacional e sinaliza a pendencia para RH
+### Requirement: Delegacao, prazos e calendario
+O sistema SHALL suportar delegacao temporaria de aprovacao, com titular, substituto, vigencia, permissoes, motivo, expiracao automatica e bloqueio de autoaprovacao. O sistema SHALL controlar prazos e escalonar atrasos. O calendario SHALL reunir feriados, dias nao uteis, ferias, ausencias, ciclos, vencimentos e prazos e ser considerado nos calculos aplicaveis.
 
-#### Scenario: Alteracao contratual
-- **WHEN** RH altera cargo, salario, jornada, contrato ou departamento
-- **THEN** o sistema cria nova vigencia, preserva o historico anterior e registra o responsavel
+#### Scenario: Delegacao vigente
+- **WHEN** o substituto atua durante uma delegacao vigente
+- **THEN** o sistema permite somente as permissoes delegadas e registra titular, substituto e decisao
 
-### Requirement: Jornada, intervalos e banco de horas CLT
-O sistema SHALL respeitar os limites configurados e formalmente aprovados para jornada CLT, incluindo ate 8 horas diarias, ate 44 semanais, horas extras, adicional minimo aplicavel, descanso entre jornadas, repouso semanal, trabalho noturno e intervalos. Jornada acima de 6 horas SHALL exigir intervalo configurado normalmente de ao menos 1 hora; jornada acima de 4 e ate 6 horas SHALL considerar 15 minutos pela regra geral. O sistema nao SHALL preencher intervalo como realizado sem marcacao. Banco de horas SHALL exigir fundamento, origem, limites, compensacao e tratamento de saldo.
+#### Scenario: Prazo vencido
+- **WHEN** uma pendencia ultrapassa seu prazo
+- **THEN** o sistema marca como atrasada, notifica o responsavel e escalona ao nivel superior quando configurado
 
-#### Scenario: Intervalo nao marcado
-- **WHEN** uma jornada exige intervalo mas nao possui marcacao de saida e retorno
-- **THEN** o sistema nao inventa o intervalo e sinaliza a inconsistência para tratamento autorizado
+#### Scenario: Conflito de ferias
+- **WHEN** uma ferias e analisada
+- **THEN** o sistema verifica sobreposicoes, ausencias, saldo, antecedencia, periodo aquisitivo e disponibilidade minima da equipe e gera alerta conforme a politica
 
-#### Scenario: Banco sem fundamento
-- **WHEN** alguem tenta habilitar banco de horas sem instrumento aplicavel aprovado
-- **THEN** o sistema bloqueia a ativacao e solicita fundamento normativo
-
-### Requirement: Estagio, aprendizagem, trabalho temporario e PJ
-O sistema SHALL exigir termo de compromisso para estagio e manter estudante, instituicao de ensino, jornada, recesso e proporcionalidade sem classificar o estagiario como CLT. O sistema SHALL limitar aprendiz conforme contrato e programa, somar atividades praticas e teoricas, impedir horas extras ou compensacao indevida e aplicar protecoes de menor. Trabalho temporario SHALL exigir contrato escrito, empresa, tomadora, motivo, prazo e prorrogacoes. PJ SHALL nao receber automaticamente jornada, ponto, ferias ou subordinacao de empregado e SHALL manter contrato, entregas, vigencia e condicoes comerciais.
-
-#### Scenario: Cadastro de estagio sem termo
-- **WHEN** RH tenta ativar estagio sem termo de compromisso valido
-- **THEN** o sistema bloqueia a ativacao e exibe a pendencia documental
-
-#### Scenario: Jornada de aprendiz excedente
-- **WHEN** uma jornada de aprendiz excede o limite aplicavel sem fundamento permitido
-- **THEN** o sistema rejeita o registro e informa a regra violada
-
-#### Scenario: PJ com férias trabalhistas
-- **WHEN** alguem tenta criar ferias trabalhistas para prestador PJ sem regra contratual especifica
-- **THEN** o sistema bloqueia a operação e direciona para o contrato comercial
-
-### Requirement: Ponto experimental e conformidade futura
-O sistema SHALL identificar o registro de ponto do MVP como controle interno experimental, preservar marcacoes originais, separar ajustes, disponibilizar espelho ao trabalhador e registrar solicitante, aprovador e justificativa. O sistema nao SHALL declarar conformidade como REP-P, REP-A ou REP-C sem implementacao e validacao especificas da Portaria nº 671/2021.
-
-#### Scenario: Marcacao preservada
-- **WHEN** uma correcao de ponto e solicitada ou aprovada
-- **THEN** a marcacao original permanece imutavel e o ajuste fica em registro separado
-
-#### Scenario: Espelho do trabalhador
-- **WHEN** o colaborador consulta seu ponto
-- **THEN** o sistema disponibiliza o espelho e diferencia marcacoes originais, ajustes e decisoes
-
-### Requirement: Protecao de dados pessoais, saude e ausencias
-O sistema SHALL coletar somente documentos necessarios, informar finalidade, restringir acesso por perfil e necessidade, usar armazenamento privado e aplicar retencao conforme finalidade e obrigacao legal. Atestados, ASO, dados biometricos e filiação sindical SHALL ter protecao de dados sensiveis. Gestores SHALL visualizar somente informacao operacional necessaria, e o sistema SHALL controlar ausencias justificadas, injustificadas, medicas e eventos aplicaveis ao eSocial.
-
-#### Scenario: Gestor consulta atestado
-- **WHEN** um gestor consulta ausencia com documento medico
-- **THEN** o sistema exibe apenas o estado operacional permitido e oculta diagnostico e conteudo clinico
-
-#### Scenario: Documento fora da finalidade
-- **WHEN** a finalidade de conservacao de um documento termina e nao existe bloqueio legal
-- **THEN** o sistema encaminha o documento para eliminacao ou revisao conforme a politica, preservando auditoria
-
-### Requirement: Avaliacao justa e nao discriminatoria
-O sistema SHALL informar previamente criterios de avaliacao, impedir criterios discriminatorios, restringir avaliações privadas, aceitar apenas reconhecimento positivo no espaco publico, permitir contestacao ou revisao humana e impedir que decisoes automaticas promovam, punam ou desliguem pessoas. O sistema SHALL evitar rankings, recomendacoes ou restricoes baseados em raça, etnia, sexo, gravidez, idade, deficiencia, religiao, orientacao sexual, saude, filiação sindical ou opiniao politica.
-
-#### Scenario: Criterio discriminatorio
-- **WHEN** um administrador tenta usar atributo protegido em ranking ou recomendacao
-- **THEN** o sistema rejeita a configuracao e registra o bloqueio
-
-#### Scenario: Avaliacao contestada
-- **WHEN** um colaborador contesta uma avaliacao concluida
-- **THEN** o sistema abre revisao humana sem alterar retroativamente a avaliacao original
-
-### Requirement: Auditoria obrigatoria
-O sistema SHALL auditar autenticacao, logout, troca e redefinicao de senha, codigo de acesso de login, usuarios, alteracoes contratuais, dados bancarios, ponto e ajustes, decisoes, documentos, regras trabalhistas, exportacoes e alteracoes em avaliacoes concluidas, incluindo responsavel, data, justificativa e valores anterior e novo. O sistema SHALL negar por padrao, preservar historicos e nunca apagar evidencias silenciosamente.
-
-#### Scenario: Operacao sensivel auditada
-- **WHEN** ocorre uma alteracao de regra, documento, contrato, ponto ou avaliacao
-- **THEN** o sistema cria evento com autor, contexto, valores e resultado consultavel por Admin ou RH
-
-#### Scenario: Tentativa sem permissao
-- **WHEN** um usuario tenta operar fora do seu escopo
-- **THEN** o sistema nega por padrao e registra a tentativa conforme a politica
-
-### Requirement: Registro de ponto e correcao
-O sistema SHALL permitir registrar entrada, inicio e fim de intervalo e saida, acompanhar a jornada e calcular horas trabalhadas e extras quando aplicavel. O registro SHALL usar os status ABERTO, COMPLETO, INCOMPLETO ou AJUSTADO. O colaborador SHALL poder solicitar correcao, e o responsavel autorizado SHALL poder aprovar ou recusar com justificativa.
-
-#### Scenario: Jornada concluida
-- **WHEN** o colaborador registra os marcadores necessarios do dia
-- **THEN** o sistema calcula a jornada e marca o registro como COMPLETO
-
-#### Scenario: Correcao aprovada
-- **WHEN** o responsavel com permissao aprova uma solicitacao de correcao
-- **THEN** o sistema ajusta o registro, preserva o valor original, registra a decisao e marca o registro como AJUSTADO
+**7. Documentos e Retenção**
 
 ### Requirement: Documentos e pendencias
 O sistema SHALL permitir que colaboradores enviem documentos associados ao seu cadastro e que RH solicite documentos pendentes. O sistema SHALL manter tipo, metadados, validade, observacoes, estado e responsaveis, proteger os arquivos e notificar pendencias por e-mail. `documento.status` SHALL aceitar somente `pendente_analise`, `aprovado`, `rejeitado`, `vencido`, `substituido` ou `arquivado`. RH SHALL poder processar documentos `aprovado` cuja `data_validade` terminou, alterando-os para `vencido`. O documento vencido SHALL deixar de ser valido, permanecer armazenado e nao SHALL desativar o colaborador. `documento.tipo` SHALL incluir tambem `holerite` e `informe_rendimentos` para documentos emitidos pelo RH. Documentos desse tipo SHALL ser criados ja como `aprovado`, sem passar por `pendente_analise`, pois o RH e a fonte da informacao.
@@ -297,16 +370,44 @@ O sistema SHALL permitir que colaboradores enviem documentos associados ao seu c
 - **WHEN** RH ou colaborador autorizado envia uma substituicao ou arquiva um documento vencido
 - **THEN** o sistema preserva o documento anterior, registra a relacao ou motivo e atualiza o status permitido
 
-### Requirement: Ferias e ausencias
-O sistema SHALL permitir solicitar ferias e registrar ausencias com acompanhamento de status. Ferias SHALL usar Pendente, Aprovada, Rejeitada, Cancelada ou Concluida. Ausencias SHALL usar Falta, Atestado, Afastamento, Licenca ou Outro e status Pendente, Aprovada, Rejeitada ou Registrado. RH e Gestor SHALL decidir ferias conforme o escopo, mantendo justificativa e responsavel.
+### Requirement: Quarentena e retencao de documentos
+O sistema SHALL processar anexos pelos estados `enviado`, `em_verificacao`, `liberado` ou `bloqueado`, validando extensao, tipo real, tamanho, hash, duplicidade, corrupcao e verificacao de seguranca antes da liberacao. O sistema SHALL manter politica de retencao por tipo de documento com finalidade, base, prazo, evento inicial, tratamento, anonimização, eliminacao ou revisao e bloqueio por processo.
 
-#### Scenario: Ferias aprovadas
-- **WHEN** RH ou Gestor autorizado aprova uma solicitacao pendente
-- **THEN** o sistema valida o periodo, registra a decisao e altera o status para Aprovada
+#### Scenario: Arquivo liberado
+- **WHEN** o anexo passa por todas as verificacoes
+- **THEN** o sistema altera o estado para `liberado` e permite seu uso conforme permissao
 
-#### Scenario: Ausencia registrada
-- **WHEN** uma ausencia e criada com tipo permitido e periodo valido
-- **THEN** o sistema registra o evento e apresenta seu status conforme o fluxo aplicavel
+#### Scenario: Arquivo bloqueado
+- **WHEN** o anexo falha em uma verificacao de seguranca ou integridade
+- **THEN** o sistema altera o estado para `bloqueado`, impede o uso e registra o motivo
+
+#### Scenario: Retencao impede eliminacao
+- **WHEN** um documento esta sob bloqueio de processo ou revisao manual
+- **THEN** o sistema impede a eliminacao automatica e preserva o historico
+
+### Requirement: Protecao de dados pessoais, saude e ausencias
+O sistema SHALL coletar somente documentos necessarios, informar finalidade, restringir acesso por perfil e necessidade, usar armazenamento privado e aplicar retencao conforme finalidade e obrigacao legal. Atestados, ASO, dados biometricos e filiação sindical SHALL ter protecao de dados sensiveis. Gestores SHALL visualizar somente informacao operacional necessaria, e o sistema SHALL controlar ausencias justificadas, injustificadas, medicas e eventos aplicaveis ao eSocial.
+
+#### Scenario: Gestor consulta atestado
+- **WHEN** um gestor consulta ausencia com documento medico
+- **THEN** o sistema exibe apenas o estado operacional permitido e oculta diagnostico e conteudo clinico
+
+#### Scenario: Documento fora da finalidade
+- **WHEN** a finalidade de conservacao de um documento termina e nao existe bloqueio legal
+- **THEN** o sistema encaminha o documento para eliminacao ou revisao conforme a politica, preservando auditoria
+
+**8. Avaliação, Desenvolvimento e Reconhecimento**
+
+### Requirement: Avaliacao justa e nao discriminatoria
+O sistema SHALL informar previamente criterios de avaliacao, impedir criterios discriminatorios, restringir avaliações privadas, aceitar apenas reconhecimento positivo no espaco publico, permitir contestacao ou revisao humana e impedir que decisoes automaticas promovam, punam ou desliguem pessoas. O sistema SHALL evitar rankings, recomendacoes ou restricoes baseados em raça, etnia, sexo, gravidez, idade, deficiencia, religiao, orientacao sexual, saude, filiação sindical ou opiniao politica.
+
+#### Scenario: Criterio discriminatorio
+- **WHEN** um administrador tenta usar atributo protegido em ranking ou recomendacao
+- **THEN** o sistema rejeita a configuracao e registra o bloqueio
+
+#### Scenario: Avaliacao contestada
+- **WHEN** um colaborador contesta uma avaliacao concluida
+- **THEN** o sistema abre revisao humana sem alterar retroativamente a avaliacao original
 
 ### Requirement: Avaliacoes, feedbacks, metas e PDI
 O sistema SHALL suportar ciclos de avaliacao, competencias, respostas, metas anuais, progresso, conclusao e PDI. Feedback entre gestor e colaborador SHALL ser privado; feedback entre colaboradores SHALL ser publico, sujeito a moderacao e visivel conforme o tipo definido.
@@ -322,106 +423,6 @@ O sistema SHALL suportar ciclos de avaliacao, competencias, respostas, metas anu
 #### Scenario: Feedback publico
 - **WHEN** um colaborador envia reconhecimento ou feedback a outro colaborador
 - **THEN** o sistema publica o conteudo conforme regras de visibilidade e permite moderacao registrada
-
-### Requirement: Auditoria e notificacoes
-O sistema SHALL registrar eventos sensiveis, incluindo autenticacao, alteracoes cadastrais, decisoes, acessos a documentos e moderacao. Notificacoes de pendencias, decisoes e eventos de prazo SHALL ser entregues por e-mail sem expor dados sensiveis no assunto ou em links sem protecao. Cada evento notificavel SHALL tambem gerar uma notificacao interna vinculada ao usuario, marcavel como lida, alem do envio por e-mail.
-
-#### Scenario: Decisao rastreavel
-- **WHEN** uma solicitacao de ponto, ferias ou ausencia e aprovada, recusada ou cancelada
-- **THEN** o sistema registra autor, data, acao, justificativa e estado anterior e posterior
-
-#### Scenario: Falha no envio de e-mail
-- **WHEN** o provedor de e-mail nao aceita uma notificacao
-- **THEN** o sistema preserva a pendencia, registra a falha e permite reprocessamento sem duplicar a decisao
-
-#### Scenario: Notificacao interna consultada
-- **WHEN** um evento gera notificacao, como ferias aprovada, documento vencendo, avaliacao disponivel ou solicitacao respondida
-- **THEN** o sistema registra uma notificacao interna vinculada ao usuario, alem do envio por e-mail
-
-### Requirement: Central de tarefas e pendencias
-O sistema SHALL apresentar uma central personalizada por perfil com documentos aguardando envio ou analise, ferias e correcoes de ponto pendentes, avaliacoes nao respondidas, metas e PDIs atrasados, pendencia de senha temporaria, cadastro incompleto e jornadas do dia sem marcacao de saida.
-
-#### Scenario: Central do colaborador
-- **WHEN** um colaborador acessa sua central
-- **THEN** o sistema exibe somente suas pendencias e as acoes autorizadas para resolve-las
-
-#### Scenario: Central do gestor ou RH
-- **WHEN** um gestor ou RH acessa sua central
-- **THEN** o sistema exibe pendencias sob seu escopo e tarefas de aprovacao ou analise correspondentes
-
-#### Scenario: Dashboard do gestor
-- **WHEN** um Gestor acessa seu dashboard
-- **THEN** o sistema exibe tamanho da equipe, ausencias, ferias proximas, avaliacoes pendentes e situacao do ponto do dia, restritos aos colaboradores da sua equipe
-
-### Requirement: Onboarding de colaborador
-O sistema SHALL oferecer checklist de admissao com dados pessoais, acesso, troca de senha, documentos obrigatorios, aprovacoes, gestor, departamento, contrato, jornada, metas iniciais e acompanhamentos de 30, 60 e 90 dias.
-
-#### Scenario: Onboarding acompanhado
-- **WHEN** RH inicia o onboarding de um colaborador
-- **THEN** o sistema cria o checklist, calcula o progresso e aponta os itens pendentes por responsavel
-
-#### Scenario: Item de onboarding concluido
-- **WHEN** uma etapa e concluida por usuario autorizado
-- **THEN** o sistema registra data, responsavel e evidencia sem permitir conclusao indevida fora do fluxo
-
-### Requirement: Auditoria consultavel
-O sistema SHALL permitir que Admin e RH consultem autor, acao, registro afetado, valor anterior, valor novo, data, horario, IP ou sessao, justificativa e resultado da operacao.
-
-#### Scenario: Consulta de auditoria
-- **WHEN** Admin ou RH filtra eventos auditados
-- **THEN** o sistema retorna os detalhes permitidos e respeita filtros de periodo, usuario, recurso e resultado
-
-#### Scenario: Auditoria restrita
-- **WHEN** um Colaborador ou Gestor tenta consultar o painel administrativo
-- **THEN** o sistema nega o acesso e registra a tentativa conforme a politica de seguranca
-
-### Requirement: Regras contratuais e excecoes individuais
-O sistema SHALL permitir que regras de jornada e ferias sejam administradas por tipo de contrato com horas diarias, horas semanais, periodo aquisitivo, dias, proporcionalidade, fracionamento, limite de periodos, antecedencia, obrigatoriedade de ponto, habilitacao de solicitacao e vigencia inicial e final. O sistema SHALL permitir excecoes individuais auditadas com jornada, escala, horas, ferias, vigencia, justificativa e autorizador.
-
-#### Scenario: Regra vigente aplicada
-- **WHEN** o sistema calcula jornada ou valida ferias
-- **THEN** usa a regra contratual vigente na data do evento, sem alterar calculos historicos
-
-#### Scenario: Excecao individual aplicada
-- **WHEN** RH autoriza uma excecao para um colaborador dentro de sua vigencia
-- **THEN** o sistema aplica a excecao, preserva a regra original e registra justificativa e autorizador
-
-### Requirement: Delegacao, prazos e calendario
-O sistema SHALL suportar delegacao temporaria de aprovacao, com titular, substituto, vigencia, permissoes, motivo, expiracao automatica e bloqueio de autoaprovacao. O sistema SHALL controlar prazos e escalonar atrasos. O calendario SHALL reunir feriados, dias nao uteis, ferias, ausencias, ciclos, vencimentos e prazos e ser considerado nos calculos aplicaveis.
-
-#### Scenario: Delegacao vigente
-- **WHEN** o substituto atua durante uma delegacao vigente
-- **THEN** o sistema permite somente as permissoes delegadas e registra titular, substituto e decisao
-
-#### Scenario: Prazo vencido
-- **WHEN** uma pendencia ultrapassa seu prazo
-- **THEN** o sistema marca como atrasada, notifica o responsavel e escalona ao nivel superior quando configurado
-
-#### Scenario: Conflito de ferias
-- **WHEN** uma ferias e analisada
-- **THEN** o sistema verifica sobreposicoes, ausencias, saldo, antecedencia, periodo aquisitivo e disponibilidade minima da equipe e gera alerta conforme a politica
-
-### Requirement: Sessoes e dispositivos
-O sistema SHALL permitir consultar sessoes ativas, ultimo acesso, dispositivo ou navegador, tentativas recentes e encerrar uma sessao ou todas as demais. O sistema SHALL alertar acessos suspeitos.
-
-#### Scenario: Encerramento de dispositivo
-- **WHEN** o usuario encerra uma sessao especifica
-- **THEN** o token daquela sessao e revogado sem encerrar as demais
-
-### Requirement: Quarentena e retencao de documentos
-O sistema SHALL processar anexos pelos estados `enviado`, `em_verificacao`, `liberado` ou `bloqueado`, validando extensao, tipo real, tamanho, hash, duplicidade, corrupcao e verificacao de seguranca antes da liberacao. O sistema SHALL manter politica de retencao por tipo de documento com finalidade, base, prazo, evento inicial, tratamento, anonimização, eliminacao ou revisao e bloqueio por processo.
-
-#### Scenario: Arquivo liberado
-- **WHEN** o anexo passa por todas as verificacoes
-- **THEN** o sistema altera o estado para `liberado` e permite seu uso conforme permissao
-
-#### Scenario: Arquivo bloqueado
-- **WHEN** o anexo falha em uma verificacao de seguranca ou integridade
-- **THEN** o sistema altera o estado para `bloqueado`, impede o uso e registra o motivo
-
-#### Scenario: Retencao impede eliminacao
-- **WHEN** um documento esta sob bloqueio de processo ou revisao manual
-- **THEN** o sistema impede a eliminacao automatica e preserva o historico
 
 ### Requirement: Desenvolvimento e reconhecimento
 O sistema SHALL registrar reunioes individuais, check-ins e historico de metas, reconhecimento publico exclusivamente positivo, feedback corretivo privado, pesquisas anonimas de clima com resultados agrupados, matriz de competencias e plano de carreira sem promocao automatica.
@@ -442,53 +443,33 @@ O sistema SHALL registrar reunioes individuais, check-ins e historico de metas, 
 - **WHEN** o colaborador consulta sua carreira
 - **THEN** o sistema exibe nivel atual, proximo nivel, competencias, lacunas, metas, PDI e evolucao sem promover automaticamente
 
-### Requirement: Indicadores, exportacoes e preferencias
-O sistema SHALL disponibilizar indicadores de colaboradores, contratos, ponto, ausencias, ferias, documentos, avaliacoes, metas, PDIs e aprovacoes, incluindo headcount, turnover, admissoes, desligamentos, absenteismo, distribuicao por departamento e horas extras. O sistema SHALL exportar CSV ou PDF respeitando permissoes e registrar a exportacao. O sistema SHALL permitir preferencias de canal e frequencia, sem desativar alertas obrigatorios de seguranca.
+### Requirement: Onboarding de colaborador
+O sistema SHALL oferecer checklist de admissao com dados pessoais, acesso, troca de senha, documentos obrigatorios, aprovacoes, gestor, departamento, contrato, jornada, metas iniciais e acompanhamentos de 30, 60 e 90 dias.
 
-#### Scenario: Exportacao autorizada
-- **WHEN** um usuario autorizado exporta um relatorio
-- **THEN** o arquivo inclui somente dados do seu escopo e a exportacao e auditada
+#### Scenario: Onboarding acompanhado
+- **WHEN** RH inicia o onboarding de um colaborador
+- **THEN** o sistema cria o checklist, calcula o progresso e aponta os itens pendentes por responsavel
 
-### Requirement: API, rastreamento e operacao
-O sistema SHALL versionar as rotas sob `/api/v1/`, gerar identificador de rastreamento por requisicao e correlaciona-lo com logs, auditoria, e-mail, erros e tarefas assincronas. O sistema SHALL monitorar erros de API, tarefas, e-mails, documentos, filas, latencia e tentativas bloqueadas e SHALL possuir backup e recuperacao testados.
+#### Scenario: Item de onboarding concluido
+- **WHEN** uma etapa e concluida por usuario autorizado
+- **THEN** o sistema registra data, responsavel e evidencia sem permitir conclusao indevida fora do fluxo
 
-#### Scenario: Requisicao rastreavel
-- **WHEN** uma requisicao dispara uma tarefa assincrona e um e-mail
-- **THEN** o mesmo identificador permite correlacionar a requisicao, o log, a auditoria e o resultado do processamento
+**9. Comunicação, Central de Solicitações e Conhecimento**
 
-#### Scenario: Falha operacional detectada
-- **WHEN** uma tarefa diaria falha ou uma fila acumula itens acima do limite
-- **THEN** o sistema registra o incidente, disponibiliza alerta operacional e permite diagnostico
+### Requirement: Central de tarefas e pendencias
+O sistema SHALL apresentar uma central personalizada por perfil com documentos aguardando envio ou analise, ferias e correcoes de ponto pendentes, avaliacoes nao respondidas, metas e PDIs atrasados, pendencia de senha temporaria, cadastro incompleto e jornadas do dia sem marcacao de saida.
 
-### Requirement: Acessibilidade e validacao de CPF
-O frontend SHALL oferecer navegacao por teclado, contraste adequado, labels, foco visivel, mensagens compreensiveis, responsividade, textos alternativos e status que nao dependam somente de cor. O sistema SHALL validar CPF exclusivamente pelo algoritmo local, sem API externa.
+#### Scenario: Central do colaborador
+- **WHEN** um colaborador acessa sua central
+- **THEN** o sistema exibe somente suas pendencias e as acoes autorizadas para resolve-las
 
-#### Scenario: CPF valido
-- **WHEN** um CPF e submetido ao cadastro
-- **THEN** o sistema aceita o cadastro quando a validacao local for positiva
+#### Scenario: Central do gestor ou RH
+- **WHEN** um gestor ou RH acessa sua central
+- **THEN** o sistema exibe pendencias sob seu escopo e tarefas de aprovacao ou analise correspondentes
 
-#### Scenario: CPF invalido ou servico indisponivel
-- **WHEN** a validacao local for negativa
-- **THEN** o sistema impede a conclusao do cadastro e informa o campo invalido sem expor dados sensiveis
-
-### Requirement: Desligamento de colaborador
-O sistema SHALL permitir que Colaborador ou Gestor solicitem o desligamento de um colaborador dentro do proprio escopo (a si mesmo ou a colaboradores do departamento sob sua gestao), com decisao exclusiva do RH. O sistema SHALL suportar desligamento `imediato` e `aviso_previo`, bloquear nova solicitacao enquanto existir uma pendente, em analise ou agendada para o mesmo colaborador, e permitir que RH conclua os desligamentos agendados assim que a data efetiva for atingida.
-
-#### Scenario: Solicitacao dentro do escopo
-- **WHEN** um Colaborador solicita o proprio desligamento ou um Gestor solicita o desligamento de um colaborador do seu departamento
-- **THEN** o sistema cria a solicitacao como `pendente` e impede solicitacao para colaborador fora do escopo do solicitante
-
-#### Scenario: Aprovacao exclusiva do RH
-- **WHEN** RH aprova uma solicitacao em analise
-- **THEN** o sistema conclui o desligamento imediato ou agenda a data efetiva para aviso previo, conforme o tipo da solicitacao
-
-#### Scenario: Conclusao do desligamento
-- **WHEN** um desligamento imediato e aprovado ou RH conclui manualmente um desligamento agendado cuja data efetiva ja foi atingida
-- **THEN** o sistema atualiza o status do colaborador para Desligado, desativa o acesso do usuario vinculado e registra o evento no historico profissional
-
-#### Scenario: Solicitacao duplicada
-- **WHEN** ja existe uma solicitacao pendente, em analise ou agendada para o colaborador
-- **THEN** o sistema rejeita a criacao de uma nova solicitacao para o mesmo colaborador
+#### Scenario: Dashboard do gestor
+- **WHEN** um Gestor acessa seu dashboard
+- **THEN** o sistema exibe tamanho da equipe, ausencias, ferias proximas, avaliacoes pendentes e situacao do ponto do dia, restritos aos colaboradores da sua equipe
 
 ### Requirement: Central de solicitacoes do colaborador
 O sistema SHALL permitir que o colaborador registre solicitacoes ao RH dos tipos `alteracao_cadastral`, `declaracao`, `documento_avulso` ou `outra`, com descricao, campo/valor pretendido quando aplicavel, e acompanhe o status `recebida`, `em_analise`, `atendida` ou `indeferida`. RH SHALL poder analisar, responder e decidir cada solicitacao, registrando justificativa. Uma solicitacao de `alteracao_cadastral` aprovada SHALL exigir que RH aplique a mudanca pelo fluxo de cadastro existente, preservando o historico profissional; a aprovacao da solicitacao nao altera o cadastro automaticamente. O sistema SHALL exibir nessa mesma central, para consulta do colaborador, o status das suas solicitacoes de ferias, ausencia e correcao de ponto, sem duplicar os fluxos ja existentes para esses tipos.
@@ -509,35 +490,6 @@ O sistema SHALL permitir que o colaborador registre solicitacoes ao RH dos tipos
 - **WHEN** o colaborador acessa a central de solicitacoes
 - **THEN** o sistema exibe suas proprias solicitacoes de todos os tipos, incluindo ferias, ausencia e correcao de ponto, com o status atual de cada uma
 
-### Requirement: Organograma da empresa
-O sistema SHALL apresentar uma visualizacao hierarquica da estrutura organizacional, reunindo departamentos, gestores e colaboradores vinculados, a partir dos dados ja mantidos de cargo, departamento e vinculo gestor-colaborador. O sistema SHALL restringir a visualizacao a nome, cargo e departamento de cada pessoa, sem expor dados sensiveis.
-
-#### Scenario: Consulta do organograma
-- **WHEN** um usuario autenticado acessa o organograma
-- **THEN** o sistema exibe departamentos, gestores e colaboradores em estrutura hierarquica, mostrando apenas nome, cargo e departamento de cada pessoa
-
-### Requirement: Informacoes derivadas do cadastro
-O sistema SHALL calcular e exibir, a partir dos dados ja cadastrados, o tempo de empresa de cada colaborador desde a `data_admissao` e a lista de aniversariantes do mes corrente com base em `data_nascimento`, respeitando o escopo de acesso do usuario. O sistema SHALL apresentar uma timeline do colaborador reunindo, em ordem cronologica, os eventos de `historico_profissional` (admissao, promocoes, alteracoes de cargo, departamento ou contrato, desligamento), ferias concluidas e avaliacoes concluidas.
-
-#### Scenario: Tempo de empresa exibido
-- **WHEN** colaborador ou RH consulta o cadastro
-- **THEN** o sistema exibe o tempo de empresa calculado a partir da data de admissao
-
-#### Scenario: Aniversariantes do mes
-- **WHEN** um usuario autenticado acessa o painel de aniversariantes
-- **THEN** o sistema lista os colaboradores ativos que fazem aniversario no mes corrente, respeitando o escopo de acesso
-
-#### Scenario: Timeline consultada
-- **WHEN** colaborador ou gestor autorizado consulta a timeline de um colaborador
-- **THEN** o sistema exibe os eventos do historico profissional, ferias concluidas e avaliacoes concluidas em ordem cronologica
-
-### Requirement: Pesquisa global de colaboradores
-O sistema SHALL permitir buscar colaboradores por nome, CPF, matricula (id), cargo ou departamento, retornando somente os registros dentro do escopo de acesso do usuario que pesquisa.
-
-#### Scenario: Busca dentro do escopo
-- **WHEN** um Gestor pesquisa colaboradores
-- **THEN** o sistema retorna apenas resultados da sua equipe; RH e Admin recebem resultados de qualquer colaborador ativo
-
 ### Requirement: Comunicados internos
 O sistema SHALL permitir que RH ou Admin publiquem comunicados internos com titulo, conteudo, publico-alvo (todos, departamento ou perfil especifico) e vigencia. O sistema SHALL exibir no dashboard dos colaboradores somente os comunicados vigentes dentro do publico-alvo definido.
 
@@ -555,3 +507,73 @@ O sistema SHALL manter artigos de FAQ organizados por categoria (ferias, ponto, 
 #### Scenario: Consulta de FAQ
 - **WHEN** um colaborador busca ou navega pela base de conhecimento
 - **THEN** o sistema exibe os artigos publicados, organizados por categoria
+
+**10. Auditoria, Notificações e Segurança Operacional**
+
+### Requirement: Auditoria obrigatoria
+O sistema SHALL auditar autenticacao, logout, troca e redefinicao de senha, codigo de acesso de login, usuarios, alteracoes contratuais, dados bancarios, ponto e ajustes, decisoes, documentos, regras trabalhistas, exportacoes e alteracoes em avaliacoes concluidas, incluindo responsavel, data, justificativa e valores anterior e novo. O sistema SHALL negar por padrao, preservar historicos e nunca apagar evidencias silenciosamente.
+
+#### Scenario: Operacao sensivel auditada
+- **WHEN** ocorre uma alteracao de regra, documento, contrato, ponto ou avaliacao
+- **THEN** o sistema cria evento com autor, contexto, valores e resultado consultavel por Admin ou RH
+
+#### Scenario: Tentativa sem permissao
+- **WHEN** um usuario tenta operar fora do seu escopo
+- **THEN** o sistema nega por padrao e registra a tentativa conforme a politica
+
+### Requirement: Auditoria e notificacoes
+O sistema SHALL registrar eventos sensiveis, incluindo autenticacao, alteracoes cadastrais, decisoes, acessos a documentos e moderacao. Notificacoes de pendencias, decisoes e eventos de prazo SHALL ser entregues por e-mail sem expor dados sensiveis no assunto ou em links sem protecao. Cada evento notificavel SHALL tambem gerar uma notificacao interna vinculada ao usuario, marcavel como lida, alem do envio por e-mail.
+
+#### Scenario: Decisao rastreavel
+- **WHEN** uma solicitacao de ponto, ferias ou ausencia e aprovada, recusada ou cancelada
+- **THEN** o sistema registra autor, data, acao, justificativa e estado anterior e posterior
+
+#### Scenario: Falha no envio de e-mail
+- **WHEN** o provedor de e-mail nao aceita uma notificacao
+- **THEN** o sistema preserva a pendencia, registra a falha e permite reprocessamento sem duplicar a decisao
+
+#### Scenario: Notificacao interna consultada
+- **WHEN** um evento gera notificacao, como ferias aprovada, documento vencendo, avaliacao disponivel ou solicitacao respondida
+- **THEN** o sistema registra uma notificacao interna vinculada ao usuario, alem do envio por e-mail
+
+### Requirement: Auditoria consultavel
+O sistema SHALL permitir que Admin e RH consultem autor, acao, registro afetado, valor anterior, valor novo, data, horario, IP ou sessao, justificativa e resultado da operacao.
+
+#### Scenario: Consulta de auditoria
+- **WHEN** Admin ou RH filtra eventos auditados
+- **THEN** o sistema retorna os detalhes permitidos e respeita filtros de periodo, usuario, recurso e resultado
+
+#### Scenario: Auditoria restrita
+- **WHEN** um Colaborador ou Gestor tenta consultar o painel administrativo
+- **THEN** o sistema nega o acesso e registra a tentativa conforme a politica de seguranca
+
+### Requirement: API, rastreamento e operacao
+O sistema SHALL versionar as rotas sob `/api/v1/`, gerar identificador de rastreamento por requisicao e correlaciona-lo com logs, auditoria, e-mail, erros e tarefas assincronas. O sistema SHALL monitorar erros de API, tarefas, e-mails, documentos, filas, latencia e tentativas bloqueadas e SHALL possuir backup e recuperacao testados.
+
+#### Scenario: Requisicao rastreavel
+- **WHEN** uma requisicao dispara uma tarefa assincrona e um e-mail
+- **THEN** o mesmo identificador permite correlacionar a requisicao, o log, a auditoria e o resultado do processamento
+
+#### Scenario: Falha operacional detectada
+- **WHEN** uma tarefa diaria falha ou uma fila acumula itens acima do limite
+- **THEN** o sistema registra o incidente, disponibiliza alerta operacional e permite diagnostico
+
+**11. Indicadores, Exportações e Acessibilidade**
+
+### Requirement: Indicadores, exportacoes e preferencias
+O sistema SHALL disponibilizar indicadores de colaboradores, contratos, ponto, ausencias, ferias, documentos, avaliacoes, metas, PDIs e aprovacoes, incluindo headcount, turnover, admissoes, desligamentos, absenteismo, distribuicao por departamento e horas extras. O sistema SHALL exportar CSV ou PDF respeitando permissoes e registrar a exportacao. O sistema SHALL permitir preferencias de canal e frequencia, sem desativar alertas obrigatorios de seguranca.
+
+#### Scenario: Exportacao autorizada
+- **WHEN** um usuario autorizado exporta um relatorio
+- **THEN** o arquivo inclui somente dados do seu escopo e a exportacao e auditada
+
+### Requirement: Acessibilidade e validacao de CPF
+O frontend SHALL oferecer navegacao por teclado, contraste adequado, labels, foco visivel, mensagens compreensiveis, responsividade, textos alternativos e status que nao dependam somente de cor. O sistema SHALL validar CPF exclusivamente pelo algoritmo local, sem API externa.
+
+#### Scenario: CPF valido
+- **WHEN** um CPF e submetido ao cadastro
+- **THEN** o sistema aceita o cadastro quando a validacao local for positiva
+
+#### Scenario: CPF invalido ou servico indisponivel
+- **WHEN** a validacao local for negativa
+- **THEN** o sistema impede a conclusao do cadastro e informa o campo invalido sem expor dados sensiveis
