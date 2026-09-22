@@ -1,7 +1,6 @@
-# Reflex (frontend)
-.web/
+# Streamlit (frontend)
+.streamlit/secrets.toml
 *.db
-.states/
 
 # Python
 __pycache__/
@@ -27,6 +26,7 @@ design/
 
 # Skills/ferramentas de IA pessoais, nao pertencem ao projeto
 .agents/
+skills-lock.json
 
 # Estado local de ferramenta, nao deve ser versionado
 .claude/scheduled_tasks.lock
