@@ -1,0 +1,13 @@
+[theme]
+# Paleta grafite + ambar, extraida do prototipo Figma real (fph1M5tB4rA4gqfIysSmkn,
+# nos 28:27 e 31:6) - ver frontend/theme.py para os mesmos tokens em CSS.
+base = "dark"
+primaryColor = "#F5A623"
+backgroundColor = "#16181D"
+secondaryBackgroundColor = "#1F222A"
+textColor = "#ECEAE4"
+font = "sans serif"
+
+[server]
+headless = true
+runOnSave = true
