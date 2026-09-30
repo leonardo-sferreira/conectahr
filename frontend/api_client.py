@@ -21,23 +21,39 @@ class ApiError(Exception):
         self.status_code = status_code
 
 
-def _base_url(grupo: str = "xano") -> str:
+# Canonical de cada api_group do Xano (xano-workspace/api/*/conecta_rh_*.xs).
+# Todos os grupos vivem na mesma instancia; so o sufixo "api:<canonical>" muda.
+GRUPO_AUTENTICACAO = "kFmShhlY"
+GRUPO_COLABORADORES = "ySciQ2YN"
+GRUPO_PONTO = "4PXzu46t"
+
+
+def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
     try:
-        return st.secrets[grupo]["auth_base_url"].rstrip("/")
+        auth_base_url = st.secrets["xano"]["auth_base_url"].rstrip("/")
     except (KeyError, FileNotFoundError) as exc:
         raise ApiError(
             "Configuração ausente: crie .streamlit/secrets.toml com a base URL da API "
             "(ver frontend/api_client.py).",
             0,
         ) from exc
+    return auth_base_url.rsplit("api:", 1)[0] + f"api:{canonical}"
 
 
-def _post(path: str, payload: dict, token: str | None = None) -> dict:
-    url = f"{_base_url()}/{path.lstrip('/')}"
+def _post(path: str, payload: dict, token: str | None = None, canonical: str = GRUPO_AUTENTICACAO) -> dict:
+    return _request("POST", path, token, canonical, payload)
+
+
+def _get(path: str, token: str, canonical: str) -> dict:
+    return _request("GET", path, token, canonical)
+
+
+def _request(method: str, path: str, token: str | None, canonical: str, payload: dict | None = None) -> dict:
+    url = f"{_base_url(canonical)}/{path.lstrip('/')}"
     headers = {"Authorization": f"Bearer {token}"} if token else {}
 
     try:
-        resp = requests.post(url, json=payload, headers=headers, timeout=10)
+        resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
     except requests.RequestException as exc:
         raise ApiError(f"Não foi possível contatar o servidor: {exc}", 0) from exc
 
@@ -84,3 +100,23 @@ def redefinir_senha(email: str, codigo: str, nova_senha: str, confirmar_senha: s
             "confirmar_senha": confirmar_senha,
         },
     )
+
+
+def central_de_tarefas(token: str) -> dict:
+    """GET central_de_tarefas -> pendencias pessoais + filas de decisao por perfil."""
+    return _get("central_de_tarefas", token, GRUPO_COLABORADORES)
+
+
+def meu_banco_horas(token: str) -> dict:
+    """GET meu_banco_horas -> {saldo_horas, lancamentos}."""
+    return _get("meu_banco_horas", token, GRUPO_PONTO)
+
+
+def aniversariantes(token: str) -> dict:
+    """GET colaboradores/aniversariantes -> {mes, aniversariantes: [{id, nome, aniversario}]}."""
+    return _get("colaboradores/aniversariantes", token, GRUPO_COLABORADORES)
+
+
+def meus_comunicados(token: str) -> dict:
+    """GET meus_comunicados -> {comunicados} (vigentes e visiveis ao usuario)."""
+    return _get("meus_comunicados", token, GRUPO_COLABORADORES)

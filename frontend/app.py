@@ -1,206 +1,65 @@
 """
 ConectaRH — ponto de entrada do frontend Streamlit.
 
-Tela de login fiel ao protótipo Figma real (arquivo "ConectaRH — Protótipo",
-nós 28:27 "Login — Passo 1" e 31:6 "Login — Passo 2") e integrada de verdade
-ao backend: POST auth/login -> POST auth/otp/validar, com "esqueci minha
-senha" (auth/senha/esqueci -> auth/senha/redefinir) como fluxo alternativo.
-Máquina de estados descrita em docs/regras-de-negocio.md secao 1.3.
+Navegação com st.navigation/st.Page (design.md do change
+implementar-frontend-streamlit): sem token só a página "Entrar" existe; com
+token, as páginas da área logada. O menu nativo fica oculto (position="hidden")
+e a sidebar é desenhada aqui, fiel ao protótipo Figma (nó 62:38): logo, item
+ativo em âmbar e os demais itens em cinza.
 
-Nota de implementação: todo HTML customizado usa st.html(), nunca
-st.markdown(unsafe_allow_html=True) — este último sanitiza e remove tags como
-<style>/<link>, mantendo só o texto de dentro visível na página (bug real já
-corrigido aqui). Links secundários ("Esqueci minha senha" etc.) usam o botão
-nativo type="tertiary" em vez de tentar envolver um st.button() já renderizado
-numa div customizada — cada chamada de HTML vira um nó isolado no DOM, não
-"abraça" um widget renderizado em outra chamada.
-
-Escopo desta branch (feature/frontend-login): só a tela de login. A migração
-para navegação multi-página (st.Page/st.navigation) e as demais telas ficam
-para as próximas branches, conforme tasks.md do change
-implementar-frontend-streamlit.
+A lista de itens por perfil é só conveniência de navegação — a autorização
+real continua sendo do backend.
 """
 
 import streamlit as st
 
-from api_client import (
-    ApiError,
-    esqueci_senha,
-    login,
-    redefinir_senha,
-    reenviar_otp,
-    validar_otp,
+from pagina_entrar import pagina_entrar
+from pagina_inicio import pagina_inicio
+from theme import inject_base_styles, render_nav_ativo, render_sidebar_logo
+
+# (rótulo, restrito a RH/ADMIN) na ordem do Figma.
+_MENU = [
+    ("Início", False),
+    ("Perfil", False),
+    ("Ponto", False),
+    ("Férias", False),
+    ("Documentos", False),
+    ("Pagamento", False),
+    ("Central de Pendências", False),
+    ("Trajetória", False),
+    ("Auditoria", True),
+    ("Regras", True),
+]
+
+logado = bool(st.session_state.get("token"))
+
+st.set_page_config(
+    page_title="ConectaRH",
+    page_icon="🧭",
+    layout="wide" if logado else "centered",
+    initial_sidebar_state="expanded" if logado else "collapsed",
 )
-from theme import card_marker, inject_base_styles, render_card_title, render_header
 
-st.set_page_config(page_title="ConectaRH", page_icon="🧭", layout="centered")
-inject_base_styles()
+if not logado:
+    st.navigation([st.Page(pagina_entrar, title="Entrar", url_path="entrar")], position="hidden").run()
+    st.stop()
 
-if "auth_step" not in st.session_state:
-    st.session_state.auth_step = "login"
-if "email" not in st.session_state:
-    st.session_state.email = ""
+inject_base_styles("app")
 
-# ---------------------------------------------------------------------------
-# Etapa 1 — login (e-mail + senha)
-# ---------------------------------------------------------------------------
-if st.session_state.auth_step == "login":
-    render_header("Seu acesso à plataforma de gestão de pessoas")
+pagina_atual = st.navigation(
+    [st.Page(pagina_inicio, title="Início", url_path="inicio", default=True)],
+    position="hidden",
+)
 
-    with st.container(border=True):
-        card_marker()
-        render_card_title("Bem-vindo de volta", "Entre com seu e-mail e senha")
+perfil = str(st.session_state.usuario.get("perfil", "")).upper()
+with st.sidebar:
+    render_sidebar_logo()
+    for rotulo, restrito in _MENU:
+        if restrito and perfil not in ("RH", "ADMIN"):
+            continue
+        if rotulo == pagina_atual.title:
+            render_nav_ativo(rotulo)
+        elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
+            st.toast(f"A tela {rotulo} ainda está em construção.")
 
-        with st.form("form_login"):
-            email = st.text_input("E-mail", placeholder="seu.email@empresa.com")
-            senha = st.text_input("Senha", type="password", placeholder="••••••••••")
-            entrar = st.form_submit_button("Entrar", type="primary", use_container_width=True)
-
-        if st.button("Esqueci minha senha", type="tertiary"):
-            st.session_state.auth_step = "esqueci"
-            st.rerun()
-
-    if entrar:
-        if not email or not senha:
-            st.error("Preencha e-mail e senha.")
-        else:
-            try:
-                resultado = login(email, senha)
-                st.session_state.email = email
-                st.session_state.auth_step = "otp"
-                st.rerun()
-            except ApiError as erro:
-                # auth/login nunca revela se o e-mail existe (mesma mensagem
-                # genérica para conta inexistente, senha errada ou conta
-                # desativada) - docs/regras-de-negocio.md secao 1.3.
-                st.error(erro.message)
-
-# ---------------------------------------------------------------------------
-# Etapa 2 — código de acesso (OTP de 6 dígitos por e-mail)
-# ---------------------------------------------------------------------------
-elif st.session_state.auth_step == "otp":
-    render_header("Confirme que é você para continuar")
-
-    with st.container(border=True):
-        card_marker()
-        render_card_title("Código de acesso", f"Enviamos 6 dígitos para {st.session_state.email}")
-
-        with st.form("form_otp"):
-            codigo = st.text_input("Código", max_chars=6, placeholder="000000", label_visibility="collapsed")
-            validar = st.form_submit_button("Validar código", type="primary", use_container_width=True)
-
-        st.html('<p class="crh-otp-caption">Expira em 5 minutos</p>')
-
-        col_reenviar, col_voltar = st.columns(2)
-        with col_reenviar:
-            if st.button("Reenviar código", type="tertiary"):
-                try:
-                    resultado = reenviar_otp(st.session_state.email)
-                    st.toast(resultado.get("mensagem", "Novo código enviado."))
-                except ApiError as erro:
-                    st.error(erro.message)
-        with col_voltar:
-            if st.button("Voltar ao login", type="tertiary"):
-                st.session_state.auth_step = "login"
-                st.rerun()
-
-    if validar:
-        if not codigo:
-            st.error("Digite o código recebido por e-mail.")
-        else:
-            try:
-                resultado = validar_otp(st.session_state.email, codigo)
-                st.session_state.auth_step = "logado"
-                st.session_state.token = resultado["token"]
-                st.session_state.usuario = resultado["usuario"]
-                st.session_state.senha_primeiro_acesso = resultado["senha_primeiro_acesso"]
-                st.rerun()
-            except ApiError as erro:
-                st.error(erro.message)
-
-# ---------------------------------------------------------------------------
-# Esqueci minha senha — solicitar código de redefinição
-# ---------------------------------------------------------------------------
-elif st.session_state.auth_step == "esqueci":
-    render_header("Vamos recuperar seu acesso")
-
-    with st.container(border=True):
-        card_marker()
-        render_card_title("Esqueci minha senha", "Informe seu e-mail para receber um código de redefinição")
-
-        with st.form("form_esqueci"):
-            email_recuperacao = st.text_input("E-mail", placeholder="seu.email@empresa.com")
-            enviar = st.form_submit_button("Enviar código", type="primary", use_container_width=True)
-
-        if st.button("Voltar ao login", key="voltar_esqueci", type="tertiary"):
-            st.session_state.auth_step = "login"
-            st.rerun()
-
-    if enviar:
-        if not email_recuperacao:
-            st.error("Informe o e-mail cadastrado.")
-        else:
-            try:
-                resultado = esqueci_senha(email_recuperacao)
-                st.session_state.email = email_recuperacao
-                st.session_state.auth_step = "redefinir"
-                st.rerun()
-            except ApiError as erro:
-                st.error(erro.message)
-
-# ---------------------------------------------------------------------------
-# Redefinir senha com o código recebido por e-mail
-# ---------------------------------------------------------------------------
-elif st.session_state.auth_step == "redefinir":
-    render_header("Defina sua nova senha")
-
-    with st.container(border=True):
-        card_marker()
-        render_card_title("Redefinir senha", f"Código enviado para {st.session_state.email}")
-
-        with st.form("form_redefinir"):
-            codigo_redef = st.text_input("Código de 6 dígitos", max_chars=6)
-            nova_senha = st.text_input("Nova senha", type="password")
-            confirmar_senha = st.text_input("Confirmar nova senha", type="password")
-            redefinir = st.form_submit_button("Redefinir senha", type="primary", use_container_width=True)
-
-        if st.button("Voltar ao login", key="voltar_redefinir", type="tertiary"):
-            st.session_state.auth_step = "login"
-            st.rerun()
-
-    if redefinir:
-        if not (codigo_redef and nova_senha and confirmar_senha):
-            st.error("Preencha todos os campos.")
-        else:
-            try:
-                resultado = redefinir_senha(st.session_state.email, codigo_redef, nova_senha, confirmar_senha)
-                st.session_state.auth_step = "login"
-                st.success(resultado.get("mensagem", "Senha redefinida com sucesso."))
-                st.rerun()
-            except ApiError as erro:
-                st.error(erro.message)
-
-# ---------------------------------------------------------------------------
-# Logado — placeholder até a próxima branch (navegação multi-página + Início)
-# ---------------------------------------------------------------------------
-elif st.session_state.auth_step == "logado":
-    render_header("Login realizado com sucesso")
-    usuario = st.session_state.usuario
-
-    with st.container(border=True):
-        card_marker()
-        render_card_title(f'Olá, {usuario["nome"]}', f'Perfil: {usuario["perfil"]}')
-
-        if st.session_state.senha_primeiro_acesso:
-            st.warning(
-                "Este é o primeiro acesso desta conta — o backend exige troca de "
-                "senha obrigatória. A tela de troca de senha ainda não foi "
-                "construída (próxima branch)."
-            )
-
-        st.caption("Próxima branch: navegação multi-página + tela de Início.")
-
-        if st.button("Sair", use_container_width=True):
-            for key in ("auth_step", "email", "token", "usuario", "senha_primeiro_acesso"):
-                st.session_state.pop(key, None)
-            st.rerun()
+pagina_atual.run()

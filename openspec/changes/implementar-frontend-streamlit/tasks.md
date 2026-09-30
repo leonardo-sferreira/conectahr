@@ -12,7 +12,7 @@
 
 ## 3. Início
 
-- [ ] 3.1 Buscar o node "Início" no Figma via MCP e conferir elementos/tokens antes de codar; construir a UI (saudação, atalhos principais) reaproveitando `theme.py`; verificar contra o screenshot do node.
+- [x] 3.1 Buscar o node "Início" no Figma via MCP e conferir elementos/tokens antes de codar; construir a UI (saudação, atalhos principais) reaproveitando `theme.py`; verificar contra o screenshot do node. Feito a partir do nó 62:38 (sidebar, barra superior, saudação, 4 indicadores, comunicados, aniversariantes, FAQ); conferido por screenshot headless com dados simulados e medição das posições no DOM (sidebar 16px/208px, topo em 40px). "Dias de férias" mostra "—": não existe endpoint de saldo de férias no backend.
 - [ ] 3.2 Integrar com `central_de_tarefas` (seção de pendências pessoais); verificar que os campos batem com a resposta real do endpoint.
 - [ ] 3.3 Testar os estados carregando/vazio/erro da tela e os diferentes contextos (com e sem colaborador vinculado, com e sem pendências).
 
