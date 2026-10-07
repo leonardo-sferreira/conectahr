@@ -28,6 +28,11 @@ query "auth/me" verb=GET {
       error = "Usuario inativo."
     }
   
+    // Sessao vinculada ao token (extras emitidos em auth/otp/validar).
+    var $sessao_id {
+      value = $auth.extras.sessao_id
+    }
+
     // Procura o colaborador vinculado a conta.
     db.get colaborador {
       field_name = "user_id"
@@ -77,6 +82,7 @@ query "auth/me" verb=GET {
     colaborador_id       : $colaborador_id
     nivel                : $nivel
     nivel_desde          : $nivel_desde
+    sessao_id            : $sessao_id
   }
 
   guid = "KxM5swM_2tmGWnc5H3D1AqHKJfk"

@@ -1,5 +1,6 @@
 // RH/ADMIN consulta os resultados agrupados por departamento (e o
-// geral da empresa) de cada pergunta da pesquisa. Um grupo (ou o geral)
+// geral da empresa) de cada pergunta da pesquisa, somando os contadores
+// anonimos de `resposta_clima_agregado`. Um grupo (ou o geral)
 // so aparece quando a quantidade de respostas atinge o minimo
 // configurado na pesquisa - abaixo disso, e omitido (nao ha como
 // identificar quem respondeu, mas um grupo pequeno demais poderia
@@ -69,23 +70,27 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
       each as $pergunta_item {
         foreach ($departamentos) {
           each as $departamento_item {
-            db.query resposta_clima {
-              where = $db.resposta_clima.pergunta_clima_id == $pergunta_item.id && $db.resposta_clima.departamento_id == $departamento_item.id
+            db.query resposta_clima_agregado {
+              where = $db.resposta_clima_agregado.pergunta_clima_id == $pergunta_item.id && $db.resposta_clima_agregado.departamento_id == $departamento_item.id
               return = {type: "list"}
-            } as $respostas_grupo
+            } as $contadores_grupo
 
             var.update $contagem_temp {
-              value = ($respostas_grupo|count)
+              value = 0
             }
 
             var.update $soma_temp {
               value = 0
             }
 
-            foreach ($respostas_grupo) {
-              each as $resposta_item {
+            foreach ($contadores_grupo) {
+              each as $contador_item {
+                var.update $contagem_temp {
+                  value = $contagem_temp + $contador_item.quantidade
+                }
+
                 var.update $soma_temp {
-                  value = $soma_temp + $resposta_item.nota
+                  value = $soma_temp + ($contador_item.nota * $contador_item.quantidade)
                 }
               }
             }
@@ -105,23 +110,27 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
           }
         }
 
-        db.query resposta_clima {
-          where = $db.resposta_clima.pergunta_clima_id == $pergunta_item.id
+        db.query resposta_clima_agregado {
+          where = $db.resposta_clima_agregado.pergunta_clima_id == $pergunta_item.id
           return = {type: "list"}
-        } as $respostas_geral_pergunta
+        } as $contadores_geral_pergunta
 
         var.update $contagem_temp {
-          value = ($respostas_geral_pergunta|count)
+          value = 0
         }
 
         var.update $soma_temp {
           value = 0
         }
 
-        foreach ($respostas_geral_pergunta) {
-          each as $resposta_geral_item {
+        foreach ($contadores_geral_pergunta) {
+          each as $contador_geral_item {
+            var.update $contagem_temp {
+              value = $contagem_temp + $contador_geral_item.quantidade
+            }
+
             var.update $soma_temp {
-              value = $soma_temp + $resposta_geral_item.nota
+              value = $soma_temp + ($contador_geral_item.nota * $contador_geral_item.quantidade)
             }
           }
         }
