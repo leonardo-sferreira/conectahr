@@ -18,6 +18,8 @@ regras do backend: um envio que com certeza falharia não sai da tela. No
 código de acesso isso evita gastar as 5 tentativas com entrada sem formato.
 """
 
+import time
+
 import streamlit as st
 
 from api_client import (
@@ -39,6 +41,10 @@ from validacao import (
     validar_nova_senha,
     validar_senha_login,
 )
+
+# Intervalo mínimo entre pedidos do código de redefinição; o backend
+# (auth/senha/esqueci) aplica o mesmo limite e ignora pedidos mais cedo.
+_INTERVALO_REENVIO_S = 60
 
 
 def pagina_entrar() -> None:
@@ -66,6 +72,12 @@ def pagina_entrar() -> None:
             if st.button("Esqueci minha senha", type="tertiary"):
                 st.session_state.auth_step = "esqueci"
                 st.rerun()
+
+        # Aviso deixado pela etapa anterior (ex.: senha redefinida). Fica na
+        # sessão porque um st.success() seguido de st.rerun() some na hora.
+        aviso = st.session_state.pop("aviso_login", None)
+        if aviso:
+            st.success(aviso)
 
         if entrar:
             erro_campo = validar_email(email) or validar_senha_login(senha)
@@ -155,6 +167,7 @@ def pagina_entrar() -> None:
                 try:
                     resultado = esqueci_senha(email_recuperacao)
                     st.session_state.email = email_recuperacao
+                    st.session_state.reset_enviado_em = time.time()
                     st.session_state.auth_step = "redefinir"
                     st.rerun()
                 except ApiError as erro:
@@ -175,9 +188,27 @@ def pagina_entrar() -> None:
                 confirmar_senha = st.text_input("Confirmar nova senha", type="password", max_chars=SENHA_MAX)
                 redefinir = st.form_submit_button("Redefinir senha", type="primary", use_container_width=True)
 
-            if st.button("Voltar ao login", key="voltar_redefinir", type="tertiary"):
-                st.session_state.auth_step = "login"
-                st.rerun()
+            st.html('<p class="crh-otp-caption">Expira em 15 minutos</p>')
+
+            col_reenviar, col_voltar = st.columns(2)
+            with col_reenviar:
+                reenviar_redef = st.button("Reenviar código", key="reenviar_redefinir", type="tertiary")
+            with col_voltar:
+                if st.button("Voltar ao login", key="voltar_redefinir", type="tertiary"):
+                    st.session_state.auth_step = "login"
+                    st.rerun()
+
+        if reenviar_redef:
+            espera = _INTERVALO_REENVIO_S - (time.time() - st.session_state.get("reset_enviado_em", 0))
+            if espera > 0:
+                st.warning(f"Aguarde {int(espera) + 1} segundos para pedir um novo código.")
+            else:
+                try:
+                    esqueci_senha(st.session_state.email)
+                    st.session_state.reset_enviado_em = time.time()
+                    st.success("Se o e-mail estiver cadastrado, enviamos um novo código. O código anterior deixa de valer.")
+                except ApiError as erro:
+                    st.error(erro.message)
 
         if redefinir:
             erro_campo = validar_codigo(codigo_redef) or validar_nova_senha(nova_senha, confirmar_senha)
@@ -185,11 +216,9 @@ def pagina_entrar() -> None:
                 st.error(erro_campo)
             else:
                 try:
-                    resultado = redefinir_senha(
-                        st.session_state.email, codigo_redef.strip(), nova_senha, confirmar_senha
-                    )
+                    redefinir_senha(st.session_state.email, codigo_redef.strip(), nova_senha, confirmar_senha)
                     st.session_state.auth_step = "login"
-                    st.success(resultado.get("mensagem", "Senha redefinida com sucesso."))
+                    st.session_state.aviso_login = "Senha redefinida com sucesso. Entre com a nova senha."
                     st.rerun()
                 except ApiError as erro:
                     st.error(erro.message)

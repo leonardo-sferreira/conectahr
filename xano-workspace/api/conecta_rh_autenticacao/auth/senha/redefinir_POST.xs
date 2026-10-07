@@ -98,16 +98,20 @@ query "auth/senha/redefinir" verb=POST {
     }
   
     // Grava a nova senha, encerra o desafio (uso unico) e conclui o primeiro acesso.
+    // Quem recebeu o codigo no e-mail provou ser o titular: o bloqueio por senha
+    // errada (auth/login) deixa de valer junto com a senha antiga.
     db.edit user {
       field_name = "id"
       field_value = $user.id
       data = {
-        senha                 : $input.nova_senha
-        senha_primeiro_acesso : false
-        reset_senha_codigo    : null
-        reset_senha_expira_em : null
-        reset_senha_tentativas: 0
-        updated_at            : "now"
+        senha                     : $input.nova_senha
+        senha_primeiro_acesso     : false
+        reset_senha_codigo        : null
+        reset_senha_expira_em     : null
+        reset_senha_tentativas    : 0
+        senha_tentativas_invalidas: 0
+        senha_bloqueada_ate       : null
+        updated_at                : "now"
       }
     } as $user_atualizado
   

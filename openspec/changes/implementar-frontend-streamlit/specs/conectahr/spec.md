@@ -130,6 +130,14 @@ A validação no cliente é só conveniência: o backend continua validando e re
 - **WHEN** a chamada ao backend falha por rede, TLS ou tempo esgotado
 - **THEN** o sistema exibe uma mensagem amigável pedindo para tentar de novo, e o detalhe técnico vai só para o log do servidor
 
+#### Scenario: Reenviar o código de redefinição
+- **WHEN** o usuário está na tela de redefinir senha e pede "Reenviar código"
+- **THEN** o sistema envia um novo código, que substitui o anterior, só se tiver passado pelo menos 60 segundos desde o último envio; antes disso, pede para aguardar, e o backend também ignora o pedido, sem enviar e-mail
+
+#### Scenario: Senha redefinida com sucesso
+- **WHEN** o usuário redefine a senha com um código válido
+- **THEN** o sistema volta para a tela de login exibindo a confirmação de sucesso, e o login com a nova senha funciona mesmo que a conta estivesse bloqueada por senhas erradas
+
 #### Scenario: Dado digitado exibido na tela
 - **WHEN** a tela exibe um valor informado pelo usuário (ex.: o e-mail no passo do código de acesso)
 - **THEN** o valor é exibido como texto escapado, sem ser interpretado como HTML

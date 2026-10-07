@@ -25,6 +25,30 @@
   - falha de conexão simulada exibiu a mensagem amigável;
   - colagem de texto acima do limite: o campo recusa o conteúdo.
 
+- [x] 1.7 Fluxo "Esqueci minha senha", com quatro ajustes:
+  - "Reenviar código" na tela de redefinir, com espera de 60 s também na tela;
+  - mensagem de sucesso que não some mais após o `st.rerun()` (aviso guardado na sessão e exibido no login);
+  - backend (`auth/senha/esqueci`): o reenvio não zera tentativas, respeita 60 s e é ignorado após 5 erros;
+  - backend (`auth/senha/redefinir`): redefinir a senha remove o bloqueio por senha errada.
+
+  Verificar ponta a ponta com a conta real:
+  - conta bloqueada por 5 senhas erradas;
+  - reenvio cedo recusado na tela e ignorado pela API (só 2 e-mails recebidos);
+  - redefinição com o código do 2º e-mail exibe a mensagem de sucesso;
+  - login com a senha nova funciona logo em seguida, e a senha antiga é recusada.
+
+  Verificado em 2026-10-07 (endpoints publicados no workspace 147338, conta Admin de teste):
+  - com 5 senhas erradas, até a senha correta é recusada (429);
+  - "Reenviar código" na tela antes de 60 s mostra "Aguarde N segundos";
+  - um código substituído deixa de valer, e um código já usado também é recusado;
+  - pedido direto na API 30 s após o anterior é ignorado, conferido no banco: o vencimento do código continua o do 1º pedido e as tentativas não zeram (3 → 3);
+  - redefinição pela tela, com a conta bloqueada, mostra "Senha redefinida com sucesso. Entre com a nova senha.", o login com a senha nova vai direto ao código de acesso e a senha antiga é recusada (403);
+  - a senha da conta de teste foi restaurada ao final.
+
+  Achado no teste: a primeira versão do intervalo de 60 s não funcionava. Num `var` com `a && b > c`, a comparação não era isolada. A correção foi isolar cada comparação em parênteses e calcular o limite numa variável separada. Esse padrão vale para outros endpoints em XanoScript.
+
+  Não testado ao vivo: reenvio ignorado depois de 5 códigos errados. Exigiria esperar o código expirar (15 min); a regra foi conferida só na leitura do código.
+
 ## 2. Navegação multi-página e guarda de sessão
 
 - [ ] 2.1 Migrar `frontend/app.py` para `st.Page`/`st.navigation`, mantendo o fluxo de autenticação (login/OTP/esqueci senha) como um wizard interno de estados dentro de uma única página "Entrar", conforme decidido em `design.md`; verificar que sem sessão só a página de autenticação é acessível.
