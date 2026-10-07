@@ -5,6 +5,33 @@
 - [x] 1.3 Criar `frontend/api_client.py` com `ApiError`/`_post` genéricos e as funções de autenticação (`login`, `validar_otp`, `reenviar_otp`, `esqueci_senha`, `redefinir_senha`).
 - [x] 1.4 Implementar a tela de Login + Código de Acesso + Esqueci minha senha/Redefinir senha, integradas de verdade com `auth/login`, `auth/otp/validar`, `auth/otp/reenviar`, `auth/senha/esqueci`, `auth/senha/redefinir`; verificado com conta real (`leonardo.2503461@aluno.impacta.edu.br`, perfil Admin) recebendo o código por e-mail via Brevo.
 
+- [x] 1.5 Legibilidade da tela Entrar. Três ajustes no `theme.py`:
+  - placeholder legível nos campos;
+  - borda visível em volta do grupo de campos (`st.form`);
+  - campo de senha sem a moldura grafite herdada do tema escuro.
+
+  Verificado em 2026-10-06 por screenshot headless e medição no DOM:
+  - placeholder de `rgba(236,234,228,0.6)` para `#6B7280`;
+  - borda do form de `rgba(236,234,228,0.2)` para `#C9C7C1`;
+  - moldura do campo de `#1F222A` para `MARFIM` com borda `BORDA`.
+
+  Pendente: incluir `PLACEHOLDER` e `BORDA_FORM` na página "Design System" do Figma (ver `design.md`).
+- [x] 1.6 QA dos 7 campos da tela Entrar (login, código de acesso, esqueci minha senha, redefinir senha). As entradas testadas foram emoji, acento, HTML/`<script>`, SQL, só espaços, 5.000 caracteres, formato inválido e senha/código fora do tamanho. Nenhuma derrubou o app. Os 8 problemas encontrados foram corrigidos, em ordem de gravidade, conforme o requisito "Validação dos campos antes do envio":
+  1. (alta) código com letras/emoji gastava as tentativas do OTP → validação de 6 dígitos no cliente;
+  2. mensagens do Xano em inglês → traduzidas no `api_client`;
+  3. campo só com espaços chegava ao backend → tratado como vazio;
+  4. falha de conexão mostrava a exceção técnica → mensagem amigável, detalhe só no log;
+  5. campos sem limite de tamanho → `max_chars` (254/64/6);
+  6. e-mail com acento recusado sem explicação → mensagem específica;
+  7. e-mail exibido sem normalizar → `trim`+`lower` antes do envio;
+  8. e-mail no subtítulo sem escape de HTML → `html.escape` em `render_header`/`render_card_title`.
+
+  Verificado em 2026-10-06:
+  - funções de `validacao.py` e a tradução conferidas isoladamente;
+  - os 30 casos repetidos no navegador real (Playwright), todos com mensagem em português e sem envio indevido, incluindo 5 códigos inválidos sem gastar tentativa;
+  - falha de conexão simulada exibiu a mensagem amigável;
+  - colagem de texto acima do limite: o campo recusa o conteúdo.
+
 ## 2. Navegação multi-página e guarda de sessão
 
 - [ ] 2.1 Migrar `frontend/app.py` para `st.Page`/`st.navigation`, mantendo o fluxo de autenticação (login/OTP/esqueci senha) como um wizard interno de estados dentro de uma única página "Entrar", conforme decidido em `design.md`; verificar que sem sessão só a página de autenticação é acessível.

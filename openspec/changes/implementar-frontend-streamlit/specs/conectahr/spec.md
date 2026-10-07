@@ -81,6 +81,59 @@ Cada tela do frontend SHALL tratar explicitamente os 6 estados exigidos pelo des
 - **WHEN** um usuário autenticado sem o perfil necessário tenta acessar uma tela restrita
 - **THEN** o sistema apresenta um estado de permissão negada em vez de tentar renderizar a tela com dados incompletos
 
+### Requirement: Validação dos campos antes do envio
+O frontend SHALL validar e normalizar cada campo de entrada antes de chamar o backend, aplicando as mesmas regras que o backend já aplica, e SHALL recusar no próprio cliente, com mensagem em português, toda entrada que o backend com certeza recusaria. Na tela "Entrar" as regras são:
+- e-mail: espaços nas pontas removidos, letras minúsculas, até 254 caracteres, só ASCII e formato `nome@dominio.tld`;
+- senha do login: de 8 a 64 caracteres e não pode ser só espaços;
+- código de acesso e código de redefinição: exatamente 6 dígitos numéricos;
+- nova senha: de 8 a 64 caracteres e igual à confirmação.
+
+A validação no cliente é só conveniência: o backend continua validando e recusando as mesmas entradas, conforme o requisito "Frontend não decide autorização".
+
+#### Scenario: E-mail com emoji, acento ou caractere especial
+- **WHEN** o usuário informa um e-mail com emoji (ex.: `teste😀@empresa.com`) ou acento (ex.: `joão@empresa.com`)
+- **THEN** o sistema não envia a requisição e informa que o e-mail não pode ter acentos, emojis ou outros caracteres especiais
+
+#### Scenario: E-mail fora do formato
+- **WHEN** o usuário informa um e-mail sem `@`, com HTML/script (ex.: `<script>alert(1)</script>`) ou com SQL (ex.: `' OR '1'='1`)
+- **THEN** o sistema não envia a requisição e pede um e-mail no formato `nome@empresa.com`
+
+#### Scenario: Campo só com espaços
+- **WHEN** o usuário preenche e-mail, senha, código ou nova senha só com espaços
+- **THEN** o sistema trata o campo como vazio e pede o preenchimento, sem enviar a requisição
+
+#### Scenario: E-mail com espaços nas pontas ou maiúsculas
+- **WHEN** o usuário informa um e-mail válido com espaços nas pontas ou letras maiúsculas
+- **THEN** o sistema remove os espaços, converte para minúsculas, envia o e-mail normalizado e o exibe assim nas etapas seguintes
+
+#### Scenario: Senha fora do tamanho
+- **WHEN** a senha do login tem menos de 8 caracteres (ex.: só 3 emojis)
+- **THEN** o sistema informa que a senha tem entre 8 e 64 caracteres e não envia a tentativa, que contaria para o bloqueio por senha errada
+
+#### Scenario: Texto acima do limite do campo
+- **WHEN** o usuário cola num campo um texto maior que o limite (254 para e-mail, 64 para senha, 6 para código)
+- **THEN** o campo não aceita o conteúdo colado e, ao enviar, o sistema informa que o campo está vazio
+
+#### Scenario: Código de acesso sem formato
+- **WHEN** o usuário digita um código com letras, emoji, espaço, HTML ou menos de 6 dígitos
+- **THEN** o sistema informa que o código tem exatamente 6 números e não envia a requisição, preservando as 5 tentativas de validação do código
+
+#### Scenario: Confirmação de senha diferente
+- **WHEN** a nova senha e a confirmação não coincidem
+- **THEN** o sistema informa que a confirmação não corresponde à nova senha, sem enviar a requisição
+
+#### Scenario: Mensagem técnica do backend
+- **WHEN** o backend recusa uma entrada com mensagem técnica em inglês (ex.: `Invalid email format.`, `Missing param: ...`, `Input does not meet minimum length requirement of 8 characters`)
+- **THEN** o sistema exibe a mensagem equivalente em português
+
+#### Scenario: Falha de conexão com o servidor
+- **WHEN** a chamada ao backend falha por rede, TLS ou tempo esgotado
+- **THEN** o sistema exibe uma mensagem amigável pedindo para tentar de novo, e o detalhe técnico vai só para o log do servidor
+
+#### Scenario: Dado digitado exibido na tela
+- **WHEN** a tela exibe um valor informado pelo usuário (ex.: o e-mail no passo do código de acesso)
+- **THEN** o valor é exibido como texto escapado, sem ser interpretado como HTML
+
 ### Requirement: Acessibilidade
 O frontend SHALL seguir os critérios de acessibilidade documentados na página "Design System" do protótipo: contraste mínimo WCAG AA entre texto e fundo, foco visível em todo elemento navegável por teclado, navegação completa por teclado nos fluxos principais, e nenhuma informação transmitida exclusivamente por cor.
 

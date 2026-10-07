@@ -41,6 +41,31 @@ Toda injeção de HTML/CSS usa exclusivamente `st.html()`. `st.markdown(unsafe_a
 
 Continuar adicionando funções a `api_client.py` (um `_post`/`_get` genérico já existe) enquanto o arquivo for gerenciável; quando ultrapassar ~300 linhas ou come çar a misturar muitos domínios (autenticação, pendências, ponto, férias, documentos...), dividir em módulos por domínio dentro de `frontend/api/` (ex.: `api/autenticacao.py`, `api/ponto.py`), todos reaproveitando o mesmo tratamento de erro (`ApiError`) e a mesma leitura de `st.secrets`. Cada grupo de API do Xano (ex.: "ConectaRH — Ponto") deve ter sua própria `base_url` em `.streamlit/secrets.toml`, adicionada conforme a tela correspondente for integrada — hoje só existe `xano.auth_base_url`.
 
+### Validação de campos no cliente: `frontend/validacao.py`
+
+As regras de cada campo (e-mail, senha, código, nova senha) ficam em `frontend/validacao.py`. Elas espelham os limites que o backend já aplica: `trim|lower` e tipo `email` do Xano, `min:8|max:64` em senha e `max:6` nos códigos. Cada tela chama essas funções antes do `api_client`, e os mesmos limites viram o `max_chars` dos `st.text_input`.
+
+O motivo principal é o código de acesso: no QA de 2026-10-06, entradas com letras ou emoji eram enviadas e consumiam as 5 tentativas do OTP.
+
+O `api_client` passou a fazer duas coisas:
+- traduz para o português as mensagens que o próprio Xano gera em inglês para tipos e filtros de input;
+- troca a exceção de conexão por uma mensagem amigável, mandando o detalhe técnico só para o log.
+
+Essas regras não substituem a validação do backend, que continua sendo a fonte de verdade.
+
+**Alternativa rejeitada:** validar só no backend e apenas traduzir as mensagens. Resolveria o idioma, mas não impediria o gasto de tentativas do OTP nem a ida ao servidor de entradas que com certeza seriam recusadas.
+
+### Tema escuro do Streamlit dentro do card branco
+
+O `.streamlit/config.toml` usa `base = "dark"`, que é o fundo grafite das telas de autenticação. Dentro do card branco, os widgets herdavam do tema três coisas:
+- o placeholder com o `textColor` claro, quase invisível;
+- a borda do `st.form` em `textColor` a 20%;
+- o `secondaryBackgroundColor` grafite na moldura do campo (`stTextInputRootElement`).
+
+O `theme.py` sobrescreve os três só para `.stTextInput` e `st-key-crh_card`.
+
+Os tokens `PLACEHOLDER` (`#6B7280`, contraste de cerca de 4.6:1 sobre `MARFIM`) e `BORDA_FORM` (`#C9C7C1`) **não existem no Figma**. Eles foram adotados por legibilidade e acessibilidade, a pedido do QA. Pelo requisito "Fidelidade ao design system do Figma", essa é uma divergência registrada, pendente de os tokens serem incluídos na página "Design System" do protótipo.
+
 ### Guarda de sessão
 
 Toda página que exige autenticação verifica `st.session_state.get("token")` no topo; sem token, redireciona para a página de autenticação (`st.switch_page`). Páginas restritas a perfil (Auditoria, Regras) verificam também `st.session_state.usuario["perfil"]` antes de montar qualquer conteúdo — sempre como conveniência de navegação, nunca como controle de acesso real: o backend segue sendo a única fonte de verdade de autorização (requisito "Frontend não decide autorização" do spec).
