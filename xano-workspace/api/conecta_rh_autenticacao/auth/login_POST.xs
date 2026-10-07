@@ -152,8 +152,10 @@ query "auth/login" verb=POST {
       data = {
         otp_codigo    : $codigo_texto
         otp_expira_em : now|add_secs_to_timestamp:300
-        otp_tentativas: 0
-        updated_at    : "now"
+        otp_tentativas     : 0
+        otp_reenvios       : 0
+        otp_ultimo_envio_em: "now"
+        updated_at         : "now"
       }
     } as $user_com_otp
 
