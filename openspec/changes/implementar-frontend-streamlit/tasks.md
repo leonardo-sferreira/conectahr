@@ -5,17 +5,10 @@
 - [x] 1.3 Criar `frontend/api_client.py` com `ApiError`/`_post` genéricos e as funções de autenticação (`login`, `validar_otp`, `reenviar_otp`, `esqueci_senha`, `redefinir_senha`).
 - [x] 1.4 Implementar a tela de Login + Código de Acesso + Esqueci minha senha/Redefinir senha, integradas de verdade com `auth/login`, `auth/otp/validar`, `auth/otp/reenviar`, `auth/senha/esqueci`, `auth/senha/redefinir`; verificado com conta real (`leonardo.2503461@aluno.impacta.edu.br`, perfil Admin) recebendo o código por e-mail via Brevo.
 
-- [x] 1.5 Legibilidade da tela Entrar. Três ajustes no `theme.py`:
-  - placeholder legível nos campos;
-  - borda visível em volta do grupo de campos (`st.form`);
-  - campo de senha sem a moldura grafite herdada do tema escuro.
-
-  Verificado em 2026-10-06 por screenshot headless e medição no DOM:
-  - placeholder de `rgba(236,234,228,0.6)` para `#6B7280`;
-  - borda do form de `rgba(236,234,228,0.2)` para `#C9C7C1`;
-  - moldura do campo de `#1F222A` para `MARFIM` com borda `BORDA`.
-
-  Pendente: incluir `PLACEHOLDER` e `BORDA_FORM` na página "Design System" do Figma (ver `design.md`).
+- [ ] 1.5 Legibilidade da tela Entrar: deixar mais visíveis o texto de exemplo (placeholder) dos campos e a borda do card que agrupa e-mail e senha.
+  - Primeira tentativa (2026-10-06) **revertida a pedido** em 2026-10-07: as cores `#6B7280`/`#C9C7C1` e a moldura marfim do campo não ficaram como esperado.
+  - O `theme.py` voltou ao visual anterior; só o escape de HTML de `render_header`/`render_card_title` foi mantido.
+  - Antes de tentar de novo, alinhar com o time o resultado esperado, de preferência com referência no Figma.
 - [x] 1.6 QA dos 7 campos da tela Entrar (login, código de acesso, esqueci minha senha, redefinir senha). As entradas testadas foram emoji, acento, HTML/`<script>`, SQL, só espaços, 5.000 caracteres, formato inválido e senha/código fora do tamanho. Nenhuma derrubou o app. Os 8 problemas encontrados foram corrigidos, em ordem de gravidade, conforme o requisito "Validação dos campos antes do envio":
   1. (alta) código com letras/emoji gastava as tentativas do OTP → validação de 6 dígitos no cliente;
   2. mensagens do Xano em inglês → traduzidas no `api_client`;
@@ -24,7 +17,7 @@
   5. campos sem limite de tamanho → `max_chars` (254/64/6);
   6. e-mail com acento recusado sem explicação → mensagem específica;
   7. e-mail exibido sem normalizar → `trim`+`lower` antes do envio;
-  8. e-mail no subtítulo sem escape de HTML → `html.escape` em `render_header`/`render_card_title`.
+  8. e-mail no subtítulo sem escape de HTML → `html.escape` em `render_header`/`render_card_title` (sem efeito visual).
 
   Verificado em 2026-10-06:
   - funções de `validacao.py` e a tradução conferidas isoladamente;

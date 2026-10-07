@@ -58,13 +58,6 @@ CINZA_CLARO = "#B2B5BA"
 AMBAR_BG = "#FEF3C7"
 SUCESSO = "#16A34A"
 ERRO = "#DC2626"
-# Fora do Figma, ajustes de legibilidade pedidos no QA da tela de login: o tema
-# "dark" do Streamlit pinta placeholder e borda de formulário com o textColor
-# claro, quase invisíveis sobre o card branco.
-# PLACEHOLDER tem contraste ~4.6:1 sobre MARFIM; BORDA_FORM delimita o grupo
-# de campos sem competir com eles.
-PLACEHOLDER = "#6B7280"
-BORDA_FORM = "#C9C7C1"
 
 _ASSETS_DIR = Path(__file__).parent / "assets"
 _LOGO_ICON_SVG_BYTES = (_ASSETS_DIR / "logo-icon.svg").read_bytes()
@@ -163,31 +156,12 @@ _BASE_CSS = f"""
     font-size: 0.78rem;
     color: {GRAFITE};
   }}
-  /* A moldura do campo (stTextInputRootElement, Streamlit 1.64) e quem desenha
-     a borda; sem isso o tema dark do Streamlit da a ela o
-     secondaryBackgroundColor grafite, o que cria uma moldura escura e um botao
-     de "olho" escuro no campo de senha. */
-  .stTextInput div[data-testid="stTextInputRootElement"] {{
+  .stTextInput input {{
     background: {MARFIM};
     border: 1px solid {BORDA};
     border-radius: 10px;
-  }}
-  .stTextInput div[data-testid="stTextInputRootElement"]:focus-within {{ border-color: {AMBAR}; }}
-  .stTextInput input {{
-    background: {MARFIM};
-    border: none;
     font-family: 'Manrope', sans-serif;
     color: {GRAFITE};
-    caret-color: {GRAFITE};
-  }}
-  .stTextInput input::placeholder {{ color: {PLACEHOLDER}; opacity: 1; }}
-  .stTextInput button {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
-  .stTextInput button svg {{ fill: {GRAFITE_SECUNDARIO}; color: {GRAFITE_SECUNDARIO}; }}
-
-  /* Borda do grupo de campos (st.form) dentro do card branco. */
-  .st-key-crh_card div[data-testid="stForm"] {{
-    border: 1px solid {BORDA_FORM};
-    border-radius: 14px;
   }}
 
   /* Botao primario ambar, texto grafite (igual ao Figma) */

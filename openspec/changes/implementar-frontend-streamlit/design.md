@@ -55,16 +55,16 @@ Essas regras não substituem a validação do backend, que continua sendo a font
 
 **Alternativa rejeitada:** validar só no backend e apenas traduzir as mensagens. Resolveria o idioma, mas não impediria o gasto de tentativas do OTP nem a ida ao servidor de entradas que com certeza seriam recusadas.
 
-### Tema escuro do Streamlit dentro do card branco
+### Tema escuro do Streamlit dentro do card branco (em aberto)
 
-O `.streamlit/config.toml` usa `base = "dark"`, que é o fundo grafite das telas de autenticação. Dentro do card branco, os widgets herdavam do tema três coisas:
-- o placeholder com o `textColor` claro, quase invisível;
+O `.streamlit/config.toml` usa `base = "dark"`, que dá o fundo grafite das telas de autenticação. Dentro do card branco, os widgets herdam do tema três coisas:
+- o placeholder com o `textColor` claro (`rgba(236,234,228,0.6)`);
 - a borda do `st.form` em `textColor` a 20%;
-- o `secondaryBackgroundColor` grafite na moldura do campo (`stTextInputRootElement`).
+- a moldura grafite (`secondaryBackgroundColor`) do campo, no `stTextInputRootElement`.
 
-O `theme.py` sobrescreve os três só para `.stTextInput` e `st-key-crh_card`.
+Uma primeira correção no `theme.py` foi **revertida** em 2026-10-07, porque não atendeu ao que se esperava visualmente (tarefa 1.5).
 
-Os tokens `PLACEHOLDER` (`#6B7280`, contraste de cerca de 4.6:1 sobre `MARFIM`) e `BORDA_FORM` (`#C9C7C1`) **não existem no Figma**. Eles foram adotados por legibilidade e acessibilidade, a pedido do QA. Pelo requisito "Fidelidade ao design system do Figma", essa é uma divergência registrada, pendente de os tokens serem incluídos na página "Design System" do protótipo.
+Qualquer nova tentativa deve sobrescrever só esses pontos, escopada a `.stTextInput` e `st-key-crh_card`. Cores fora dos tokens do Figma precisam ser registradas aqui como divergência.
 
 ### Guarda de sessão
 
