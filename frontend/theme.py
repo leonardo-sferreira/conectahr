@@ -58,6 +58,13 @@ CINZA_CLARO = "#B2B5BA"
 AMBAR_BG = "#FEF3C7"
 SUCESSO = "#16A34A"
 ERRO = "#DC2626"
+# Fora do Figma, ajustes de legibilidade pedidos no QA da tela de login: o tema
+# "dark" do Streamlit pinta placeholder e borda de formulário com o textColor
+# claro, quase invisíveis sobre o card branco.
+# PLACEHOLDER tem contraste ~4.6:1 sobre MARFIM; BORDA_FORM delimita o grupo
+# de campos sem competir com eles.
+PLACEHOLDER = "#6B7280"
+BORDA_FORM = "#C9C7C1"
 
 _ASSETS_DIR = Path(__file__).parent / "assets"
 _LOGO_ICON_SVG_BYTES = (_ASSETS_DIR / "logo-icon.svg").read_bytes()
@@ -156,12 +163,31 @@ _BASE_CSS = f"""
     font-size: 0.78rem;
     color: {GRAFITE};
   }}
-  .stTextInput input {{
+  /* A moldura do campo (stTextInputRootElement, Streamlit 1.64) e quem desenha
+     a borda; sem isso o tema dark do Streamlit da a ela o
+     secondaryBackgroundColor grafite, o que cria uma moldura escura e um botao
+     de "olho" escuro no campo de senha. */
+  .stTextInput div[data-testid="stTextInputRootElement"] {{
     background: {MARFIM};
     border: 1px solid {BORDA};
     border-radius: 10px;
+  }}
+  .stTextInput div[data-testid="stTextInputRootElement"]:focus-within {{ border-color: {AMBAR}; }}
+  .stTextInput input {{
+    background: {MARFIM};
+    border: none;
     font-family: 'Manrope', sans-serif;
     color: {GRAFITE};
+    caret-color: {GRAFITE};
+  }}
+  .stTextInput input::placeholder {{ color: {PLACEHOLDER}; opacity: 1; }}
+  .stTextInput button {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
+  .stTextInput button svg {{ fill: {GRAFITE_SECUNDARIO}; color: {GRAFITE_SECUNDARIO}; }}
+
+  /* Borda do grupo de campos (st.form) dentro do card branco. */
+  .st-key-crh_card div[data-testid="stForm"] {{
+    border: 1px solid {BORDA_FORM};
+    border-radius: 14px;
   }}
 
   /* Botao primario ambar, texto grafite (igual ao Figma) */
@@ -382,7 +408,7 @@ def render_header(subtitle: str) -> None:
             <img src="{_LOGO_ICON_DATA_URI}" alt="" class="crh-icon" />
             <span class="crh-wordmark">conecta<span class="amber">RH</span></span>
           </div>
-          <p class="crh-subtitle">{subtitle}</p>
+          <p class="crh-subtitle">{html.escape(subtitle)}</p>
         </div>
         """
     )
@@ -392,12 +418,13 @@ def render_card_title(title: str, subtitle: str) -> None:
     """Título + subtítulo do card, num único bloco (ver .crh-card-titleblock) -
     ambos precisam nascer no mesmo st.html() para ficarem colados entre si
     (gap-4 do Figma) e não herdar o gap-22 grande usado entre os elementos
-    do card."""
+    do card. O texto é escapado: o subtítulo pode trazer dado digitado pelo
+    usuário (ex.: o e-mail no passo do código de acesso)."""
     st.html(
         f"""
         <div class="crh-card-titleblock">
-          <p class="crh-card-title">{title}</p>
-          <p class="crh-card-subtitle">{subtitle}</p>
+          <p class="crh-card-title">{html.escape(title)}</p>
+          <p class="crh-card-subtitle">{html.escape(subtitle)}</p>
         </div>
         """
     )
