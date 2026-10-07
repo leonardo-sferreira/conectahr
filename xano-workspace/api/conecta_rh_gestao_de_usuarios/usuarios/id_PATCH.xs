@@ -84,6 +84,23 @@ query "usuarios/{id}" verb=PATCH {
       data = {nome: $input.nome, email: $input.email}
     } as $usuario_atualizado
 
+    // Troca de e-mail: alerta o titular no e-mail anterior, sem informar o
+    // novo endereco, para que uma troca indevida (seguida de redefinicao de
+    // senha) nao passe despercebida.
+    conditional {
+      if ($input.email != $usuario_alvo.email) {
+        db.add email_outbox {
+          data = {
+            destinatario_email: $usuario_alvo.email
+            destinatario_nome : $usuario_alvo.nome
+            assunto           : "ConectaRH - O e-mail de acesso da sua conta foi alterado"
+            corpo             : "Ola " ~ $usuario_alvo.nome ~ ",\n\nO e-mail de acesso da sua conta no ConectaRH foi alterado pelo RH. A partir de agora, este endereco nao recebe mais os codigos de acesso.\n\nSe voce nao pediu essa alteracao, procure o RH imediatamente.\n\nEste e um aviso automatico de seguranca."
+            chave_idempotencia: ("alerta_troca_email_" ~ ($usuario_alvo.id|to_text) ~ "_" ~ (now|to_text))
+          }
+        } as $alerta_troca_email
+      }
+    }
+
     // Localiza o colaborador vinculado à conta.
     db.get colaborador {
       field_name = "user_id"
