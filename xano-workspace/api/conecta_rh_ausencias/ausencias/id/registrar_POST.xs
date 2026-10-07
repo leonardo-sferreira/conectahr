@@ -54,6 +54,32 @@ query "ausencias/{id}/registrar" verb=POST {
       error_type = "notfound"
       error = "Ausencia nao encontrada."
     }
+
+    // Bloqueio de autoaprovacao: ninguem decide uma solicitacao em que e o
+    // proprio colaborador, nem RH/ADMIN. A tentativa e auditada antes da recusa.
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $auth.id
+    } as $colaborador_do_decisor
+
+    conditional {
+      if ($colaborador_do_decisor != null && $colaborador_do_decisor.id == $ausencia_atual.colaborador_id) {
+        db.add auditoria {
+          data = {
+            user_id    : $auth.id
+            acao       : "autoaprovacao_bloqueada"
+            recurso    : "ausencia"
+            registro_id: $ausencia_atual.id
+            resultado  : "falha"
+          }
+        } as $evento_autoaprovacao
+
+        precondition (false) {
+          error_type = "accessdenied"
+          error = "Voce nao pode decidir uma solicitacao propria."
+        }
+      }
+    }
   
     // Somente ausencias Aprovadas podem ser registradas.
     var $status_atual {

@@ -39,6 +39,32 @@ query "contestacoes_avaliacao/{id}/revisar" verb=POST {
       error = "Contestacao nao encontrada."
     }
 
+    // Bloqueio de autoaprovacao: ninguem decide uma solicitacao em que e o
+    // proprio colaborador, nem RH/ADMIN. A tentativa e auditada antes da recusa.
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $auth.id
+    } as $colaborador_do_decisor
+
+    conditional {
+      if ($colaborador_do_decisor != null && $colaborador_do_decisor.id == $contestacao_atual.colaborador_id) {
+        db.add auditoria {
+          data = {
+            user_id    : $auth.id
+            acao       : "autoaprovacao_bloqueada"
+            recurso    : "contestacao_avaliacao"
+            registro_id: $contestacao_atual.id
+            resultado  : "falha"
+          }
+        } as $evento_autoaprovacao
+
+        precondition (false) {
+          error_type = "accessdenied"
+          error = "Voce nao pode decidir uma solicitacao propria."
+        }
+      }
+    }
+
     precondition ($contestacao_atual.status == "aberta") {
       error_type = "inputerror"
       error = "Esta contestacao ja foi revisada."

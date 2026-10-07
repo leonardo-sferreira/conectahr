@@ -40,6 +40,32 @@ query "correcoes_ponto/{id}/rejeitar" verb=POST {
       error = "Solicitacao de correcao nao encontrada."
     }
 
+    // Bloqueio de autoaprovacao: ninguem decide uma solicitacao em que e o
+    // proprio colaborador, nem RH/ADMIN. A tentativa e auditada antes da recusa.
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $auth.id
+    } as $colaborador_do_decisor
+
+    conditional {
+      if ($colaborador_do_decisor != null && $colaborador_do_decisor.id == $correcao_atual.colaborador_id) {
+        db.add auditoria {
+          data = {
+            user_id    : $auth.id
+            acao       : "autoaprovacao_bloqueada"
+            recurso    : "correcao_ponto"
+            registro_id: $correcao_atual.id
+            resultado  : "falha"
+          }
+        } as $evento_autoaprovacao
+
+        precondition (false) {
+          error_type = "accessdenied"
+          error = "Voce nao pode decidir uma solicitacao propria."
+        }
+      }
+    }
+
     precondition ($correcao_atual.status == "pendente") {
       error_type = "inputerror"
       error = "Somente solicitacoes pendentes podem ser rejeitadas."
