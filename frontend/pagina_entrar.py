@@ -12,6 +12,10 @@ st.session_state e app.py passa a expor as páginas da área logada.
 Links secundários ("Esqueci minha senha" etc.) usam o botão nativo
 type="tertiary" em vez de tentar envolver um st.button() já renderizado numa
 div customizada — cada chamada de HTML vira um nó isolado no DOM.
+
+Cada campo é validado (validacao.py) antes de chamar a API, com as mesmas
+regras do backend: um envio que com certeza falharia não sai da tela. No
+código de acesso isso evita gastar as 5 tentativas com entrada sem formato.
 """
 
 import streamlit as st
@@ -25,6 +29,16 @@ from api_client import (
     validar_otp,
 )
 from theme import inject_base_styles, render_card_title, render_header
+from validacao import (
+    CODIGO_TAMANHO,
+    EMAIL_MAX,
+    SENHA_MAX,
+    normalizar_email,
+    validar_codigo,
+    validar_email,
+    validar_nova_senha,
+    validar_senha_login,
+)
 
 
 def pagina_entrar() -> None:
@@ -45,8 +59,8 @@ def pagina_entrar() -> None:
             render_card_title("Bem-vindo de volta", "Entre com seu e-mail e senha")
 
             with st.form("form_login"):
-                email = st.text_input("E-mail", placeholder="seu.email@empresa.com")
-                senha = st.text_input("Senha", type="password", placeholder="••••••••••")
+                email = st.text_input("E-mail", placeholder="seu.email@empresa.com", max_chars=EMAIL_MAX)
+                senha = st.text_input("Senha", type="password", placeholder="••••••••••", max_chars=SENHA_MAX)
                 entrar = st.form_submit_button("Entrar", type="primary", use_container_width=True)
 
             if st.button("Esqueci minha senha", type="tertiary"):
@@ -54,9 +68,11 @@ def pagina_entrar() -> None:
                 st.rerun()
 
         if entrar:
-            if not email or not senha:
-                st.error("Preencha e-mail e senha.")
+            erro_campo = validar_email(email) or validar_senha_login(senha)
+            if erro_campo:
+                st.error(erro_campo)
             else:
+                email = normalizar_email(email)
                 try:
                     resultado = login(email, senha)
                     st.session_state.email = email
@@ -78,7 +94,9 @@ def pagina_entrar() -> None:
             render_card_title("Código de acesso", f"Enviamos 6 dígitos para {st.session_state.email}")
 
             with st.form("form_otp"):
-                codigo = st.text_input("Código", max_chars=6, placeholder="000000", label_visibility="collapsed")
+                codigo = st.text_input(
+                    "Código", max_chars=CODIGO_TAMANHO, placeholder="000000", label_visibility="collapsed"
+                )
                 validar = st.form_submit_button("Validar código", type="primary", use_container_width=True)
 
             st.html('<p class="crh-otp-caption">Expira em 5 minutos</p>')
@@ -97,11 +115,12 @@ def pagina_entrar() -> None:
                     st.rerun()
 
         if validar:
-            if not codigo:
-                st.error("Digite o código recebido por e-mail.")
+            erro_campo = validar_codigo(codigo)
+            if erro_campo:
+                st.error(erro_campo)
             else:
                 try:
-                    resultado = validar_otp(st.session_state.email, codigo)
+                    resultado = validar_otp(st.session_state.email, codigo.strip())
                     st.session_state.auth_step = "login"
                     st.session_state.token = resultado["token"]
                     st.session_state.usuario = resultado["usuario"]
@@ -120,7 +139,7 @@ def pagina_entrar() -> None:
             render_card_title("Esqueci minha senha", "Informe seu e-mail para receber um código de redefinição")
 
             with st.form("form_esqueci"):
-                email_recuperacao = st.text_input("E-mail", placeholder="seu.email@empresa.com")
+                email_recuperacao = st.text_input("E-mail", placeholder="seu.email@empresa.com", max_chars=EMAIL_MAX)
                 enviar = st.form_submit_button("Enviar código", type="primary", use_container_width=True)
 
             if st.button("Voltar ao login", key="voltar_esqueci", type="tertiary"):
@@ -128,9 +147,11 @@ def pagina_entrar() -> None:
                 st.rerun()
 
         if enviar:
-            if not email_recuperacao:
-                st.error("Informe o e-mail cadastrado.")
+            erro_campo = validar_email(email_recuperacao)
+            if erro_campo:
+                st.error(erro_campo)
             else:
+                email_recuperacao = normalizar_email(email_recuperacao)
                 try:
                     resultado = esqueci_senha(email_recuperacao)
                     st.session_state.email = email_recuperacao
@@ -149,9 +170,9 @@ def pagina_entrar() -> None:
             render_card_title("Redefinir senha", f"Código enviado para {st.session_state.email}")
 
             with st.form("form_redefinir"):
-                codigo_redef = st.text_input("Código de 6 dígitos", max_chars=6)
-                nova_senha = st.text_input("Nova senha", type="password")
-                confirmar_senha = st.text_input("Confirmar nova senha", type="password")
+                codigo_redef = st.text_input("Código de 6 dígitos", max_chars=CODIGO_TAMANHO)
+                nova_senha = st.text_input("Nova senha", type="password", max_chars=SENHA_MAX)
+                confirmar_senha = st.text_input("Confirmar nova senha", type="password", max_chars=SENHA_MAX)
                 redefinir = st.form_submit_button("Redefinir senha", type="primary", use_container_width=True)
 
             if st.button("Voltar ao login", key="voltar_redefinir", type="tertiary"):
@@ -159,11 +180,14 @@ def pagina_entrar() -> None:
                 st.rerun()
 
         if redefinir:
-            if not (codigo_redef and nova_senha and confirmar_senha):
-                st.error("Preencha todos os campos.")
+            erro_campo = validar_codigo(codigo_redef) or validar_nova_senha(nova_senha, confirmar_senha)
+            if erro_campo:
+                st.error(erro_campo)
             else:
                 try:
-                    resultado = redefinir_senha(st.session_state.email, codigo_redef, nova_senha, confirmar_senha)
+                    resultado = redefinir_senha(
+                        st.session_state.email, codigo_redef.strip(), nova_senha, confirmar_senha
+                    )
                     st.session_state.auth_step = "login"
                     st.success(resultado.get("mensagem", "Senha redefinida com sucesso."))
                     st.rerun()

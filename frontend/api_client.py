@@ -8,8 +8,40 @@ criar um novo para o mesmo problema (AGENTS.md).
 A base URL fica em .streamlit/secrets.toml (nunca versionado - ver .gitignore).
 """
 
+import logging
+import re
+
 import requests
 import streamlit as st
+
+_log = logging.getLogger(__name__)
+
+_MENSAGEM_SEM_CONEXAO = "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente em instantes."
+_MENSAGEM_GENERICA = "Erro inesperado. Tente novamente."
+
+# Mensagens de validação que o próprio Xano gera em inglês (tipos e filtros de
+# input), traduzidas para o usuário. As mensagens escritas nos endpoints já
+# estão em português e passam direto.
+_TRADUCOES = [
+    (re.compile(r"^Invalid email format\.?$", re.I), lambda m: "Informe um e-mail válido, no formato nome@empresa.com."),
+    (re.compile(r"^Missing param: .*", re.I), lambda m: "Preencha todos os campos obrigatórios."),
+    (
+        re.compile(r"minimum length requirement of (\d+)", re.I),
+        lambda m: f"O valor informado precisa ter pelo menos {m.group(1)} caracteres.",
+    ),
+    (
+        re.compile(r"maximum length requirement of (\d+)", re.I),
+        lambda m: f"O valor informado pode ter no máximo {m.group(1)} caracteres.",
+    ),
+]
+
+
+def _traduzir(message: str) -> str:
+    for padrao, traducao in _TRADUCOES:
+        achado = padrao.search(message)
+        if achado:
+            return traducao(achado)
+    return message
 
 
 class ApiError(Exception):
@@ -29,6 +61,8 @@ GRUPO_PONTO = "4PXzu46t"
 
 
 def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
+    # Uma base URL que não começa com http (ex.: texto de exemplo esquecido nos
+    # secrets) gera uma mensagem de configuração clara, em vez do erro do requests.
     try:
         auth_base_url = st.secrets["xano"]["auth_base_url"].rstrip("/")
     except (KeyError, FileNotFoundError) as exc:
@@ -37,6 +71,12 @@ def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
             "(ver frontend/api_client.py).",
             0,
         ) from exc
+    if not auth_base_url.startswith(("https://", "http://")):
+        raise ApiError(
+            "Configuração inválida: xano.auth_base_url em .streamlit/secrets.toml precisa ser a URL "
+            "completa da API, começando com https://.",
+            0,
+        )
     return auth_base_url.rsplit("api:", 1)[0] + f"api:{canonical}"
 
 
@@ -55,16 +95,21 @@ def _request(method: str, path: str, token: str | None, canonical: str, payload:
     try:
         resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
     except requests.RequestException as exc:
-        raise ApiError(f"Não foi possível contatar o servidor: {exc}", 0) from exc
+        # O detalhe técnico (host, SSL, retries) vai só para o log do servidor,
+        # nunca para a tela (spec: erro do backend sem detalhes internos).
+        _log.warning("Falha de conexão em %s %s: %s", method, path, exc)
+        raise ApiError(_MENSAGEM_SEM_CONEXAO, 0) from exc
 
     try:
         data = resp.json()
     except ValueError:
         data = {}
+    if not isinstance(data, dict):
+        data = {}
 
     if not resp.ok:
-        message = data.get("message") or data.get("error") or "Erro inesperado. Tente novamente."
-        raise ApiError(message, resp.status_code)
+        message = data.get("message") or data.get("error") or _MENSAGEM_GENERICA
+        raise ApiError(_traduzir(str(message)), resp.status_code)
 
     return data
 
