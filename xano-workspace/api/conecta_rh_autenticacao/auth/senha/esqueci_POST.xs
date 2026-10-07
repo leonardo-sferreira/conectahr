@@ -1,5 +1,9 @@
-// Solicitacao de redefinicao de senha (esqueci minha senha)
-// Gera um codigo de uso unico e envia por e-mail. Nunca revela se o e-mail existe.
+// Solicitacao de redefinicao de senha (esqueci minha senha), usada tambem pelo
+// "Reenviar codigo" da tela de redefinicao. Gera um codigo de uso unico e envia
+// por e-mail. Nunca revela se o e-mail existe.
+// Enquanto ha um codigo pendente (nao expirado), um novo pedido substitui o
+// codigo sem zerar as tentativas erradas, respeita intervalo minimo de 60s e e
+// ignorado depois de 5 tentativas erradas - o mesmo criterio do reenvio de OTP.
 query "auth/senha/esqueci" verb=POST {
   api_group = "ConectaRH — Autenticação"
 
@@ -18,9 +22,44 @@ query "auth/senha/esqueci" verb=POST {
     var $usuario_elegivel {
       value = ($user != null && $user.ativo)
     }
-  
+
+    // Cada comparacao fica entre parenteses proprios: sem isso o `&&` e
+    // avaliado antes do `>` e a regra de intervalo deixa de valer (achado no
+    // teste de 2026-10-07).
+    var $agora {
+      value = now
+    }
+
+    // O codigo vale 900s; expirar depois de agora+840s significa que foi
+    // enviado ha menos de 60s.
+    var $limite_reenvio {
+      value = $agora|add_secs_to_timestamp:840
+    }
+
+    // Codigo anterior ainda valido: este pedido e um reenvio.
+    var $codigo_pendente {
+      value = (($usuario_elegivel) && ($user.reset_senha_codigo != null) && ($user.reset_senha_expira_em != null) && ($user.reset_senha_expira_em > $agora))
+    }
+
+    var $reenvio_cedo_demais {
+      value = (($codigo_pendente) && ($user.reset_senha_expira_em > $limite_reenvio))
+    }
+
+    // Depois de 5 codigos errados, so vale um novo pedido apos o codigo expirar.
+    var $tentativas_esgotadas {
+      value = (($codigo_pendente) && ($user.reset_senha_tentativas != null) && ($user.reset_senha_tentativas >= 5))
+    }
+
+    var $deve_enviar {
+      value = (($usuario_elegivel) && ($reenvio_cedo_demais == false) && ($tentativas_esgotadas == false))
+    }
+
+    var $tentativas_mantidas {
+      value = ((($codigo_pendente) && ($user.reset_senha_tentativas != null)) ? $user.reset_senha_tentativas : 0)
+    }
+
     conditional {
-      if ($usuario_elegivel) {
+      if ($deve_enviar) {
         security.random_number {
           min = 100000
           max = 999999
@@ -36,7 +75,7 @@ query "auth/senha/esqueci" verb=POST {
           data = {
             reset_senha_codigo    : $codigo_texto
             reset_senha_expira_em : now|add_secs_to_timestamp:900
-            reset_senha_tentativas: 0
+            reset_senha_tentativas: $tentativas_mantidas
             updated_at            : "now"
           }
         } as $user_com_reset
