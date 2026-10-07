@@ -56,6 +56,32 @@ query "documentos/{id}/rejeitar" verb=POST {
       error = "Documento nao encontrado."
     }
 
+    // Bloqueio de autoaprovacao: ninguem decide uma solicitacao em que e o
+    // proprio colaborador, nem RH/ADMIN. A tentativa e auditada antes da recusa.
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $auth.id
+    } as $colaborador_do_decisor
+
+    conditional {
+      if ($colaborador_do_decisor != null && $colaborador_do_decisor.id == $documento_atual.colaborador_id) {
+        db.add auditoria {
+          data = {
+            user_id    : $auth.id
+            acao       : "autoaprovacao_bloqueada"
+            recurso    : "documento"
+            registro_id: $documento_atual.id
+            resultado  : "falha"
+          }
+        } as $evento_autoaprovacao
+
+        precondition (false) {
+          error_type = "accessdenied"
+          error = "Voce nao pode decidir uma solicitacao propria."
+        }
+      }
+    }
+
     // Somente documentos pendentes de analise podem ser rejeitados.
     precondition ($documento_atual.status == "pendente_analise") {
       error_type = "inputerror"

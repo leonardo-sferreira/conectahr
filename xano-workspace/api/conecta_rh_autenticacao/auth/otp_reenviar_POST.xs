@@ -1,5 +1,6 @@
 // Reenvia um novo codigo OTP por e-mail, substituindo o anterior.
-// Uso quando o codigo expirou ou o e-mail nao chegou.
+// Uso quando o codigo expirou ou o e-mail nao chegou. Nao zera as tentativas
+// erradas; limite de 3 reenvios por login e intervalo minimo de 60s.
 query "auth/otp/reenviar" verb=POST {
   api_group = "ConectaRH — Autenticação"
 
@@ -30,6 +31,24 @@ query "auth/otp/reenviar" verb=POST {
       error = "Nao foi possivel reenviar o codigo."
     }
 
+    // Depois de 5 codigos errados, so um novo login gera outro codigo.
+    precondition ($user.otp_tentativas == null || $user.otp_tentativas < 5) {
+      error_type = "toomanyrequests"
+      error = "Nao foi possivel reenviar o codigo. Faca login novamente."
+    }
+
+    // No maximo 3 reenvios por login.
+    precondition ($user.otp_reenvios == null || $user.otp_reenvios < 3) {
+      error_type = "toomanyrequests"
+      error = "Nao foi possivel reenviar o codigo. Faca login novamente."
+    }
+
+    // Intervalo minimo de 60 segundos entre envios.
+    precondition ($user.otp_ultimo_envio_em == null || ($user.otp_ultimo_envio_em|add_secs_to_timestamp:60) <= now) {
+      error_type = "toomanyrequests"
+      error = "Aguarde um minuto antes de pedir um novo codigo."
+    }
+
     security.random_number {
       min = 100000
       max = 999999
@@ -43,10 +62,11 @@ query "auth/otp/reenviar" verb=POST {
       field_name = "id"
       field_value = $user.id
       data = {
-        otp_codigo    : $codigo_texto
-        otp_expira_em : now|add_secs_to_timestamp:300
-        otp_tentativas: 0
-        updated_at    : "now"
+        otp_codigo         : $codigo_texto
+        otp_expira_em      : now|add_secs_to_timestamp:300
+        otp_reenvios       : ($user.otp_reenvios == null ? 1 : $user.otp_reenvios + 1)
+        otp_ultimo_envio_em: "now"
+        updated_at         : "now"
       }
     } as $user_com_novo_otp
 

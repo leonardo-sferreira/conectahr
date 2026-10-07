@@ -37,6 +37,16 @@ table user {
       visibility = "private"
     }
   
+    // Reenvios do codigo no login atual; zerado a cada auth/login (limite 3).
+    int? otp_reenvios?=0 {
+      visibility = "private"
+    }
+  
+    // Ultimo envio do codigo (login ou reenvio); intervalo minimo de 60s entre reenvios.
+    timestamp? otp_ultimo_envio_em {
+      visibility = "private"
+    }
+  
     text? reset_senha_codigo filters=trim|max:6 {
       sensitive = true
       visibility = "private"

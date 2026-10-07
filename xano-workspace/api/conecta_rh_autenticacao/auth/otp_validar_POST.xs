@@ -53,7 +53,11 @@ query "auth/otp/validar" verb=POST {
         db.edit user {
           field_name = "id"
           field_value = $user.id
-          data = {otp_tentativas: $user.otp_tentativas + 1, updated_at: "now"}
+          data = {
+            otp_tentativas: $user.otp_tentativas + 1
+            otp_codigo    : (($user.otp_tentativas + 1) >= 5 ? null : $user.otp_codigo)
+            updated_at    : "now"
+          }
         } as $user_tentativa_invalida
 
         // Auditoria: tentativa de login com codigo invalido (nunca o codigo).
@@ -93,16 +97,9 @@ query "auth/otp/validar" verb=POST {
       field_value = $user.id
     } as $colaborador
 
-    // Gera um token valido por uma hora.
-    security.create_auth_token {
-      table = "user"
-      extras = {perfil: $user.perfil}
-      expiration = 3600
-      id = $user.id
-    } as $auth_token
-
-    // Registra a sessao para consulta e encerramento posterior
-    // (item 2.2 / requisito "Sessoes e dispositivos").
+    // Registra a sessao antes do token: o id dela vai nos extras do token,
+    // e todo endpoint autenticado confere que essa sessao continua ativa
+    // (requisitos "Autenticacao e ciclo de sessao" e "Sessoes e dispositivos").
     db.add sessao {
       data = {
         user_id  : $user.id
@@ -110,6 +107,14 @@ query "auth/otp/validar" verb=POST {
         ativa    : true
       }
     } as $sessao_criada
+
+    // Gera um token valido por uma hora, vinculado a sessao.
+    security.create_auth_token {
+      table = "user"
+      extras = {perfil: $user.perfil, sessao_id: $sessao_criada.id}
+      expiration = 3600
+      id = $user.id
+    } as $auth_token
 
     // Auditoria: login concluido com sucesso.
     db.add auditoria {

@@ -39,6 +39,9 @@ table documento {
     text? estado_de_emissao filters=trim
     date? data_emissao?
     date? data_validade?
+    // Data ate a qual o documento deve ser retido (documento_obrigatorio_regra).
+    // Usada so para revisao manual do RH; nada e eliminado automaticamente.
+    date? retencao_ate?
     text observacao? filters=trim|max:500
     enum status?=pendente_analise {
       values = ["pendente_analise", "aprovado", "rejeitado", "vencido", "substituido", "arquivado"]

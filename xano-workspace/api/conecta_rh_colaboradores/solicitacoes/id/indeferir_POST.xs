@@ -43,6 +43,32 @@ query "solicitacoes/{id}/indeferir" verb=POST {
       error = "Solicitacao nao encontrada."
     }
 
+    // Bloqueio de autoaprovacao: ninguem decide uma solicitacao em que e o
+    // proprio colaborador, nem RH/ADMIN. A tentativa e auditada antes da recusa.
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $auth.id
+    } as $colaborador_do_decisor
+
+    conditional {
+      if ($colaborador_do_decisor != null && $colaborador_do_decisor.id == $solicitacao_atual.colaborador_id) {
+        db.add auditoria {
+          data = {
+            user_id    : $auth.id
+            acao       : "autoaprovacao_bloqueada"
+            recurso    : "solicitacao_rh"
+            registro_id: $solicitacao_atual.id
+            resultado  : "falha"
+          }
+        } as $evento_autoaprovacao
+
+        precondition (false) {
+          error_type = "accessdenied"
+          error = "Voce nao pode decidir uma solicitacao propria."
+        }
+      }
+    }
+
     precondition ($solicitacao_atual.status == "recebida" || $solicitacao_atual.status == "em_analise") {
       error_type = "inputerror"
       error = "Somente solicitacoes recebidas ou em analise podem ser indeferidas."
