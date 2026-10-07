@@ -41,8 +41,13 @@
 - `auth/otp/validar`: `email` (trim|lower) e `codigo` (trim, máx. 6) obrigatórios (`xano-workspace/api/conecta_rh_autenticacao/auth/otp_validar_POST.xs`).
 - `auth/otp/reenviar`: `email` apenas; exige desafio OTP pendente (`otp_codigo != null`) (`xano-workspace/api/conecta_rh_autenticacao/auth/otp_reenviar_POST.xs`).
 - `auth/senha` (PATCH): `senha_atual`, `nova_senha` e `confirmar_senha` (8-64 caracteres); devem coincidir entre si, `senha_atual` deve bater via `security.check_password`, e a nova senha deve ser diferente da atual (`xano-workspace/api/conecta_rh_autenticacao/auth/senha_PATCH.xs`).
-- `auth/senha/esqueci` (POST): só `email`; nunca revela se a conta existe — resposta idêntica em qualquer caso (`xano-workspace/api/conecta_rh_autenticacao/auth/senha/esqueci_POST.xs`).
-- `auth/senha/redefinir` (POST): `email`, `codigo` (máx. 6), `nova_senha`/`confirmar_senha` (8-64); confirmação validada antes de qualquer consulta ao banco, para não vazar por timing se o desafio existe (`xano-workspace/api/conecta_rh_autenticacao/auth/senha/redefinir_POST.xs`).
+- `auth/senha/esqueci` (POST): só `email`; nunca revela se a conta existe — resposta idêntica em qualquer caso. Também atende ao "Reenviar código" da tela de redefinição. Com um código ainda válido (pendente), um novo pedido:
+  - substitui o código **sem zerar** as tentativas erradas;
+  - é ignorado, sem enviar e-mail, se vier menos de 60 s depois do envio anterior;
+  - é ignorado se já houver 5 tentativas erradas, até o código expirar (15 min).
+
+  A resposta continua genérica nos casos ignorados (`xano-workspace/api/conecta_rh_autenticacao/auth/senha/esqueci_POST.xs`).
+- `auth/senha/redefinir` (POST): `email`, `codigo` (máx. 6), `nova_senha`/`confirmar_senha` (8-64). A confirmação é validada antes de qualquer consulta ao banco, para não vazar por timing se o desafio existe. Ao redefinir com sucesso, também **remove o bloqueio por senha errada** do login (`senha_tentativas_invalidas = 0`, `senha_bloqueada_ate = null`): quem recebeu o código no e-mail provou ser o titular (`xano-workspace/api/conecta_rh_autenticacao/auth/senha/redefinir_POST.xs`).
 - `auth/sessoes/{id}/encerrar`: a sessão deve pertencer ao chamador (`sessao.user_id == auth.id`) e estar `ativa` (`xano-workspace/api/conecta_rh_autenticacao/auth/sessoes/id/encerrar_POST.xs`).
 - Todos os endpoints autenticados exigem `auth = "user"` e revalidam que o usuário ainda existe e está `ativo == true` (`xano-workspace/api/conecta_rh_autenticacao/auth/me_GET.xs`, `logout_POST.xs`, `minhas_sessoes_GET.xs`, `senha_PATCH.xs`).
 
