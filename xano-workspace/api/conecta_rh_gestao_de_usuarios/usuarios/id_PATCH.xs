@@ -115,13 +115,20 @@ query "usuarios/{id}" verb=PATCH {
     // senha) nao passe despercebida.
     conditional {
       if ($input.email != $usuario_alvo.email) {
+        // Instante real (com milissegundos) para a chave ser unica por evento: com
+        // (now|to_text) a chave virava o texto literal "now" e o 2o alerta da mesma
+        // conta violava o indice unico de email_outbox (HTTP 500).
+        var $instante_alerta {
+          value = now|format_timestamp:"YmdHisv":"UTC"
+        }
+
         db.add email_outbox {
           data = {
             destinatario_email: $usuario_alvo.email
             destinatario_nome : $usuario_alvo.nome
             assunto           : "ConectaRH - O e-mail de acesso da sua conta foi alterado"
             corpo             : "Ola " ~ $usuario_alvo.nome ~ ",\n\nO e-mail de acesso da sua conta no ConectaRH foi alterado pelo RH. A partir de agora, este endereco nao recebe mais os codigos de acesso.\n\nSe voce nao pediu essa alteracao, procure o RH imediatamente.\n\nEste e um aviso automatico de seguranca."
-            chave_idempotencia: ("alerta_troca_email_" ~ ($usuario_alvo.id|to_text) ~ "_" ~ (now|to_text))
+            chave_idempotencia: ("alerta_troca_email_" ~ ($usuario_alvo.id|to_text) ~ "_" ~ $instante_alerta)
           }
         } as $alerta_troca_email
       }
@@ -133,6 +140,23 @@ query "usuarios/{id}" verb=PATCH {
       field_value = $usuario_atualizado.id
     } as $colaborador
 
+    // E-mail na auditoria vai MASCARADO (LGPD): primeira letra e dominio.
+    var $email_anterior_partes {
+      value = $usuario_alvo.email|split:"@"
+    }
+
+    var $email_anterior_mascarado {
+      value = (($usuario_alvo.email|substr:0:1) ~ "***@" ~ ($email_anterior_partes|last))
+    }
+
+    var $email_novo_partes {
+      value = $usuario_atualizado.email|split:"@"
+    }
+
+    var $email_novo_mascarado {
+      value = (($usuario_atualizado.email|substr:0:1) ~ "***@" ~ ($email_novo_partes|last))
+    }
+
     // Auditoria: atualizacao de conta de usuario (item 7.11).
     db.add auditoria {
       data = {
@@ -140,8 +164,8 @@ query "usuarios/{id}" verb=PATCH {
         acao          : "atualizar_usuario"
         recurso       : "user"
         registro_id   : $usuario_alvo.id
-        valor_anterior: ("nome=" ~ $usuario_alvo.nome ~ "; email=" ~ $usuario_alvo.email)
-        valor_novo    : ("nome=" ~ $usuario_atualizado.nome ~ "; email=" ~ $usuario_atualizado.email)
+        valor_anterior: ("nome=" ~ $usuario_alvo.nome ~ "; email=" ~ $email_anterior_mascarado)
+        valor_novo    : ("nome=" ~ $usuario_atualizado.nome ~ "; email=" ~ $email_novo_mascarado)
         resultado     : "sucesso"
       }
     } as $evento_auditoria

@@ -82,6 +82,8 @@ query minhas_ausencias verb=GET {
     db.query ausencia {
       where = $db.ausencia.colaborador_id == $colaborador_autenticado.id
       sort = {ausencia.created_at: "desc"}
+      // Sem o comprovante (atestado): so abre por ausencias/{id}/comprovante, que audita o acesso.
+      output = ["id", "created_at", "updated_at", "colaborador_id", "tipo", "data_inicio", "data_fim", "motivo", "status", "observacao"]
       return = {type: "list"}
     } as $registros_ausencia
   

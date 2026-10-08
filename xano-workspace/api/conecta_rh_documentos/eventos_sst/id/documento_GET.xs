@@ -1,7 +1,7 @@
-// Consulta os eventos de SST de um colaborador. Acesso restrito:
-// RH/ADMIN, ou o proprio colaborador. Gestor NAO tem acesso (mesmo
-// modelo ja usado para documentos em geral, item 5.9).
-query "colaboradores/{id}/eventos_sst" verb=GET {
+// Abre o documento de um evento de SST (ASO e similares) e registra o acesso na
+// auditoria (acessar_arquivo_documento). Mesmo escopo da consulta de eventos:
+// RH/ADMIN ou o proprio colaborador; o Gestor NAO tem acesso.
+query "eventos_sst/{id}/documento" verb=GET {
   api_group = "ConectaRH - Documentos"
   auth = "user"
 
@@ -56,9 +56,19 @@ query "colaboradores/{id}/eventos_sst" verb=GET {
       error = "Sessao encerrada ou expirada. Faca login novamente."
     }
 
-    db.get colaborador {
+    db.get evento_sst {
       field_name = "id"
       field_value = $input.id
+    } as $evento
+
+    precondition ($evento != null) {
+      error_type = "notfound"
+      error = "Evento de SST nao encontrado."
+    }
+
+    db.get colaborador {
+      field_name = "id"
+      field_value = $evento.colaborador_id
     } as $colaborador_alvo
 
     precondition ($colaborador_alvo != null) {
@@ -76,22 +86,34 @@ query "colaboradores/{id}/eventos_sst" verb=GET {
 
     precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || $e_o_proprio) {
       error_type = "accessdenied"
-      error = "Voce nao tem permissao para consultar estes eventos de SST."
+      error = "Voce nao tem permissao para abrir este documento de SST."
     }
 
-    db.query evento_sst {
-      where = $db.evento_sst.colaborador_id == $colaborador_alvo.id
-      sort = {evento_sst.data_exame: "desc"}
-      // Sem documento_url: so abre por eventos_sst/{id}/documento, que audita o acesso.
-      output = ["id", "created_at", "updated_at", "colaborador_id", "tipo", "resultado", "data_exame", "data_validade", "medico_responsavel", "observacao_operacional", "registrado_por_user_id"]
-      return = {type: "list"}
-    } as $eventos
+    var $tem_documento {
+      value = (($evento.documento_url != null) && (($evento.documento_url|trim) != ""))
+    }
+
+    precondition ($tem_documento) {
+      error_type = "notfound"
+      error = "Este evento nao possui documento."
+    }
+
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "acessar_arquivo_documento"
+        recurso    : "evento_sst"
+        registro_id: $evento.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria_acesso
   }
 
   response = {
-    sucesso: true
-    eventos: $eventos
+    sucesso     : true
+    evento_id   : $evento.id
+    documento_url: ($evento.documento_url|trim)
   }
 
-  guid = "conectahr-colaboradores-eventos-sst-get-0001"
+  guid = "conectahr-eventos-sst-documento-get-0001"
 }

@@ -1,7 +1,9 @@
-// Consulta um registro de ausencia pelo ID.
-// RH e ADMIN consultam qualquer registro.
-// Outros usuarios consultam somente registros proprios.
-query "ausencias/{id}" verb=GET {
+// Abre o comprovante (atestado) de uma ausencia: devolve um link temporario
+// assinado do arquivo privado e registra o acesso na auditoria
+// (acessar_arquivo_documento). RH e ADMIN abrem qualquer comprovante; o
+// colaborador, somente o proprio. O Gestor NAO tem acesso: o comprovante e dado
+// de saude e ele so ve tipo, periodo e status da ausencia.
+query "ausencias/{id}/comprovante" verb=GET {
   api_group = "ConectaRH - Ausencias"
   auth = "user"
 
@@ -47,7 +49,7 @@ query "ausencias/{id}" verb=GET {
       error = "Sessao encerrada ou expirada. Faca login novamente."
     }
   
-    // Contas inativas nao podem consultar ausencias.
+    // Contas inativas nao podem abrir comprovantes.
     precondition ($usuario_autenticado.ativo) {
       error_type = "unauthorized"
       error = "Usuario inativo."
@@ -63,50 +65,59 @@ query "ausencias/{id}" verb=GET {
       value = $usuario_autenticado.perfil|trim|to_upper
     }
   
-    // Localiza o registro de ausencia.
+    // Localiza o registro de ausencia (o comprovante e lido do registro completo).
     db.get ausencia {
       field_name = "id"
       field_value = $input.id
-      // Sem o comprovante (atestado): so abre por ausencias/{id}/comprovante, que audita o acesso.
-      output = ["id", "created_at", "updated_at", "colaborador_id", "tipo", "data_inicio", "data_fim", "motivo", "status", "observacao"]
     } as $registro_ausencia
-  
+
     precondition ($registro_ausencia != null) {
       error_type = "notfound"
       error = "Registro de ausencia nao encontrado."
     }
-  
-    // Localiza o colaborador relacionado.
-    db.get colaborador {
-      field_name = "id"
-      field_value = $registro_ausencia.colaborador_id
-    } as $colaborador_registro
-  
-    precondition ($colaborador_registro != null) {
-      error_type = "notfound"
-      error = "Colaborador relacionado ao registro de ausencia nao encontrado."
-    }
-  
-    // Procura o colaborador vinculado a conta autenticada.
-    // RH ou ADMIN podem nao possuir esse vinculo.
+
     db.get colaborador {
       field_name = "user_id"
       field_value = $usuario_autenticado.id
     } as $colaborador_autenticado
-  
-    // RH e ADMIN consultam qualquer registro.
-    // Outros usuarios consultam somente registros proprios.
-    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || ($colaborador_autenticado != null && $registro_ausencia.colaborador_id == $colaborador_autenticado.id)) {
-      error_type = "accessdenied"
-      error = "Voce nao possui permissao para consultar este registro de ausencia."
+
+    var $e_o_proprio {
+      value = (($colaborador_autenticado != null) && ($registro_ausencia.colaborador_id == $colaborador_autenticado.id))
     }
+
+    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || $e_o_proprio) {
+      error_type = "accessdenied"
+      error = "Voce nao possui permissao para abrir este comprovante."
+    }
+
+    precondition ($registro_ausencia.comprovante != null) {
+      error_type = "notfound"
+      error = "Esta ausencia nao possui comprovante."
+    }
+
+    // Link temporario (5 minutos) do arquivo privado.
+    storage.sign_private_url {
+      pathname = $registro_ausencia.comprovante.path
+      ttl = 300
+    } as $comprovante_assinado
+
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "acessar_arquivo_documento"
+        recurso    : "ausencia"
+        registro_id: $registro_ausencia.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria_acesso
   }
 
   response = {
-    sucesso    : true
-    ausencia   : $registro_ausencia
-    colaborador: $colaborador_registro
+    sucesso           : true
+    ausencia_id       : $registro_ausencia.id
+    comprovante_url   : $comprovante_assinado
+    expira_em_segundos: 300
   }
 
-  guid = "_ysNVQfe1UHLqNuOoXFl3vS3FiY"
+  guid = "conectahr-ausencias-comprovante-get-0001"
 }

@@ -67,6 +67,9 @@ query "documentos/{id}" verb=GET {
     db.get documento {
       field_name = "id"
       field_value = $input.id
+      // Sem o arquivo (arquivo_url e imagens): a abertura de arquivo sensivel so acontece em
+      // endpoint proprio, que audita cada acesso (LGPD).
+      output = ["id", "created_at", "updated_at", "colaborador_id", "tipo", "nome_documento", "numero_documento", "estado_de_emissao", "data_emissao", "data_validade", "retencao_ate", "observacao", "status", "estado_verificacao", "ultimo_alerta_dias", "hash_arquivo", "documento_substituido_id", "motivo_bloqueio", "ativo"]
     } as $documento
   
     precondition ($documento != null) {

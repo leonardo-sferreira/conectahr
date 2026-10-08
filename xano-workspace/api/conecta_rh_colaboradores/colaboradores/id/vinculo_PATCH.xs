@@ -333,8 +333,8 @@ query "colaboradores/{id}/vinculo" verb=PATCH {
             acao          : $tipo_historico
             recurso       : "colaborador"
             registro_id   : $colaborador_atual.id
-            valor_anterior: ("cargo_id=" ~ (($colaborador_atual.cargo_id)|to_text) ~ "; departamento_id=" ~ (($colaborador_atual.departamento_id)|to_text) ~ "; salario=" ~ (($colaborador_atual.salario)|to_text))
-            valor_novo    : ("cargo_id=" ~ (($cargo.id)|to_text) ~ "; departamento_id=" ~ (($departamento.id)|to_text) ~ "; salario=" ~ (($input.salario)|to_text))
+            valor_anterior: ("cargo_id=" ~ (($colaborador_atual.cargo_id)|to_text) ~ "; departamento_id=" ~ (($colaborador_atual.departamento_id)|to_text) ~ "; salario=***")
+            valor_novo    : ("cargo_id=" ~ (($cargo.id)|to_text) ~ "; departamento_id=" ~ (($departamento.id)|to_text) ~ "; salario=" ~ ($input.salario == $colaborador_atual.salario ? "inalterado" : "alterado"))
             justificativa : $input.motivo_alteracao
             resultado     : "sucesso"
           }
