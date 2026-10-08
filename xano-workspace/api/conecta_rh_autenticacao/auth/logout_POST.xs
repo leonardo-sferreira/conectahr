@@ -1,9 +1,6 @@
-// Encerra a sessao mais recente do usuario autenticado. Aproximacao
-// deliberada de "sessao atual": o token em si permanece criptografico
-// e valido ate a expiracao natural (1h) em endpoints que nao verificam
-// a tabela `sessao` — ver nota de escopo em design.md/tasks.md (2.2).
-// Para encerrar uma sessao especifica (nao necessariamente a mais
-// recente), use `sessoes/{id}/encerrar`.
+// Encerra a sessao do proprio token (extras.sessao_id). Como todo endpoint
+// autenticado valida a sessao do token, o token deixa de funcionar na hora.
+// Para encerrar outra sessao, use `sessoes/{id}/encerrar`.
 query "auth/logout" verb=POST {
   api_group = "ConectaRH — Autenticação"
   auth = "user"
@@ -22,32 +19,55 @@ query "auth/logout" verb=POST {
       error = "Usuario autenticado nao encontrado."
     }
 
-    db.query sessao {
-      where = $db.sessao.user_id == $usuario_autenticado.id && $db.sessao.ativa == true
-      sort = {sessao.created_at: "desc"}
-      return = {type: "single"}
-    } as $sessao_recente
-
-    conditional {
-      if ($sessao_recente != null) {
-        db.edit sessao {
-          field_name = "id"
-          field_value = $sessao_recente.id
-          data = {ativa: false, revogada_em: "now", updated_at: "now"}
-        } as $sessao_encerrada
-
-        // Auditoria: logout.
-        db.add auditoria {
-          data = {
-            user_id    : $usuario_autenticado.id
-            acao       : "logout"
-            recurso    : "sessao"
-            registro_id: $sessao_recente.id
-            resultado  : "sucesso"
-          }
-        } as $evento_auditoria
-      }
+    precondition ($usuario_autenticado.ativo) {
+      error_type = "unauthorized"
+      error = "Usuario inativo."
     }
+
+    // Sessao do token: precisa existir, ser do usuario, estar ativa e no prazo.
+    db.get sessao {
+      field_name = "id"
+      field_value = $auth.extras.sessao_id
+    } as $sessao_token
+
+    precondition ($sessao_token.ativa) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.user_id == $auth.id) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.revogada_em == null) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.expira_em > now) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    // Encerra exatamente a sessao do token (validada pela guarda acima);
+    // as demais sessoes do usuario continuam ativas.
+    db.edit sessao {
+      field_name = "id"
+      field_value = $sessao_token.id
+      data = {ativa: false, revogada_em: "now", updated_at: "now"}
+    } as $sessao_encerrada
+
+    // Auditoria: logout.
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "logout"
+        recurso    : "sessao"
+        registro_id: $sessao_token.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
