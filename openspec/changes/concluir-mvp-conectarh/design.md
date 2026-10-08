@@ -69,6 +69,14 @@ A alternativa por hash do token, prevista no D2 da `corrigir-brechas`, não é n
 
 O spike usou o próprio `auth/me` em vez de um endpoint temporário. O `sessao_id` **continua** na resposta de `auth/me`, por dois motivos: ele não é sensível (só identifica a sessão do próprio usuário) e a tela de sessões e dispositivos o usa para marcar "esta sessão".
 
+### C6. Swagger desligado e repositório público (`[CB 1.15]`, 2026-10-08)
+
+O repositório `leonardo-sferreira/conectahr` é **público**, então todo o código do backend e qualquer segredo commitado são visíveis a qualquer pessoa. Isso torna o swagger um risco maior do que o previsto no D9 da `corrigir-brechas`:
+- um grupo de API **sem** o campo `swagger` fica com a documentação aberta, e um grupo com token só é aberto por quem o conhece (e os tokens estavam no repositório);
+- `swagger = {active: false}` desliga de verdade: o `apispec` responde 404, e o campo é aceito pelo XanoScript.
+
+Decisão: todo grupo declara `swagger = {active: false}` no repositório. Os tokens ficam só no Xano e nunca são commitados. O `tools/checar_endpoints.py` garante isso.
+
 ## Risks / Trade-offs
 
 - [Referências cruzadas antigas podem confundir] → A regra C1 e os prefixos `[XX x.y]` mantêm cada tarefa ligada à origem.

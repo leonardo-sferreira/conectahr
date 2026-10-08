@@ -98,6 +98,32 @@ def checar_arquivo(caminho, checar_sessao):
     return f"{verbo} {rota}", problemas
 
 
+RE_SWAGGER = re.compile(r"swagger\s*=\s*\{([^}]*)\}")
+
+
+def checar_swagger(pastas):
+    """Grupos de API com swagger ligado ou com token no arquivo.
+
+    O repositorio e publico: o swagger deve ficar desligado (`active: false`) e
+    nenhum token pode ser commitado. Um `xano workspace pull` reescreve os
+    arquivos de grupo com o token que esta no Xano; descarte essa linha antes
+    do commit (git checkout no arquivo de grupo)."""
+    problemas = []
+    for pasta in pastas:
+        for caminho in sorted(pasta.rglob("conecta_rh_*.xs")):
+            texto = caminho.read_text(encoding="utf-8")
+            if "api_group" not in texto:
+                continue
+            achado = RE_SWAGGER.search(texto)
+            if not achado:
+                problemas.append((caminho.relative_to(RAIZ), "sem `swagger = {active: false}` (o Xano deixa a documentacao aberta)"))
+            elif "active: false" not in achado.group(1):
+                problemas.append((caminho.relative_to(RAIZ), "swagger ligado"))
+            elif "token" in achado.group(1):
+                problemas.append((caminho.relative_to(RAIZ), "token de swagger no arquivo (repositorio publico: nao commitar)"))
+    return problemas
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--sem-sessao", action="store_true", help="nao exige a validacao de sessao")
@@ -122,8 +148,12 @@ def main():
         for problema in problemas:
             print(f"    - {problema}")
 
-    print(f"\n{autenticados} endpoints autenticados, {len(falhas)} com falha.")
-    return 1 if falhas else 0
+    problemas_swagger = checar_swagger(pastas)
+    for caminho, motivo in problemas_swagger:
+        print(f"{caminho}  [grupo de API]\n    - {motivo}")
+
+    print(f"\n{autenticados} endpoints autenticados, {len(falhas)} com falha; {len(problemas_swagger)} grupo(s) com problema de swagger.")
+    return 1 if (falhas or problemas_swagger) else 0
 
 
 if __name__ == "__main__":
