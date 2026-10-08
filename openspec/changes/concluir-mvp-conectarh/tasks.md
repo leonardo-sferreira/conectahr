@@ -103,8 +103,25 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
 **Novas tarefas**
 
-- [ ] 2.37 [novo] Construir o Passo 3 do login, "Trocar senha temporária" (design C2; Figma 193:55 e 193:241): depois do código de acesso, se `senha_primeiro_acesso` for verdadeiro, mostrar senha temporária, nova senha e confirmação, chamar `auth/senha PATCH` e só então liberar o Início; "Sair" encerra a sessão. Verificar com uma conta de teste com senha temporária: o restante do app fica inacessível antes da troca, a senha errada mostra o alerta da 193:241 e, depois da troca, o Início abre e o primeiro acesso aparece concluído.
-- [ ] 2.38 [novo] Levar os alertas de erro e de sucesso da tela Entrar para dentro do card, abaixo do título, como no Figma (design C3; nós 193:241 e 193:139). Verificar por screenshot lado a lado com os nós.
+- [x] 2.37 [novo] Construir o Passo 3 do login, "Trocar senha temporária" (design C2; Figma 193:55 e 193:241): depois do código de acesso, se `senha_primeiro_acesso` for verdadeiro, mostrar senha temporária, nova senha e confirmação, chamar `auth/senha PATCH` e só então liberar o Início; "Sair" encerra a sessão. Verificar com uma conta de teste com senha temporária: o restante do app fica inacessível antes da troca, a senha errada mostra o alerta da 193:241 e, depois da troca, o Início abre e o primeiro acesso aparece concluído.
+  - Verificado em 2026-10-08 com a conta de teste `qa.primeiro.acesso@conectarh.test` (usuário 15, colaborador 21, perfil Colaborador), criada por `usuarios POST`. No navegador (Playwright):
+    - depois do código, o app abre o Passo 3, sem barra lateral nem Início;
+    - senha temporária errada → "A senha atual está incorreta." dentro do card;
+    - nova senha igual à temporária e confirmação diferente → recusadas na própria tela;
+    - "Sair" volta ao login;
+    - novo login volta ao Passo 3, e a troca correta abre o Início.
+
+    Pela API, a senha temporária passa a ser recusada (403) e a nova é aceita; no banco, `senha_primeiro_acesso = false`.
+  - Diferenças em relação ao Figma, iguais às outras telas do app: moldura escura do campo e alerta no estilo nativo do Streamlit.
+- [x] 2.38 [novo] Levar os alertas de erro e de sucesso da tela Entrar para dentro do card, abaixo do título, como no Figma (design C3; nós 193:241 e 193:139). Verificar por screenshot lado a lado com os nós.
+  - Verificado em 2026-10-08 no navegador (Playwright), conferindo no DOM que cada alerta fica dentro do card, abaixo do título e acima do formulário, nos 6 casos:
+    - login: e-mail inválido e credencial recusada;
+    - código: formato inválido;
+    - esqueci: e-mail com acento;
+    - redefinir: reenvio antes de 60 s e confirmação diferente.
+
+    O aviso de sucesso após redefinir usa o mesmo espaço reservado, mas não foi reexecutado (exige um código de redefinição real).
+  - A conexão com o Figma caiu nesta sessão. A comparação foi feita com as capturas dos nós 193:139 e 193:241 tiradas em 2026-10-07.
 - [ ] 2.39 [novo] Construir o painel de notificações e o menu da conta da barra superior (Figma, seção 5, nó 197:74): lista de `minhas_notificacoes` com o total de não lidas, `notificacoes/{id}/marcar_lida` ao abrir, estado vazio, e menu só com "Configurações" e "Sair da conta". Verificar os estados com e sem notificações e que "Sair da conta" volta ao Login.
 - [ ] 2.40 [novo] Desenhar no Figma e depois construir as telas de Configurações: troca de senha, sessões e dispositivos, e preferências de notificação, sobre `auth/senha PATCH`, `auth/minhas_sessoes`, `auth/sessoes/*` e `minhas_preferencias_notificacao`. Verificar prints lado a lado com os nós e os 6 estados de UI.
 
@@ -112,20 +129,45 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
 **1. Brechas de segurança (Parte 1)**
 
-- [ ] 3.1 [CB 1.1] Spike de sessão no token (design D2): emitir um token de teste com `extras = {perfil, sessao_id}` e ler o `sessao_id` num endpoint temporário. Se não houver acessor confiável, testar a alternativa por hash do token. Registrar o resultado em `design.md` (D2). Verificar: o endpoint temporário devolve o `sessao_id` correto para dois tokens diferentes e é removido do workspace ao final. Se as duas abordagens falharem, parar a 1.4 e rever o design antes de seguir.
-- [ ] 3.2 [CB 1.4] Sessão no token (item 1.3 da auditoria):
+- [x] 3.1 [CB 1.1] Spike de sessão no token (design D2): emitir um token de teste com `extras = {perfil, sessao_id}` e ler o `sessao_id` num endpoint temporário. Se não houver acessor confiável, testar a alternativa por hash do token. Registrar o resultado em `design.md` (D2). Verificar: o endpoint temporário devolve o `sessao_id` correto para dois tokens diferentes e é removido do workspace ao final. Se as duas abordagens falharem, parar a 1.4 e rever o design antes de seguir.
+  - Verificado em 2026-10-08: dois tokens da conta de teste devolveram, em `auth/me`, as sessões 30 e 31, as duas conferidas no banco (ativas, usuário 15). O resultado está no `design.md` (C5). Não houve endpoint temporário: o spike usou o `auth/me`, que mantém o `sessao_id`.
+- [x] 3.2 [CB 1.4] Sessão no token (item 1.3 da auditoria):
   - `auth/otp/validar` cria a sessão antes do token e inclui o `sessao_id` em `extras`;
   - `auth/logout` encerra exatamente a sessão do token;
   - `auth/sessoes/encerrar_outras` preserva a sessão do token;
   - `auth/sessoes/{id}/encerrar` só encerra sessão do próprio usuário.
 
   Verificar por HTTP com duas sessões do mesmo usuário: depois do logout na sessão A, o token A é recusado e o token B continua aceito; depois de `encerrar_outras` chamado com B, A é recusado e B continua aceito.
-- [ ] 3.3 [CB 1.5] Guarda de acesso (itens 1.1, 1.2 e 1.3 da auditoria) nos grupos "ConectaRH — Autenticação" e "ConectaRH — Gestão de Usuários": usuário ativo, senha trocada (com as exceções do D1) e sessão válida. Verificar: o script da 1.2 passa para esses grupos. Por HTTP: um usuário com senha temporária só consegue usar `auth/senha PATCH`, `auth/me`, `auth/logout` e as rotas de sessão.
-- [ ] 3.4 [CB 1.6] Guarda de acesso no grupo "ConectaRH — Colaboradores", parte 1: cadastro, organograma, busca, onboarding, contratos, banco de horas, solicitações, comunicados e FAQ. Verificar: o script passa para esses arquivos e o smoke test HTTP funciona com um endpoint por perfil.
-- [ ] 3.5 [CB 1.7] Guarda de acesso no grupo "ConectaRH — Colaboradores", parte 2: avaliação, metas, PDI, clima, reconhecimento, regras, instrumentos, indicadores, auditoria, delegações e calendário. Verificar: o script passa para o grupo inteiro. Por HTTP, com um usuário de senha temporária, `auditoria GET`, `indicadores GET`, `instrumentos_normativos/{id}/aprovar`, `metas POST`, `pdi POST` e `perguntas_clima/{id}/responder` são negados.
-- [ ] 3.6 [CB 1.8] Guarda de acesso nos grupos Ponto, Férias, Ausências, Documentos, Desligamentos, Cargos e Departamentos. Verificar: o script não aponta nenhuma falha em todo o `xano-workspace/api`. Por HTTP, depois de desativar um usuário de teste, o token antigo dele é negado em `ponto/marcar` e em `ferias/solicitacoes`.
-- [ ] 3.7 [CB 1.9] Revogação em massa: `usuarios/{id}/status PATCH` (ao desativar), `solicitacoes_desligamento/{id}/aprovar` (desligamento imediato) e `.../concluir` encerram todas as sessões do usuário, com `revogada_em` preenchido. Verificar por HTTP: o usuário com duas sessões ativas tem os dois tokens recusados depois da desativação.
-- [ ] 3.8 [CB 1.11] Bloqueio de autoaprovação (item 1.5 da auditoria, design D4) em todos os endpoints de decisão listados no D4, com a auditoria `autoaprovacao_bloqueada` gravada antes da recusa. Verificar por HTTP com uma conta RH que tem colaborador vinculado:
+  - Código publicado no workspace 147338 em 2026-10-08. Verificado por HTTP com duas sessões da conta de teste (sessões 30 e 31):
+    - logout com a sessão A → o token A passa a ser recusado (401) e o B continua aceito;
+    - `encerrar_outras` chamado com D → o token E é recusado e o D continua aceito;
+    - o usuário 15 tentando encerrar uma sessão do Admin → 403 "Voce so pode encerrar as proprias sessoes", e a sessão do Admin segue válida;
+    - encerrar a própria sessão → o token seguinte é recusado.
+  - O plano gratuito do Xano limita a 10 requisições por 20 s (429). Testes automatizados precisam de pausa entre as chamadas.
+- [x] 3.3 [CB 1.5] Guarda de acesso (itens 1.1, 1.2 e 1.3 da auditoria) nos grupos "ConectaRH — Autenticação" e "ConectaRH — Gestão de Usuários": usuário ativo, senha trocada (com as exceções do D1) e sessão válida. Verificar: o script da 1.2 passa para esses grupos. Por HTTP: um usuário com senha temporária só consegue usar `auth/senha PATCH`, `auth/me`, `auth/logout` e as rotas de sessão.
+  - Publicado em 2026-10-08. `tools/checar_endpoints.py --grupo conecta_rh_autenticacao --grupo conecta_rh_gestao_de_usuarios`: 16 endpoints, 0 falhas. Por HTTP, com a conta de teste ainda com senha temporária:
+    - `auth/me`, `auth/minhas_sessoes`, `auth/sessoes/encerrar_outras` e `auth/senha PATCH` funcionam;
+    - `usuarios GET`, `minhas_delegacoes` e `status_operacional` → 401 "Troque a senha temporaria antes de continuar.";
+    - depois da troca, `minhas_delegacoes` abre (200);
+    - com a conta desativada, `auth/me` e as demais rotas → 401 "Usuario inativo.", e o login também é recusado.
+  - O `logout` e o `encerrar_outras` agora encerram exatamente a sessão do token (antes usavam "a mais recente").
+- [x] 3.4 [CB 1.6] Guarda de acesso no grupo "ConectaRH — Colaboradores", parte 1: cadastro, organograma, busca, onboarding, contratos, banco de horas, solicitações, comunicados e FAQ. Verificar: o script passa para esses arquivos e o smoke test HTTP funciona com um endpoint por perfil.
+  - A guarda foi aplicada ao grupo "ConectaRH — Colaboradores" inteiro (89 endpoints, as partes 1 e 2 juntas) e publicada em 2026-10-08. `tools/checar_endpoints.py --grupo conecta_rh_colaboradores`: 89 endpoints, 0 falhas. Por HTTP:
+    - Admin: 28 de 28 leituras sem parâmetro obrigatório respondem 200;
+    - amostra de 10 leituras por perfil (RH, Gestor e Colaborador, trocando o perfil de uma conta de teste e devolvendo ao final): nenhum 401; RH 10 em 200, Gestor e Colaborador 4 em 200 e 6 em 403 (rotas que exigem outro perfil).
+  - O `tools/checar_endpoints.py` passou a ignorar comentários: um cabeçalho que cita "db.add auditoria" era lido como escrita anterior à guarda.
+- [x] 3.5 [CB 1.7] Guarda de acesso no grupo "ConectaRH — Colaboradores", parte 2: avaliação, metas, PDI, clima, reconhecimento, regras, instrumentos, indicadores, auditoria, delegações e calendário. Verificar: o script passa para o grupo inteiro. Por HTTP, com um usuário de senha temporária, `auditoria GET`, `indicadores GET`, `instrumentos_normativos/{id}/aprovar`, `metas POST`, `pdi POST` e `perguntas_clima/{id}/responder` são negados.
+  - Coberta pelo mesmo push da 3.4. Com uma conta de teste ainda com senha temporária (usuário 17), por HTTP em 2026-10-08, todas negadas com 401 "Troque a senha temporaria antes de continuar.": `auditoria GET`, `indicadores GET`, `instrumentos_normativos/{id}/aprovar`, `metas POST`, `pdi POST` e `perguntas_clima/{id}/responder`, além de `central_de_tarefas` e `meu_perfil_colaborador`.
+  - Para `metas` e `pdi`, o corpo precisa ter todos os campos obrigatórios; com campos faltando o Xano devolve 400 antes de executar a guarda.
+- [x] 3.6 [CB 1.8] Guarda de acesso nos grupos Ponto, Férias, Ausências, Documentos, Desligamentos, Cargos e Departamentos. Verificar: o script não aponta nenhuma falha em todo o `xano-workspace/api`. Por HTTP, depois de desativar um usuário de teste, o token antigo dele é negado em `ponto/marcar` e em `ferias/solicitacoes`.
+  - Publicado em 2026-10-08 (68 endpoints de Ponto, Férias, Ausências, Documentos, Desligamentos, Cargos e Departamentos). `python tools/checar_endpoints.py` em todo o `xano-workspace/api`: **173 endpoints autenticados, 0 falhas**. Por HTTP:
+    - Admin: 14 de 15 leituras sem parâmetro obrigatório em 200; a exceção é `minhas_solicitacoes_desligamento`, que responde 403 por regra (só colaborador ou gestor);
+    - conta de teste desativada, com o token emitido antes: `ponto/marcar` e `ferias/solicitacoes` → 401 "Usuario inativo.", antes de qualquer gravação.
+  - Ao conferir o `--dry-run`, os padrões `-i` sem aspas foram expandidos pelo shell e o preview mostrou 17 dos 68 arquivos. Sempre citar `"api/<grupo>/**/*.xs"` entre aspas e conferir a contagem de `Matched`.
+- [x] 3.7 [CB 1.9] Revogação em massa: `usuarios/{id}/status PATCH` (ao desativar), `solicitacoes_desligamento/{id}/aprovar` (desligamento imediato) e `.../concluir` encerram todas as sessões do usuário, com `revogada_em` preenchido. Verificar por HTTP: o usuário com duas sessões ativas tem os dois tokens recusados depois da desativação.
+  - Publicado em 2026-10-08. A revogação entra logo depois de desativar a conta, nos três endpoints; nos dois de desligamento fica dentro da mesma transação. Por HTTP, com a conta de teste (usuário 15) em duas sessões ativas (40 e 41): o Admin desativa a conta e os dois tokens passam a responder 401 "Sessao encerrada ou expirada" (e não "Usuario inativo", o que prova a revogação). Depois de reativar, as sessões antigas seguem revogadas e um login novo funciona (sessão 42).
+  - **Não exercitado ao vivo:** os caminhos de `solicitacoes_desligamento/{id}/aprovar` (desligamento imediato) e `.../concluir`. Usam o mesmo bloco de código, mas testá-los desliga um colaborador de forma irreversível. Ficam para a integração final com um colaborador de teste dedicado.
+- [x] 3.8 [CB 1.11] Bloqueio de autoaprovação (item 1.5 da auditoria, design D4) em todos os endpoints de decisão listados no D4, com a auditoria `autoaprovacao_bloqueada` gravada antes da recusa. Verificar por HTTP com uma conta RH que tem colaborador vinculado:
   - aprovar as próprias férias, ausência e documento retorna acesso negado e gera o evento consultável em `auditoria GET`;
   - um Gestor aprovando a própria correção de ponto é negado;
   - decidir solicitações de outro colaborador continua funcionando.
@@ -136,20 +178,43 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
     - as férias 6, de outro colaborador, passam pelo bloqueio e param na validação de status (400), sem alterar dados.
 
     Falta o cenário do Gestor com a própria correção de ponto (não há conta Gestor de teste) e uma decisão positiva efetivamente aplicada.
-- [ ] 3.9 [CB 1.12] Anonimato da pesquisa de clima (item 1.6 da auditoria, design D5): `perguntas_clima/{id}/responder` grava a participação e incrementa `resposta_clima_agregado`, sem gravar em `resposta_clima`. Também valida pesquisa `ativo`, período, colaborador não desligado e a guarda completa. `pesquisas_clima/{id}/resultados` passa a ler o agregado. Verificar por HTTP:
+  - Verificado por HTTP em 2026-10-07 e 2026-10-08, com a conta Admin (colaborador 2) e uma conta de teste (usuário 15, colaborador 21):
+    - o Admin aprovando as próprias férias, ausência e documento → 403 "Voce nao pode decidir uma solicitacao propria.", status inalterados e 4 eventos `autoaprovacao_bloqueada` (falha) em `auditoria GET`;
+    - a conta de teste, com perfil Gestor, aprovando a própria correção de ponto (id 4) → 403 e 1 evento `autoaprovacao_bloqueada` para `correcao_ponto`. A checagem vem antes do escopo, então vale mesmo para um Gestor sem departamento;
+    - o Admin aprovando a correção do colaborador 21 (outra pessoa) → 200, sem regressão.
+  - O perfil da conta de teste foi alterado só durante o teste e devolvido a Colaborador. Uma correção de ponto e um registro de ponto de teste ficaram no colaborador 21.
+- [x] 3.9 [CB 1.12] Anonimato da pesquisa de clima (item 1.6 da auditoria, design D5): `perguntas_clima/{id}/responder` grava a participação e incrementa `resposta_clima_agregado`, sem gravar em `resposta_clima`. Também valida pesquisa `ativo`, período, colaborador não desligado e a guarda completa. `pesquisas_clima/{id}/resultados` passa a ler o agregado. Verificar por HTTP:
   - resposta fora do período, de pesquisa inativa ou de colaborador desligado é recusada sem gravar participação;
   - resposta válida incrementa o agregado e nenhuma linha nova aparece em `resposta_clima`;
   - os resultados continuam suprimindo grupos abaixo de `minimo_respostas`.
-- [ ] 3.10 [CB 1.13] Function idempotente para consolidar as linhas legadas de `resposta_clima` em `resposta_clima_agregado`, executada uma vez com `xano function run`. Responder à Open Question do `design.md` sobre dados reais. Verificar: a soma das quantidades no agregado é igual ao total de linhas legadas por pergunta, e uma segunda execução não altera nada.
-- [ ] 3.11 [CB 1.14] Troca de e-mail de conta (item 1.7 da auditoria, design D9): `usuarios/{id} PATCH` passa a enfileirar no `email_outbox` um alerta para o e-mail anterior e a auditar os valores anterior e novo. Verificar por HTTP: a troca de e-mail de uma conta de teste gera a linha no outbox para o endereço antigo e o evento de auditoria.
-- [ ] 3.12 [CB 1.15] Swagger (item 1.7 da auditoria, design D9): regenerar os tokens de swagger de todos os grupos no Xano e desativar o swagger público. Fazer `pull` para atualizar os `api/*/conecta_rh_*.xs`. Verificar: os tokens antigos do histórico do git não abrem mais a documentação (teste no navegador) e o diff pós-pull mostra os tokens novos ou o swagger desativado.
-- [ ] 3.13 [CB 1.16] Documentar em `docs/regras-de-negocio.md`:
+  - Publicado em 2026-10-08 (os endpoints `perguntas_clima/{id}/responder` e `pesquisas_clima/{id}/resultados` estavam só no git). Verificado por HTTP com uma conta Colaborador de teste e conferido no banco com `xano workspace pull --records`:
+    - resposta válida (nota 4) → 200; o agregado ganhou a linha (pergunta 1, departamento 4, nota 4, quantidade 1) e `resposta_clima` continuou com as 2 linhas antigas, **sem nenhuma individual nova**;
+    - resposta repetida → "Voce ja respondeu esta pergunta."; nota 6 → "A nota deve estar entre 1 e 5.";
+    - pesquisa de teste com período encerrado → "Esta pesquisa esta fora do periodo de respostas." e **nenhuma participação gravada**;
+    - `resultados` (Admin): pergunta 1 com quantidade 3 e média 4, por departamento e geral; a pergunta 2, abaixo do mínimo de 2, não aparece.
+  - **Não exercitado ao vivo:** (a) pesquisa inativa, porque não há como encerrar uma pesquisa antes da tarefa de `pesquisas_clima/{id}/encerrar`; (b) colaborador desligado, porque o desligamento desativa a conta e a guarda barra antes da checagem; (c) supressão de um grupo que tem respostas, mas menos que o mínimo, por falta de dados.
+  - Os vazamentos por complemento e por diferença seguem abertos, na tarefa [novo] da seção 3.
+- [x] 3.10 [CB 1.13] Function idempotente para consolidar as linhas legadas de `resposta_clima` em `resposta_clima_agregado`, executada uma vez com `xano function run`. Responder à Open Question do `design.md` sobre dados reais. Verificar: a soma das quantidades no agregado é igual ao total de linhas legadas por pergunta, e uma segunda execução não altera nada.
+  - Function publicada e executada em 2026-10-08 com `xano function run`. 1ª execução: 2 linhas consolidadas. 2ª: `ja_executada_antes: true` e 0 linhas. Conferido no banco: soma dos agregados (2) igual às linhas legadas, nota por nota; 1 evento na auditoria.
+  - Resposta à pergunta em aberto do design: existem 2 linhas em `resposta_clima`, ambas do departamento 4 (notas 5 e 3). Pelo conteúdo parecem dados de teste; o risco residual (as linhas continuam correlacionáveis no banco, mas nenhum endpoint as lê) fica registrado para a decisão do grupo.
+- [x] 3.11 [CB 1.14] Troca de e-mail de conta (item 1.7 da auditoria, design D9): `usuarios/{id} PATCH` passa a enfileirar no `email_outbox` um alerta para o e-mail anterior e a auditar os valores anterior e novo. Verificar por HTTP: a troca de e-mail de uma conta de teste gera a linha no outbox para o endereço antigo e o evento de auditoria.
+  - O código já estava no git desde o PR #3, mas só foi publicado no Xano junto com o `usuarios/{id} PATCH` (guarda da 3.3). Verificado em 2026-10-08: trocar o e-mail de uma conta de teste gerou 1 linha no `email_outbox` para o **e-mail antigo** (status `pendente`, sem o endereço novo no texto) e o evento `atualizar_usuario` na auditoria, com os valores anterior e novo.
+- [x] 3.12 [CB 1.15] Swagger (item 1.7 da auditoria, design D9): regenerar os tokens de swagger de todos os grupos no Xano e desativar o swagger público. Fazer `pull` para atualizar os `api/*/conecta_rh_*.xs`. Verificar: os tokens antigos do histórico do git não abrem mais a documentação (teste no navegador) e o diff pós-pull mostra os tokens novos ou o swagger desativado.
+  - Feito em 2026-10-08 pela CLI, sem passar pela interface do Xano. Antes: os tokens de 7 grupos abriam a documentação (`apispec`, HTTP 200) e os 3 grupos sem o campo `swagger` estavam **abertos para qualquer pessoa**, com ou sem token. O repositório é **público**. Depois:
+    - `swagger = {active: false}` em todos os 10 grupos: o `apispec` responde 404 com o token antigo, sem token e com qualquer token;
+    - os tokens guardados no Xano foram trocados por valores novos, enviados de uma pasta temporária que foi apagada; nenhum dos 7 tokens do histórico do git continua no servidor;
+    - o `pull` confirma `active: false` nos 10 grupos.
+  - Atenção: um `xano workspace pull` reescreve os arquivos de grupo com o token novo do Xano. Antes de commitar, descarte essa linha. O `tools/checar_endpoints.py` agora reprova swagger ligado, grupo sem a configuração e token no arquivo.
+  - Os tokens antigos continuam no histórico público do git, mas não valem mais. Reescrever o histórico não é necessário e seria destrutivo para os clones do grupo.
+- [x] 3.13 [CB 1.16] Documentar em `docs/regras-de-negocio.md`:
   - as regras novas da Parte 1 (guarda de acesso, sessão no token, reenvio de OTP, autoaprovação, troca de e-mail e swagger);
   - a reescrita da seção 11.6 (anonimato por agregação);
   - o risco aceito do bloqueio por senha errada (D9).
 
   Verificar: cada regra cita o endpoint correspondente, e a seção 2.6 e a 11.6 não contradizem o código.
-- [ ] 3.14 [CB 1.17] Registrar as evidências da Parte 1 em `docs/evidencias/seguranca.md`, com o cenário, a requisição (sem token completo) e o resultado esperado e obtido de cada verificação das tarefas 1.4 a 1.15. Verificar: o arquivo não contém e-mail, CPF nem token reais.
+  - Feito em 2026-10-08 em `docs/regras-de-negocio.md`: itens 2 a 4 da 1.3 (reenvio e validação do código, troca de senha), a 1.4 (logout, `encerrar_outras` e revogação ao desativar), a 2.1, a 2.6 e a 11.6 (anonimato por agregação) foram reescritos, e a nova subseção **2.7** reúne guarda de acesso, rotas de primeiro acesso, autoaprovação, troca de e-mail, redefinição de senha, swagger e o risco aceito do bloqueio por senha errada. Cada regra cita o endpoint; os trechos reescritos foram conferidos contra o comportamento testado por HTTP.
+- [x] 3.14 [CB 1.17] Registrar as evidências da Parte 1 em `docs/evidencias/seguranca.md`, com o cenário, a requisição (sem token completo) e o resultado esperado e obtido de cada verificação das tarefas 1.4 a 1.15. Verificar: o arquivo não contém e-mail, CPF nem token reais.
+  - Criado `docs/evidencias/seguranca.md`, com cenário, esperado e obtido de cada verificação das tarefas 1.1 a 1.15. `grep` por e-mail, `Bearer`, token JWT e CPF: nada encontrado. As contas de teste aparecem só pelo papel.
 
 **2. Requisitos da spec não cumpridos (Parte 2)**
 

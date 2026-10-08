@@ -147,6 +147,22 @@ def redefinir_senha(email: str, codigo: str, nova_senha: str, confirmar_senha: s
     )
 
 
+def trocar_senha(token: str, senha_atual: str, nova_senha: str, confirmar_senha: str) -> dict:
+    """PATCH auth/senha -> {sucesso, mensagem, usuario_id, senha_primeiro_acesso}. Conclui o primeiro acesso."""
+    return _request(
+        "PATCH",
+        "auth/senha",
+        token,
+        GRUPO_AUTENTICACAO,
+        {"senha_atual": senha_atual, "nova_senha": nova_senha, "confirmar_senha": confirmar_senha},
+    )
+
+
+def logout(token: str) -> dict:
+    """POST auth/logout -> encerra a sessão do usuário autenticado."""
+    return _post("auth/logout", {}, token)
+
+
 def central_de_tarefas(token: str) -> dict:
     """GET central_de_tarefas -> pendencias pessoais + filas de decisao por perfil."""
     return _get("central_de_tarefas", token, GRUPO_COLABORADORES)

@@ -70,9 +70,6 @@ def pagina_inicio() -> None:
 
     render_topbar(usuario["nome"])
 
-    if st.session_state.get("senha_primeiro_acesso"):
-        st.warning("Este é o seu primeiro acesso: troque a senha temporária para liberar os dados da plataforma.")
-
     with st.spinner("Carregando..."):
         central = _consultar(central_de_tarefas, token)
         banco = _consultar(meu_banco_horas, token)

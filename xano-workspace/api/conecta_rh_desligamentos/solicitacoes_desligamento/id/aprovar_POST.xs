@@ -23,6 +23,32 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
       error_type = "unauthorized"
       error = "Usuário autenticado não encontrado."
     }
+
+    // Sessao do token: precisa existir, ser do usuario, estar ativa e no prazo.
+    db.get sessao {
+      field_name = "id"
+      field_value = $auth.extras.sessao_id
+    } as $sessao_token
+
+    precondition ($sessao_token.ativa) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.user_id == $auth.id) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.revogada_em == null) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.expira_em > now) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
   
     // Contas inativas não podem aprovar solicitações.
     precondition ($usuario_rh.ativo) {
@@ -185,6 +211,23 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
               field_value = $conta_colaborador.id
               data = {ativo: false, updated_at: "now"}
             } as $conta_desativada
+
+            // Revoga todas as sessoes da conta: os tokens ja emitidos deixam de valer
+            // (a guarda de cada endpoint confere a sessao do token).
+            db.query sessao {
+              where = $db.sessao.user_id == $conta_colaborador.id && $db.sessao.ativa == true
+              return = {type: "list"}
+            } as $sessoes_a_revogar
+
+            foreach ($sessoes_a_revogar) {
+              each as $sessao_revogavel {
+                db.edit sessao {
+                  field_name = "id"
+                  field_value = $sessao_revogavel.id
+                  data = {ativa: false, revogada_em: "now", updated_at: "now"}
+                } as $sessao_revogada
+              }
+            }
 
             // Encerra o historico profissional aberto, se existir.
             conditional {
