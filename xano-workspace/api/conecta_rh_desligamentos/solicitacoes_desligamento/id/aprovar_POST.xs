@@ -212,6 +212,23 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
               data = {ativo: false, updated_at: "now"}
             } as $conta_desativada
 
+            // Revoga todas as sessoes da conta: os tokens ja emitidos deixam de valer
+            // (a guarda de cada endpoint confere a sessao do token).
+            db.query sessao {
+              where = $db.sessao.user_id == $conta_colaborador.id && $db.sessao.ativa == true
+              return = {type: "list"}
+            } as $sessoes_a_revogar
+
+            foreach ($sessoes_a_revogar) {
+              each as $sessao_revogavel {
+                db.edit sessao {
+                  field_name = "id"
+                  field_value = $sessao_revogavel.id
+                  data = {ativa: false, revogada_em: "now", updated_at: "now"}
+                } as $sessao_revogada
+              }
+            }
+
             // Encerra o historico profissional aberto, se existir.
             conditional {
               if ($historico_atual != null) {

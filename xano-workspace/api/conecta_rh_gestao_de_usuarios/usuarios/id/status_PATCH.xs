@@ -104,6 +104,27 @@ query "usuarios/{id}/status" verb=PATCH {
       field_value = $usuario_alvo.id
       data = {ativo: $input.ativo}
     } as $usuario_atualizado
+    
+    conditional {
+      if ($input.ativo == false) {
+        // Revoga todas as sessoes da conta: os tokens ja emitidos deixam de valer
+        // (a guarda de cada endpoint confere a sessao do token).
+        db.query sessao {
+          where = $db.sessao.user_id == $usuario_alvo.id && $db.sessao.ativa == true
+          return = {type: "list"}
+        } as $sessoes_a_revogar
+
+        foreach ($sessoes_a_revogar) {
+          each as $sessao_revogavel {
+            db.edit sessao {
+              field_name = "id"
+              field_value = $sessao_revogavel.id
+              data = {ativa: false, revogada_em: "now", updated_at: "now"}
+            } as $sessao_revogada
+          }
+        }
+      }
+    }
 
     // Auditoria: ativacao/desativacao de conta.
     db.add auditoria {
