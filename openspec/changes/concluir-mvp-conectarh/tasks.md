@@ -103,8 +103,25 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
 **Novas tarefas**
 
-- [ ] 2.37 [novo] Construir o Passo 3 do login, "Trocar senha temporária" (design C2; Figma 193:55 e 193:241): depois do código de acesso, se `senha_primeiro_acesso` for verdadeiro, mostrar senha temporária, nova senha e confirmação, chamar `auth/senha PATCH` e só então liberar o Início; "Sair" encerra a sessão. Verificar com uma conta de teste com senha temporária: o restante do app fica inacessível antes da troca, a senha errada mostra o alerta da 193:241 e, depois da troca, o Início abre e o primeiro acesso aparece concluído.
-- [ ] 2.38 [novo] Levar os alertas de erro e de sucesso da tela Entrar para dentro do card, abaixo do título, como no Figma (design C3; nós 193:241 e 193:139). Verificar por screenshot lado a lado com os nós.
+- [x] 2.37 [novo] Construir o Passo 3 do login, "Trocar senha temporária" (design C2; Figma 193:55 e 193:241): depois do código de acesso, se `senha_primeiro_acesso` for verdadeiro, mostrar senha temporária, nova senha e confirmação, chamar `auth/senha PATCH` e só então liberar o Início; "Sair" encerra a sessão. Verificar com uma conta de teste com senha temporária: o restante do app fica inacessível antes da troca, a senha errada mostra o alerta da 193:241 e, depois da troca, o Início abre e o primeiro acesso aparece concluído.
+  - Verificado em 2026-10-08 com a conta de teste `qa.primeiro.acesso@conectarh.test` (usuário 15, colaborador 21, perfil Colaborador), criada por `usuarios POST`. No navegador (Playwright):
+    - depois do código, o app abre o Passo 3, sem barra lateral nem Início;
+    - senha temporária errada → "A senha atual está incorreta." dentro do card;
+    - nova senha igual à temporária e confirmação diferente → recusadas na própria tela;
+    - "Sair" volta ao login;
+    - novo login volta ao Passo 3, e a troca correta abre o Início.
+
+    Pela API, a senha temporária passa a ser recusada (403) e a nova é aceita; no banco, `senha_primeiro_acesso = false`.
+  - Diferenças em relação ao Figma, iguais às outras telas do app: moldura escura do campo e alerta no estilo nativo do Streamlit.
+- [x] 2.38 [novo] Levar os alertas de erro e de sucesso da tela Entrar para dentro do card, abaixo do título, como no Figma (design C3; nós 193:241 e 193:139). Verificar por screenshot lado a lado com os nós.
+  - Verificado em 2026-10-08 no navegador (Playwright), conferindo no DOM que cada alerta fica dentro do card, abaixo do título e acima do formulário, nos 6 casos:
+    - login: e-mail inválido e credencial recusada;
+    - código: formato inválido;
+    - esqueci: e-mail com acento;
+    - redefinir: reenvio antes de 60 s e confirmação diferente.
+
+    O aviso de sucesso após redefinir usa o mesmo espaço reservado, mas não foi reexecutado (exige um código de redefinição real).
+  - A conexão com o Figma caiu nesta sessão. A comparação foi feita com as capturas dos nós 193:139 e 193:241 tiradas em 2026-10-07.
 - [ ] 2.39 [novo] Construir o painel de notificações e o menu da conta da barra superior (Figma, seção 5, nó 197:74): lista de `minhas_notificacoes` com o total de não lidas, `notificacoes/{id}/marcar_lida` ao abrir, estado vazio, e menu só com "Configurações" e "Sair da conta". Verificar os estados com e sem notificações e que "Sair da conta" volta ao Login.
 - [ ] 2.40 [novo] Desenhar no Figma e depois construir as telas de Configurações: troca de senha, sessões e dispositivos, e preferências de notificação, sobre `auth/senha PATCH`, `auth/minhas_sessoes`, `auth/sessoes/*` e `minhas_preferencias_notificacao`. Verificar prints lado a lado com os nós e os 6 estados de UI.
 
