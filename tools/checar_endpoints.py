@@ -56,8 +56,13 @@ def _precondition(var, condicao):
     return re.compile(r"precondition\s*\(\s*\$" + var + r"\." + condicao + r"\s*\)")
 
 
+RE_COMENTARIO = re.compile(r"(?m)(^|\s)//[^\n]*")
+
+
 def checar_arquivo(caminho, checar_sessao):
-    texto = caminho.read_text(encoding="utf-8")
+    # Comentarios nao contam: um cabecalho que cita "db.add auditoria" nao e uma
+    # escrita. O `\s` antes de `//` preserva URLs como "https://..." em strings.
+    texto = RE_COMENTARIO.sub(r"\1", caminho.read_text(encoding="utf-8"))
     query = RE_QUERY.search(texto)
     if not query or not RE_AUTH.search(texto):
         return None  # definicao de grupo ou endpoint publico
