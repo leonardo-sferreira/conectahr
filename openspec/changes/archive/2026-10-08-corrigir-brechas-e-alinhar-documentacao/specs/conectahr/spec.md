@@ -345,6 +345,10 @@ O sistema SHALL oferecer checklist de admissao com dados pessoais, acesso, troca
 ### Requirement: API, rastreamento e operacao
 O sistema SHALL versionar a API pelo grupo de API do Xano, cuja URL base identifica a versao publicada; o prefixo `/api/v1/` nao e exigido. A geracao de identificador de rastreamento por requisicao e sua correlacao com logs, auditoria, e-mail e erros ficam fora do MVP e registradas no backlog. O sistema SHALL monitorar erros de API, rotinas manuais, e-mails, documentos, filas e tentativas bloqueadas e SHALL possuir procedimento de backup e restauracao documentado e testado ao menos uma vez.
 
+#### Scenario: Requisicao rastreavel
+- **WHEN** uma operacao gera evento de auditoria e mensagem de e-mail
+- **THEN** a correlacao e feita pelo usuario, recurso, registro e horario gravados na auditoria e pela chave de idempotencia do `email_outbox`; o identificador unico por requisicao fica no backlog
+
 #### Scenario: Falha operacional detectada
 - **WHEN** uma rotina manual tem itens pendentes ou uma fila acumula itens acima do limite
 - **THEN** o sistema disponibiliza o indicador operacional correspondente e permite diagnostico
