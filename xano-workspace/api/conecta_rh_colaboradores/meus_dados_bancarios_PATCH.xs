@@ -92,13 +92,40 @@ query "meus_dados_bancarios" verb=PATCH {
       error = "Tipo de conta invalido. Use corrente ou poupanca."
     }
 
-    // Resumo dos valores anterior e novo, para a trilha de auditoria.
+    // Resumo dos valores anterior e novo, para a trilha de auditoria. Dados
+    // bancarios entram MASCARADOS (LGPD): agencia e digito viram ****, e da conta
+    // so aparecem os 4 ultimos digitos. O banco e o tipo de conta nao identificam
+    // a pessoa e ficam como estao.
+    var $conta_anterior_texto {
+      value = ($colaborador.conta != null ? ($colaborador.conta|to_text) : "")
+    }
+
+    var $tamanho_conta_anterior {
+      value = $conta_anterior_texto|strlen
+    }
+
+    var $conta_anterior_mascarada {
+      value = ($tamanho_conta_anterior > 4 ? ("****" ~ ($conta_anterior_texto|substr:($tamanho_conta_anterior - 4):4)) : "****")
+    }
+
+    var $conta_nova_texto {
+      value = $input.conta|to_text
+    }
+
+    var $tamanho_conta_nova {
+      value = $conta_nova_texto|strlen
+    }
+
+    var $conta_nova_mascarada {
+      value = ($tamanho_conta_nova > 4 ? ("****" ~ ($conta_nova_texto|substr:($tamanho_conta_nova - 4):4)) : "****")
+    }
+
     var $resumo_anterior {
-      value = "banco=" ~ $colaborador.banco ~ "; agencia=" ~ $colaborador.agencia ~ "; conta=" ~ $colaborador.conta ~ "; digito=" ~ $colaborador.digito ~ "; tipo_conta=" ~ $colaborador.tipo_conta
+      value = "banco=" ~ $colaborador.banco ~ "; agencia=****; conta=" ~ $conta_anterior_mascarada ~ "; digito=*; tipo_conta=" ~ $colaborador.tipo_conta
     }
 
     var $resumo_novo {
-      value = "banco=" ~ $input.banco ~ "; agencia=" ~ $input.agencia ~ "; conta=" ~ $input.conta ~ "; digito=" ~ $input.digito ~ "; tipo_conta=" ~ $input.tipo_conta
+      value = "banco=" ~ $input.banco ~ "; agencia=****; conta=" ~ $conta_nova_mascarada ~ "; digito=*; tipo_conta=" ~ $input.tipo_conta
     }
 
     // Atualiza somente os dados bancários.

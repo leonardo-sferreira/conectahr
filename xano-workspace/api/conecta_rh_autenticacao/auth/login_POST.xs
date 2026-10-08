@@ -98,13 +98,20 @@ query "auth/login" verb=POST {
     // outbox assincrono (nao atrasa nem falha o login em si).
     conditional {
       if ($user.senha_tentativas_invalidas != null && $user.senha_tentativas_invalidas >= 3) {
+        // Instante real (com milissegundos) para a chave ser unica por evento: com
+        // (now|to_text) a chave virava o texto literal "now" e o 2o alerta da mesma
+        // conta violava o indice unico de email_outbox (HTTP 500).
+        var $instante_alerta {
+          value = now|format_timestamp:"YmdHisv":"UTC"
+        }
+
         db.add email_outbox {
           data = {
             destinatario_email: $user.email
             destinatario_nome : $user.nome
             assunto           : "ConectaRH - Alerta de seguranca na sua conta"
             corpo             : "Ola " ~ $user.nome ~ ",\n\nDetectamos " ~ ($user.senha_tentativas_invalidas|to_text) ~ " tentativas de acesso com senha incorreta na sua conta, seguidas de um login bem-sucedido agora. Se foi voce, pode ignorar este aviso. Se nao reconhece essa atividade, troque sua senha imediatamente e contate o RH.\n\nEste e um aviso automatico de seguranca."
-            chave_idempotencia: ("alerta_acesso_suspeito_" ~ ($user.id|to_text) ~ "_" ~ (now|to_text))
+            chave_idempotencia: ("alerta_acesso_suspeito_" ~ ($user.id|to_text) ~ "_" ~ $instante_alerta)
           }
         } as $alerta_seguranca_criado
 

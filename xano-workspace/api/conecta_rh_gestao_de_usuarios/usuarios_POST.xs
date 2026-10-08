@@ -165,6 +165,15 @@ query usuarios verb=POST {
       ]
     } as $usuario_criado
 
+    // E-mail na auditoria vai MASCARADO (LGPD): primeira letra e dominio.
+    var $email_criado_partes {
+      value = $usuario_criado.email|split:"@"
+    }
+
+    var $email_criado_mascarado {
+      value = (($usuario_criado.email|substr:0:1) ~ "***@" ~ ($email_criado_partes|last))
+    }
+
     // Auditoria: criacao de conta de acesso (item 7.11). Nunca a senha em si.
     db.add auditoria {
       data = {
@@ -172,7 +181,7 @@ query usuarios verb=POST {
         acao       : "criar_conta_acesso"
         recurso    : "user"
         registro_id: $usuario_criado.id
-        valor_novo : ("colaborador_id=" ~ ($colaborador.id|to_text) ~ "; email=" ~ $usuario_criado.email)
+        valor_novo : ("colaborador_id=" ~ ($colaborador.id|to_text) ~ "; email=" ~ $email_criado_mascarado)
         resultado  : "sucesso"
       }
     } as $evento_auditoria

@@ -91,3 +91,25 @@ Resultado das verificações da Parte 1 da change `corrigir-brechas-e-alinhar-do
 | Tokens antigos do histórico do git | Sem validade | Nenhum dos 7 tokens do histórico continua no servidor (trocados por valores novos, guardados só no Xano) |
 
 O repositório é **público**: os tokens antigos continuam no histórico do git, mas não valem mais. O `tools/checar_endpoints.py` reprova grupo com swagger ligado, sem a configuração ou com token no arquivo.
+
+## Correção posterior à 1.14: chave de idempotência do e-mail
+
+Ao testar o mascaramento da auditoria (08/10/2026), a **segunda** troca de e-mail da mesma conta devolveu HTTP 500 "Duplicate record", e o mesmo erro aparecia no `auth/login` no **segundo** alerta de acesso suspeito da conta.
+
+| Cenário | Antes | Depois da correção |
+|---|---|---|
+| Duas trocas de e-mail seguidas na mesma conta | 1ª: 200; 2ª: **500**, com a troca aplicada e sem alerta nem auditoria | 200 e 200; auditoria com e-mail mascarado |
+| "3 senhas erradas e 1 certa", repetido 3 vezes na mesma conta | 1ª: 200; 2ª: **500**, e o contador de tentativas não zerava (a conta ficava presa) | 200, 200 e 200 |
+
+**Causa:** `chave_idempotencia` montada com `(now|to_text)`, que vira o texto literal `now`; a coluna é única. **Correção:** instante real com milissegundos, `now|format_timestamp:"YmdHisv":"UTC"`.
+
+## 4.9 Mascaramento de dados pessoais na auditoria
+
+| Dado | Como fica | Obtido (leitura de `auditoria GET`) |
+|---|---|---|
+| Dados bancários | agência `****`, dígito `*`, conta `****` + 4 últimos | `banco=341; agencia=****; conta=****3210; digito=*; tipo_conta=corrente` |
+| Salário | `***`, e `alterado` ou `inalterado` | `salario=*** -> salario=inalterado` |
+| E-mail | primeira letra e domínio | `email=q***@conectarh.test` |
+
+Dos 10 valores gravados depois da publicação, nenhum tinha conta, e-mail ou salário completos. Eventos antigos (ids até 258) não foram reescritos.
+
