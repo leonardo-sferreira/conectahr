@@ -59,6 +59,16 @@ A agregação de `[CB 1.12]` evita correlacionar resposta e participação. Mas 
 
 A correção libera os resultados só depois que a pesquisa é encerrada e aplica supressão complementar. É o mesmo critério do design L8 da `adequacao-lgpd` para os indicadores.
 
+### C5. Resultado do spike de sessão no token (`[CB 1.1]`, 2026-10-08)
+
+O acessor `$auth.extras.sessao_id` funciona neste workspace. Teste com dois logins da conta de teste (usuário 15):
+- o token A devolveu `sessao_id = 30` e o token B, `sessao_id = 31`;
+- as duas sessões existem no banco (`xano workspace pull --records`), ativas e com `user_id = 15`.
+
+A alternativa por hash do token, prevista no D2 da `corrigir-brechas`, não é necessária.
+
+O spike usou o próprio `auth/me` em vez de um endpoint temporário. O `sessao_id` **continua** na resposta de `auth/me`, por dois motivos: ele não é sensível (só identifica a sessão do próprio usuário) e a tela de sessões e dispositivos o usa para marcar "esta sessão".
+
 ## Risks / Trade-offs
 
 - [Referências cruzadas antigas podem confundir] → A regra C1 e os prefixos `[XX x.y]` mantêm cada tarefa ligada à origem.

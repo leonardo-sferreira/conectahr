@@ -129,15 +129,28 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
 **1. Brechas de segurança (Parte 1)**
 
-- [ ] 3.1 [CB 1.1] Spike de sessão no token (design D2): emitir um token de teste com `extras = {perfil, sessao_id}` e ler o `sessao_id` num endpoint temporário. Se não houver acessor confiável, testar a alternativa por hash do token. Registrar o resultado em `design.md` (D2). Verificar: o endpoint temporário devolve o `sessao_id` correto para dois tokens diferentes e é removido do workspace ao final. Se as duas abordagens falharem, parar a 1.4 e rever o design antes de seguir.
-- [ ] 3.2 [CB 1.4] Sessão no token (item 1.3 da auditoria):
+- [x] 3.1 [CB 1.1] Spike de sessão no token (design D2): emitir um token de teste com `extras = {perfil, sessao_id}` e ler o `sessao_id` num endpoint temporário. Se não houver acessor confiável, testar a alternativa por hash do token. Registrar o resultado em `design.md` (D2). Verificar: o endpoint temporário devolve o `sessao_id` correto para dois tokens diferentes e é removido do workspace ao final. Se as duas abordagens falharem, parar a 1.4 e rever o design antes de seguir.
+  - Verificado em 2026-10-08: dois tokens da conta de teste devolveram, em `auth/me`, as sessões 30 e 31, as duas conferidas no banco (ativas, usuário 15). O resultado está no `design.md` (C5). Não houve endpoint temporário: o spike usou o `auth/me`, que mantém o `sessao_id`.
+- [x] 3.2 [CB 1.4] Sessão no token (item 1.3 da auditoria):
   - `auth/otp/validar` cria a sessão antes do token e inclui o `sessao_id` em `extras`;
   - `auth/logout` encerra exatamente a sessão do token;
   - `auth/sessoes/encerrar_outras` preserva a sessão do token;
   - `auth/sessoes/{id}/encerrar` só encerra sessão do próprio usuário.
 
   Verificar por HTTP com duas sessões do mesmo usuário: depois do logout na sessão A, o token A é recusado e o token B continua aceito; depois de `encerrar_outras` chamado com B, A é recusado e B continua aceito.
-- [ ] 3.3 [CB 1.5] Guarda de acesso (itens 1.1, 1.2 e 1.3 da auditoria) nos grupos "ConectaRH — Autenticação" e "ConectaRH — Gestão de Usuários": usuário ativo, senha trocada (com as exceções do D1) e sessão válida. Verificar: o script da 1.2 passa para esses grupos. Por HTTP: um usuário com senha temporária só consegue usar `auth/senha PATCH`, `auth/me`, `auth/logout` e as rotas de sessão.
+  - Código publicado no workspace 147338 em 2026-10-08. Verificado por HTTP com duas sessões da conta de teste (sessões 30 e 31):
+    - logout com a sessão A → o token A passa a ser recusado (401) e o B continua aceito;
+    - `encerrar_outras` chamado com D → o token E é recusado e o D continua aceito;
+    - o usuário 15 tentando encerrar uma sessão do Admin → 403 "Voce so pode encerrar as proprias sessoes", e a sessão do Admin segue válida;
+    - encerrar a própria sessão → o token seguinte é recusado.
+  - O plano gratuito do Xano limita a 10 requisições por 20 s (429). Testes automatizados precisam de pausa entre as chamadas.
+- [x] 3.3 [CB 1.5] Guarda de acesso (itens 1.1, 1.2 e 1.3 da auditoria) nos grupos "ConectaRH — Autenticação" e "ConectaRH — Gestão de Usuários": usuário ativo, senha trocada (com as exceções do D1) e sessão válida. Verificar: o script da 1.2 passa para esses grupos. Por HTTP: um usuário com senha temporária só consegue usar `auth/senha PATCH`, `auth/me`, `auth/logout` e as rotas de sessão.
+  - Publicado em 2026-10-08. `tools/checar_endpoints.py --grupo conecta_rh_autenticacao --grupo conecta_rh_gestao_de_usuarios`: 16 endpoints, 0 falhas. Por HTTP, com a conta de teste ainda com senha temporária:
+    - `auth/me`, `auth/minhas_sessoes`, `auth/sessoes/encerrar_outras` e `auth/senha PATCH` funcionam;
+    - `usuarios GET`, `minhas_delegacoes` e `status_operacional` → 401 "Troque a senha temporaria antes de continuar.";
+    - depois da troca, `minhas_delegacoes` abre (200);
+    - com a conta desativada, `auth/me` e as demais rotas → 401 "Usuario inativo.", e o login também é recusado.
+  - O `logout` e o `encerrar_outras` agora encerram exatamente a sessão do token (antes usavam "a mais recente").
 - [ ] 3.4 [CB 1.6] Guarda de acesso no grupo "ConectaRH — Colaboradores", parte 1: cadastro, organograma, busca, onboarding, contratos, banco de horas, solicitações, comunicados e FAQ. Verificar: o script passa para esses arquivos e o smoke test HTTP funciona com um endpoint por perfil.
 - [ ] 3.5 [CB 1.7] Guarda de acesso no grupo "ConectaRH — Colaboradores", parte 2: avaliação, metas, PDI, clima, reconhecimento, regras, instrumentos, indicadores, auditoria, delegações e calendário. Verificar: o script passa para o grupo inteiro. Por HTTP, com um usuário de senha temporária, `auditoria GET`, `indicadores GET`, `instrumentos_normativos/{id}/aprovar`, `metas POST`, `pdi POST` e `perguntas_clima/{id}/responder` são negados.
 - [ ] 3.6 [CB 1.8] Guarda de acesso nos grupos Ponto, Férias, Ausências, Documentos, Desligamentos, Cargos e Departamentos. Verificar: o script não aponta nenhuma falha em todo o `xano-workspace/api`. Por HTTP, depois de desativar um usuário de teste, o token antigo dele é negado em `ponto/marcar` e em `ferias/solicitacoes`.
@@ -158,7 +171,8 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
   - resposta válida incrementa o agregado e nenhuma linha nova aparece em `resposta_clima`;
   - os resultados continuam suprimindo grupos abaixo de `minimo_respostas`.
 - [ ] 3.10 [CB 1.13] Function idempotente para consolidar as linhas legadas de `resposta_clima` em `resposta_clima_agregado`, executada uma vez com `xano function run`. Responder à Open Question do `design.md` sobre dados reais. Verificar: a soma das quantidades no agregado é igual ao total de linhas legadas por pergunta, e uma segunda execução não altera nada.
-- [ ] 3.11 [CB 1.14] Troca de e-mail de conta (item 1.7 da auditoria, design D9): `usuarios/{id} PATCH` passa a enfileirar no `email_outbox` um alerta para o e-mail anterior e a auditar os valores anterior e novo. Verificar por HTTP: a troca de e-mail de uma conta de teste gera a linha no outbox para o endereço antigo e o evento de auditoria.
+- [x] 3.11 [CB 1.14] Troca de e-mail de conta (item 1.7 da auditoria, design D9): `usuarios/{id} PATCH` passa a enfileirar no `email_outbox` um alerta para o e-mail anterior e a auditar os valores anterior e novo. Verificar por HTTP: a troca de e-mail de uma conta de teste gera a linha no outbox para o endereço antigo e o evento de auditoria.
+  - O código já estava no git desde o PR #3, mas só foi publicado no Xano junto com o `usuarios/{id} PATCH` (guarda da 3.3). Verificado em 2026-10-08: trocar o e-mail de uma conta de teste gerou 1 linha no `email_outbox` para o **e-mail antigo** (status `pendente`, sem o endereço novo no texto) e o evento `atualizar_usuario` na auditoria, com os valores anterior e novo.
 - [ ] 3.12 [CB 1.15] Swagger (item 1.7 da auditoria, design D9): regenerar os tokens de swagger de todos os grupos no Xano e desativar o swagger público. Fazer `pull` para atualizar os `api/*/conecta_rh_*.xs`. Verificar: os tokens antigos do histórico do git não abrem mais a documentação (teste no navegador) e o diff pós-pull mostra os tokens novos ou o swagger desativado.
 - [ ] 3.13 [CB 1.16] Documentar em `docs/regras-de-negocio.md`:
   - as regras novas da Parte 1 (guarda de acesso, sessão no token, reenvio de OTP, autoaprovação, troca de e-mail e swagger);
