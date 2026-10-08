@@ -20,8 +20,10 @@ context: |
   ausencias) — o padrao e arquivamento. Reutilizar padroes ja estabelecidos no codigo existente
   em vez de introduzir um padrao novo para o mesmo problema.
 
-  Security: dados pessoais e sensiveis seguem a LGPD (minimizacao, finalidade, acesso por
-  necessidade, retencao controlada). Dados bancarios do colaborador sao visiveis so a ele e ao
+  Security: dados pessoais e sensiveis seguem a LGPD, documentada em docs/lgpd/ (registro de
+  operacoes, aviso de privacidade, plano de incidentes, RIPD, operadores e legitimo interesse).
+  Campo sensivel novo, mascaramento em auditoria e servico externo novo seguem as regras do
+  AGENTS.md. Dados bancarios do colaborador sao visiveis so a ele e ao
   RH, nunca ao Gestor. CPF e validado localmente pelos digitos verificadores, sem API externa.
   Acoes sensiveis (aprovacoes, rejeicoes, alteracoes de cadastro, aplicacao de regra) devem ser
   auditaveis com responsavel e justificativa.

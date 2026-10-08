@@ -309,13 +309,15 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 **Novas tarefas**
 
 - [ ] 3.49 [novo] Corrigir os vazamentos do resultado da pesquisa de clima (design C4): `pesquisas_clima/{id}/resultados` só responde depois que a pesquisa está encerrada (`ativo = false` ou `data_fim` passada) e aplica supressão complementar quando um único grupo é omitido. Verificar por HTTP: a consulta com a pesquisa aberta é recusada, e com um único departamento abaixo do mínimo o total geral também é omitido.
+- [ ] 3.50 [novo] Servir as fontes Sora e Manrope pelo próprio aplicativo, em vez do Google Fonts (`frontend/theme.py` carrega `fonts.googleapis.com`): hoje o navegador de cada usuário consulta o Google e entrega o IP, uma transferência internacional sem necessidade (LGPD, `docs/lgpd/operadores.md`). Verificar: a aba de rede do navegador não mostra nenhuma requisição a `googleapis.com` ou `gstatic.com` e as telas mantêm a tipografia do Figma.
 
 ## 4. Adequação à LGPD [LG]
 
 **1. Documentação e governança (Parte 1, só documentos)**
 
-- [ ] 4.1 [LG 1.1] Criar `docs/lgpd/registro-de-operacoes.md` (arts. 7, 11 e 37), com uma linha por finalidade. Colunas: finalidade, dados, titular, base legal, quem acessa, operador, prazo de retenção e medidas de segurança. O ponto de partida é o inventário do proposal. Verificar: toda tabela de `xano-workspace/table/` com dado pessoal aparece em pelo menos uma linha, conferido com uma lista das 49 tabelas anexada ao documento.
-- [ ] 4.2 [LG 1.2] Criar `docs/lgpd/aviso-de-privacidade.md` (arts. 6, VI, e 9), em linguagem simples, com:
+- [x] 4.1 [LG 1.1] Criar `docs/lgpd/registro-de-operacoes.md` (arts. 7, 11 e 37), com uma linha por finalidade. Colunas: finalidade, dados, titular, base legal, quem acessa, operador, prazo de retenção e medidas de segurança. O ponto de partida é o inventário do proposal. Verificar: toda tabela de `xano-workspace/table/` com dado pessoal aparece em pelo menos uma linha, conferido com uma lista das 49 tabelas anexada ao documento.
+  - Criado `docs/lgpd/registro-de-operacoes.md`: 19 finalidades (F01 a F19). Conferido por script: as **49 tabelas** de `xano-workspace/table/` aparecem no documento, 12 delas marcadas "sem dado pessoal". Inclui a decisão de minimização (sem raça, sexo, religião, filiação sindical nem biometria). Bases legais e prazos ficam "a confirmar com o jurídico".
+- [x] 4.2 [LG 1.2] Criar `docs/lgpd/aviso-de-privacidade.md` (arts. 6, VI, e 9), em linguagem simples, com:
   - dados coletados e por quê;
   - compartilhamento com os operadores da 1.6;
   - prazos de guarda;
@@ -324,8 +326,10 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
   - contato do encarregado.
 
   Verificar: cada finalidade da 1.1 é citada no aviso.
-- [ ] 4.3 [LG 1.3] Definir o encarregado (art. 41; Res. CD/ANPD 18/2024; sugestão: Matheus) e um e-mail de contato. Publicar no aviso da 1.2 e no `README.md`. Verificar: o mesmo contato aparece nos dois arquivos.
-- [ ] 4.4 [LG 1.4] Criar `docs/lgpd/plano-de-incidentes.md` (art. 48; Res. CD/ANPD 15/2024), com:
+  - Criado `docs/lgpd/aviso-de-privacidade.md`, em linguagem simples. Conferido por script: as 19 finalidades do registro são citadas. Só promete o que o sistema faz hoje: enquanto a tela "Privacidade" não existe, o pedido é feito ao encarregado, com prazo de 15 dias.
+- [x] 4.3 [LG 1.3] Definir o encarregado (art. 41; Res. CD/ANPD 18/2024; sugestão: Matheus) e um e-mail de contato. Publicar no aviso da 1.2 e no `README.md`. Verificar: o mesmo contato aparece nos dois arquivos.
+  - Aviso e README trazem o mesmo contato, conferido por script. **O contato é provisório:** `privacidade@conectarh.com` é um endereço sugerido, a caixa precisa ser criada, e o encarregado ainda está "a definir" (sugestão: o responsável pela documentação). O grupo disse que a definição é indiferente neste momento; confirmar antes de uso com dados reais.
+- [x] 4.4 [LG 1.4] Criar `docs/lgpd/plano-de-incidentes.md` (art. 48; Res. CD/ANPD 15/2024), com:
   - quem detecta e quem avalia;
   - critérios de risco;
   - modelo de comunicação à ANPD e aos titulares em até 3 dias úteis;
@@ -333,15 +337,21 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
   - ligação com os alertas de `docs/monitoramento.md`.
 
   Verificar: um incidente simulado (token vazado) percorre o plano do começo ao fim e fica registrado em `docs/evidencias/lgpd.md`.
-- [ ] 4.5 [LG 1.5] Criar `docs/lgpd/ripd.md` (art. 38) para dados de saúde, adolescentes aprendizes e controle de jornada, com riscos, probabilidade, impacto e medidas. Incluir os riscos residuais do `design.md`: auditoria antiga com dados completos e, se for o caso, campos `image` públicos. Verificar: cada risco aponta para uma tarefa desta change ou da `corrigir-brechas-e-alinhar-documentacao`.
-- [ ] 4.6 [LG 1.6] Criar `docs/lgpd/operadores.md` (arts. 33 a 39; Res. CD/ANPD 19/2024), com Xano, Brevo, hospedagem do Streamlit, GitHub e o serviço usado em `arquivo_url`. Para cada um: dados recebidos, região, termos de tratamento e mecanismo de transferência internacional. Verificar: todo domínio externo encontrado por `grep -rhoE "https://[a-z0-9.-]+" xano-workspace frontend README.md` está na lista ou é justificado como não recebedor de dados pessoais.
-- [ ] 4.7 [LG 1.7] Criar `docs/lgpd/legitimo-interesse.md` (arts. 7, IX, e 10), com o teste de balanceamento para aniversariantes, mural de reconhecimento, pesquisa de clima e logs de segurança: finalidade, necessidade, expectativa do colaborador e salvaguardas, incluindo a oposição da 3.3. Verificar: cada linha da 1.1 com base em legítimo interesse tem seu teste.
-- [ ] 4.8 [LG 1.8] Integrar a LGPD aos documentos do projeto:
+  - Criado `docs/lgpd/plano-de-incidentes.md`, só com ações que o sistema já oferece. O exercício `EX-2026-001` (token vazado) percorreu o plano por HTTP: detecção pela auditoria, avaliação como risco baixo, contenção revogando a sessão e verificação de que o token vazado passou a ser recusado e o do titular continuou válido. Registrado em `docs/evidencias/lgpd.md`, sem token, e-mail ou nome.
+- [x] 4.5 [LG 1.5] Criar `docs/lgpd/ripd.md` (art. 38) para dados de saúde, adolescentes aprendizes e controle de jornada, com riscos, probabilidade, impacto e medidas. Incluir os riscos residuais do `design.md`: auditoria antiga com dados completos e, se for o caso, campos `image` públicos. Verificar: cada risco aponta para uma tarefa desta change ou da `corrigir-brechas-e-alinhar-documentacao`.
+  - Criado `docs/lgpd/ripd.md` para dados de saúde, adolescentes aprendizes e controle de jornada, com 18 riscos, cada um com medida, tarefa e situação (feita, planejada ou a verificar). Conferido: todas as tarefas citadas existem. **Conclusão do RIPD:** os riscos altos que ainda dependem de implementação (diagnóstico em texto livre, link público de arquivo, abertura de arquivo sem auditoria, exposição de menores e possível URL pública das imagens) devem ser concluídos antes de uso com dados reais.
+- [x] 4.6 [LG 1.6] Criar `docs/lgpd/operadores.md` (arts. 33 a 39; Res. CD/ANPD 19/2024), com Xano, Brevo, hospedagem do Streamlit, GitHub e o serviço usado em `arquivo_url`. Para cada um: dados recebidos, região, termos de tratamento e mecanismo de transferência internacional. Verificar: todo domínio externo encontrado por `grep -rhoE "https://[a-z0-9.-]+" xano-workspace frontend README.md` está na lista ou é justificado como não recebedor de dados pessoais.
+  - Criado `docs/lgpd/operadores.md` (Xano, Brevo, hospedagem do Streamlit, Google Fonts, GitHub, Figma e assistentes de IA). A busca por endereços externos em `xano-workspace/`, `frontend/`, `README.md` e `.streamlit/config.toml` está registrada no documento, e todo host encontrado está na lista ou justificado. **Achado:** `frontend/theme.py` carrega o Google Fonts do navegador, o que entrega o IP de cada usuário ao Google; criada a tarefa 3.50.
+  - **Pendente de confirmação** (marcado "a confirmar" no documento): região do Xano, do Brevo e da hospedagem; contratos de tratamento de dados; mecanismo de transferência internacional. O protótipo do Figma tem um e-mail de pessoa real num texto e deve ser trocado por exemplo fictício.
+- [x] 4.7 [LG 1.7] Criar `docs/lgpd/legitimo-interesse.md` (arts. 7, IX, e 10), com o teste de balanceamento para aniversariantes, mural de reconhecimento, pesquisa de clima e logs de segurança: finalidade, necessidade, expectativa do colaborador e salvaguardas, incluindo a oposição da 3.3. Verificar: cada linha da 1.1 com base em legítimo interesse tem seu teste.
+  - Criado `docs/lgpd/legitimo-interesse.md` com um teste para cada linha do registro que usa legítimo interesse: F01 e F02, F12, F13, F14, F15, F16 e F17 (conferido por script). Todos "aprovados", alguns com condição: aniversariantes e mural dependem da opção de sair (tarefa 4.18), e a pesquisa de clima depende da tarefa 3.49.
+- [x] 4.8 [LG 1.8] Integrar a LGPD aos documentos do projeto:
   - registrar no `docs/regras-de-negocio.md` que os requisitos da seção 12 (delta desta change) passam a valer;
   - acrescentar ao `AGENTS.md` três regras: campo sensível novo atualiza a 1.1 e a 1.5; dados pessoais são mascarados em auditoria e logs; serviço externo novo atualiza a 1.6;
   - no `docs/project-overview.md` e no `openspec/config.yaml`, trocar a frase genérica sobre LGPD por um link para `docs/lgpd/`.
 
   Verificar: `openspec validate adequacao-lgpd` passa, e cada cenário da seção 12 tem tarefa correspondente (tabela cenário → tarefa anexada ao fim deste arquivo).
+  - Feito em 2026-10-08: `AGENTS.md` com as três regras pedidas (campo sensível novo, mascaramento, serviço externo novo), mais duas (repositório público e assistentes de IA); `docs/project-overview.md`, `openspec/config.yaml` e `README.md` trocaram a frase genérica por links para `docs/lgpd/`; nova seção 18 em `docs/regras-de-negocio.md`. O OpenSpec lê o `config.yaml` sem erro e `openspec validate concluir-mvp-conectarh --strict` passa. O anexo no fim deste arquivo liga os **28 cenários** de LGPD da spec principal a tarefas. A change `adequacao-lgpd` já foi arquivada, então a validação foi feita na change consolidada.
 
 **2. Ajustes no backend (Parte 2, antes da demonstração de dezembro)**
 
@@ -438,3 +448,38 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 ## 5. Integração final
 
 - [ ] 5.1 Rodar `python tools/checar_endpoints.py` e um teste HTTP por perfil (Admin, RH, Gestor e Colaborador) cobrindo os fluxos alterados por esta change, e `openspec validate concluir-mvp-conectarh`. Verificar: zero falhas, resultado esperado em todas as chamadas e registro em `docs/evidencias/`.
+
+## Anexo: cenários de LGPD da spec e as tarefas que os cobrem
+
+Gerado a partir de `openspec/specs/conectahr/spec.md` (14 requisitos da proteção de dados). Todo cenário aponta para pelo menos uma tarefa deste arquivo.
+
+| Requisito | Cenário | Tarefa(s) |
+|---|---|---|
+| Transparência sobre o tratamento de dados | Aviso acessível antes do login | 4.19 |
+| Transparência sobre o tratamento de dados | Contato do encarregado | 4.3 |
+| Transparência sobre o tratamento de dados | Nova finalidade sem aviso | 4.8 (regra no AGENTS.md) |
+| Acesso e portabilidade dos próprios dados | Colaborador baixa os próprios dados | 4.16 |
+| Acesso e portabilidade dos próprios dados | Sem dados de terceiros | 4.16 |
+| Acesso e portabilidade dos próprios dados | Exportação de outra pessoa | 4.16 |
+| Pedidos do titular de dados | Pedido criado entra na fila do RH | 4.17 |
+| Pedidos do titular de dados | Pedido perto do prazo | 4.17 |
+| Pedidos do titular de dados | Resposta ao titular | 4.17 |
+| Oposição a tratamentos por legítimo interesse | Colaborador sai da lista de aniversariantes | 4.18, 4.19 |
+| Oposição a tratamentos por legítimo interesse | Colaborador sai do mural público | 4.18, 4.19 |
+| Minimização e dados sensíveis de saúde | Motivo de ausência escolhido de lista | 4.11 |
+| Minimização e dados sensíveis de saúde | Diagnóstico na observação | 4.11 |
+| Minimização e dados sensíveis de saúde | Gestor consulta ausência da equipe | 3.17, 4.11 |
+| Acesso a arquivos sensíveis auditado | RH abre o arquivo de um documento | 4.10 |
+| Dados pessoais mascarados na auditoria | Alteração de dados bancários | 4.9 |
+| Dados pessoais mascarados na auditoria | Nenhum dado completo em auditoria nova | 4.9 |
+| Arquivos só em armazenamento controlado | Link público de drive | 4.12 |
+| Códigos de acesso protegidos | Código não legível no banco | 4.13 |
+| Indicadores sem identificação de pessoas | Departamento pequeno | 4.14 |
+| Indicadores sem identificação de pessoas | Dedução pela diferença | 4.14 |
+| Retenção e anonimização | Limpeza de dados vencidos | 4.21 |
+| Retenção e anonimização | Anonimização de desligado | 4.22 |
+| Retenção e anonimização | Anonimização antes do prazo | 4.22 |
+| Dados de adolescentes | Aprendiz sem responsável legal | 4.23 |
+| Dados de adolescentes | Aprendiz fora da exposição pública | 4.23, 4.18 |
+| Resposta a incidentes de segurança | Incidente simulado | 4.4 |
+| Operadores e transferência internacional | Novo serviço externo | 4.8 (regra no AGENTS.md), 4.6 |

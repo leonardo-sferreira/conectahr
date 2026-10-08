@@ -54,6 +54,8 @@ docs/
   project-overview.md   O que e o projeto (visao, objetivos, escopo)
   domain-model.md        Conceitos do dominio e relacionamentos
   regras-de-negocio.md   Regras de negocio ja implementadas, mapeadas do codigo
+  lgpd/                  Protecao de dados: registro de operacoes, aviso de privacidade, incidentes, RIPD
+  evidencias/            Resultado dos testes, sem dados pessoais
 openspec/
   config.yaml       Contexto e regras injetados pelo OpenSpec em cada workflow
   specs/            Comportamento consolidado do sistema (preenchido ao arquivar changes)
@@ -94,6 +96,21 @@ já implementadas, mapeadas diretamente do código do backend.
 - Todo trabalho é integrado a `master` por Pull Request, com pelo menos uma revisão do grupo antes
   do merge.
 - Commits referenciam a tarefa do `tasks.md` que estão implementando quando aplicável.
+
+## Privacidade e proteção de dados
+
+O ConectaRH trata dados pessoais e sensíveis de colaboradores e segue a LGPD. A documentação está em
+[`docs/lgpd/`](docs/lgpd/): [aviso de privacidade](docs/lgpd/aviso-de-privacidade.md),
+[registro de operações](docs/lgpd/registro-de-operacoes.md),
+[plano de incidentes](docs/lgpd/plano-de-incidentes.md), [RIPD](docs/lgpd/ripd.md),
+[operadores](docs/lgpd/operadores.md) e [legítimo interesse](docs/lgpd/legitimo-interesse.md).
+Bases legais e prazos de guarda são sugestões, **a confirmar com o jurídico**.
+
+**Encarregado pelo tratamento de dados pessoais:** a definir (sugestão: o responsável pela
+documentação). **Contato:** `privacidade@conectarh.com` (endereço provisório; a caixa precisa ser
+criada e confirmada). O mesmo contato consta no aviso de privacidade.
+
+O repositório é **público**: não commite dado pessoal real, senha, token nem chave de serviço.
 
 ## Responsabilidades do grupo
 
