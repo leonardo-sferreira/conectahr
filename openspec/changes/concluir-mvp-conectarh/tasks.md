@@ -206,13 +206,15 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
     - o `pull` confirma `active: false` nos 10 grupos.
   - Atenção: um `xano workspace pull` reescreve os arquivos de grupo com o token novo do Xano. Antes de commitar, descarte essa linha. O `tools/checar_endpoints.py` agora reprova swagger ligado, grupo sem a configuração e token no arquivo.
   - Os tokens antigos continuam no histórico público do git, mas não valem mais. Reescrever o histórico não é necessário e seria destrutivo para os clones do grupo.
-- [ ] 3.13 [CB 1.16] Documentar em `docs/regras-de-negocio.md`:
+- [x] 3.13 [CB 1.16] Documentar em `docs/regras-de-negocio.md`:
   - as regras novas da Parte 1 (guarda de acesso, sessão no token, reenvio de OTP, autoaprovação, troca de e-mail e swagger);
   - a reescrita da seção 11.6 (anonimato por agregação);
   - o risco aceito do bloqueio por senha errada (D9).
 
   Verificar: cada regra cita o endpoint correspondente, e a seção 2.6 e a 11.6 não contradizem o código.
-- [ ] 3.14 [CB 1.17] Registrar as evidências da Parte 1 em `docs/evidencias/seguranca.md`, com o cenário, a requisição (sem token completo) e o resultado esperado e obtido de cada verificação das tarefas 1.4 a 1.15. Verificar: o arquivo não contém e-mail, CPF nem token reais.
+  - Feito em 2026-10-08 em `docs/regras-de-negocio.md`: itens 2 a 4 da 1.3 (reenvio e validação do código, troca de senha), a 1.4 (logout, `encerrar_outras` e revogação ao desativar), a 2.1, a 2.6 e a 11.6 (anonimato por agregação) foram reescritos, e a nova subseção **2.7** reúne guarda de acesso, rotas de primeiro acesso, autoaprovação, troca de e-mail, redefinição de senha, swagger e o risco aceito do bloqueio por senha errada. Cada regra cita o endpoint; os trechos reescritos foram conferidos contra o comportamento testado por HTTP.
+- [x] 3.14 [CB 1.17] Registrar as evidências da Parte 1 em `docs/evidencias/seguranca.md`, com o cenário, a requisição (sem token completo) e o resultado esperado e obtido de cada verificação das tarefas 1.4 a 1.15. Verificar: o arquivo não contém e-mail, CPF nem token reais.
+  - Criado `docs/evidencias/seguranca.md`, com cenário, esperado e obtido de cada verificação das tarefas 1.1 a 1.15. `grep` por e-mail, `Bearer`, token JWT e CPF: nada encontrado. As contas de teste aparecem só pelo papel.
 
 **2. Requisitos da spec não cumpridos (Parte 2)**
 
