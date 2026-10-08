@@ -24,6 +24,7 @@
 15. [Indicadores, exportações e preferências de notificação](#15-indicadores-exportações-e-preferências-de-notificação)
 16. [Contratos específicos e compliance documental](#16-contratos-específicos-e-compliance-documental)
 17. [Experiência e produtividade](#17-experiência-e-produtividade)
+18. [Proteção de dados (LGPD)](#18-proteção-de-dados-lgpd)
 
 ---
 
@@ -731,6 +732,14 @@ Conjunto de consultas somente-leitura, construídas sobre dados já existentes (
 - **Plano de carreira** (`GET colaboradores/{id}/plano_carreira`): nível atual, próximo nível, competências esperadas para o próximo nível (lacunas a desenvolver), metas ativas, PDI ativo e histórico de evolução de cargo — **nunca promove automaticamente**, é só exibição. Acesso: o próprio colaborador, RH/ADMIN, ou o Gestor da equipe.
 - **Reuniões individuais (1:1)**: entidade `reuniao_individual` — `colaborador_id`, `gestor_user_id`, `data_reuniao`, `assuntos`, `acordos?`, `acoes?`, `responsavel_acoes_user_id?`, `prazo_acoes?`, `proxima_reunião?`, `visibilidade` (enum `privado`/`compartilhado_rh`, default `privado`). Criada via `reunioes_individuais_POST`; listada por colaborador via `colaboradores/{id}/reunioes_individuais_GET` (`xano-workspace/table/reuniao_individual.xs`).
 - **Mural de reconhecimento** (`GET mural_reconhecimento`): retorna só registros de `reconhecimento` com `visibilidade=publico` e `status=ativo` — feedback privado (gestor→colaborador) nunca aparece aqui, consistente com a regra de visibilidade automática da seção 11.5.
+
+---
+
+## 18. Proteção de dados (LGPD)
+
+A spec principal (`openspec/specs/conectahr/spec.md`) tem os requisitos de proteção de dados: transparência, acesso e portabilidade dos próprios dados, pedidos do titular, oposição, minimização e dados de saúde, auditoria de acesso a arquivos sensíveis, mascaramento na auditoria, arquivos em armazenamento controlado, códigos de acesso protegidos, indicadores sem identificação de pessoas, retenção e anonimização, adolescentes, incidentes e operadores. **Eles passam a valer como regra do sistema**, mas parte do comportamento ainda depende de tarefas pendentes em `concluir-mvp-conectarh`; este documento só registra como regra implementada o que já está no código.
+
+**Já implementado e descrito acima:** guarda de acesso e sessão (2.7), anonimato da pesquisa de clima por agregação (11.6) e alerta de troca de e-mail (2.7). **Ainda não implementado:** mascaramento de dados pessoais na auditoria (tarefa 4.9), auditoria de acesso a arquivos sensíveis (4.10), motivo de ausência em lista fechada (4.11), links de arquivo controlados (4.12), hash dos códigos de acesso (4.13), mínimo de pessoas nos indicadores (4.14), direitos do titular (4.16 a 4.19) e retenção e anonimização (4.20 a 4.23). A documentação de governança está em [`docs/lgpd/`](lgpd/): registro de operações, aviso de privacidade, plano de incidentes, RIPD, operadores e teste de legítimo interesse.
 
 ---
 

@@ -45,8 +45,19 @@ trabalhar no projeto. Para entender **o que é** o projeto, leia primeiro:
   seguem o mesmo padrão de proteção já usado no código: campos privados, acesso restrito por
   dono do registro ou por perfil administrativo (RH/Admin), nunca por Gestor quando o domínio
   já exclui esse acesso.
-- Dados pessoais e sensíveis devem observar a LGPD: minimização, finalidade declarada, acesso
-  por necessidade e retenção controlada.
+- Dados pessoais e sensíveis seguem a LGPD. A documentação está em [`docs/lgpd/`](docs/lgpd/);
+  comece pelo [registro de operações](docs/lgpd/registro-de-operacoes.md). Regras práticas:
+  - **Campo de dado sensível novo** (saúde, biometria, filiação sindical, raça, religião etc.)
+    não é criado sem antes atualizar o registro de operações e o [RIPD](docs/lgpd/ripd.md). O
+    sistema não coleta raça, sexo, religião, filiação sindical nem biometria.
+  - **Dados pessoais são mascarados** em auditoria e em logs (conta bancária, CPF, salário,
+    telefone, endereço e e-mail nunca inteiros). Nunca grave senha, token ou código de acesso.
+  - **Serviço externo novo** que receba dados entra em
+    [`docs/lgpd/operadores.md`](docs/lgpd/operadores.md) antes de receber o primeiro dado.
+  - **O repositório é público:** nenhum dado pessoal real, senha, token ou chave de serviço pode
+    ser commitado, nem em evidências de teste (`docs/evidencias/`).
+  - **Assistentes de IA** não recebem dado pessoal real. Uma exportação do banco
+    (`xano workspace pull --records`) traz dados pessoais e não deve ser colada em ferramentas externas.
 
 ## Desenvolvimento
 

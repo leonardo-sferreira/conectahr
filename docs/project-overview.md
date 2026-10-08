@@ -100,7 +100,9 @@ carreira.
 - Exclusão física é bloqueada para entidades com trilha de auditoria (documentos, ausências) —
   o padrão é arquivamento, não exclusão.
 - API versionada sob `/api/v1/`, com identificador de rastreamento por requisição.
-- Conformidade com a LGPD na proteção de dados pessoais e sensíveis.
+- Conformidade com a LGPD na proteção de dados pessoais e sensíveis, documentada em
+  [`docs/lgpd/`](lgpd/) (registro de operações, aviso de privacidade, plano de incidentes, RIPD,
+  operadores e teste de legítimo interesse).
 
 ## 8. Arquitetura tecnológica
 
@@ -130,8 +132,8 @@ carreira.
   anterior/novo.
 - Anonimato real na pesquisa de clima: a resposta não carrega identidade do respondente, e a
   tabela de controle de participação nunca é cruzada com as respostas.
-- Proteção de dados pessoais e sensíveis conforme a LGPD (minimização, finalidade, acesso por
-  necessidade, retenção controlada).
+- Proteção de dados pessoais e sensíveis conforme a LGPD: veja o
+  [registro de operações](lgpd/registro-de-operacoes.md) e o [RIPD](lgpd/ripd.md).
 
 ## 11. Estratégia de desenvolvimento
 
