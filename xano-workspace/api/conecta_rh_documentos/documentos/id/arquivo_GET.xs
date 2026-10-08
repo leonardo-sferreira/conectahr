@@ -1,4 +1,5 @@
-// Retorna o link externo do arquivo de um documento.
+// Abre o arquivo de um documento: link externo e/ou links temporarios das imagens
+// privadas. Cada abertura gera o evento de auditoria acessar_arquivo_documento.
 // Adaptado para o plano gratuito do Xano.
 // RH e ADMIN podem acessar qualquer documento.
 // Outros usuarios podem acessar somente documentos proprios.
@@ -135,27 +136,75 @@ query "documentos/{id}/arquivo" verb=GET {
       error = "Voce nao possui permissao para acessar este arquivo."
     }
 
-    // Confirma que existe um link cadastrado.
-    precondition ($documento.arquivo_url != null) {
+    // O documento precisa ter ao menos um arquivo: link externo ou imagem privada.
+    var $tem_link {
+      value = (($documento.arquivo_url != null) && (($documento.arquivo_url|trim) != ""))
+    }
+
+    precondition ($tem_link || $documento.imagem_frente != null || $documento.imagem_verso != null) {
       error_type = "notfound"
       error = "Este documento nao possui um arquivo vinculado."
     }
 
-    // Confirma que o link nao esta vazio.
     var $arquivo_url_normalizado {
-      value = $documento.arquivo_url|trim
+      value = ($tem_link ? ($documento.arquivo_url|trim) : null)
     }
 
-    precondition ($arquivo_url_normalizado != "") {
-      error_type = "notfound"
-      error = "Este documento nao possui um arquivo vinculado."
+    // Imagens privadas: link temporario assinado (5 minutos).
+    var $url_imagem_frente {
+      value = null
     }
+
+    var $url_imagem_verso {
+      value = null
+    }
+
+    conditional {
+      if ($documento.imagem_frente != null) {
+        storage.sign_private_url {
+          pathname = $documento.imagem_frente.path
+          ttl = 300
+        } as $frente_assinada
+
+        var.update $url_imagem_frente {
+          value = $frente_assinada
+        }
+      }
+    }
+
+    conditional {
+      if ($documento.imagem_verso != null) {
+        storage.sign_private_url {
+          pathname = $documento.imagem_verso.path
+          ttl = 300
+        } as $verso_assinado
+
+        var.update $url_imagem_verso {
+          value = $verso_assinado
+        }
+      }
+    }
+
+    // Auditoria de leitura: toda abertura de arquivo sensivel e registrada, mesmo
+    // quando o acesso e permitido (autor, documento e horario).
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "acessar_arquivo_documento"
+        recurso    : "documento"
+        registro_id: $documento.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria_acesso
   }
 
   response = {
-    sucesso     : true
-    documento_id: $documento.id
-    arquivo_url : $arquivo_url_normalizado
+    sucesso           : true
+    documento_id      : $documento.id
+    arquivo_url       : $arquivo_url_normalizado
+    imagem_frente_url : $url_imagem_frente
+    imagem_verso_url  : $url_imagem_verso
+    expira_em_segundos: 300
   }
 
   guid = "scw4k4guwq5O8of1l0Edqdis3OA"
