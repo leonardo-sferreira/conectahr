@@ -314,7 +314,7 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
 **5. Instruções para agentes de IA (Parte 5)**
 
-- [ ] 3.43 [CB 5.1] Reescrever o `AGENTS.md` da raiz como fonte única, com:
+- [x] 3.43 [CB 5.1] Reescrever o `AGENTS.md` da raiz como fonte única, com:
   - visão e perfis;
   - fora de escopo;
   - stack e pastas;
@@ -327,7 +327,8 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
   - configuração do MCP do Figma no Codex, no Gemini CLI e no Claude, com o Dev Mode como alternativa.
 
   Verificar: cada item da Parte 5.1 e da 5.4 do pedido tem uma seção correspondente.
-- [ ] 3.44 [CB 5.2] Criar `frontend/AGENTS.md`, com:
+  - Feito em 2026-10-08: o `AGENTS.md` da raiz foi reescrito como fonte única, com as seções 1 (visão e perfis), 2 (fora de escopo), 3 (stack e pastas), 4 (fluxo OpenSpec → branch `feature/CON-XX-descricao` → commit → PR com revisão e sem push direto no `master`), 5 (checklist de endpoint), 6 (frontend e link do Figma), 7 (segredos e LGPD), 8 (testes contra o Xano real e evidências), 9 (idioma pt-BR) e 10 (MCP do Figma no Claude Code, no Codex e no Gemini CLI, com o Dev Mode como alternativa). As regras que já existiam foram mantidas. Os `CON-XX` vêm dos cards do Jira; sem card, a tarefa do `tasks.md` ocupa o lugar. Os comandos de configuração do MCP seguem a documentação do Figma e **não foram executados** aqui (o MCP não conectou nesta sessão).
+- [x] 3.44 [CB 5.2] Criar `frontend/AGENTS.md`, com:
   - as regras da Parte 4;
   - como rodar (venv, `requirements.txt`, `secrets.toml` de exemplo sem valores reais);
   - o padrão do `api_client.py`;
@@ -335,15 +336,19 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
   - os 6 estados de UI.
 
   O arquivo remete ao `AGENTS.md` da raiz. Verificar: seguir as instruções de execução num clone limpo sobe o Streamlit.
-- [ ] 3.45 [CB 5.3] Criar `xano-workspace/AGENTS.md`, com:
+  - Feito em 2026-10-08: `frontend/AGENTS.md` (regras de tela, como rodar, padrão do `api_client.py`, `theme.py` e `st.html()`, os 6 estados), remetendo ao da raiz, e `.streamlit/secrets.toml.example` sem valor real. **Verificado** num clone limpo do repositório: ambiente virtual, `pip install -r frontend/requirements.txt`, cópia do modelo para `secrets.toml` e `streamlit run frontend/app.py` subiram o Streamlit (health 200), e a tela renderizou com os campos E-mail e Senha e os botões Entrar e Esqueci minha senha, sem exceção.
+- [x] 3.45 [CB 5.3] Criar `xano-workspace/AGENTS.md`, com:
   - o checklist de endpoint;
   - os padrões de XanoScript adotados (precondition, "registra e depois falha", auditoria inline, outbox de e-mail e rotina manual);
   - o fluxo de publicação (`push --dry-run` → push → `pull` e diff);
   - o uso do `tools/checar_endpoints.py`.
 
   Verificar: o checklist é igual ao da raiz e ao que o script confere.
-- [ ] 3.46 [CB 5.4] Criar `.gemini/settings.json` com `{"contextFileName": "AGENTS.md"}`. Criar `GEMINI.md` e `CLAUDE.md` na raiz, cada um com a instrução única "Siga integralmente o AGENTS.md deste repositório." Conferir que `.agents/`, `skills-lock.json` e `.claude/scheduled_tasks.lock` continuam no `.gitignore`. Verificar: `git status` mostra os 3 arquivos novos rastreados e nenhum arquivo pessoal.
+  - Feito em 2026-10-08: `xano-workspace/AGENTS.md` com o checklist (itens 1 a 4 idênticos aos da raiz e aos que `tools/checar_endpoints.py` confere), os padrões de XanoScript (`precondition`, "registra e depois falha", auditoria inline, outbox de e-mail e rotina manual), as armadilhas conhecidas do workspace, o fluxo de publicação (`--dry-run` → push → `pull` e diff) e o uso do verificador.
+- [x] 3.46 [CB 5.4] Criar `.gemini/settings.json` com `{"contextFileName": "AGENTS.md"}`. Criar `GEMINI.md` e `CLAUDE.md` na raiz, cada um com a instrução única "Siga integralmente o AGENTS.md deste repositório." Conferir que `.agents/`, `skills-lock.json` e `.claude/scheduled_tasks.lock` continuam no `.gitignore`. Verificar: `git status` mostra os 3 arquivos novos rastreados e nenhum arquivo pessoal.
+  - Feito em 2026-10-08: `.gemini/settings.json` (`{"contextFileName": "AGENTS.md"}`), `GEMINI.md` e `CLAUDE.md`, cada um com a linha "Siga integralmente o AGENTS.md deste repositório.". `.agents/`, `skills-lock.json` e `.claude/scheduled_tasks.lock` seguem no `.gitignore`. `git status` mostra os arquivos novos como não rastreados e nenhum arquivo pessoal.
 - [ ] 3.47 [CB 5.5] Com Codex, Gemini CLI e Claude Code, abrir o repositório e perguntar "Quais são as regras para criar um endpoint e uma tela neste projeto?". Verificar: as três respostas citam o checklist de endpoint e o link do Figma. Registrar as respostas resumidas em `docs/evidencias/agentes.md`.
+  - **Em aberto (2026-10-08).** Não dá para fazer daqui: o Codex CLI, o Gemini CLI e o `claude` não estão instalados nesta máquina (não há como abrir o repositório com cada um). Para fechar, cada integrante com a ferramenta instalada abre o repositório e pergunta "Quais são as regras para criar um endpoint e uma tela neste projeto?"; cada resposta deve citar o checklist de endpoint (itens 1 a 4) e o link do Figma. Registrar as três respostas resumidas em `docs/evidencias/agentes.md`, sem dado pessoal.
 
 **6. Integração final**
 
