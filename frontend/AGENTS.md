@@ -61,7 +61,7 @@ Todo acesso à API passa por `frontend/api_client.py`. Não chame `requests` dir
 - HTML próprio só com `st.html()`, sempre escapando texto vindo de usuário ou da API
   (`html.escape`). Nunca use `unsafe_allow_html` com texto não escapado.
 - Fontes: Sora e Manrope. Hoje são carregadas do Google Fonts, o que envia o IP do usuário ao
-  Google; servir localmente está na tarefa 3.50 da change `concluir-mvp-conectarh`.
+  Google; servir localmente está na tarefa 4 da change `concluir-frontend-streamlit` (origem 3.50).
 
 ## Os 6 estados de UI
 

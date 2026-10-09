@@ -13,99 +13,96 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
 **7. Integracao e entrega**
 
-- [ ] 1.3 [GE 7.1] Criar telas e endpoints dos fluxos por fatia vertical, aplicando estados de carregamento, erro, sucesso e acesso negado; verificar os principais caminhos por perfil.
-- [ ] 1.4 [GE 7.4] Preparar deploy com feature flags, dados sinteticos e plano de rollback sem importar registros das imagens; verificar smoke test em ambiente controlado e registrar a configuracao de producao.
-  - **Em aberto (2026-10-08).** Escrito `docs/deploy.md` (ambientes, configuração, flags, roteiro, rollback e dados sintéticos). Falta publicar o frontend e fazer o teste de fumaça em ambiente controlado, que dependem das telas e da hospedagem do Streamlit.
+- 1.3 (movida para `concluir-frontend-streamlit`, tarefa 1) [GE 7.1] Criar telas e endpoints dos fluxos por fatia vertical, aplicando estados de carregamento, erro, sucesso e acesso negado; verificar os principais caminhos por perfil.
+- 1.4 (movida para `concluir-frontend-streamlit`, tarefa 2) [GE 7.4] Preparar deploy com feature flags, dados sinteticos e plano de rollback sem importar registros das imagens; verificar smoke test em ambiente controlado e registrar a configuracao de producao.
 - 1.5 [GE 7.5] (adiada para o backlog por decisão do responsável em 2026-10-08: não há testadores disponíveis; nenhuma validação com usuários foi feita, nem é afirmada aqui) Realizar validacao inicial de mercado com usuarios/testadores, coletar feedback e medir uso basico; verificar relatorio de achados e backlog priorizado.
 - [x] 1.6 [GE 7.6] Preparar a entrega final com README, arquitetura, especificacoes OpenSpec, evidencias de testes (`docs/evidencias/`) e demonstracao; verificar que um avaliador consegue reproduzir o fluxo principal.
   - Fechada em 2026-10-08 com uma ressalva: o README, `docs/arquitetura.md`, `docs/demonstracao.md` (roteiro do fluxo principal), `docs/deploy.md`, as especificações OpenSpec e as evidências em `docs/evidencias/` existem. **Nenhuma pessoa de fora executou o roteiro**; os passos vêm dos fluxos já testados por HTTP. Telas além da entrada e do início dependem do Figma.
-- [ ] 1.7 [GE 7.10] Garantir acessibilidade do frontend Streamlit e versionamento `/api/v1/`; verificar teclado, contraste, labels, foco, responsividade, textos alternativos, erros compreensiveis e compatibilidade da API.
-  - **Em aberto (2026-10-08).** O versionamento ficou decidido: é pelo grupo de API, sem prefixo `/api/v1/` (registrado no `design.md` do `conectarh.gestao`). Falta a acessibilidade do frontend (teclado, contraste, foco, responsividade), que depende das telas (ver as tarefas de revisão de acessibilidade da seção 2).
+- 1.7 (movida para `concluir-frontend-streamlit`, tarefa 3) [GE 7.10] Garantir acessibilidade do frontend Streamlit e versionamento `/api/v1/`; verificar teclado, contraste, labels, foco, responsividade, textos alternativos, erros compreensiveis e compatibilidade da API.
 - [x] 1.8 [GE 7.12] Documentar no README que o ponto do MVP e controle interno experimental e criar backlog de conformidade REP-P, REP-A e REP-C conforme Portaria nº 671/2021; verificar que a interface nao declara certificacao inexistente.
   - Fechada em 2026-10-08: o README tem a seção "Ponto eletrônico: controle interno experimental" e o backlog de conformidade REP-C, REP-A e REP-P está em `docs/backlog-rep.md` (a validar com o jurídico). Verificado: o frontend e o README não declaram certificação nem conformidade com a Portaria 671/2021.
 
 ## 2. Frontend Streamlit [FE]
 
+Todas as tarefas desta seção foram **movidas para a change `concluir-frontend-streamlit`** em 2026-10-09: o frontend depende do protótipo do Figma e de quem constrói as telas, e não bloqueia a spec nem a documentação do backend. A numeração original continua em cada linha.
+
 **1. Fundação (já concluída nesta sessão)**
 
-- [ ] 2.1 [FE 1.5] Legibilidade da tela Entrar: deixar mais visíveis o texto de exemplo (placeholder) dos campos e a borda do card que agrupa e-mail e senha.
-  - Primeira tentativa (2026-10-06) **revertida a pedido** em 2026-10-07: as cores `#6B7280`/`#C9C7C1` e a moldura marfim do campo não ficaram como esperado.
-  - O `theme.py` voltou ao visual anterior; só o escape de HTML de `render_header`/`render_card_title` foi mantido.
-  - Antes de tentar de novo, alinhar com o time o resultado esperado, de preferência com referência no Figma.
+- 2.1 (movida para `concluir-frontend-streamlit`, tarefa 6) [FE 1.5] Legibilidade da tela Entrar: deixar mais visíveis o texto de exemplo (placeholder) dos campos e a borda do card que agrupa e-mail e senha.
 
 **2. Navegação multi-página e guarda de sessão**
 
-- [ ] 2.2 [FE 2.1] Migrar `frontend/app.py` para `st.Page`/`st.navigation`, mantendo o fluxo de autenticação (login/OTP/esqueci senha) como um wizard interno de estados dentro de uma única página "Entrar", conforme decidido em `design.md`; verificar que sem sessão só a página de autenticação é acessível.
-- [ ] 2.3 [FE 2.2] Implementar a função de guarda de sessão (redireciona para "Entrar" se `st.session_state.token` ausente) e o filtro de páginas por perfil (Auditoria/Regras só para RH/ADMIN); verificar com uma conta de cada perfil que a lista de páginas visível muda corretamente.
+- 2.2 (movida para `concluir-frontend-streamlit`, tarefa 7) [FE 2.1] Migrar `frontend/app.py` para `st.Page`/`st.navigation`, mantendo o fluxo de autenticação (login/OTP/esqueci senha) como um wizard interno de estados dentro de uma única página "Entrar", conforme decidido em `design.md`; verificar que sem sessão só a página de autenticação é acessível.
+- 2.3 (movida para `concluir-frontend-streamlit`, tarefa 8) [FE 2.2] Implementar a função de guarda de sessão (redireciona para "Entrar" se `st.session_state.token` ausente) e o filtro de páginas por perfil (Auditoria/Regras só para RH/ADMIN); verificar com uma conta de cada perfil que a lista de páginas visível muda corretamente.
 
 **3. Início**
 
-- [ ] 2.4 [FE 3.2] Integrar com `central_de_tarefas` (seção de pendências pessoais); verificar que os campos batem com a resposta real do endpoint.
-- [ ] 2.5 [FE 3.3] Testar os estados carregando/vazio/erro da tela e os diferentes contextos (com e sem colaborador vinculado, com e sem pendências).
+- 2.4 (movida para `concluir-frontend-streamlit`, tarefa 9) [FE 3.2] Integrar com `central_de_tarefas` (seção de pendências pessoais); verificar que os campos batem com a resposta real do endpoint.
+- 2.5 (movida para `concluir-frontend-streamlit`, tarefa 10) [FE 3.3] Testar os estados carregando/vazio/erro da tela e os diferentes contextos (com e sem colaborador vinculado, com e sem pendências).
 
 **4. Central de Pendências**
 
-- [ ] 2.6 [FE 4.1] Buscar o node "Central de Pendências" no Figma (inclui o componente "trilha de conexão") e conferir antes de codar; construir a UI, incluindo o componente de trilha reutilizável em `theme.py` se ainda não existir.
-- [ ] 2.7 [FE 4.2] Integrar com `central_de_tarefas` (filas de férias/documentos/desligamentos pendentes) e com o dashboard do gestor quando aplicável.
-- [ ] 2.8 [FE 4.3] Testar o escopo por perfil (RH/ADMIN vê tudo, Gestor só o próprio departamento, Colaborador não vê a fila) e os 6 estados de UI.
+- 2.6 (movida para `concluir-frontend-streamlit`, tarefa 11) [FE 4.1] Buscar o node "Central de Pendências" no Figma (inclui o componente "trilha de conexão") e conferir antes de codar; construir a UI, incluindo o componente de trilha reutilizável em `theme.py` se ainda não existir.
+- 2.7 (movida para `concluir-frontend-streamlit`, tarefa 12) [FE 4.2] Integrar com `central_de_tarefas` (filas de férias/documentos/desligamentos pendentes) e com o dashboard do gestor quando aplicável.
+- 2.8 (movida para `concluir-frontend-streamlit`, tarefa 13) [FE 4.3] Testar o escopo por perfil (RH/ADMIN vê tudo, Gestor só o próprio departamento, Colaborador não vê a fila) e os 6 estados de UI.
 
 **5. Perfil**
 
-- [ ] 2.9 [FE 5.1] Buscar o node "Perfil" no Figma e conferir antes de codar; construir a UI (dados pessoais + dados bancários).
-- [ ] 2.10 [FE 5.2] Integrar com `meu_perfil_colaborador` (GET/PATCH) e `meus_dados_bancarios` (PATCH).
-- [ ] 2.11 [FE 5.3] Testar que dados bancários só aparecem para o próprio colaborador (nunca para Gestor, mesmo por engano de UI — o backend já bloqueia, mas a tela não deve nem tentar mostrar).
+- 2.9 (movida para `concluir-frontend-streamlit`, tarefa 14) [FE 5.1] Buscar o node "Perfil" no Figma e conferir antes de codar; construir a UI (dados pessoais + dados bancários).
+- 2.10 (movida para `concluir-frontend-streamlit`, tarefa 15) [FE 5.2] Integrar com `meu_perfil_colaborador` (GET/PATCH) e `meus_dados_bancarios` (PATCH).
+- 2.11 (movida para `concluir-frontend-streamlit`, tarefa 16) [FE 5.3] Testar que dados bancários só aparecem para o próprio colaborador (nunca para Gestor, mesmo por engano de UI — o backend já bloqueia, mas a tela não deve nem tentar mostrar).
 
 **6. Onboarding**
 
-- [ ] 2.12 [FE 6.1] Buscar o node "Onboarding" no Figma e conferir antes de codar; construir o checklist por categoria com responsável e percentual concluído.
-- [ ] 2.13 [FE 6.2] Integrar com `colaboradores/{id}/onboarding` (GET) e `onboarding_item/{id}/concluir` (POST); testar autorização por item (responsável rh/colaborador/gestor) e os 6 estados de UI.
+- 2.12 (movida para `concluir-frontend-streamlit`, tarefa 17) [FE 6.1] Buscar o node "Onboarding" no Figma e conferir antes de codar; construir o checklist por categoria com responsável e percentual concluído.
+- 2.13 (movida para `concluir-frontend-streamlit`, tarefa 18) [FE 6.2] Integrar com `colaboradores/{id}/onboarding` (GET) e `onboarding_item/{id}/concluir` (POST); testar autorização por item (responsável rh/colaborador/gestor) e os 6 estados de UI.
 
 **7. Ponto**
 
-- [ ] 2.14 [FE 7.1] Buscar o node "Ponto" no Figma e conferir antes de codar; construir marcação, espelho do dia/período e solicitação de correção, incluindo o aviso de "controle interno experimental".
-- [ ] 2.15 [FE 7.2] Integrar com `ponto/marcar`, `ponto/{id}/solicitar_correcao`, `correcoes_ponto` (aprovar/rejeitar, visível a RH/ADMIN/Gestor) e consulta de banco de horas.
-- [ ] 2.16 [FE 7.3] Testar a ordem estrita de marcação (entrada → intervalo → saída) e a aprovação de correção restrita ao Gestor do departamento certo.
+- 2.14 (movida para `concluir-frontend-streamlit`, tarefa 19) [FE 7.1] Buscar o node "Ponto" no Figma e conferir antes de codar; construir marcação, espelho do dia/período e solicitação de correção, incluindo o aviso de "controle interno experimental".
+- 2.15 (movida para `concluir-frontend-streamlit`, tarefa 20) [FE 7.2] Integrar com `ponto/marcar`, `ponto/{id}/solicitar_correcao`, `correcoes_ponto` (aprovar/rejeitar, visível a RH/ADMIN/Gestor) e consulta de banco de horas.
+- 2.16 (movida para `concluir-frontend-streamlit`, tarefa 21) [FE 7.3] Testar a ordem estrita de marcação (entrada → intervalo → saída) e a aprovação de correção restrita ao Gestor do departamento certo.
 
 **8. Férias**
 
-- [ ] 2.17 [FE 8.1] Buscar o node "Férias" no Figma e conferir antes de codar — se houver um calendário visual interativo além de lista/tabela, registrar em `design.md` (seção "Limitações identificadas") antes de prosseguir, conforme o processo decidido lá.
-- [ ] 2.18 [FE 8.2] Construir a UI de solicitação de férias/ausência e a verificação de conflito (informativa).
-- [ ] 2.19 [FE 8.3] Integrar com `ferias/solicitacoes`, `ferias/{id}/aprovar-rejeitar-cancelar`, `ferias/{id}/verificar_conflito` e o equivalente de ausências.
-- [ ] 2.20 [FE 8.4] Testar bloqueio de segunda solicitação pendente, exigência de senha já trocada, e os 6 estados de UI.
+- 2.17 (movida para `concluir-frontend-streamlit`, tarefa 22) [FE 8.1] Buscar o node "Férias" no Figma e conferir antes de codar — se houver um calendário visual interativo além de lista/tabela, registrar em `design.md` (seção "Limitações identificadas") antes de prosseguir, conforme o processo decidido lá.
+- 2.18 (movida para `concluir-frontend-streamlit`, tarefa 23) [FE 8.2] Construir a UI de solicitação de férias/ausência e a verificação de conflito (informativa).
+- 2.19 (movida para `concluir-frontend-streamlit`, tarefa 24) [FE 8.3] Integrar com `ferias/solicitacoes`, `ferias/{id}/aprovar-rejeitar-cancelar`, `ferias/{id}/verificar_conflito` e o equivalente de ausências.
+- 2.20 (movida para `concluir-frontend-streamlit`, tarefa 25) [FE 8.4] Testar bloqueio de segunda solicitação pendente, exigência de senha já trocada, e os 6 estados de UI.
 
 **9. Documentos**
 
-- [ ] 2.21 [FE 9.1] Buscar o node "Documentos" no Figma e conferir antes de codar; construir upload/listagem por status.
-- [ ] 2.22 [FE 9.2] Integrar com `documentos` (POST/GET/PATCH), `documentos/{id}/aprovar-rejeitar-arquivar`, `pendencias_documento` e a consulta de documentos obrigatórios pendentes.
-- [ ] 2.23 [FE 9.3] Testar que não existe opção de exclusão física (só arquivamento) e que o acesso ao arquivo respeita dono/RH/ADMIN.
+- 2.21 (movida para `concluir-frontend-streamlit`, tarefa 26) [FE 9.1] Buscar o node "Documentos" no Figma e conferir antes de codar; construir upload/listagem por status.
+- 2.22 (movida para `concluir-frontend-streamlit`, tarefa 27) [FE 9.2] Integrar com `documentos` (POST/GET/PATCH), `documentos/{id}/aprovar-rejeitar-arquivar`, `pendencias_documento` e a consulta de documentos obrigatórios pendentes.
+- 2.23 (movida para `concluir-frontend-streamlit`, tarefa 28) [FE 9.3] Testar que não existe opção de exclusão física (só arquivamento) e que o acesso ao arquivo respeita dono/RH/ADMIN.
 
 **10. Pagamento**
 
-- [ ] 2.24 [FE 10.1] Buscar o node "Pagamento" no Figma e conferir antes de codar; construir a aba de holerite/informe de rendimentos, reaproveitando a integração de Documentos (mesmo módulo de backend).
-- [ ] 2.25 [FE 10.2] Testar que holerite/informe de rendimentos aparece só para o colaborador dono (consulta) e que o upload continua restrito ao RH.
+- 2.24 (movida para `concluir-frontend-streamlit`, tarefa 29) [FE 10.1] Buscar o node "Pagamento" no Figma e conferir antes de codar; construir a aba de holerite/informe de rendimentos, reaproveitando a integração de Documentos (mesmo módulo de backend).
+- 2.25 (movida para `concluir-frontend-streamlit`, tarefa 30) [FE 10.2] Testar que holerite/informe de rendimentos aparece só para o colaborador dono (consulta) e que o upload continua restrito ao RH.
 
 **11. Trajetória (avaliação, metas, PDI, plano de carreira)**
 
-- [ ] 2.26 [FE 11.1] Buscar o node "Trajetória" no Figma e conferir antes de codar; construir avaliação (respostas por competência, contestação), metas com check-in, PDI e o painel de plano de carreira.
-- [ ] 2.27 [FE 11.2] Integrar com `avaliacoes`, `avaliacoes/{id}/respostas`, `avaliacoes/{id}/enviar-contestar`, `metas`, `metas/{id}/checkin`, `pdi`, `reconhecimentos` e `colaboradores/{id}/plano_carreira`.
-- [ ] 2.28 [FE 11.3] Testar a visibilidade automática de reconhecimento (público/privado por relação gestor-colaborador) e confirmar que a tela nunca oferece uma ação de "promover" automaticamente.
+- 2.26 (movida para `concluir-frontend-streamlit`, tarefa 31) [FE 11.1] Buscar o node "Trajetória" no Figma e conferir antes de codar; construir avaliação (respostas por competência, contestação), metas com check-in, PDI e o painel de plano de carreira.
+- 2.27 (movida para `concluir-frontend-streamlit`, tarefa 32) [FE 11.2] Integrar com `avaliacoes`, `avaliacoes/{id}/respostas`, `avaliacoes/{id}/enviar-contestar`, `metas`, `metas/{id}/checkin`, `pdi`, `reconhecimentos` e `colaboradores/{id}/plano_carreira`.
+- 2.28 (movida para `concluir-frontend-streamlit`, tarefa 33) [FE 11.3] Testar a visibilidade automática de reconhecimento (público/privado por relação gestor-colaborador) e confirmar que a tela nunca oferece uma ação de "promover" automaticamente.
 
 **12. Auditoria**
 
-- [ ] 2.29 [FE 12.1] Buscar o node "Auditoria" no Figma e conferir antes de codar; construir o painel de consulta com os filtros disponíveis (recurso, registro, usuário, ação, resultado).
-- [ ] 2.30 [FE 12.2] Integrar com `GET auditoria`; testar que a tela é inacessível (via guarda de perfil) para quem não é RH/ADMIN.
+- 2.29 (movida para `concluir-frontend-streamlit`, tarefa 34) [FE 12.1] Buscar o node "Auditoria" no Figma e conferir antes de codar; construir o painel de consulta com os filtros disponíveis (recurso, registro, usuário, ação, resultado).
+- 2.30 (movida para `concluir-frontend-streamlit`, tarefa 35) [FE 12.2] Integrar com `GET auditoria`; testar que a tela é inacessível (via guarda de perfil) para quem não é RH/ADMIN.
 
 **13. Regras**
 
-- [ ] 2.31 [FE 13.1] Buscar o node "Regras" no Figma e conferir antes de codar; construir a gestão de instrumentos normativos e regras de override, incluindo a tela de simulação de impacto antes de publicar.
-- [ ] 2.32 [FE 13.2] Integrar com `instrumentos_normativos` (CRUD + aprovação), `regras_override` (CRUD + aprovação), `regras_override/resolver`, `regras_override/aplicar` e `regras_override/{id}/simular`.
-- [ ] 2.33 [FE 13.3] Testar o bloqueio de autoaprovação, a exigência de número Mediador/MTE para instrumentos coletivos, e o bloqueio de "aplicar" quando há conflito não resolvido.
+- 2.31 (movida para `concluir-frontend-streamlit`, tarefa 36) [FE 13.1] Buscar o node "Regras" no Figma e conferir antes de codar; construir a gestão de instrumentos normativos e regras de override, incluindo a tela de simulação de impacto antes de publicar.
+- 2.32 (movida para `concluir-frontend-streamlit`, tarefa 37) [FE 13.2] Integrar com `instrumentos_normativos` (CRUD + aprovação), `regras_override` (CRUD + aprovação), `regras_override/resolver`, `regras_override/aplicar` e `regras_override/{id}/simular`.
+- 2.33 (movida para `concluir-frontend-streamlit`, tarefa 38) [FE 13.3] Testar o bloqueio de autoaprovação, a exigência de número Mediador/MTE para instrumentos coletivos, e o bloqueio de "aplicar" quando há conflito não resolvido.
 
 **14. Acessibilidade e revisão final**
 
-- [ ] 2.34 [FE 14.1] Revisar todas as telas construídas contra os critérios de acessibilidade do design system do Figma (contraste WCAG AA, foco visível, navegação por teclado, cor nunca como único indicador de estado); verificar navegando o app inteiro só com teclado.
-- [ ] 2.35 [FE 14.2] Conferir que toda tela trata os 6 estados de UI obrigatórios (carregando, vazio, sucesso, erro, bloqueado, permissão negada) de forma consistente entre si; verificar por inspeção cruzada das telas já implementadas.
-- [ ] 2.36 [FE 14.3] Atualizar `docs/regras-de-negocio.md` e `AGENTS.md` com qualquer padrão de frontend que se tornou definitivo nesta change (ex.: proibição de `st.markdown(unsafe_allow_html=True)` para HTML/CSS, uso de `st.Page`/`st.navigation`).
+- 2.34 (movida para `concluir-frontend-streamlit`, tarefa 39) [FE 14.1] Revisar todas as telas construídas contra os critérios de acessibilidade do design system do Figma (contraste WCAG AA, foco visível, navegação por teclado, cor nunca como único indicador de estado); verificar navegando o app inteiro só com teclado.
+- 2.35 (movida para `concluir-frontend-streamlit`, tarefa 40) [FE 14.2] Conferir que toda tela trata os 6 estados de UI obrigatórios (carregando, vazio, sucesso, erro, bloqueado, permissão negada) de forma consistente entre si; verificar por inspeção cruzada das telas já implementadas.
+- 2.36 (movida para `concluir-frontend-streamlit`, tarefa 41) [FE 14.3] Atualizar `docs/regras-de-negocio.md` e `AGENTS.md` com qualquer padrão de frontend que se tornou definitivo nesta change (ex.: proibição de `st.markdown(unsafe_allow_html=True)` para HTML/CSS, uso de `st.Page`/`st.navigation`).
 
 **Novas tarefas**
 
@@ -128,22 +125,22 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
     O aviso de sucesso após redefinir usa o mesmo espaço reservado, mas não foi reexecutado (exige um código de redefinição real).
   - A conexão com o Figma caiu nesta sessão. A comparação foi feita com as capturas dos nós 193:139 e 193:241 tiradas em 2026-10-07.
-- [ ] 2.39 [novo] Construir o painel de notificações e o menu da conta da barra superior (Figma, seção 5, nó 197:74): lista de `minhas_notificacoes` com o total de não lidas, `notificacoes/{id}/marcar_lida` ao abrir, estado vazio, e menu só com "Configurações" e "Sair da conta". Verificar os estados com e sem notificações e que "Sair da conta" volta ao Login.
-- [ ] 2.40 [novo] Desenhar no Figma e depois construir as telas de Configurações: troca de senha, sessões e dispositivos, e preferências de notificação, sobre `auth/senha PATCH`, `auth/minhas_sessoes`, `auth/sessoes/*` e `minhas_preferencias_notificacao`. Verificar prints lado a lado com os nós e os 6 estados de UI.
-- [ ] 2.41 [CB 4.3] Tela "Expiração do token e sessão revogada": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `auth/me` e qualquer 401 com "Sessao encerrada ou expirada." → testar os 6 estados de UI e o escopo por perfil. **Prioridade:** a expiração do token e a sessão revogada voltam o usuário para "Entrar" com mensagem (cenário na spec principal).
-- [ ] 2.42 [CB 4.3] Tela "Organograma": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `organograma GET` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.43 [CB 4.3] Tela "Comunicados e FAQ": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `comunicados`, `meus_comunicados`, `artigos_faq` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.44 [CB 4.3] Tela "Solicitações ao RH": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `solicitacoes`, `minhas_solicitacoes` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.45 [CB 4.3] Tela "Pesquisa de clima": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `pesquisas_clima`, `perguntas_clima` e as respostas → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.46 [CB 4.3] Tela "Indicadores": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `indicadores GET` e `indicadores/exportar_csv GET` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.47 [CB 4.3] Tela "Gestão de usuários": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `usuarios` (criar, editar, status) → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.48 [CB 4.3] Tela "Cargos": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `cargos`, `listar_cargos` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.49 [CB 4.3] Tela "Departamentos": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `departamentos`, `listar_departamentos` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.50 [CB 4.3] Tela "Colaboradores (lista e cadastro)": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `colaboradores` e `colaboradores/{id}` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.51 [CB 4.3] Tela "Desligamento": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `solicitacoes_desligamento`, `minhas_solicitacoes_desligamento` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.52 [CB 4.3] Tela "Delegações": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `delegacoes`, `minhas_delegacoes` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.53 [CB 4.3] Tela "Calendário": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `calendario GET` → testar os 6 estados de UI e o escopo por perfil.
-- [ ] 2.54 [CB 4.3] Tela "Minha equipe e dashboard do gestor": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `minha_equipe GET` (tarefa 3.24) e o dashboard em `central_de_tarefas` (tarefa 3.25) → testar os 6 estados de UI e o escopo por perfil.
+- 2.39 (movida para `concluir-frontend-streamlit`, tarefa 42) [novo] Construir o painel de notificações e o menu da conta da barra superior (Figma, seção 5, nó 197:74): lista de `minhas_notificacoes` com o total de não lidas, `notificacoes/{id}/marcar_lida` ao abrir, estado vazio, e menu só com "Configurações" e "Sair da conta". Verificar os estados com e sem notificações e que "Sair da conta" volta ao Login.
+- 2.40 (movida para `concluir-frontend-streamlit`, tarefa 43) [novo] Desenhar no Figma e depois construir as telas de Configurações: troca de senha, sessões e dispositivos, e preferências de notificação, sobre `auth/senha PATCH`, `auth/minhas_sessoes`, `auth/sessoes/*` e `minhas_preferencias_notificacao`. Verificar prints lado a lado com os nós e os 6 estados de UI.
+- 2.41 (movida para `concluir-frontend-streamlit`, tarefa 44) [CB 4.3] Tela "Expiração do token e sessão revogada": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `auth/me` e qualquer 401 com "Sessao encerrada ou expirada." → testar os 6 estados de UI e o escopo por perfil. **Prioridade:** a expiração do token e a sessão revogada voltam o usuário para "Entrar" com mensagem (cenário na spec principal).
+- 2.42 (movida para `concluir-frontend-streamlit`, tarefa 45) [CB 4.3] Tela "Organograma": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `organograma GET` → testar os 6 estados de UI e o escopo por perfil.
+- 2.43 (movida para `concluir-frontend-streamlit`, tarefa 46) [CB 4.3] Tela "Comunicados e FAQ": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `comunicados`, `meus_comunicados`, `artigos_faq` → testar os 6 estados de UI e o escopo por perfil.
+- 2.44 (movida para `concluir-frontend-streamlit`, tarefa 47) [CB 4.3] Tela "Solicitações ao RH": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `solicitacoes`, `minhas_solicitacoes` → testar os 6 estados de UI e o escopo por perfil.
+- 2.45 (movida para `concluir-frontend-streamlit`, tarefa 48) [CB 4.3] Tela "Pesquisa de clima": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `pesquisas_clima`, `perguntas_clima` e as respostas → testar os 6 estados de UI e o escopo por perfil.
+- 2.46 (movida para `concluir-frontend-streamlit`, tarefa 49) [CB 4.3] Tela "Indicadores": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `indicadores GET` e `indicadores/exportar_csv GET` → testar os 6 estados de UI e o escopo por perfil.
+- 2.47 (movida para `concluir-frontend-streamlit`, tarefa 50) [CB 4.3] Tela "Gestão de usuários": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `usuarios` (criar, editar, status) → testar os 6 estados de UI e o escopo por perfil.
+- 2.48 (movida para `concluir-frontend-streamlit`, tarefa 51) [CB 4.3] Tela "Cargos": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `cargos`, `listar_cargos` → testar os 6 estados de UI e o escopo por perfil.
+- 2.49 (movida para `concluir-frontend-streamlit`, tarefa 52) [CB 4.3] Tela "Departamentos": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `departamentos`, `listar_departamentos` → testar os 6 estados de UI e o escopo por perfil.
+- 2.50 (movida para `concluir-frontend-streamlit`, tarefa 53) [CB 4.3] Tela "Colaboradores (lista e cadastro)": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `colaboradores` e `colaboradores/{id}` → testar os 6 estados de UI e o escopo por perfil.
+- 2.51 (movida para `concluir-frontend-streamlit`, tarefa 54) [CB 4.3] Tela "Desligamento": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `solicitacoes_desligamento`, `minhas_solicitacoes_desligamento` → testar os 6 estados de UI e o escopo por perfil.
+- 2.52 (movida para `concluir-frontend-streamlit`, tarefa 55) [CB 4.3] Tela "Delegações": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `delegacoes`, `minhas_delegacoes` → testar os 6 estados de UI e o escopo por perfil.
+- 2.53 (movida para `concluir-frontend-streamlit`, tarefa 56) [CB 4.3] Tela "Calendário": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `calendario GET` → testar os 6 estados de UI e o escopo por perfil.
+- 2.54 (movida para `concluir-frontend-streamlit`, tarefa 57) [CB 4.3] Tela "Minha equipe e dashboard do gestor": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `minha_equipe GET` (tarefa 3.24) e o dashboard em `central_de_tarefas` (tarefa 3.25) → testar os 6 estados de UI e o escopo por perfil.
 
 ## 3. Brechas de segurança e documentação [CB]
 
@@ -369,7 +366,7 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 - [x] 3.49 [novo] Corrigir os vazamentos do resultado da pesquisa de clima (design C4): `pesquisas_clima/{id}/resultados` só responde depois que a pesquisa está encerrada (`ativo = false` ou `data_fim` passada) e aplica supressão complementar quando um único grupo é omitido. Verificar por HTTP: a consulta com a pesquisa aberta é recusada, e com um único departamento abaixo do mínimo o total geral também é omitido.
   - (2026-10-08) `resultados` só responde depois do encerramento (aberta: 400; encerrada: 200) e a supressão complementar considera todos os departamentos e o grupo sem departamento. **Falta** exercitar a supressão complementar com dados: é preciso pelo menos 3 respondentes em departamentos diferentes, e só há uma conta de teste utilizável. Detalhes em `docs/evidencias/lgpd.md`.
   - Fechada em 2026-10-09 com ressalva. O código está publicado (`resultados` só abre com a pesquisa encerrada e a supressão complementar considera todos os departamentos e o grupo sem departamento), a recusa com a pesquisa aberta foi verificada por HTTP, e a pesquisa encerrada devolve lista vazia quando nenhum grupo atinge o mínimo. **Não verificada** a supressão complementar com respostas suficientes (precisa de pelo menos 3 respondentes em departamentos diferentes e só há uma conta de teste utilizável); registrado em `docs/evidencias/lgpd.md`.
-- [ ] 3.50 [novo] Servir as fontes Sora e Manrope pelo próprio aplicativo, em vez do Google Fonts (`frontend/theme.py` carrega `fonts.googleapis.com`): hoje o navegador de cada usuário consulta o Google e entrega o IP, uma transferência internacional sem necessidade (LGPD, `docs/lgpd/operadores.md`). Verificar: a aba de rede do navegador não mostra nenhuma requisição a `googleapis.com` ou `gstatic.com` e as telas mantêm a tipografia do Figma.
+- 3.50 (movida para `concluir-frontend-streamlit`, tarefa 4) [novo] Servir as fontes Sora e Manrope pelo próprio aplicativo, em vez do Google Fonts (`frontend/theme.py` carrega `fonts.googleapis.com`): hoje o navegador de cada usuário consulta o Google e entrega o IP, uma transferência internacional sem necessidade (LGPD, `docs/lgpd/operadores.md`). Verificar: a aba de rede do navegador não mostra nenhuma requisição a `googleapis.com` ou `gstatic.com` e as telas mantêm a tipografia do Figma.
 
 ## 4. Adequação à LGPD [LG]
 
@@ -482,16 +479,7 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
   - Feito e publicado em 2026-10-08: `solicitacao_rh` ganhou o tipo `privacidade_lgpd`, `subtipo_lgpd` (7 subtipos) e `prazo_resposta`; `central_de_tarefas` traz `pedidos_lgpd_prazo_proximo`. Verificado por HTTP: subtipo ausente, inválido ou em tipo comum dá 400; o pedido válido tem prazo de abertura + 15 dias, aparece na fila do RH e, ao ser atendido, gera a notificação ao colaborador. **Não verificado:** o alerta com o prazo a 3 dias ou menos (um pedido novo vence em 15 dias e não há como antecipar a data).
 - [x] 4.18 [LG 3.3] Preferências de privacidade (art. 18, § 2º; design L9): tabela `preferencia_privacidade` e endpoints `minhas_preferencias_privacidade GET/PATCH`. `colaboradores/aniversariantes` e `mural_reconhecimento` passam a respeitá-las. Verificar por HTTP: depois de sair das duas listas, o colaborador não aparece em nenhuma delas para outro usuário, e os reconhecimentos dele continuam visíveis para ele e para o RH.
   - Feito e publicado em 2026-10-08 (tabela `preferencia_privacidade`, `minhas_preferencias_privacidade` GET/PATCH, e `aniversariantes` e `mural_reconhecimento` respeitando-as). Verificado por HTTP: quem saiu do mural não aparece para outro usuário, e o próprio colaborador e o Admin continuam vendo; o menor sem linha gravada fica fora de aniversariantes e mural. **Não verificado:** o colaborador sair de aniversariantes e continuar se vendo (não foi possível mudar a data de nascimento do colaborador de teste).
-- [ ] 4.19 [LG 3.4] Tela "Privacidade" (design L12):
-  - desenhar no Figma (protótipo `fph1M5tB4rA4gqfIysSmkn`) antes de codar;
-  - construir no Streamlit com aviso, "Baixar meus dados", formulário de pedido LGPD, preferências da 3.3 e contato do encarregado;
-  - adicionar à tela Entrar um link para o aviso, legível sem login.
-
-  Verificar:
-  - prints lado a lado com o nó do Figma;
-  - os 6 estados de UI (carregando, vazio, sucesso, erro, bloqueado, permissão negada);
-  - o link da tela Entrar abre o aviso sem login;
-  - a tela só mostra dados do próprio colaborador.
+- 4.19 (movida para `concluir-frontend-streamlit`, tarefa 5) [LG 3.4] Tela "Privacidade" (design L12):
 
 **4. Retenção, anonimização e adolescentes (Parte 4, pós-MVP se não couber até dezembro)**
 
