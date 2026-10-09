@@ -74,16 +74,20 @@ da hospedagem. O projeto, porém, mantém **o seu próprio backup**, em dois ped
 2. **Dados:** o `pull --records` só quando necessário (antes de uma mudança de schema destrutiva ou de
    uma limpeza). A pasta resultante fica fora do Git (o `.gitignore` não cobre `pr_*` ou pastas
    temporárias: escolha um caminho fora do repositório).
-3. **Restauração em um workspace vazio:** criar o workspace de destino pelo painel do Xano, anotar o
-   ID e rodar `xano workspace push -p ConectaRH -w <ID> -d <pasta-do-backup> --sync`. Para os dados,
-   acrescentar `--records` (depois de conferir o destino). Reconfigurar as variáveis de ambiente do
-   Xano no destino (as chaves não vão no backup).
+3. **Restauração:** `xano workspace push -p ConectaRH -d <pasta-do-backup> --sync`. Em outro workspace
+   (plano pago), acrescentar `-w <ID>`; para os dados, `--records` (depois de conferir o destino).
+   Reconfigurar as variáveis de ambiente do Xano no destino (as chaves não vão no backup).
+   **Prove a restauração antes com `--dry-run`:** o resultado "No changes to push" mostra que o
+   backup recria exatamente o estado atual. O plano gratuito tem um workspace só, então não dá para
+   restaurar num workspace vazio de teste.
 4. **Depois de restaurar:** rodar `tools/checar_endpoints.py`, fazer um login de teste e conferir a
    contagem de objetos (tabelas, funções, endpoints).
 
 ### Situação do teste de restauração
 
-O backup de código e schema foi baixado e comparado com o repositório (ver
-[`evidencias/backup.md`](evidencias/backup.md)). A restauração num workspace vazio **ainda não foi
-executada**: depende de criar um workspace de teste pelo painel.
+O backup de código e schema foi baixado e comparado com o repositório, e a restauração foi
+**simulada com `--dry-run` sobre o workspace real**, com resultado "No changes to push" (ver
+[`evidencias/backup.md`](evidencias/backup.md)). A restauração **de verdade**, num workspace vazio,
+não foi feita porque o plano gratuito só permite um workspace; fica como pendência para o dia em
+que houver um segundo. A restauração dos **registros** (dados) também não foi exercitada.
 

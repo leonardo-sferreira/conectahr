@@ -18,8 +18,10 @@ diferenças que não são de comportamento.
 
 | Passo | Resultado |
 |---|---|
-| Criar um workspace de teste pela CLI (`xano workspace create`) | Bloqueado pelo ambiente de trabalho, que não autoriza criar recursos novos na conta |
-| Restaurar o backup num workspace vazio | **Não executado** |
+| Restaurar o backup num workspace vazio | **Não é possível**: o plano gratuito do Xano permite um workspace só |
+| Simular a restauração: `xano workspace push -p ConectaRH -d <pasta-do-backup> --sync --dry-run` (264 documentos) | **"No changes to push"**: aplicar o backup não criaria, alteraria nem apagaria nada, ou seja, ele reproduz o estado atual do workspace |
+| Restaurar os registros (`--records`) | Não exercitado |
 
-**Para fechar:** criar um workspace vazio pelo painel do Xano, informar o ID e executar o passo 3 do
-procedimento, registrando aqui a contagem de objetos e o resultado do `checar_endpoints.py` no destino.
+**Limite:** o `dry-run` prova que o backup está completo e consistente, não que uma restauração do zero
+funciona (por exemplo, a ordem de criação das tabelas num workspace vazio). Isso só se prova com um
+segundo workspace.
