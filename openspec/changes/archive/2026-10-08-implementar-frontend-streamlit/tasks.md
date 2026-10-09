@@ -123,3 +123,20 @@
 - 14.1 (movida para `concluir-mvp-conectarh`, tarefa 2.34) Revisar todas as telas construídas contra os critérios de acessibilidade do design system do Figma (contraste WCAG AA, foco visível, navegação por teclado, cor nunca como único indicador de estado); verificar navegando o app inteiro só com teclado.
 - 14.2 (movida para `concluir-mvp-conectarh`, tarefa 2.35) Conferir que toda tela trata os 6 estados de UI obrigatórios (carregando, vazio, sucesso, erro, bloqueado, permissão negada) de forma consistente entre si; verificar por inspeção cruzada das telas já implementadas.
 - 14.3 (movida para `concluir-mvp-conectarh`, tarefa 2.36) Atualizar `docs/regras-de-negocio.md` e `AGENTS.md` com qualquer padrão de frontend que se tornou definitivo nesta change (ex.: proibição de `st.markdown(unsafe_allow_html=True)` para HTML/CSS, uso de `st.Page`/`st.navigation`).
+
+## 15. Telas que faltam no protótipo (levantamento de 2026-10-08)
+
+- 15.1 (movida para `concluir-mvp-conectarh`, tarefa 2.41) Expiração do token e sessão revogada
+- 15.2 (movida para `concluir-mvp-conectarh`, tarefa 2.42) Organograma
+- 15.3 (movida para `concluir-mvp-conectarh`, tarefa 2.43) Comunicados e FAQ
+- 15.4 (movida para `concluir-mvp-conectarh`, tarefa 2.44) Solicitações ao RH
+- 15.5 (movida para `concluir-mvp-conectarh`, tarefa 2.45) Pesquisa de clima
+- 15.6 (movida para `concluir-mvp-conectarh`, tarefa 2.46) Indicadores
+- 15.7 (movida para `concluir-mvp-conectarh`, tarefa 2.47) Gestão de usuários
+- 15.8 (movida para `concluir-mvp-conectarh`, tarefa 2.48) Cargos
+- 15.9 (movida para `concluir-mvp-conectarh`, tarefa 2.49) Departamentos
+- 15.10 (movida para `concluir-mvp-conectarh`, tarefa 2.50) Colaboradores (lista e cadastro)
+- 15.11 (movida para `concluir-mvp-conectarh`, tarefa 2.51) Desligamento
+- 15.12 (movida para `concluir-mvp-conectarh`, tarefa 2.52) Delegações
+- 15.13 (movida para `concluir-mvp-conectarh`, tarefa 2.53) Calendário
+- 15.14 (movida para `concluir-mvp-conectarh`, tarefa 2.54) Minha equipe e dashboard do gestor

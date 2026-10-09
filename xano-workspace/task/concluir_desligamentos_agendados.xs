@@ -1,3 +1,9 @@
+// BACKLOG ATE O UPGRADE DO PLANO: o plano Xano deste workspace nao inclui Background
+// Tasks e a decisao e nao fazer upgrade, entao esta rotina fica DESLIGADA
+// (`active = false`) e nao roda sozinha. Os desligamentos agendados sao concluidos
+// pelo RH em `desligamentos/solicitacoes/{id}/concluir` e, depois, por
+// `rotinas/processar_diarias` (tarefa 3.18 da change concluir-mvp-conectarh).
+// Este arquivo so volta a `active = true` se o plano passar a permitir tarefas.
 // Rotina diaria (ConectaHR). Conclui desligamentos com aviso previo cuja
 // data_efetiva ja chegou: encerra o vinculo do colaborador, desativa o
 // acesso, registra o evento no historico profissional e fecha a
@@ -6,7 +12,7 @@
 // futuras. Espelha o mesmo par status+data que a tarefa equivalente de
 // vencimento de documentos (item 5.3) deve seguir.
 task concluir_desligamentos_agendados {
-  active = true
+  active = false
 
   stack {
     // Localiza desligamentos agendados cuja data efetiva ja chegou.

@@ -35,5 +35,15 @@ Como escrever:
 | `seguranca.md` | Evidências da Parte 1 da `concluir-mvp-conectarh` (sessão no token, guarda de acesso, revogação) |
 | `lgpd.md` | Evidências da adequação à LGPD (mascaramento, auditoria de arquivos, dados de saúde, hash dos códigos) |
 
+## Checklist antes de cada commit nesta pasta
+
+- [ ] Nenhum nome, e-mail, CPF, telefone, endereço, conta bancária ou salário de pessoa real.
+- [ ] Nenhuma senha, token, código de acesso ou chave de serviço (nem parcial).
+- [ ] Contas citadas pelo papel; e-mail, quando indispensável, mascarado.
+- [ ] Respostas de API reduzidas aos campos que provam o resultado.
+- [ ] A varredura abaixo não achou dado real:
+  `grep -rnE "[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[a-z]{2,}|Bearer [A-Za-z0-9]|[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}" docs/evidencias`
+  (os exemplos fictícios que sobram são aceitos, como o e-mail de injeção de teste em `testes-seguranca.md`).
+
 Limite do plano gratuito do Xano: 10 requisições a cada 20 segundos (HTTP 429). Os testes
 automatizados esperam entre as chamadas.
