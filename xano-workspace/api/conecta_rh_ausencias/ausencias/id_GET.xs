@@ -68,7 +68,7 @@ query "ausencias/{id}" verb=GET {
       field_name = "id"
       field_value = $input.id
       // Sem o comprovante (atestado): so abre por ausencias/{id}/comprovante, que audita o acesso.
-      output = ["id", "created_at", "updated_at", "colaborador_id", "tipo", "data_inicio", "data_fim", "motivo", "status", "observacao"]
+      output = ["id", "created_at", "updated_at", "colaborador_id", "tipo", "data_inicio", "data_fim", "motivo_tipo", "status", "observacao"]
     } as $registro_ausencia
   
     precondition ($registro_ausencia != null) {

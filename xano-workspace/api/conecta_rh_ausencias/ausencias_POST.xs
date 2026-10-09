@@ -9,7 +9,7 @@ query ausencias verb=POST {
     text tipo filters=trim
     date data_inicio
     date data_fim
-    text motivo filters=trim|min:5|max:1000
+    text motivo_tipo filters=trim
     attachment? comprovante?
     text? observacao? filters=trim|max:1000
   }
@@ -91,6 +91,76 @@ query ausencias verb=POST {
       error = "A data final deve ser igual ou posterior a data inicial."
     }
   
+    // Motivo escolhido de uma lista fechada (sem texto livre: evita diagnostico).
+    precondition ($input.motivo_tipo == "consulta" || $input.motivo_tipo == "doenca" || $input.motivo_tipo == "acompanhamento_familiar" || $input.motivo_tipo == "outro") {
+      error_type = "inputerror"
+      error = "Motivo invalido. Escolha: consulta, doenca, acompanhamento_familiar ou outro."
+    }
+
+    // Diagnostico (codigo CID, ex.: J11 ou F32.1) nao deve ir na observacao: fica so
+    // no atestado (LGPD, dado de saude). Sem regex (os filtros regex_* nao funcionam
+    // neste workspace): separa o texto em palavras e confere letra + 2 digitos.
+    var $observacao_tem_cid {
+      value = false
+    }
+
+    conditional {
+      if ($input.observacao != null) {
+        var $observacao_normalizada {
+          value = $input.observacao|to_upper|replace:",":" "|replace:";":" "|replace:":":" "|replace:"(":" "|replace:")":" "|replace:"[":" "|replace:"]":" "|replace:"/":" "|replace:"-":" "|replace:"_":" "|replace:"!":" "|replace:"?":" "
+        }
+
+        var $palavras_observacao {
+          value = $observacao_normalizada|split:" "
+        }
+
+        foreach ($palavras_observacao) {
+          each as $palavra {
+            var $tamanho_palavra {
+              value = $palavra|strlen
+            }
+
+            conditional {
+              if ($tamanho_palavra >= 3) {
+                var $cid_letra {
+                  value = $palavra|substr:0:1
+                }
+
+                var $cid_digito_1 {
+                  value = $palavra|substr:1:1
+                }
+
+                var $cid_digito_2 {
+                  value = $palavra|substr:2:1
+                }
+
+                var $cid_quarto {
+                  value = ($tamanho_palavra > 3 ? ($palavra|substr:3:1) : "")
+                }
+
+                var $cid_tem_formato {
+                  value = (("ABCDEFGHIJKLMNOPQRSTUVWXYZ"|contains:$cid_letra) && ("0123456789"|contains:$cid_digito_1) && ("0123456789"|contains:$cid_digito_2) && (($tamanho_palavra == 3) || ($cid_quarto == ".") || ($cid_quarto == ",")))
+                }
+
+                conditional {
+                  if ($cid_tem_formato) {
+                    var.update $observacao_tem_cid {
+                      value = true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    precondition ($observacao_tem_cid == false) {
+      error_type = "inputerror"
+      error = "Nao informe diagnostico nem codigo CID na observacao. O diagnostico fica somente no atestado."
+    }
+
     // Valida o tipo conforme o Enum da tabela.
     precondition ($input.tipo == "Falta" || $input.tipo == "Atestado" || $input.tipo == "Afastamento" || $input.tipo == "Licenca" || $input.tipo == "Outro") {
       error_type = "inputerror"
@@ -124,7 +194,7 @@ query ausencias verb=POST {
         tipo          : $input.tipo
         data_inicio   : $input.data_inicio
         data_fim      : $input.data_fim
-        motivo        : $input.motivo
+        motivo_tipo   : $input.motivo_tipo
         comprovante   : $comprovante_metadata
         status        : "Pendente"
         observacao    : $input.observacao

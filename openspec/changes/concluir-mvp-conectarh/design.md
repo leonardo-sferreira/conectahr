@@ -77,6 +77,12 @@ O repositório `leonardo-sferreira/conectahr` é **público**, então todo o có
 
 Decisão: todo grupo declara `swagger = {active: false}` no repositório. Os tokens ficam só no Xano e nunca são commitados. O `tools/checar_endpoints.py` garante isso.
 
+### C7. Filtros de regex não funcionam neste workspace (2026-10-08)
+
+Os filtros `regex_matches`, `regex_get_first_match`, `regex_get_all_matches` e `regex_replace` são aceitos pelo parser, mas **devolvem falso, lista vazia ou nulo para qualquer padrão**, inclusive `.*J11.*`, com e sem delimitadores `/.../` e com os argumentos invertidos. Já `contains`, `replace`, `split`, `substr`, `strlen` e `to_upper` funcionam. Uma checagem que parece protegida por regex falha **em silêncio** (um padrão com CID passou como se fosse válido).
+
+Decisão: toda validação de formato de texto é feita sem regex, por palavras: `split`, `substr` e `contains`. A detecção de código CID segue esse modelo (letra, dois dígitos e fim da palavra ou `.`), testada com 10 textos. Qualquer nova validação deve ser exercitada com um caso que deve falhar, antes de ser dada como pronta.
+
 ## Risks / Trade-offs
 
 - [Referências cruzadas antigas podem confundir] → A regra C1 e os prefixos `[XX x.y]` mantêm cada tarefa ligada à origem.

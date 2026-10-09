@@ -149,13 +149,27 @@ query calendario verb=GET {
         }
       }
     }
+
+    // Ausencias na resposta: SO tipo, periodo e status (LGPD). Motivo, observacao e
+    // comprovante sao dado de saude e nunca saem por aqui, nem para o Gestor.
+    var $ausencias_resposta {
+      value = []
+    }
+
+    foreach ($ausencias_no_escopo) {
+      each as $ausencia_visivel {
+        var.update $ausencias_resposta {
+          value = $ausencias_resposta|push:{id: $ausencia_visivel.id, colaborador_id: $ausencia_visivel.colaborador_id, tipo: $ausencia_visivel.tipo, data_inicio: $ausencia_visivel.data_inicio, data_fim: $ausencia_visivel.data_fim, status: $ausencia_visivel.status}
+        }
+      }
+    }
   }
 
   response = {
     sucesso   : true
     feriados  : $feriados
     ferias    : $ferias_no_escopo
-    ausencias : $ausencias_no_escopo
+    ausencias : $ausencias_resposta
   }
 
   guid = "conectahr-calendario-get-0001"
