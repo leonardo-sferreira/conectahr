@@ -88,8 +88,8 @@ Documentos, além de Colaboradores. A tabela diz onde procurar cada módulo.
 | `conecta_rh_documentos` | documentos, documentos obrigatórios, pendências de documento e eventos de SST |
 | `conecta_rh_desligamentos` | solicitações de desligamento |
 
-O plano funcional em andamento está em `openspec/changes/concluir-mvp-conectarh/` (proposta,
-design e lista de tarefas); as mudanças já concluídas estão em `openspec/changes/archive/`. `docs/regras-de-negocio.md` documenta as regras de negócio
+O plano em andamento (telas do frontend) está em `openspec/changes/concluir-frontend-streamlit/`; as
+mudanças já concluídas, inclusive `concluir-mvp-conectarh`, estão em `openspec/changes/archive/`. `docs/regras-de-negocio.md` documenta as regras de negócio
 já implementadas, mapeadas diretamente do código do backend.
 
 > A proposta de gestão de vagas e candidaturas (ConectaRH Vagas) foi retirada deste repositório

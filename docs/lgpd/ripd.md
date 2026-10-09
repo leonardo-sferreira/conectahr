@@ -8,7 +8,7 @@
 2. **Adolescentes aprendizes** (menores de 18 anos): cadastro e documentos (F03, F04) e exposição em aniversariantes e mural (F13, F14).
 3. **Controle de jornada** (F07).
 
-Os números `tarefa X.Y` são tarefas de `openspec/changes/concluir-mvp-conectarh/tasks.md`.
+Os números `tarefa X.Y` são tarefas de `openspec/changes/archive/2026-10-09-concluir-mvp-conectarh/tasks.md`.
 
 ## Como os riscos foram classificados
 
