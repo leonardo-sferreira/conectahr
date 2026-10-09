@@ -62,3 +62,37 @@ Em `ferias/{id}/aprovar|rejeitar` a autorização é conferida **antes** do esta
 
 **Não verificado por HTTP:** o substituto concluindo (200) uma solicitação de **férias** pendente, o Gestor decidindo as próprias férias (a conta de Gestor de teste não tem contrato que permita pedir férias) e a delegação com `data_fim` já passada (a criação recusa datas passadas). A autorização é o mesmo bloco nos quatro endpoints, e o 200 de decisão foi confirmado nas correções de ponto e na primeira rodada de férias.
 
+## 3.18 e 3.19 Rotina diária e status operacional
+
+`POST rotinas/processar_diarias` (RH e Admin) chama a função `ConectaHR/processar_transicoes_diarias` com `aplicar = true`; `GET status_operacional` chama a mesma função com `aplicar = false`, então a contagem pendente e a aplicada saem da mesma regra.
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| `status_operacional` antes: 1 férias encerrada, 1 ponto aberto de dia anterior e 2 colaboradores como `Ferias`/`Afastado` sem período vigente | Contagens pendentes | `ferias_concluidas = 1`, `ponto_para_incompleto = 1`, `colaboradores_para_ativo = 2` |
+| Primeira execução | Mesmas contagens aplicadas | Idênticas às pendentes |
+| `status_operacional` logo depois | Tudo zerado | Zerado |
+| Segunda execução | Contagens zeradas | Zeradas |
+| Afastamento aprovado cobrindo hoje, colaborador `Ativo` | `colaboradores_para_afastado = 1` no pendente e na execução; o colaborador vira `Afastado` e segue no organograma | Igual; segunda execução zerada |
+| Colaborador e Gestor chamam a rotina | Negado | 403 nos dois |
+| Gestor chama `status_operacional` | Negado | 403 |
+| Auditoria | `processar_rotinas_diarias` com as contagens | Registrada a cada execução |
+
+**Não exercitados por HTTP, por falta de dados de teste:** o desligamento agendado vencido (concluiria uma conta de teste), o instrumento `vigente` vencido, `Ativo → Ferias` (nenhuma férias aprovada em andamento) e o colaborador `Desligado` com férias ou afastamento terminado. O último vale por construção: a rotina só altera colaboradores `Ativo`, `Ferias` ou `Afastado`.
+
+**Fuso horário:** a rotina compara datas em UTC, como o resto do sistema. À noite no Brasil (depois das 21h) o "hoje" da rotina já é o dia seguinte; uma ausência que termina no dia local já não é considerada vigente. Isso apareceu no teste, e foi preciso criar a ausência com fim no dia seguinte.
+
+## 3.23 Organograma com colaboradores de férias e afastados
+
+Com colaboradores reais de teste nos status `Ferias` (1) e `Afastado` (1): ambos apareceram em `organograma`, e os 2 `Desligado` ficaram de fora. O filtro de `aniversariantes` é o mesmo, mas nenhum desses colaboradores faz aniversário neste mês, então não foi observado na resposta.
+
+## 3.24 e 3.25 Equipe e dashboard do Gestor
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Colaborador e Admin chamam `minha_equipe` | Negado | 403 |
+| Gestor chama `minha_equipe` | Só a própria equipe (10 pessoas), sem campo sensível | 200; campos `id`, `nome`, `cargo_id`, `departamento_id`, `nivel`, `tipo_contrato`, `data_admissao`, `status`, `ferias_proximas`, `ausencias`, `ponto_hoje`; nenhum CPF, salário, dado bancário, contato, endereço ou data de nascimento |
+| Ausências na equipe | Só tipo, período e status | `tipo`, `data_inicio`, `data_fim`, `status` |
+| Gestor chama `central_de_tarefas` | Traz `equipe_avaliacoes_pendentes` | 200, campo presente (lista vazia: não há avaliação pendente de membro da equipe nos dados de teste) |
+
+Depois do teste, os perfis e o gestor do departamento foram restaurados.
+

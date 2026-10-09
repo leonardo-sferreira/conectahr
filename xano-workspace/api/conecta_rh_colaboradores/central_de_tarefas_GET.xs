@@ -273,10 +273,16 @@ query "central_de_tarefas" verb=GET {
       value = 0
     }
 
+    // Avaliacoes ainda nao enviadas dos membros da equipe: so metadados (sem nota
+    // nem comentario).
+    var $avaliacoes_pendentes_equipe {
+      value = []
+    }
+
     conditional {
       if ($departamento_escopo_id != null) {
         db.query colaborador {
-          where = $db.colaborador.departamento_id == $departamento_escopo_id && $db.colaborador.status == "Ativo"
+          where = $db.colaborador.departamento_id == $departamento_escopo_id && $db.colaborador.status != "Desligado"
           return = {type: "list"}
         } as $equipe
 
@@ -293,6 +299,12 @@ query "central_de_tarefas" verb=GET {
           where = $db.ausencia.status == "Aprovada"
           return = {type: "list"}
         } as $ausencias_aprovadas_todas
+
+        db.query avaliacao {
+          where = $db.avaliacao.status == "pendente" || $db.avaliacao.status == "em_andamento"
+          return = {type: "list"}
+          output = ["id", "colaborador_id", "ciclo_avaliacao_id", "relacao_avaliador", "status"]
+        } as $avaliacoes_abertas_todas
 
         foreach ($equipe) {
           each as $membro_equipe {
@@ -318,6 +330,19 @@ query "central_de_tarefas" verb=GET {
                     // sao dado de saude e nunca vao ao painel do Gestor.
                     var.update $ausencias_equipe {
                       value = $ausencias_equipe|push:{id: $ausencia_item.id, colaborador_id: $ausencia_item.colaborador_id, tipo: $ausencia_item.tipo, data_inicio: $ausencia_item.data_inicio, data_fim: $ausencia_item.data_fim, status: $ausencia_item.status}
+                    }
+                  }
+                }
+              }
+            }
+
+            // Avaliacoes pendentes do membro da equipe.
+            foreach ($avaliacoes_abertas_todas) {
+              each as $avaliacao_item {
+                conditional {
+                  if ($avaliacao_item.colaborador_id == $membro_equipe.id) {
+                    var.update $avaliacoes_pendentes_equipe {
+                      value = $avaliacoes_pendentes_equipe|push:$avaliacao_item
                     }
                   }
                 }
@@ -374,6 +399,7 @@ query "central_de_tarefas" verb=GET {
     equipe_ponto_completo_hoje     : $ponto_completo_hoje
     equipe_ponto_aberto_hoje       : $ponto_aberto_hoje
     equipe_ponto_sem_registro_hoje : $ponto_sem_registro_hoje
+    equipe_avaliacoes_pendentes    : $avaliacoes_pendentes_equipe
   }
 
   guid = "conectahr-central-de-tarefas-get-0001"
