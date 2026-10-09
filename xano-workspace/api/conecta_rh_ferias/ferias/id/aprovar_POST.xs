@@ -63,12 +63,6 @@ query "ferias/{id}/aprovar" verb=POST {
       value = $usuario_decisor.perfil|trim|to_upper
     }
   
-    // Somente RH ou ADMIN podem aprovar.
-    precondition ($perfil_decisor == "RH" || $perfil_decisor == "ADMIN") {
-      error_type = "accessdenied"
-      error = "Somente RH ou ADMIN podem aprovar solicitacoes de ferias."
-    }
-  
     // Localiza a solicitacao.
     db.get ferias {
       field_name = "id"
@@ -106,6 +100,105 @@ query "ferias/{id}/aprovar" verb=POST {
       }
     }
   
+    // Colaborador da solicitacao (departamento define o escopo do Gestor e da delegacao).
+    db.get colaborador {
+      field_name = "id"
+      field_value = $solicitacao.colaborador_id
+    } as $colaborador_escopo
+
+    var $e_gestor_da_equipe {
+      value = false
+    }
+
+    conditional {
+      if ($colaborador_escopo != null && $perfil_decisor == "GESTOR") {
+        db.get colaborador {
+          field_name = "user_id"
+          field_value = $usuario_decisor.id
+        } as $colaborador_do_gestor
+
+        conditional {
+          if ($colaborador_do_gestor != null) {
+            db.query departamento {
+              where = $db.departamento.gestor_colaborador_id == $colaborador_do_gestor.id && $db.departamento.id == $colaborador_escopo.departamento_id
+              return = {type: "single"}
+            } as $departamento_do_gestor
+
+            conditional {
+              if ($departamento_do_gestor != null) {
+                var.update $e_gestor_da_equipe {
+                  value = true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Substituto com delegacao vigente (design D6): existe uma delegacao ativa, dentro
+    // do periodo, com escopo "ferias" ou "todas", cujo titular e o Gestor do departamento
+    // do colaborador. A tentativa so vale para quem nao tem o escopo por outro caminho.
+    var $titular_delegacao_id {
+      value = null
+    }
+
+    var $escopo_ok {
+      value = (($perfil_decisor == "RH") || ($perfil_decisor == "ADMIN") || $e_gestor_da_equipe)
+    }
+
+    conditional {
+      if ($escopo_ok == false && $colaborador_escopo != null) {
+        var $hoje_delegacao {
+          value = now|format_timestamp:"Y-m-d":"UTC"
+        }
+
+        db.query delegacao_aprovacao {
+          where = $db.delegacao_aprovacao.substituto_user_id == $usuario_decisor.id && $db.delegacao_aprovacao.cancelada_em == null && $db.delegacao_aprovacao.data_inicio <= $hoje_delegacao && $db.delegacao_aprovacao.data_fim >= $hoje_delegacao && ($db.delegacao_aprovacao.escopo == "ferias" || $db.delegacao_aprovacao.escopo == "todas")
+          return = {type: "list"}
+        } as $delegacoes_vigentes
+
+        foreach ($delegacoes_vigentes) {
+          each as $delegacao_item {
+            conditional {
+              if ($titular_delegacao_id == null) {
+                db.get colaborador {
+                  field_name = "user_id"
+                  field_value = $delegacao_item.titular_user_id
+                } as $colaborador_titular
+
+                conditional {
+                  if ($colaborador_titular != null) {
+                    db.query departamento {
+                      where = $db.departamento.gestor_colaborador_id == $colaborador_titular.id && $db.departamento.id == $colaborador_escopo.departamento_id
+                      return = {type: "single"}
+                    } as $departamento_do_titular
+
+                    conditional {
+                      if ($departamento_do_titular != null) {
+                        var.update $titular_delegacao_id {
+                          value = $delegacao_item.titular_user_id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    var $nota_delegacao {
+      value = ($titular_delegacao_id != null ? ("decisao por delegacao do titular user_id=" ~ ($titular_delegacao_id|to_text)) : "")
+    }
+
+    precondition ($escopo_ok || $titular_delegacao_id != null) {
+      error_type = "accessdenied"
+      error = "Voce nao tem permissao para decidir esta solicitacao de ferias."
+    }
+
     // Normaliza o status atual.
     var $status_solicitacao {
       value = $solicitacao.status|trim|to_upper
@@ -157,6 +250,7 @@ query "ferias/{id}/aprovar" verb=POST {
         acao          : "aprovar_ferias"
         recurso       : "ferias"
         registro_id   : $solicitacao.id
+        justificativa : $nota_delegacao
         resultado     : "sucesso"
       }
     } as $evento_auditoria

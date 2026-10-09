@@ -138,7 +138,65 @@ query "correcoes_ponto/{id}/rejeitar" verb=POST {
       }
     }
 
-    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || $e_gestor_da_equipe) {
+    // Substituto com delegacao vigente (design D6): existe uma delegacao ativa, dentro
+    // do periodo, com escopo "correcao_ponto" ou "todas", cujo titular e o Gestor do departamento
+    // do colaborador. A tentativa so vale para quem nao tem o escopo por outro caminho.
+    var $titular_delegacao_id {
+      value = null
+    }
+
+    var $escopo_ok {
+      value = (($perfil_autenticado == "RH") || ($perfil_autenticado == "ADMIN") || $e_gestor_da_equipe)
+    }
+
+    conditional {
+      if ($escopo_ok == false && $colaborador_da_correcao != null) {
+        var $hoje_delegacao {
+          value = now|format_timestamp:"Y-m-d":"UTC"
+        }
+
+        db.query delegacao_aprovacao {
+          where = $db.delegacao_aprovacao.substituto_user_id == $usuario_autenticado.id && $db.delegacao_aprovacao.cancelada_em == null && $db.delegacao_aprovacao.data_inicio <= $hoje_delegacao && $db.delegacao_aprovacao.data_fim >= $hoje_delegacao && ($db.delegacao_aprovacao.escopo == "correcao_ponto" || $db.delegacao_aprovacao.escopo == "todas")
+          return = {type: "list"}
+        } as $delegacoes_vigentes
+
+        foreach ($delegacoes_vigentes) {
+          each as $delegacao_item {
+            conditional {
+              if ($titular_delegacao_id == null) {
+                db.get colaborador {
+                  field_name = "user_id"
+                  field_value = $delegacao_item.titular_user_id
+                } as $colaborador_titular
+
+                conditional {
+                  if ($colaborador_titular != null) {
+                    db.query departamento {
+                      where = $db.departamento.gestor_colaborador_id == $colaborador_titular.id && $db.departamento.id == $colaborador_da_correcao.departamento_id
+                      return = {type: "single"}
+                    } as $departamento_do_titular
+
+                    conditional {
+                      if ($departamento_do_titular != null) {
+                        var.update $titular_delegacao_id {
+                          value = $delegacao_item.titular_user_id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    var $nota_delegacao {
+      value = ($titular_delegacao_id != null ? ("decisao por delegacao do titular user_id=" ~ ($titular_delegacao_id|to_text)) : "")
+    }
+
+    precondition ($escopo_ok || $titular_delegacao_id != null) {
       error_type = "accessdenied"
       error = "Voce nao tem permissao para decidir esta correcao de ponto."
     }
@@ -162,7 +220,7 @@ query "correcoes_ponto/{id}/rejeitar" verb=POST {
         acao          : "rejeitar_correcao_ponto"
         recurso       : "correcao_ponto"
         registro_id   : $correcao_atual.id
-        justificativa : $input.motivo_decisao
+        justificativa : ($input.motivo_decisao ~ ($nota_delegacao != "" ? (" | " ~ $nota_delegacao) : ""))
         resultado     : "sucesso"
       }
     } as $evento_auditoria

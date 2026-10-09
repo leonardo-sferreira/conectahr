@@ -33,3 +33,32 @@ Num onboarding de 13 itens, concluir os itens 1 a 12 devolveu `onboarding_conclu
 |---|---|---|
 | Regra de retenção de 365 dias a partir da emissão e documento emitido em 10/01/2025 | `retencao_ate = 2026-01-10` | `2026-01-10` |
 | `GET documentos/retencao_vencida` | Lista só leitura, sem arquivo, link, imagem nem número | 200, campos `id`, `colaborador_id`, `tipo`, `nome_documento`, `status`, `retencao_ate` |
+
+## 3.15 e 3.16 Gestor decide férias e delegação vigente
+
+Contas pelo papel: *Admin* (solicitante, com colaborador no departamento "rh"), *Gestor de teste* (conta de Colaborador promovida a Gestor só para o teste) e *titular* (gestor original do departamento). Perfis e gestor do departamento foram restaurados no fim.
+
+Em `ferias/{id}/aprovar|rejeitar` a autorização é conferida **antes** do estado da solicitação, então "403" significa sem escopo e "400 somente pendentes" significa que a autorização passou. Foi usado um período já aprovado do Admin, porque a conta atingiu o máximo de períodos e não foi possível criar novas solicitações.
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Gestor do próprio departamento aprova férias da equipe (primeira rodada, solicitação pendente) | Aprovada | 200 |
+| Gestor do próprio departamento, período já decidido | Passa da autorização | 400 "Somente solicitações pendentes" |
+| Gestor de outra equipe, sem delegação (aprovar e rejeitar) | Negado | 403 nos dois |
+| Delegação vigente com escopo `documento` | Ignorada | 403 |
+| Delegação vigente com escopo `ferias` | Passa da autorização | 400 "Somente solicitações pendentes" |
+| Delegação de `ferias` cancelada | Negado | 403 |
+
+`correcoes_ponto/{id}/rejeitar`:
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Gestor de outra equipe, sem delegação | Negado | 403 |
+| Substituto com delegação `correcao_ponto` vigente | Aceita | 200 |
+| Delegação cancelada | Negado | 403 |
+| Gestor do próprio departamento | Aceita | 200 |
+| Admin aprova a própria correção | Negado | 403 |
+| Auditoria da decisão por delegação | Registra o titular | `decisao por delegacao do titular user_id=<titular>` na justificativa |
+
+**Não verificado por HTTP:** o substituto concluindo (200) uma solicitação de **férias** pendente, o Gestor decidindo as próprias férias (a conta de Gestor de teste não tem contrato que permita pedir férias) e a delegação com `data_fim` já passada (a criação recusa datas passadas). A autorização é o mesmo bloco nos quatro endpoints, e o 200 de decisão foi confirmado nas correções de ponto e na primeira rodada de férias.
+
