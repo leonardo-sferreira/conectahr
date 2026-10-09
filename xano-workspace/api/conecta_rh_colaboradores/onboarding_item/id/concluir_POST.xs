@@ -169,6 +169,44 @@ query "onboarding_item/{id}/concluir" verb=POST {
       }
     } as $item_concluido
 
+    // Sem nenhum item pendente, o onboarding inteiro passa a concluido.
+    db.query onboarding_item {
+      where = $db.onboarding_item.onboarding_id == $item_atual.onboarding_id && $db.onboarding_item.concluido == false
+      return = {type: "list"}
+      output = ["id"]
+    } as $itens_pendentes
+
+    var $onboarding_concluido {
+      value = false
+    }
+
+    conditional {
+      if (($itens_pendentes|count) == 0 && $onboarding_do_item.status != "concluido") {
+        db.edit onboarding {
+          field_name = "id"
+          field_value = $onboarding_do_item.id
+          data = {
+            status    : "concluido"
+            updated_at: "now"
+          }
+        } as $onboarding_atualizado
+
+        var.update $onboarding_concluido {
+          value = true
+        }
+
+        db.add auditoria {
+          data = {
+            user_id    : $usuario_autenticado.id
+            acao       : "concluir_onboarding"
+            recurso    : "onboarding"
+            registro_id: $onboarding_do_item.id
+            resultado  : "sucesso"
+          }
+        } as $evento_auditoria_onboarding
+      }
+    }
+
     // Auditoria: conclusao de item de onboarding.
     db.add auditoria {
       data = {
@@ -185,6 +223,7 @@ query "onboarding_item/{id}/concluir" verb=POST {
     sucesso : true
     mensagem: "Item de onboarding concluido com sucesso."
     item    : $item_concluido
+    onboarding_concluido: $onboarding_concluido
   }
 
   guid = "conectahr-onboarding-item-concluir-post-0001"

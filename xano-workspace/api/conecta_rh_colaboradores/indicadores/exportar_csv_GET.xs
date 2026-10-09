@@ -90,11 +90,11 @@ query "indicadores/exportar_csv" verb=GET {
     }
 
     var.update $csv {
-      value = ($csv ~ "headcount_ativos," ~ ($indicadores.headcount.ativos|to_text) ~ $quebra_linha)
+      value = ($csv ~ "headcount_ativos," ~ ($indicadores.totais_omitidos ? "omitido" : ($indicadores.headcount.ativos|to_text)) ~ $quebra_linha)
     }
 
     var.update $csv {
-      value = ($csv ~ "headcount_total," ~ ($indicadores.headcount.total|to_text) ~ $quebra_linha)
+      value = ($csv ~ "headcount_total," ~ ($indicadores.totais_omitidos ? "omitido" : ($indicadores.headcount.total|to_text)) ~ $quebra_linha)
     }
 
     var.update $csv {
@@ -110,7 +110,7 @@ query "indicadores/exportar_csv" verb=GET {
     }
 
     var.update $csv {
-      value = ($csv ~ "ausencias_aprovadas_periodo," ~ ($indicadores.absenteismo.ausencias_aprovadas_periodo|to_text) ~ $quebra_linha)
+      value = ($csv ~ "minimo_pessoas_por_grupo," ~ ($indicadores.minimo_pessoas|to_text) ~ $quebra_linha ~ "grupos_omitidos," ~ ($indicadores.grupos_omitidos|to_text) ~ $quebra_linha ~ "ausencias_aprovadas_periodo," ~ ($indicadores.absenteismo.ausencias_aprovadas_periodo|to_text) ~ $quebra_linha)
     }
 
     var.update $csv {

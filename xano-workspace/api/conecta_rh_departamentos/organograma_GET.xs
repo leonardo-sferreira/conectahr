@@ -74,9 +74,10 @@ query organograma verb=GET {
       output = ["id", "nome"]
     } as $cargos
 
-    // Colaboradores ativos, somente com os campos permitidos no organograma.
+    // Colaboradores nao desligados (quem esta de ferias ou afastado continua na
+    // equipe), somente com os campos permitidos no organograma.
     db.query colaborador {
-      where = $db.colaborador.status == "Ativo"
+      where = $db.colaborador.status != "Desligado"
       sort = {colaborador.nome: "asc"}
       return = {type: "list"}
       output = ["id", "nome", "cargo_id", "departamento_id"]

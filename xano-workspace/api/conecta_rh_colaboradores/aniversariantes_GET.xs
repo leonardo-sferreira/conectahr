@@ -1,4 +1,4 @@
-// Lista os colaboradores ativos que fazem aniversario no mes corrente.
+// Lista os colaboradores nao desligados que fazem aniversario no mes corrente.
 // Visivel para qualquer usuario autenticado (informacao social, sem
 // dado sensivel): retorna apenas nome e dia/mes, nunca o ano de
 // nascimento, para nao revelar idade.
@@ -64,7 +64,7 @@ query "colaboradores/aniversariantes" verb=GET {
 
     // Colaboradores ativos com data de nascimento informada.
     db.query colaborador {
-      where = $db.colaborador.status == "Ativo" && $db.colaborador.data_nascimento != null
+      where = $db.colaborador.status != "Desligado" && $db.colaborador.data_nascimento != null
       return = {type: "list"}
       output = ["id", "nome", "data_nascimento"]
     } as $candidatos

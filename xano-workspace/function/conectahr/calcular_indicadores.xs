@@ -79,6 +79,20 @@ function "ConectaHR/calcular_indicadores" {
       value = []
     }
 
+    // Minimo de pessoas por grupo (LGPD, design L8): grupos menores nao aparecem,
+    // porque uma contagem de 1 ou 2 pessoas identifica quem elas sao. Padrao 5.
+    var $minimo_pessoas {
+      value = ($env.INDICADORES_MINIMO_PESSOAS != null ? ($env.INDICADORES_MINIMO_PESSOAS|to_int) : 5)
+    }
+
+    var $grupos_omitidos {
+      value = 0
+    }
+
+    var $soma_departamentos {
+      value = 0
+    }
+
     foreach ($departamentos_ativos) {
       each as $depto_item {
         db.query colaborador {
@@ -86,10 +100,44 @@ function "ConectaHR/calcular_indicadores" {
           return = {type: "count"}
         } as $qtd_no_departamento
 
-        var.update $distribuicao_departamento {
-          value = $distribuicao_departamento|push:{departamento_id: $depto_item.id, nome: $depto_item.nome, quantidade: $qtd_no_departamento}
+        var.update $soma_departamentos {
+          value = $soma_departamentos + $qtd_no_departamento
+        }
+
+        conditional {
+          if ($qtd_no_departamento >= $minimo_pessoas) {
+            var.update $distribuicao_departamento {
+              value = $distribuicao_departamento|push:{departamento_id: $depto_item.id, nome: $depto_item.nome, quantidade: $qtd_no_departamento}
+            }
+          }
+
+          elseif ($qtd_no_departamento > 0) {
+            var.update $grupos_omitidos {
+              value = $grupos_omitidos + 1
+            }
+          }
         }
       }
+    }
+
+    // Quem esta ativo sem departamento tambem e um grupo: se for pequeno e nao
+    // aparecer, entra na conta dos omitidos.
+    var $sem_departamento {
+      value = $headcount_ativos - $soma_departamentos
+    }
+
+    conditional {
+      if ($sem_departamento > 0 && $sem_departamento < $minimo_pessoas) {
+        var.update $grupos_omitidos {
+          value = $grupos_omitidos + 1
+        }
+      }
+    }
+
+    // Supressao complementar: com um unico grupo omitido, o total menos os grupos
+    // visiveis revelaria o tamanho dele, entao os totais de pessoas tambem somem.
+    var $totais_omitidos {
+      value = ($grupos_omitidos == 1)
     }
 
     // ---------- Horas extras no periodo ----------
@@ -236,7 +284,10 @@ function "ConectaHR/calcular_indicadores" {
 
   response = {
     periodo  : {data_inicio: $inicio_final, data_fim: $fim_final}
-    headcount: {ativos: $headcount_ativos, total: $headcount_total}
+    headcount: {ativos: ($totais_omitidos ? null : $headcount_ativos), total: ($totais_omitidos ? null : $headcount_total)}
+    minimo_pessoas: $minimo_pessoas
+    grupos_omitidos: $grupos_omitidos
+    totais_omitidos: $totais_omitidos
     turnover : {desligamentos_periodo: $desligamentos_periodo, admissoes_periodo: $admissoes_periodo, percentual: $turnover_percentual}
     absenteismo             : {ausencias_aprovadas_periodo: $ausencias_aprovadas_periodo, percentual: $absenteismo_percentual}
     distribuicao_departamento: $distribuicao_departamento

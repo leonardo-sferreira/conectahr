@@ -744,6 +744,17 @@ A spec principal (`openspec/specs/conectahr/spec.md`) tem os requisitos de prote
 
 **Dependência de segurança:** os controles de LGPD que alteram endpoints existentes assumem que todo endpoint autenticado recarrega o usuário, valida a sessão ligada ao token e é coberto por `tools/checar_endpoints.py` (175 endpoints, 0 falhas em 2026-10-08).
 
+**Implementado em 2026-10-08 (lote de tarefas pequenas):**
+
+- **Ciclo de avaliação:** `PATCH ciclos_avaliacao/{id}/status` (RH/Admin, auditado) só aceita `planejamento → em_andamento → fechamento → concluido` e `cancelado` a partir de qualquer etapa aberta. `metas POST` e `avaliacoes POST` exigem ciclo `em_andamento` (`xano-workspace/api/conecta_rh_colaboradores/ciclos_avaliacao/id/status_PATCH.xs`).
+- **Pesquisa de clima:** `pesquisas_clima/{id}/encerrar` (RH/Admin, auditado) desliga a pesquisa; `resultados` só responde depois do encerramento (pesquisa desligada ou `data_fim` vencida) e omite o total quando só um grupo fica de fora (inclui o grupo sem departamento e os departamentos inativos).
+- **Onboarding:** concluir o último item pendente passa `onboarding.status` para `concluido` e audita `concluir_onboarding`.
+- **Organograma e aniversariantes:** incluem todo colaborador não desligado (`status != "Desligado"`), não só os `Ativo`. Hoje nenhum endpoint define `Ferias` nem `Afastado`.
+- **Retenção de documentos:** `documentos POST` preenche `retencao_ate` pela regra de `documento_obrigatorio_regra` do tipo (contrato, cargo e departamento; regras com faixa de idade não são avaliadas; o evento "desligamento" não gera data no cadastro). `GET documentos/retencao_vencida` (RH/Admin) é só leitura.
+- **Mínimo de pessoas nos indicadores:** grupos com menos de `$env.INDICADORES_MINIMO_PESSOAS` (padrão 5) não aparecem; com exatamente um grupo omitido, os totais de pessoas também são omitidos (`ConectaHR/calcular_indicadores`, usada por `indicadores` e `indicadores/exportar_csv`). Os percentuais de turnover e absenteísmo não foram suprimidos.
+- **Exportação do titular:** `GET meus_dados?formato=json|csv`, só do próprio usuário, sem respostas de clima, sem dados de terceiros e sem senha, códigos, comprovantes ou links; grava `exportar_meus_dados` (`xano-workspace/api/conecta_rh_colaboradores/meus_dados_GET.xs`).
+- **Upload de arquivo privado:** não é suportado no plano atual do Xano (recusa com "Please upgrade your Xano instance"). Documentos entram por link de domínio aprovado.
+
 **Já implementado e descrito acima:** guarda de acesso e sessão (2.7), anonimato da pesquisa de clima por agregação (11.6) alerta de troca de e-mail, mascaramento de dados pessoais na auditoria (dados bancários, salário e e-mail) e motivo de ausência em lista fechada com recusa de CID (2.7). **Ainda não implementado:** auditoria de acesso a arquivos sensíveis e confirmação de que as imagens são privadas, só em parte (tarefas 4.10 e 4.12), hash dos códigos de acesso (4.13), mínimo de pessoas nos indicadores (4.14), direitos do titular (4.16 a 4.19) e retenção e anonimização (4.20 a 4.23). A documentação de governança está em [`docs/lgpd/`](lgpd/): registro de operações, aviso de privacidade, plano de incidentes, RIPD, operadores e teste de legítimo interesse.
 
 ---

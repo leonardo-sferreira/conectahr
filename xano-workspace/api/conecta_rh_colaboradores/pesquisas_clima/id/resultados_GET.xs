@@ -79,16 +79,43 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
       error = "Pesquisa de clima nao encontrada."
     }
 
+    // Os resultados so abrem depois que a pesquisa esta encerrada (desligada ou
+    // com o periodo vencido). Com a pesquisa aberta, dois pedidos em sequencia
+    // revelariam a resposta de quem respondeu entre eles.
+    var $hoje_resultados {
+      value = now|format_timestamp:"Y-m-d":"UTC"
+    }
+
+    var $pesquisa_encerrada {
+      value = (($pesquisa.ativo == false) || ($pesquisa.data_fim < $hoje_resultados))
+    }
+
+    precondition ($pesquisa_encerrada) {
+      error_type = "inputerror"
+      error = "Os resultados so ficam disponiveis depois que a pesquisa for encerrada."
+    }
+
     db.query pergunta_clima {
       where = $db.pergunta_clima.pesquisa_clima_id == $pesquisa.id
       sort = {pergunta_clima.ordem: "asc"}
       return = {type: "list"}
     } as $perguntas_da_pesquisa
 
+    // Todos os departamentos (inclusive inativos): respostas de qualquer um deles
+    // entram no total e, por isso, tambem contam na supressao complementar.
     db.query departamento {
-      where = $db.departamento.ativo == true
       return = {type: "list"}
-    } as $departamentos
+      output = ["id"]
+    } as $departamentos_todos
+
+    // Grupo 0 = colaborador sem departamento (ver resposta_clima_agregado.xs).
+    var $departamentos {
+      value = $departamentos_todos|push:{id: 0}
+    }
+
+    var $grupos_suprimidos {
+      value = 0
+    }
 
     var $resultados {
       value = []
@@ -104,6 +131,10 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
 
     foreach ($perguntas_da_pesquisa) {
       each as $pergunta_item {
+        var.update $grupos_suprimidos {
+          value = 0
+        }
+
         foreach ($departamentos) {
           each as $departamento_item {
             db.query resposta_clima_agregado {
@@ -142,6 +173,12 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
                   }
                 }
               }
+
+              elseif ($contagem_temp > 0) {
+                var.update $grupos_suprimidos {
+                  value = $grupos_suprimidos + 1
+                }
+              }
             }
           }
         }
@@ -171,8 +208,10 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
           }
         }
 
+        // Supressao complementar: com um unico grupo omitido, o total menos os grupos
+        // visiveis revelaria o grupo omitido, entao o total tambem e omitido.
         conditional {
-          if ($contagem_temp >= $pesquisa.minimo_respostas) {
+          if ($contagem_temp >= $pesquisa.minimo_respostas && $grupos_suprimidos != 1) {
             var.update $resultados {
               value = $resultados|push:{
                 pergunta_id     : $pergunta_item.id

@@ -100,6 +100,11 @@ query avaliacoes verb=POST {
       error = "Ciclo de avaliacao nao encontrado."
     }
 
+    precondition ($ciclo.status == "em_andamento") {
+      error_type = "inputerror"
+      error = "O ciclo de avaliacao precisa estar em andamento."
+    }
+
     // Valida a relacao usando os valores exatos do Enum.
     precondition ($input.relacao_avaliador == "autoavaliacao" || $input.relacao_avaliador == "gestor" || $input.relacao_avaliador == "par" || $input.relacao_avaliador == "subordinado" || $input.relacao_avaliador == "rh") {
       error_type = "inputerror"
