@@ -1,79 +1,107 @@
 # ConectaRH
 
 Plataforma integrada de RH que centraliza rotinas hoje dispersas em uma empresa: identidade e
-autorização por perfil (Admin, RH, Gestor, Colaborador), estrutura organizacional, jornada e
-ponto, documentos, férias, ausências, desligamento e desenvolvimento de colaboradores
-(avaliações, metas, PDI, pesquisa de clima).
+autorização por perfil (Admin, RH, Gestor, Colaborador), estrutura organizacional, jornada e ponto,
+documentos, férias, ausências, desligamento e desenvolvimento de colaboradores (avaliações, metas, PDI,
+pesquisa de clima). É um **trabalho acadêmico** desenvolvido em grupo.
+
+**Versão atual: [v0.2.0](https://github.com/leonardo-sferreira/conectahr/releases)**: backend, segurança,
+LGPD, especificações e documentação concluídos; o frontend Streamlit está parcial (tela de entrada e início).
 
 ## Sobre o projeto
 
-RH, gestores e colaboradores hoje dependem de processos e ferramentas dispersas (planilhas,
-e-mail, controles paralelos) para tarefas como controle de jornada, cadastro e histórico
-profissional, gestão de documentos, solicitação de férias/ausências, avaliação de desempenho e
-desligamento. O ConectaRH resolve isso centralizando essas rotinas em uma única plataforma, com
-autorização consistente por perfil e escopo, e com toda decisão relevante auditável (quem, o
-quê, quando e por quê).
+RH, gestores e colaboradores hoje dependem de processos e ferramentas dispersas (planilhas, e-mail,
+controles paralelos) para tarefas como controle de jornada, cadastro e histórico profissional, gestão de
+documentos, solicitação de férias e ausências, avaliação de desempenho e desligamento. O ConectaRH
+centraliza essas rotinas em uma única plataforma, com autorização consistente por perfil e escopo, e com
+toda decisão relevante auditável (quem, o quê, quando e por quê).
 
-Um dos pilares do projeto é o motor de resolução de regras de negócio: parâmetros de jornada,
-banco de horas e férias são resolvidos por uma matriz de contrato que pode ser sobrescrita por
-norma legal, instrumento coletivo (acordo/convenção) ou exceção individual, sempre com histórico
-auditável de qual regra foi aplicada e por quê — cobrindo cenários reais de conformidade
-trabalhista brasileira (eSocial, CTPS Digital, Sistema Mediador/MTE).
+Um dos pilares é o motor de resolução de regras de negócio: parâmetros de jornada, banco de horas e férias
+são resolvidos por uma matriz de contrato que pode ser sobrescrita por norma legal, instrumento coletivo
+(acordo ou convenção) ou exceção individual, sempre com histórico auditável de qual regra foi aplicada e
+por quê.
 
-Visão completa do projeto (problema, objetivos, escopo, restrições) em
-[`docs/project-overview.md`](docs/project-overview.md); conceitos do domínio e relacionamentos
-em [`docs/domain-model.md`](docs/domain-model.md).
+Visão completa em [`docs/project-overview.md`](docs/project-overview.md); arquitetura em
+[`docs/arquitetura.md`](docs/arquitetura.md); conceitos do domínio em
+[`docs/domain-model.md`](docs/domain-model.md).
+
+## Status do projeto
+
+| Área | Situação |
+|---|---|
+| **Backend (Xano)** | Concluído: 50 tabelas, 14 funções e 189 endpoints em 10 grupos de API (184 autenticados) |
+| **Segurança** | Concluída: guarda de acesso em todo endpoint autenticado, sessão ligada ao token, revogação em massa, bloqueio de autoaprovação, hash dos códigos de acesso, swagger desligado |
+| **LGPD** | Documentação e controles concluídos (registro de operações, aviso, RIPD, retenção, direitos do titular, anonimização, menores de 18 anos). Prazos e bases legais são sugestões acadêmicas |
+| **Especificações (OpenSpec)** | Spec principal com 65 requisitos e 201 cenários; 6 changes arquivadas |
+| **Documentação e evidências** | Concluídas, com testes por HTTP por perfil em [`docs/evidencias/`](docs/evidencias/) |
+| **Frontend (Streamlit)** | Parcial: tela de entrada (login em dois passos, troca de senha, redefinição) e início. As demais telas dependem do protótipo do Figma |
+
+O que falta está na change [`concluir-frontend-streamlit`](openspec/changes/concluir-frontend-streamlit/):
+57 tarefas (telas do Figma, acessibilidade, deploy, fontes locais e a tela "Privacidade").
 
 ### Principais funcionalidades
 
-- Login com token de curta duração + validação obrigatória por código de acesso (OTP) por
-  e-mail, com bloqueio após tentativas inválidas.
-- Cadastro e histórico profissional de colaboradores, cargos e departamentos.
-- Ponto com correção sujeita a aprovação, e banco de horas.
-- Documentos com fluxo de aprovação, vencimento automático e retenção.
-- Férias e ausências, com verificação de conflito.
-- Fluxo completo de desligamento (imediato ou aviso prévio).
+- Login com senha e **código de acesso por e-mail** (guardado como hash), token de 1 hora ligado a uma
+  sessão, bloqueio após tentativas inválidas e alerta de acesso suspeito.
+- Cadastro e histórico profissional de colaboradores, cargos e departamentos; onboarding e organograma.
+- Ponto com correção sujeita a aprovação e banco de horas (controle interno experimental, ver abaixo).
+- Documentos por link de domínio aprovado, com aprovação, vencimento e prazo de retenção.
+- Férias e ausências com verificação de conflito; o Gestor decide a própria equipe e há delegação por
+  vigência.
+- Desligamento imediato ou com aviso prévio.
 - Avaliação de desempenho, metas, PDI, reconhecimento e pesquisa de clima anônima.
 - Instrumentos normativos e regras de override por contrato, com aprovação e versionamento.
-- Central de solicitações, comunicados, FAQ, calendário, onboarding, organograma e auditoria.
+- Central de solicitações, comunicados, FAQ, calendário, painel do Gestor, indicadores e auditoria.
+- **Rotina diária manual** (RH/Admin) para as transições que dependem de data, com o pendente visível em
+  `status_operacional`.
+- **Privacidade:** exportação dos dados do titular, pedido LGPD com prazo, preferências de privacidade e
+  anonimização de colaborador desligado.
 
 ## Stack
 
-- **Backend:** [Xano](https://xano.com) + Script Xano (XanoScript), versionado em `xano-workspace/`
-- **Frontend:** [Streamlit](https://streamlit.io), em `frontend/` (tela de entrada e início; as demais telas dependem do protótipo do Figma)
+- **Backend:** [Xano](https://xano.com) + XanoScript, versionado em `xano-workspace/` (plano gratuito)
+- **Frontend:** [Streamlit](https://streamlit.io), em `frontend/`
 - **E-mail transacional:** [Brevo](https://www.brevo.com)
-- **Design:** Figma (design system, protótipos e handoff — assets exportados não são versionados
-  neste repositório)
+- **Design:** Figma (design system, protótipos e handoff; assets exportados não são versionados)
 - **Planejamento e especificação:** [OpenSpec](https://github.com/Fission-AI/OpenSpec), em `openspec/`
+- **Validação:** GitHub Actions (`.github/workflows/validar.yml`)
 
 ## Estrutura do repositório
 
 ```
-AGENTS.md           Instrucoes para agentes de IA que trabalham no projeto
+AGENTS.md           Instruções para agentes de IA (fonte única; CLAUDE.md e GEMINI.md apontam para ele)
 docs/
-  project-overview.md   O que e o projeto (visao, objetivos, escopo)
-  domain-model.md        Conceitos do dominio e relacionamentos
-  regras-de-negocio.md   Regras de negocio ja implementadas, mapeadas do codigo
-  lgpd/                  Protecao de dados: registro de operacoes, aviso de privacidade, incidentes, RIPD
+  project-overview.md    O que é o projeto (visão, objetivos, escopo)
+  arquitetura.md         Arquitetura e padrões
+  domain-model.md        Conceitos do domínio e relacionamentos
+  regras-de-negocio.md   Regras de negócio implementadas, mapeadas do código
+  demonstracao.md        Roteiro para reproduzir o fluxo principal
+  deploy.md              Ambientes, configuração, flags e plano de rollback
+  monitoramento.md       Sessões, monitoramento operacional, backup e recuperação
+  backlog-rep.md         Ponto eletrônico: o que não é feito e o backlog de conformidade
+  lgpd/                  Registro de operações, aviso, RIPD, operadores, retenção, incidentes
   evidencias/            Resultado dos testes, sem dados pessoais
+frontend/           App Streamlit (app.py, páginas, theme.py, api_client.py) e AGENTS.md próprio
 openspec/
-  config.yaml       Contexto e regras injetados pelo OpenSpec em cada workflow
-  specs/            Comportamento consolidado do sistema (preenchido ao arquivar changes)
-  changes/          Propostas, specs, design e tasks das mudancas em planejamento
-    archive/        Historico de mudancas concluidas e arquivadas
-xano-workspace/     Backend Xano em XanoScript (tabelas, funcoes e endpoints de API)
-  table/            Definicoes de tabelas do banco relacional
-  function/         Funcoes reutilizaveis (ex.: validacao de CPF, resolucao de regras)
-  api/              Grupos de endpoints de API (ver a tabela abaixo)
-  task/             Rotinas agendadas (aguardando upgrade de plano Xano para publicar)
+  specs/            Comportamento consolidado do sistema (spec principal)
+  changes/          Mudanças em andamento
+    archive/        Histórico de mudanças concluídas e arquivadas
+tools/              checar_endpoints.py (guarda de acesso) e smoke_frontend.py (tela de entrada)
+xano-workspace/     Backend Xano em XanoScript
+  table/            Tabelas do banco relacional
+  function/         Funções reutilizáveis (CPF, regras, rotina diária, hash dos códigos…)
+  api/              Grupos de endpoints (ver a tabela abaixo)
+  task/             Rotina agendada de referência (desligada: o plano gratuito não publica tarefas)
+.github/workflows/  Pipeline "Validar"
 ```
 
 ### Grupos de API
 
-Os 10 grupos de API refletem a **ordem histórica em que foram criados**, não uma divisão limpa
-por domínio: por exemplo, avaliações, clima, comunicados e o mural de reconhecimento vivem no
-grupo de Colaboradores, e as rotas aninhadas em `colaboradores/{id}/...` aparecem em Ponto e em
-Documentos, além de Colaboradores. A tabela diz onde procurar cada módulo.
+Os 10 grupos de API refletem a **ordem histórica em que foram criados**, não uma divisão limpa por
+domínio: por exemplo, avaliações, clima, comunicados e o mural de reconhecimento vivem no grupo de
+Colaboradores, e as rotas aninhadas em `colaboradores/{id}/...` aparecem em Ponto e em Documentos, além de
+Colaboradores. A tabela diz onde procurar cada módulo. O versionamento é pelo grupo de API (uma mudança
+incompatível cria um grupo novo, sem prefixo `/v1/`).
 
 | Grupo (`xano-workspace/api/`) | Módulos |
 |---|---|
@@ -88,42 +116,79 @@ Documentos, além de Colaboradores. A tabela diz onde procurar cada módulo.
 | `conecta_rh_documentos` | documentos, documentos obrigatórios, pendências de documento e eventos de SST |
 | `conecta_rh_desligamentos` | solicitações de desligamento |
 
-O plano em andamento (telas do frontend) está em `openspec/changes/concluir-frontend-streamlit/`; as
-mudanças já concluídas, inclusive `concluir-mvp-conectarh`, estão em `openspec/changes/archive/`. `docs/regras-de-negocio.md` documenta as regras de negócio
-já implementadas, mapeadas diretamente do código do backend.
+## Como rodar
 
-> A proposta de gestão de vagas e candidaturas (ConectaRH Vagas) foi retirada deste repositório
-> e não está em planejamento ativo no momento.
+### Backend (Xano)
 
-## Setup
+1. Clone o repositório e instale a [CLI do Xano](https://docs.xano.com), autenticada em um perfil (aqui,
+   `ConectaRH`).
+2. Publique `xano-workspace/` no workspace do projeto, sempre com `--dry-run` antes. Os padrões `-i` e
+   `-e` vão **entre aspas** e os arquivos de grupo ficam de fora:
+   ```
+   xano workspace push -p ConectaRH -i "api/conecta_rh_ponto/**/*.xs" -e "api/*/conecta_rh_*.xs" --dry-run
+   ```
+   Detalhes e armadilhas em [`xano-workspace/AGENTS.md`](xano-workspace/AGENTS.md).
+3. Configure as variáveis de ambiente no painel do Xano (nunca no repositório):
+   `BREVO_API_KEY` (chave de API da Brevo) e `CODIGO_ACESSO_PEPPER` (segredo aleatório longo do hash dos
+   códigos). Opcionais: `ARQUIVOS_DOMINIOS_APROVADOS`, `INDICADORES_MINIMO_PESSOAS` e os prazos de
+   retenção. Lista completa em [`docs/deploy.md`](docs/deploy.md).
 
-1. Clone o repositório.
-2. Backend: importe o conteúdo de `xano-workspace/` no workspace Xano do projeto (via
-   sincronização Git do Xano, ou pela CLI `xano workspace push`) para aplicar tabelas, funções e
-   endpoints.
-3. Configure a variável de ambiente `BREVO_API_KEY` no workspace Xano (chave de API, não a chave
-   SMTP) para o envio de e-mails transacionais (código de acesso, notificações).
-4. Frontend: siga "Como rodar" em [`frontend/AGENTS.md`](frontend/AGENTS.md) (ambiente virtual,
-   `pip install -r frontend/requirements.txt`, `.streamlit/secrets.toml` a partir do modelo
-   `.streamlit/secrets.toml.example` e `streamlit run frontend/app.py`).
-5. Consulte `openspec/specs/conectahr/spec.md` para o comportamento esperado e as decisões em
-   `openspec/changes/` (plano em andamento) e `openspec/changes/archive/` (histórico).
+### Frontend (Streamlit)
 
-## Para agentes de IA
+```
+python -m venv .venv
+.venv\Scripts\activate          # Linux/Mac: source .venv/bin/activate
+pip install -r frontend/requirements.txt
+copy .streamlit\secrets.toml.example .streamlit\secrets.toml    # Linux/Mac: cp
+# edite .streamlit/secrets.toml e informe a URL da API do grupo de autenticação
+streamlit run frontend/app.py
+```
 
-O [`AGENTS.md`](AGENTS.md) da raiz é a fonte única de instruções para Codex, Gemini CLI e Claude
-Code (`CLAUDE.md` e `GEMINI.md` apontam para ele). `frontend/AGENTS.md` e
-`xano-workspace/AGENTS.md` trazem só o que é específico de cada pasta.
+`.streamlit/secrets.toml` não é versionado. Mais detalhes em [`frontend/AGENTS.md`](frontend/AGENTS.md).
 
-## Estratégia de branches
+### Demonstração
 
-- `master`: sempre reflete o estado estável e implantável.
-- `feature/CON-XX-descricao`: uma branch por tarefa ou grupo de tarefas, onde `CON-XX` é o card do
-  Jira. Enquanto não houver card, a tarefa do `tasks.md` ocupa o lugar (ex.:
-  `feature/lgpd-backend-parte2`).
-- Todo trabalho é integrado a `master` por Pull Request, com `CON-XX` no título e pelo menos uma
-  revisão do grupo antes do merge. Nunca há push direto no `master`.
-- Commits: `CON-XX descrição (tarefa)`; sem card, citam a tarefa do `tasks.md` (ex.: `4.12`).
+O código de acesso chega por e-mail, então é preciso uma caixa de e-mail real para entrar. O roteiro está
+em [`docs/demonstracao.md`](docs/demonstracao.md).
+
+## Qualidade e verificação
+
+- `python tools/checar_endpoints.py` confere a guarda de acesso em todo endpoint autenticado do Xano
+  (184 endpoints, 0 falhas).
+- `python tools/smoke_frontend.py` confere que a tela de entrada renderiza.
+- O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
+  fumaça do frontend e busca de segredos no repositório.
+- Os testes do backend são feitos por HTTP contra o Xano real, por perfil, e registrados em
+  [`docs/evidencias/`](docs/evidencias/) (o teste final cobriu os quatro perfis: 43 de 43 chamadas como
+  esperado, em [`smoke-final.md`](docs/evidencias/smoke-final.md)). Casos que não foram possíveis de testar
+  estão marcados como "não verificado", com o motivo.
+
+## Especificações e histórico (OpenSpec)
+
+A spec principal está em [`openspec/specs/conectahr/spec.md`](openspec/specs/conectahr/spec.md). O projeto
+seguiu o ciclo Explorar → Propor → Revisar → Aplicar → Arquivar. Mudanças arquivadas em
+[`openspec/changes/archive/`](openspec/changes/archive/):
+
+| Change | O que fez |
+|---|---|
+| `mapear-regras-negocio` | Mapeou as regras de negócio do código para `docs/regras-de-negocio.md` |
+| `conectarh.gestao` | O MVP de gestão de RH (backend) |
+| `implementar-frontend-streamlit` | Fundação do frontend: navegação, tema, cliente de API e tela de entrada |
+| `corrigir-brechas-e-alinhar-documentacao` | Auditoria de segurança e alinhamento da documentação |
+| `adequacao-lgpd` | Adequação à LGPD |
+| `concluir-mvp-conectarh` | Consolidou e concluiu as quatro anteriores (81 tarefas) |
+
+Em andamento: [`concluir-frontend-streamlit`](openspec/changes/concluir-frontend-streamlit/).
+
+## Limitações conhecidas
+
+- **Plano gratuito do Xano:** 10 requisições a cada 20 segundos, um workspace só, sem tarefas agendadas
+  (as rotinas são acionadas por RH/Admin) e **sem upload de arquivo privado** (documento entra por link
+  de domínio aprovado; o atestado não é guardado no sistema).
+- **Ponto eletrônico:** controle interno experimental, sem certificação (ver abaixo).
+- **LGPD:** bases legais e prazos de guarda são sugestões acadêmicas, sem assessoria jurídica. A instância
+  do Xano fica nos EUA (inferido pelo IP), o que é uma transferência internacional a tratar.
+- **Frontend:** só a tela de entrada e o início; o restante depende do Figma.
 
 ## Privacidade e proteção de dados
 
@@ -131,12 +196,13 @@ O ConectaRH trata dados pessoais e sensíveis de colaboradores e segue a LGPD. A
 [`docs/lgpd/`](docs/lgpd/): [aviso de privacidade](docs/lgpd/aviso-de-privacidade.md),
 [registro de operações](docs/lgpd/registro-de-operacoes.md),
 [plano de incidentes](docs/lgpd/plano-de-incidentes.md), [RIPD](docs/lgpd/ripd.md),
-[operadores](docs/lgpd/operadores.md) e [legítimo interesse](docs/lgpd/legitimo-interesse.md).
-Bases legais e prazos de guarda são sugestões, **a confirmar com o jurídico**.
+[operadores](docs/lgpd/operadores.md), [legítimo interesse](docs/lgpd/legitimo-interesse.md) e
+[retenção](docs/lgpd/retencao.md). Bases legais e prazos de guarda são sugestões acadêmicas, **a
+confirmar com o jurídico** de quem for usar o sistema de verdade.
 
-**Encarregado pelo tratamento de dados pessoais:** a definir (sugestão: o responsável pela
-documentação). **Contato:** `privacidade@conectarh.com` (endereço provisório; a caixa precisa ser
-criada e confirmada). O mesmo contato consta no aviso de privacidade.
+**Encarregado pelo tratamento de dados pessoais:** a definir (sugestão: o responsável pela documentação).
+**Contato:** `privacidade@conectarh.com` (endereço provisório; a caixa precisa ser criada e confirmada). O
+mesmo contato consta no aviso de privacidade.
 
 O repositório é **público**: não commite dado pessoal real, senha, token nem chave de serviço.
 
@@ -146,15 +212,22 @@ O registro de ponto do MVP é um **controle interno experimental**. Ele **não �
 certificação nem conformidade** com a Portaria MTP nº 671/2021 (REP-C, REP-A e REP-P). O backlog de
 conformidade está em [`docs/backlog-rep.md`](docs/backlog-rep.md).
 
-## Documentação para avaliar o projeto
+## Para agentes de IA
 
-- [`docs/arquitetura.md`](docs/arquitetura.md): visão da arquitetura e dos padrões.
-- [`docs/demonstracao.md`](docs/demonstracao.md): roteiro para reproduzir o fluxo principal.
-- [`docs/deploy.md`](docs/deploy.md): ambientes, configuração, flags e plano de rollback.
-- [`docs/evidencias/`](docs/evidencias/): testes e evidências, sem dado pessoal.
-- [`docs/monitoramento.md`](docs/monitoramento.md): monitoramento, backup e recuperação.
-- O pipeline `Validar` (`.github/workflows/validar.yml`) roda a cada Pull Request: sintaxe do Python,
-  guarda dos endpoints, teste de fumaça do frontend e busca de segredos.
+O [`AGENTS.md`](AGENTS.md) da raiz é a fonte única de instruções para Codex, Gemini CLI e Claude Code
+(`CLAUDE.md` e `GEMINI.md` apontam para ele). `frontend/AGENTS.md` e `xano-workspace/AGENTS.md` trazem só o
+que é específico de cada pasta.
+
+## Estratégia de branches e versões
+
+- `master`: sempre reflete o estado estável.
+- `feature/CON-XX-descricao`: uma branch por tarefa ou grupo de tarefas, onde `CON-XX` é o card do Jira.
+  Enquanto não houver card, a tarefa do `tasks.md` ocupa o lugar (ex.: `feature/lgpd-backend-parte2`).
+- Todo trabalho é integrado a `master` por Pull Request, com pelo menos uma revisão do grupo. Nunca há push
+  direto no `master`.
+- Commits: `CON-XX descrição (tarefa)`; sem card, citam a tarefa do `tasks.md` (ex.: `4.12`).
+- **Versões:** as releases do GitHub marcam os marcos do projeto: `v0.1.0` (backend em andamento e
+  fundação do OpenSpec) e `v0.2.0` (backend, segurança, LGPD, especificações e documentação concluídos).
 
 ## Responsabilidades do grupo
 
