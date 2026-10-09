@@ -87,6 +87,46 @@ Nenhuma até o momento — as duas telas já implementadas (Login, Código de Ac
 
 Nenhuma decisão de tecnologia alternativa é tomada aqui adiantado — cada caso será revisado (e esta seção atualizada) no início da tarefa daquela tela específica, conforme o processo acima.
 
+### Protótipo Figma como fonte única
+
+O frontend é construído **só** a partir do protótipo oficial: https://www.figma.com/design/fph1M5tB4rA4gqfIysSmkn (arquivo `fph1M5tB4rA4gqfIysSmkn`, "ConectaRH — Protótipo"). O mapa de seções e nós está no `design.md` (C3) da change `concluir-mvp-conectarh`. Regras (design D13 da `corrigir-brechas-e-alinhar-documentacao`):
+
+1. ler o nó no Figma, pelo MCP ou pelo Dev Mode, antes de codar;
+2. não criar nada visual fora dos tokens e componentes de `theme.py`;
+3. tela inexistente no Figma deve ser desenhada primeiro;
+4. textos idênticos aos do protótipo;
+5. os 6 estados de UI devem seguir o Figma;
+6. o PR deve trazer o link do nó e os prints lado a lado;
+7. o menu por perfil é só conveniência (a autorização é do backend).
+
+### Telas que faltam no Figma (levantamento de 2026-10-08)
+
+O Figma não estava conectado nesta conferência (o MCP falhou), então a lista parte do mapa registrado no C3 da `concluir-mvp-conectarh` e **deve ser reconferida no Figma antes de cada tela ser construída**.
+
+| Tela | Situação no Figma |
+|---|---|
+| Troca de senha no primeiro acesso | Existe: Passo 3 (193:55) e Passo 3 com erro (193:241). Já construída |
+| Esqueci minha senha / Redefinir senha | Existe: 193:97 e 193:118 (e login com senha redefinida, 193:139). Já construídas |
+| Logout | Existe como "Sair da conta" no menu da conta (197:156) |
+| Expiração do token / sessão revogada | A desenhar (tela ou aviso que volta para "Entrar" com mensagem) |
+| Notificações | Existe: painel de notificações (197:77) |
+| Organograma | A desenhar |
+| Comunicados e FAQ | A desenhar |
+| Solicitações ao RH | A desenhar |
+| Pesquisa de clima | A desenhar |
+| Indicadores | A desenhar |
+| Gestão de usuários | A desenhar |
+| Cargos | A desenhar |
+| Departamentos | A desenhar |
+| Colaboradores (lista e cadastro) | A desenhar |
+| Desligamento | A desenhar |
+| Delegações | A desenhar |
+| Sessões e dispositivos | A desenhar (Configurações, tarefa 2.40 da `concluir-mvp-conectarh`) |
+| Preferências de notificação | A desenhar (Configurações, tarefa 2.40) |
+| Calendário | A desenhar |
+| Minha equipe | A desenhar |
+| Dashboard do gestor | A desenhar |
+
 ## Risks / Trade-offs
 
 - **Seletores CSS não são API oficial do Streamlit** (`data-testid`, `kind="..."`) → podem mudar em atualizações futuras do Streamlit. Mitigação: versão pinada em `requirements.txt` (`streamlit==1.64.0`); qualquer upgrade de versão deve re-testar visualmente as telas antes de mesclar.

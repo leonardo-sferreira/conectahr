@@ -31,10 +31,7 @@ skills-lock.json
 # Estado local de ferramenta, nao deve ser versionado
 .claude/scheduled_tasks.lock
 
-# Docs internos (auditoria, testes, modelos de e-mail) - mantidos so localmente
-docs/auditoria.md
-docs/testes-integracao.md
-docs/testes-seguranca.md
+# Docs internos (modelos de e-mail) - mantidos so localmente
 docs/emails-templates.md
 
 # Editor / SO

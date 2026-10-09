@@ -43,8 +43,12 @@ query "auth/otp/validar" verb=POST {
       error = "Codigo invalido ou expirado."
     }
 
+    function.run "ConectaHR/hash_codigo_acesso" {
+      input = {user_id: $user.id, codigo: $input.codigo}
+    } as $codigo_digitado_hash
+
     var $codigo_correto {
-      value = ($input.codigo == $user.otp_codigo)
+      value = ($codigo_digitado_hash == $user.otp_codigo)
     }
 
     // Registra a tentativa invalida e recusa sem revelar o motivo exato.

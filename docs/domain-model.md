@@ -210,8 +210,10 @@ um InstrumentoNormativo.
 ### RegraContrato / RegraAplicada
 
 Parâmetros-base por tipo de contrato e registro de qual regra foi aplicada a um processo.
-Tabelas existentes no domínio, mas ainda sem endpoint de API que as consuma — o motor de
-resolução de regras (aplicar override + regra de contrato) é trabalho futuro do MVP.
+A function `ConectaHR/resolver_regra` combina a regra do contrato com o override vigente, e
+os endpoints `regras_override/resolver` (GET), `regras_override/{id}/simular` (GET) e
+`regras_override/aplicar` (POST) a consomem; `aplicar` grava a `RegraAplicada` do processo
+(a marcação de ponto e os documentos pendentes obrigatórios também chamam a function).
 
 ### ParametroProtegido
 

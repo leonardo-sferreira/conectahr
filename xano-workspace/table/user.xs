@@ -24,7 +24,7 @@ table user {
       visibility = "private"
     }
 
-    text? otp_codigo filters=trim|max:6 {
+    text? otp_codigo filters=trim|max:64 {
       sensitive = true
       visibility = "private"
     }
@@ -47,7 +47,7 @@ table user {
       visibility = "private"
     }
   
-    text? reset_senha_codigo filters=trim|max:6 {
+    text? reset_senha_codigo filters=trim|max:64 {
       sensitive = true
       visibility = "private"
     }

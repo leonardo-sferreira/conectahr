@@ -314,8 +314,10 @@ query "central_de_tarefas" verb=GET {
               each as $ausencia_item {
                 conditional {
                   if ($ausencia_item.colaborador_id == $membro_equipe.id) {
+                    // So tipo, periodo e status (LGPD): motivo, observacao e comprovante
+                    // sao dado de saude e nunca vao ao painel do Gestor.
                     var.update $ausencias_equipe {
-                      value = $ausencias_equipe|push:$ausencia_item
+                      value = $ausencias_equipe|push:{id: $ausencia_item.id, colaborador_id: $ausencia_item.colaborador_id, tipo: $ausencia_item.tipo, data_inicio: $ausencia_item.data_inicio, data_fim: $ausencia_item.data_fim, status: $ausencia_item.status}
                     }
                   }
                 }

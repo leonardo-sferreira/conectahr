@@ -51,6 +51,15 @@ O frontend SHALL implementar uma tela ou fluxo correspondente para cada tela nav
 - **WHEN** um usuário com perfil RH ou ADMIN acessa a tela de regras
 - **THEN** o sistema apresenta a gestão de instrumentos normativos e regras de override, incluindo a simulação de impacto antes de publicar
 
+#### Scenario: Troca de senha no primeiro acesso
+- **WHEN** um usuário com senha temporária conclui o código de acesso
+- **THEN** o sistema mostra a troca de senha como etapa seguinte do login, com a confirmação da nova senha, e mantém o restante do app bloqueado até a troca
+- **THEN** depois da troca, o usuário volta para "Entrar" com o aviso de que a senha foi alterada, e "Sair" encerra a sessão em qualquer momento
+
+#### Scenario: Sessão revogada ou expirada
+- **WHEN** o backend recusa uma requisição com a sessão encerrada, expirada ou revogada (por exemplo, usuário desativado ou "encerrar outras sessões")
+- **THEN** o frontend descarta o token, volta o usuário para "Entrar" e mostra uma mensagem de que a sessão terminou, sem mostrar dados da sessão anterior
+
 #### Scenario: Trajetória
 - **WHEN** um usuário autenticado acessa a tela de trajetória
 - **THEN** o sistema apresenta avaliação, metas, PDI e o painel de plano de carreira (nível atual, próximo nível, lacunas), sem nenhuma ação de promoção automática

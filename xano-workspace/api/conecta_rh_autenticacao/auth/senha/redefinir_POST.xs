@@ -52,8 +52,12 @@ query "auth/senha/redefinir" verb=POST {
       error = "Codigo invalido ou expirado."
     }
 
+    function.run "ConectaHR/hash_codigo_acesso" {
+      input = {user_id: $user.id, codigo: $input.codigo}
+    } as $codigo_digitado_hash
+
     var $codigo_correto {
-      value = ($input.codigo == $user.reset_senha_codigo)
+      value = ($codigo_digitado_hash == $user.reset_senha_codigo)
     }
   
     // Registra a tentativa invalida e recusa sem revelar o motivo exato.

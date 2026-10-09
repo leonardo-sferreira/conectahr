@@ -159,6 +159,35 @@ query documentos verb=POST {
     }
 
     // Exige pelo menos uma imagem ou um link externo.
+    // Link de arquivo controlado (LGPD): so https e so de dominio aprovado. Links
+    // publicos de compartilhamento (drive, nuvem) nao entram. Lista aprovada = a
+    // propria instancia do Xano + $env.ARQUIVOS_DOMINIOS_APROVADOS (separada por
+    // virgula; sem a variavel, so a instancia vale). Comparacao exata do host.
+    var $link_aprovado_post {
+      value = true
+    }
+
+    conditional {
+      if ($input.arquivo_url != null) {
+        var $link_host_post {
+          value = $input.arquivo_url|replace:"https://":""|split:"/"|first|to_lower
+        }
+
+        var $link_lista_post {
+          value = ("," ~ "x8ki-letl-twmt.n7.xano.io" ~ "," ~ ($env.ARQUIVOS_DOMINIOS_APROVADOS != null ? ($env.ARQUIVOS_DOMINIOS_APROVADOS|replace:" ":""|to_lower) : "") ~ ",")
+        }
+
+        var.update $link_aprovado_post {
+          value = (($input.arquivo_url|starts_with:"https://") && ($link_lista_post|contains:("," ~ $link_host_post ~ ",")))
+        }
+      }
+    }
+
+    precondition ($link_aprovado_post) {
+      error_type = "inputerror"
+      error = "Link de arquivo nao aceito. Envie o arquivo pelo sistema ou use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
+    }
+
     precondition ($input.imagem_frente != null || $input.imagem_verso != null || $input.arquivo_url != null) {
       error_type = "inputerror"
       error = "Informe imagem_frente, imagem_verso ou arquivo_url."

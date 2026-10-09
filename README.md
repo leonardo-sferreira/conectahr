@@ -64,12 +64,32 @@ openspec/
 xano-workspace/     Backend Xano em XanoScript (tabelas, funcoes e endpoints de API)
   table/            Definicoes de tabelas do banco relacional
   function/         Funcoes reutilizaveis (ex.: validacao de CPF, resolucao de regras)
-  api/              Grupos de endpoints de API, organizados por dominio
+  api/              Grupos de endpoints de API (ver a tabela abaixo)
   task/             Rotinas agendadas (aguardando upgrade de plano Xano para publicar)
 ```
 
-O plano funcional em andamento está em `openspec/changes/conectarh.gestao/` (proposta, design,
-especificações e lista de tarefas). `docs/regras-de-negocio.md` documenta as regras de negócio
+### Grupos de API
+
+Os 10 grupos de API refletem a **ordem histórica em que foram criados**, não uma divisão limpa
+por domínio: por exemplo, avaliações, clima, comunicados e o mural de reconhecimento vivem no
+grupo de Colaboradores, e as rotas aninhadas em `colaboradores/{id}/...` aparecem em Ponto e em
+Documentos, além de Colaboradores. A tabela diz onde procurar cada módulo.
+
+| Grupo (`xano-workspace/api/`) | Módulos |
+|---|---|
+| `conecta_rh_autenticacao` | login em dois passos (senha + código por e-mail), troca e redefinição de senha, sessões, logout, `status_operacional` |
+| `conecta_rh_gestao_de_usuarios` | `usuarios` (criar, editar, ativar e desativar), `delegacoes` e `minhas_delegacoes` |
+| `conecta_rh_colaboradores` | colaboradores, vínculo, perfil e dados bancários; onboarding; avaliações, ciclos, metas, PDI e reuniões 1:1; reconhecimentos; pesquisas de clima; comunicados e notificações; solicitações; indicadores; auditoria; instrumentos normativos e regras de override; calendário, feriados, FAQ e `central_de_tarefas` |
+| `conecta_rh_departamentos` | departamentos e organograma |
+| `conecta_rh_cargos` | cargos |
+| `conecta_rh_ponto` | marcação de ponto, correções e banco de horas |
+| `conecta_rh_ferias` | solicitações de férias e suas decisões |
+| `conecta_rh_ausencias` | ausências e atestados |
+| `conecta_rh_documentos` | documentos, documentos obrigatórios, pendências de documento e eventos de SST |
+| `conecta_rh_desligamentos` | solicitações de desligamento |
+
+O plano funcional em andamento está em `openspec/changes/concluir-mvp-conectarh/` (proposta,
+design e lista de tarefas); as mudanças já concluídas estão em `openspec/changes/archive/`. `docs/regras-de-negocio.md` documenta as regras de negócio
 já implementadas, mapeadas diretamente do código do backend.
 
 > A proposta de gestão de vagas e candidaturas (ConectaRH Vagas) foi retirada deste repositório

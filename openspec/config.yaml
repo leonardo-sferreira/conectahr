@@ -49,7 +49,7 @@ operations:
   apply:
     guidance:
       - Verificar o comportamento implementado no workspace Xano (ou nos testes documentados
-        em docs/testes-integracao.md / docs/testes-seguranca.md) antes de concluir uma tarefa.
+        em docs/evidencias/testes-integracao.md / docs/evidencias/testes-seguranca.md) antes de concluir uma tarefa.
   archive:
     guidance:
       - Confirmar que a implementacao corresponde a especificacao antes de arquivar.

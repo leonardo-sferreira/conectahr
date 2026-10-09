@@ -97,6 +97,35 @@ query eventos_sst verb=POST {
       }
     }
 
+    // Link de arquivo controlado (LGPD): so https e so de dominio aprovado. Links
+    // publicos de compartilhamento (drive, nuvem) nao entram. Lista aprovada = a
+    // propria instancia do Xano + $env.ARQUIVOS_DOMINIOS_APROVADOS (separada por
+    // virgula; sem a variavel, so a instancia vale). Comparacao exata do host.
+    var $link_aprovado_sst {
+      value = true
+    }
+
+    conditional {
+      if ($input.documento_url != null) {
+        var $link_host_sst {
+          value = $input.documento_url|replace:"https://":""|split:"/"|first|to_lower
+        }
+
+        var $link_lista_sst {
+          value = ("," ~ "x8ki-letl-twmt.n7.xano.io" ~ "," ~ ($env.ARQUIVOS_DOMINIOS_APROVADOS != null ? ($env.ARQUIVOS_DOMINIOS_APROVADOS|replace:" ":""|to_lower) : "") ~ ",")
+        }
+
+        var.update $link_aprovado_sst {
+          value = (($input.documento_url|starts_with:"https://") && ($link_lista_sst|contains:("," ~ $link_host_sst ~ ",")))
+        }
+      }
+    }
+
+    precondition ($link_aprovado_sst) {
+      error_type = "inputerror"
+      error = "Link de arquivo nao aceito. Envie o arquivo pelo sistema ou use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
+    }
+
     db.add evento_sst {
       data = {
         colaborador_id           : $colaborador_alvo.id

@@ -18,7 +18,14 @@ table ausencia {
 
     date? data_inicio
     date? data_fim
-    text motivo? filters=trim
+    // Texto livre LEGADO: pode conter diagnostico. Fica privado (fora das respostas)
+    // e sem novas gravacoes (LGPD); o motivo agora e escolhido em motivo_tipo.
+    text motivo? filters=trim {
+      visibility = "private"
+    }
+    enum? motivo_tipo {
+      values = ["consulta", "doenca", "acompanhamento_familiar", "outro"]
+    }
     image? comprovante?
     enum status {
       values = ["Pendente", "Aprovada", "Rejeitada", "Registrado"]
