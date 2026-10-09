@@ -8,7 +8,7 @@ Este aviso explica, em linguagem simples, o que o ConectaRH faz com os seus dado
 
 | Para quê | Quais dados | Por que podemos usar |
 |---|---|---|
-| **Entrar no sistema com segurança** (F01) | Seu nome, e-mail, senha (guardada de forma que ninguém consegue ler), código de acesso temporário e o **endereço IP e o dispositivo** de cada login | Para executar o seu contrato de trabalho e para proteger a sua conta |
+| **Entrar no sistema com segurança** (F01) | Seu nome, e-mail, senha (guardada de forma que ninguém consegue ler), código de acesso temporário e a data e hora dos acessos. O sistema tem espaço para guardar o **endereço IP e o dispositivo**, mas **hoje não os grava** | Para executar o seu contrato de trabalho e para proteger a sua conta |
 | **Registrar o que acontece no sistema** (F02) | Quem fez cada ação importante, quando, e o que mudou | Para a segurança e a prestação de contas. Dados como conta bancária e CPF aparecem mascarados |
 | **Manter o seu cadastro** (F03) | Nome, CPF, e-mail pessoal, telefone, endereço, data de nascimento | Contrato de trabalho e obrigações legais |
 | **Guardar documentos obrigatórios** (F04) | RG, CPF, CNH, carteira de trabalho, reservista, documentos de estrangeiro e, para menores de 18 anos, o documento do responsável legal | Obrigações legais |
@@ -46,7 +46,7 @@ Guardamos os dados enquanto você tem vínculo com a empresa e, depois, pelo tem
 
 ## IP e dispositivo
 
-A cada login, registramos o seu **endereço IP e o dispositivo**. Usamos isso para mostrar a você as suas sessões abertas, avisar sobre acessos suspeitos e investigar incidentes de segurança. Quem vê essas informações: você, o RH e o administrador.
+Hoje o sistema **não grava** o seu endereço IP nem o dispositivo: o cadastro de sessões tem campos para isso, mas o login não os preenche. Se isso passar a ser gravado, este aviso será atualizado antes, com a finalidade (mostrar as suas sessões abertas, avisar sobre acessos suspeitos e investigar incidentes de segurança) e o prazo de guarda. Quem veria essas informações: você, o RH e o administrador.
 
 ## Seus direitos
 

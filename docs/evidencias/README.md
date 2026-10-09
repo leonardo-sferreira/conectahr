@@ -34,6 +34,9 @@ Como escrever:
 | `auditoria.md` | Levantamento da auditoria obrigatória dos endpoints de ação |
 | `seguranca.md` | Evidências da Parte 1 da `concluir-mvp-conectarh` (sessão no token, guarda de acesso, revogação) |
 | `lgpd.md` | Evidências da adequação à LGPD (mascaramento, auditoria de arquivos, dados de saúde, hash dos códigos) |
+| `rotinas-e-fluxos.md` | Evidências da Parte 2: Gestor e delegação, rotina diária, ciclo, clima, equipe, retenção |
+| `backup.md` | Backup de código e schema e a restauração (pendente) |
+| `smoke-final.md` | Teste final por perfil (Admin, RH, Gestor e Colaborador) |
 
 ## Checklist antes de cada commit nesta pasta
 

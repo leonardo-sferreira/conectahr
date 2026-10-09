@@ -16,8 +16,6 @@ query documentos verb=POST {
     text? estado_de_emissao? filters=trim|max:50
     date? data_emissao?
     date? data_validade?
-    image? imagem_frente?
-    image? imagem_verso?
     text? arquivo_url? filters=trim|min:10|max:2000
     text? observacao? filters=trim|max:1000
     int? documento_substituido_id?
@@ -185,12 +183,13 @@ query documentos verb=POST {
 
     precondition ($link_aprovado_post) {
       error_type = "inputerror"
-      error = "Link de arquivo nao aceito. Envie o arquivo pelo sistema ou use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
+      error = "Link de arquivo nao aceito. Use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
     }
 
-    precondition ($input.imagem_frente != null || $input.imagem_verso != null || $input.arquivo_url != null) {
+    // O upload de imagem nao e suportado no plano atual do Xano: o documento entra por link.
+    precondition ($input.arquivo_url != null) {
       error_type = "inputerror"
-      error = "Informe imagem_frente, imagem_verso ou arquivo_url."
+      error = "Informe arquivo_url, um endereco https de um dominio aprovado."
     }
   
     // Valida a ordem das datas quando ambas forem informadas.
@@ -204,37 +203,9 @@ query documentos verb=POST {
       value = null
     }
   
-    conditional {
-      if ($input.imagem_frente != null) {
-        storage.create_image {
-          value = $input.imagem_frente
-          access = "private"
-          filename = ""
-        } as $imagem_frente_privada
-      
-        var.update $imagem_frente_final {
-          value = $imagem_frente_privada
-        }
-      }
-    }
-  
     // Prepara a imagem do verso.
     var $imagem_verso_final {
       value = null
-    }
-  
-    conditional {
-      if ($input.imagem_verso != null) {
-        storage.create_image {
-          value = $input.imagem_verso
-          access = "private"
-          filename = ""
-        } as $imagem_verso_privada
-      
-        var.update $imagem_verso_final {
-          value = $imagem_verso_privada
-        }
-      }
     }
   
     // Valida o documento substituido, quando informado.

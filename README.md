@@ -40,7 +40,7 @@ em [`docs/domain-model.md`](docs/domain-model.md).
 ## Stack
 
 - **Backend:** [Xano](https://xano.com) + Script Xano (XanoScript), versionado em `xano-workspace/`
-- **Frontend:** [Streamlit](https://streamlit.io) — ainda não iniciado
+- **Frontend:** [Streamlit](https://streamlit.io), em `frontend/` (tela de entrada e início; as demais telas dependem do protótipo do Figma)
 - **E-mail transacional:** [Brevo](https://www.brevo.com)
 - **Design:** Figma (design system, protótipos e handoff — assets exportados não são versionados
   neste repositório)
@@ -103,19 +103,27 @@ já implementadas, mapeadas diretamente do código do backend.
    endpoints.
 3. Configure a variável de ambiente `BREVO_API_KEY` no workspace Xano (chave de API, não a chave
    SMTP) para o envio de e-mails transacionais (código de acesso, notificações).
-4. Frontend: a estrutura Streamlit ainda será adicionada (ver
-   `openspec/changes/conectarh.gestao/tasks.md`).
-5. Consulte `openspec/changes/conectarh.gestao/design.md` para decisões de arquitetura e
-   `specs/` para o comportamento esperado de cada funcionalidade.
+4. Frontend: siga "Como rodar" em [`frontend/AGENTS.md`](frontend/AGENTS.md) (ambiente virtual,
+   `pip install -r frontend/requirements.txt`, `.streamlit/secrets.toml` a partir do modelo
+   `.streamlit/secrets.toml.example` e `streamlit run frontend/app.py`).
+5. Consulte `openspec/specs/conectahr/spec.md` para o comportamento esperado e as decisões em
+   `openspec/changes/` (plano em andamento) e `openspec/changes/archive/` (histórico).
+
+## Para agentes de IA
+
+O [`AGENTS.md`](AGENTS.md) da raiz é a fonte única de instruções para Codex, Gemini CLI e Claude
+Code (`CLAUDE.md` e `GEMINI.md` apontam para ele). `frontend/AGENTS.md` e
+`xano-workspace/AGENTS.md` trazem só o que é específico de cada pasta.
 
 ## Estratégia de branches
 
 - `master`: sempre reflete o estado estável e implantável.
-- `feature/<área>-<descrição-curta>`: uma branch por tarefa ou grupo de tarefas relacionadas
-  do `tasks.md` (ex.: `feature/auth-login-token`, `feature/desligamento-fluxo`).
-- Todo trabalho é integrado a `master` por Pull Request, com pelo menos uma revisão do grupo antes
-  do merge.
-- Commits referenciam a tarefa do `tasks.md` que estão implementando quando aplicável.
+- `feature/CON-XX-descricao`: uma branch por tarefa ou grupo de tarefas, onde `CON-XX` é o card do
+  Jira. Enquanto não houver card, a tarefa do `tasks.md` ocupa o lugar (ex.:
+  `feature/lgpd-backend-parte2`).
+- Todo trabalho é integrado a `master` por Pull Request, com `CON-XX` no título e pelo menos uma
+  revisão do grupo antes do merge. Nunca há push direto no `master`.
+- Commits: `CON-XX descrição (tarefa)`; sem card, citam a tarefa do `tasks.md` (ex.: `4.12`).
 
 ## Privacidade e proteção de dados
 
@@ -131,6 +139,22 @@ documentação). **Contato:** `privacidade@conectarh.com` (endereço provisório
 criada e confirmada). O mesmo contato consta no aviso de privacidade.
 
 O repositório é **público**: não commite dado pessoal real, senha, token nem chave de serviço.
+
+## Ponto eletrônico: controle interno experimental
+
+O registro de ponto do MVP é um **controle interno experimental**. Ele **não é um REP** e **não possui
+certificação nem conformidade** com a Portaria MTP nº 671/2021 (REP-C, REP-A e REP-P). O backlog de
+conformidade está em [`docs/backlog-rep.md`](docs/backlog-rep.md).
+
+## Documentação para avaliar o projeto
+
+- [`docs/arquitetura.md`](docs/arquitetura.md): visão da arquitetura e dos padrões.
+- [`docs/demonstracao.md`](docs/demonstracao.md): roteiro para reproduzir o fluxo principal.
+- [`docs/deploy.md`](docs/deploy.md): ambientes, configuração, flags e plano de rollback.
+- [`docs/evidencias/`](docs/evidencias/): testes e evidências, sem dado pessoal.
+- [`docs/monitoramento.md`](docs/monitoramento.md): monitoramento, backup e recuperação.
+- O pipeline `Validar` (`.github/workflows/validar.yml`) roda a cada Pull Request: sintaxe do Python,
+  guarda dos endpoints, teste de fumaça do frontend e busca de segredos.
 
 ## Responsabilidades do grupo
 

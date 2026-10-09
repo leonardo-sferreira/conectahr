@@ -11,7 +11,7 @@ Os códigos F01, F02… são as finalidades do [registro de operações](registr
 
 | Serviço | Para quê | Dados que recebe | Finalidades | Região | Termos de tratamento de dados | Mecanismo de transferência internacional |
 |---|---|---|---|---|---|---|
-| **Xano** (backend) | Banco de dados, regras de negócio e armazenamento de arquivos (atestados, documentos, holerites) | **Todos** os dados do sistema, inclusive sensíveis (saúde) | F01 a F19 | **A confirmar** no painel do Xano (instância `x8ki-letl-twmt`). Ver tarefa 4.24 | **A confirmar**: se existe um acordo de tratamento de dados (DPA) aceito pela empresa | **A confirmar** (provável transferência internacional; cláusulas-padrão da Res. 19/2024 se o serviço estiver fora do Brasil) |
+| **Xano** (backend) | Banco de dados e regras de negócio (o sistema não guarda arquivo: o upload foi retirado, tarefa 4.27) | **Todos** os dados do sistema, inclusive sensíveis (saúde) | F01 a F19 | Criptografia em repouso: **sim**, AES-256 no nível do armazenamento, segundo a documentação oficial do Xano (consultada em 08/10/2026; não confirmada no painel). Região: o painel do plano gratuito não mostra; pelo endereço IP da instância `x8ki-letl-twmt`, o servidor é da **Google Cloud em Council Bluffs, Iowa (EUA)** (inferência de 09/10/2026, a confirmar com o fornecedor) | **A confirmar**: se existe um acordo de tratamento de dados (DPA) aceito pela empresa | **A confirmar** (provável transferência internacional; cláusulas-padrão da Res. 19/2024 se o serviço estiver fora do Brasil) |
 | **Brevo** (e-mail transacional) | Envio do código de acesso, da redefinição de senha e dos avisos | Nome, e-mail e o **conteúdo da mensagem** (código e texto do aviso) | F01, F17 | **A confirmar.** A empresa é sediada na França; a região de processamento não foi verificada | **A confirmar** (DPA do fornecedor) | **A confirmar** (verificar decisão de adequação aplicável ou cláusulas-padrão) |
 | **Hospedagem do aplicativo Streamlit** | Serve as telas e guarda o token da sessão na memória do servidor do aplicativo | Tudo que aparece nas telas e o token de sessão, em memória, durante o uso | F01 a F19 | **A confirmar.** O repositório não define onde o app é publicado | **A confirmar** | **A confirmar** |
 | **Google Fonts** | Fornece as fontes Sora e Manrope. O CSS do aplicativo as carrega direto do navegador (`fonts.googleapis.com`) | **Endereço IP e dados do navegador** de quem abre o sistema | F01 (acesso) | Estados Unidos (a empresa é norte-americana); distribuição global | Termos do Google Fonts | **Há transferência internacional sem necessidade.** Recomenda-se **hospedar as fontes localmente** e remover a dependência (tarefa 3.50) |
@@ -21,7 +21,7 @@ Os códigos F01, F02… são as finalidades do [registro de operações](registr
 
 ## O serviço de arquivos citado no sistema
 
-Os campos `documento.arquivo_url` e `evento_sst.documento_url` aceitam hoje **qualquer endereço**, de **nenhum serviço específico**. A regra planejada (tarefa 4.12) aceita só o armazenamento do próprio Xano ou domínios de uma lista aprovada, que **começa vazia**. Quando um serviço de arquivos for aprovado, ele entra nesta lista antes de receber qualquer dado. Os arquivos enviados pelo sistema (campos de imagem) ficam no armazenamento do **Xano**.
+Os campos `documento.arquivo_url` e `evento_sst.documento_url` aceitam hoje **qualquer endereço**, de **nenhum serviço específico**. A regra (tarefa 4.12, em vigor) aceita só `https` do próprio Xano ou de domínios de uma lista aprovada (`ARQUIVOS_DOMINIOS_APROVADOS`), que **começa vazia**. Quando um serviço de arquivos for aprovado, ele entra nesta lista antes de receber qualquer dado. O sistema não recebe arquivo (upload retirado no plano gratuito), então nenhum arquivo fica no armazenamento do Xano.
 
 ## Lista de verificação: serviços externos citados no código e no README
 
@@ -42,7 +42,7 @@ Para repetir a busca: `grep -rhoE "https?://[A-Za-z0-9._-]+" xano-workspace fron
 
 ## Pendências
 
-1. **Confirmar no painel do Xano a região e a criptografia em repouso** (tarefa 4.24) e registrar a resposta na linha do Xano acima.
+1. **Confirmar com o fornecedor a região** do Xano (inferida como Iowa, EUA, pelo IP) e tratar a **transferência internacional** de dados para os EUA (cláusulas-padrão ou outra hipótese da Resolução CD/ANPD nº 19/2024). A criptografia em repouso já consta na documentação oficial do fornecedor.
 2. **Confirmar, com o fornecedor, o acordo de tratamento de dados** do Xano, do Brevo e da hospedagem do Streamlit.
 3. **Definir onde o aplicativo Streamlit é hospedado** e completar a linha correspondente.
 4. **Hospedar as fontes localmente** (tarefa 3.50), o que elimina o envio do IP ao Google.

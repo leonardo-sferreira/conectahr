@@ -57,6 +57,42 @@ query "colaboradores/aniversariantes" verb=GET {
       error = "Troque a senha temporaria antes de continuar."
     }
 
+    // Preferencias de privacidade (LGPD): quem saiu da lista nao aparece para os
+    // outros. Sem linha, menores de 18 anos ficam ocultos por padrao.
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $usuario_autenticado.id
+    } as $colaborador_consulta
+
+    db.query preferencia_privacidade {
+      return = {type: "list"}
+      output = ["colaborador_id", "ocultar_aniversario"]
+    } as $preferencias_privacidade
+
+    var $ids_com_preferencia {
+      value = ","
+    }
+
+    var $ids_ocultar_aniversario {
+      value = ","
+    }
+
+    foreach ($preferencias_privacidade) {
+      each as $preferencia_item {
+        var.update $ids_com_preferencia {
+          value = $ids_com_preferencia ~ ($preferencia_item.colaborador_id|to_text) ~ ","
+        }
+
+        conditional {
+          if ($preferencia_item.ocultar_aniversario) {
+            var.update $ids_ocultar_aniversario {
+              value = $ids_ocultar_aniversario ~ ($preferencia_item.colaborador_id|to_text) ~ ","
+            }
+          }
+        }
+      }
+    }
+
     // Mes corrente, no formato de dois digitos (ex.: "08").
     var $mes_atual {
       value = now|format_timestamp:"m":"UTC"
@@ -79,8 +115,24 @@ query "colaboradores/aniversariantes" verb=GET {
           value = $colaborador_item.data_nascimento|format_timestamp:"m":"UTC"
         }
 
+        var $chave_aniversario {
+          value = "," ~ ($colaborador_item.id|to_text) ~ ","
+        }
+
+        function.run "ConectaHR/idade_em_anos" {
+          input = {data_nascimento: $colaborador_item.data_nascimento}
+        } as $idade_aniversariante
+
+        var $oculto_aniversario {
+          value = (($ids_ocultar_aniversario|contains:$chave_aniversario) || (($ids_com_preferencia|contains:$chave_aniversario) == false && $idade_aniversariante != null && $idade_aniversariante < 18))
+        }
+
+        var $e_o_proprio_aniversario {
+          value = ($colaborador_consulta != null && $colaborador_consulta.id == $colaborador_item.id)
+        }
+
         conditional {
-          if ($mes_nascimento == $mes_atual) {
+          if ($mes_nascimento == $mes_atual && ($oculto_aniversario == false || $e_o_proprio_aniversario)) {
             var.update $aniversariantes {
               value = $aniversariantes|push:{
                 id        : $colaborador_item.id

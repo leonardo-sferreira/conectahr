@@ -93,6 +93,16 @@ Spike: `hmac_sha256` funciona neste workspace (assim como `md5` e `sha*`), entã
 
 As tarefas de LGPD que mexem em endpoints existentes (4.9 a 4.14) dependem da guarda de acesso, da sessão ligada ao token e da revogação em massa das tarefas `[CB 1.4]` a `[CB 1.9]` (3.2 a 3.7): o mascaramento na auditoria, a auditoria de abertura de arquivos e o hash dos códigos só têm sentido se todo endpoint recarrega o usuário e valida a sessão. Andamento conferido em 2026-10-08: as seis estão concluídas (`[x]`), e `python tools/checar_endpoints.py` passa nos 175 endpoints autenticados, inclusive nos novos e nos alterados pela Parte 2 da LGPD (`ausencias/{id}/comprovante`, `eventos_sst/{id}/documento`, `documentos/{id}/arquivo`, `calendario`, `central_de_tarefas`, `auth/*`).
 
+### C10. Sem upload de arquivo no plano gratuito (2026-10-08)
+
+O teste da tarefa 4.27 mostrou que o Xano gratuito não suporta arquivo privado: o campo `image` recebido por multipart dá 400 "Missing param: path", e o campo `file` dá 403 "Not supported. Please upgrade your Xano instance." A decisão do responsável é **continuar no plano gratuito**.
+
+Consequências:
+- `documentos POST` e `documentos/{id}` PATCH deixam de aceitar `imagem_frente` e `imagem_verso`; o documento entra por `arquivo_url`, que só aceita `https` de um domínio aprovado (L6). `ausencias POST` e `ausencias/{id}` PATCH deixam de aceitar `comprovante`.
+- O atestado médico **não é guardado no sistema**. Isso reduz o risco de dado de saúde (R1.5 do RIPD vira "eliminado") e é o que o produto entrega neste plano.
+- As colunas `imagem_frente`, `imagem_verso` e `comprovante` ficam nas tabelas, vazias, e as rotas `documentos/{id}/arquivo`, `ausencias/{id}/comprovante` e `eventos_sst/{id}/documento` continuam com auditoria, para o caso de um upgrade futuro.
+- Se um dia houver upgrade, é preciso refazer o recebimento do arquivo e exercitar o link assinado, a auditoria de abertura e a privacidade do armazenamento (tarefas 4.10 e 4.12, partes que ficaram sem dados).
+
 ## Risks / Trade-offs
 
 - [Referências cruzadas antigas podem confundir] → A regra C1 e os prefixos `[XX x.y]` mantêm cada tarefa ligada à origem.

@@ -11,7 +11,6 @@ query "ausencias/{id}" verb=PATCH {
     date data_inicio
     date data_fim
     text motivo_tipo filters=trim
-    attachment? comprovante?
     text? observacao? filters=trim|max:1000
   }
 
@@ -194,7 +193,7 @@ query "ausencias/{id}" verb=PATCH {
       error = "Tipo de ausencia invalido."
     }
   
-    // Mantem o comprovante atual quando nenhum arquivo novo for enviado.
+    // Mantem o comprovante atual (o upload nao e suportado no plano atual do Xano).
     var $comprovante_final {
       value = $ausencia_atual.comprovante
     }
@@ -202,21 +201,6 @@ query "ausencias/{id}" verb=PATCH {
     // Mantem a observacao atual quando nenhuma nova for enviada.
     var $observacao_final {
       value = $ausencia_atual.observacao
-    }
-  
-    // Processa um novo comprovante apenas quando ele for enviado.
-    conditional {
-      if ($input.comprovante != null) {
-        storage.create_attachment {
-          value = $input.comprovante
-          access = "private"
-          filename = ""
-        } as $novo_comprovante
-      
-        var.update $comprovante_final {
-          value = $novo_comprovante
-        }
-      }
     }
   
     // Atualiza a observacao apenas quando ela for enviada.

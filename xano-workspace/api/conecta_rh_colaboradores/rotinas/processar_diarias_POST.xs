@@ -74,7 +74,7 @@ query "rotinas/processar_diarias" verb=POST {
         user_id      : $usuario_autenticado.id
         acao         : "processar_rotinas_diarias"
         recurso      : "rotina"
-        justificativa: ("desligamentos=" ~ ($contagens.desligamentos_concluidos|to_text) ~ "; ferias_concluidas=" ~ ($contagens.ferias_concluidas|to_text) ~ "; ponto_incompleto=" ~ ($contagens.ponto_para_incompleto|to_text) ~ "; instrumentos_expirados=" ~ ($contagens.instrumentos_expirados|to_text) ~ "; para_ferias=" ~ ($contagens.colaboradores_para_ferias|to_text) ~ "; para_afastado=" ~ ($contagens.colaboradores_para_afastado|to_text) ~ "; para_ativo=" ~ ($contagens.colaboradores_para_ativo|to_text))
+        justificativa: ("desligamentos=" ~ ($contagens.desligamentos_concluidos|to_text) ~ "; ferias_concluidas=" ~ ($contagens.ferias_concluidas|to_text) ~ "; ponto_incompleto=" ~ ($contagens.ponto_para_incompleto|to_text) ~ "; instrumentos_expirados=" ~ ($contagens.instrumentos_expirados|to_text) ~ "; para_ferias=" ~ ($contagens.colaboradores_para_ferias|to_text) ~ "; para_afastado=" ~ ($contagens.colaboradores_para_afastado|to_text) ~ "; para_ativo=" ~ ($contagens.colaboradores_para_ativo|to_text) ~ "; sessoes_limpas=" ~ ($contagens.sessoes_ip_dispositivo_limpos|to_text) ~ "; emails_limpos=" ~ ($contagens.emails_enviados_limpos|to_text) ~ "; desligados_prazo_cumprido=" ~ (($contagens.desligados_prazo_cumprido|count)|to_text))
         resultado    : "sucesso"
       }
     } as $evento_auditoria

@@ -1,5 +1,5 @@
 // Cria uma solicitacao de ausencia para o usuario autenticado.
-// Permite comprovante e observacao opcionais.
+// Permite observacao opcional. O envio de comprovante (arquivo privado) nao e suportado no plano atual do Xano.
 // Nao recebe colaborador_id ou user_id.
 query ausencias verb=POST {
   api_group = "ConectaRH - Ausencias"
@@ -10,7 +10,6 @@ query ausencias verb=POST {
     date data_inicio
     date data_fim
     text motivo_tipo filters=trim
-    attachment? comprovante?
     text? observacao? filters=trim|max:1000
   }
 
@@ -167,24 +166,9 @@ query ausencias verb=POST {
       error = "Tipo invalido. Use Falta, Atestado, Afastamento, Licenca ou Outro."
     }
   
-    // Prepara o comprovante opcional.
+    // Sem upload de comprovante neste plano do Xano: o campo fica vazio.
     var $comprovante_metadata {
       value = null
-    }
-  
-    // Armazena o arquivo como privado quando enviado.
-    conditional {
-      if ($input.comprovante != null) {
-        storage.create_attachment {
-          value = $input.comprovante
-          access = "private"
-          filename = ""
-        } as $arquivo_privado
-      
-        var.update $comprovante_metadata {
-          value = $arquivo_privado
-        }
-      }
     }
   
     // Cria a solicitacao.

@@ -57,11 +57,37 @@ bloqueada anteriormente voltou a logar com sucesso após o TTL de 15 minutos exp
 e uma nova conta bloqueada em seguida apareceu corretamente em
 `acesso_bloqueado.contas_bloqueadas_por_senha`.
 
-## Fora do escopo: backups e recuperação
+## Backup e recuperação
 
-Backups do banco de dados e recuperação de desastres são responsabilidade da
-infraestrutura/plano de hospedagem do Xano — não há filtro, primitiva ou API em
-XanoScript para acionar, listar ou restaurar backups a partir de código de
-aplicação. Não há, portanto, nada a implementar ou expor nesta camada; é uma
-responsabilidade de operação da plataforma, fora do alcance do backend
-desenvolvido neste projeto.
+O Xano não tem, em XanoScript, uma primitiva para acionar ou restaurar o backup da plataforma; isso é
+da hospedagem. O projeto, porém, mantém **o seu próprio backup**, em dois pedaços:
+
+| Pedaço | Como | Contém dado pessoal? |
+|---|---|---|
+| **Código e schema** (tabelas, funções, endpoints, grupos) | O repositório Git (`xano-workspace/`) é a fonte; `xano workspace pull -p ConectaRH -d <pasta>` baixa o estado real do Xano | Não |
+| **Dados** (registros das tabelas) | `xano workspace pull -p ConectaRH --records -d <pasta>` | **Sim**: guarde fora do repositório, em local protegido, e nunca cole em ferramenta externa |
+
+### Procedimento
+
+1. **Rotina:** antes de cada publicação grande e ao menos uma vez por semana, rodar o `pull` de código
+   e conferir que não há diferença de conteúdo em relação ao repositório (só formatação).
+2. **Dados:** o `pull --records` só quando necessário (antes de uma mudança de schema destrutiva ou de
+   uma limpeza). A pasta resultante fica fora do Git (o `.gitignore` não cobre `pr_*` ou pastas
+   temporárias: escolha um caminho fora do repositório).
+3. **Restauração:** `xano workspace push -p ConectaRH -d <pasta-do-backup> --sync`. Em outro workspace
+   (plano pago), acrescentar `-w <ID>`; para os dados, `--records` (depois de conferir o destino).
+   Reconfigurar as variáveis de ambiente do Xano no destino (as chaves não vão no backup).
+   **Prove a restauração antes com `--dry-run`:** o resultado "No changes to push" mostra que o
+   backup recria exatamente o estado atual. O plano gratuito tem um workspace só, então não dá para
+   restaurar num workspace vazio de teste.
+4. **Depois de restaurar:** rodar `tools/checar_endpoints.py`, fazer um login de teste e conferir a
+   contagem de objetos (tabelas, funções, endpoints).
+
+### Situação do teste de restauração
+
+O backup de código e schema foi baixado e comparado com o repositório, e a restauração foi
+**simulada com `--dry-run` sobre o workspace real**, com resultado "No changes to push" (ver
+[`evidencias/backup.md`](evidencias/backup.md)). A restauração **de verdade**, num workspace vazio,
+não foi feita porque o plano gratuito só permite um workspace; fica como pendência para o dia em
+que houver um segundo. A restauração dos **registros** (dados) também não foi exercitada.
+

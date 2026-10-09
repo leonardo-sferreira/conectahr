@@ -247,6 +247,41 @@ query "central_de_tarefas" verb=GET {
       }
     }
 
+    // ---- Pedidos LGPD a vencer (RH e Admin) ----
+    // Pedidos de privacidade ainda sem resposta cujo prazo vence em 3 dias ou menos
+    // (ou ja venceu).
+
+    var $pedidos_lgpd_prazo_proximo {
+      value = []
+    }
+
+    conditional {
+      if ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
+        var $limite_alerta_lgpd {
+          value = now|add_secs_to_timestamp:259200|format_timestamp:"Y-m-d":"UTC"
+        }
+
+        db.query solicitacao_rh {
+          where = $db.solicitacao_rh.tipo == "privacidade_lgpd" && $db.solicitacao_rh.prazo_resposta != null && $db.solicitacao_rh.prazo_resposta <= $limite_alerta_lgpd
+          sort = {solicitacao_rh.prazo_resposta: "asc"}
+          return = {type: "list"}
+          output = ["id", "colaborador_id", "subtipo_lgpd", "status", "prazo_resposta"]
+        } as $pedidos_lgpd_abertos_ou_nao
+
+        foreach ($pedidos_lgpd_abertos_ou_nao) {
+          each as $pedido_lgpd_item {
+            conditional {
+              if ($pedido_lgpd_item.status == "recebida" || $pedido_lgpd_item.status == "em_analise") {
+                var.update $pedidos_lgpd_prazo_proximo {
+                  value = $pedidos_lgpd_prazo_proximo|push:$pedido_lgpd_item
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     // ---- Dashboard do gestor ----
 
     var $tamanho_equipe {
@@ -400,6 +435,7 @@ query "central_de_tarefas" verb=GET {
     equipe_ponto_aberto_hoje       : $ponto_aberto_hoje
     equipe_ponto_sem_registro_hoje : $ponto_sem_registro_hoje
     equipe_avaliacoes_pendentes    : $avaliacoes_pendentes_equipe
+    pedidos_lgpd_prazo_proximo     : $pedidos_lgpd_prazo_proximo
   }
 
   guid = "conectahr-central-de-tarefas-get-0001"

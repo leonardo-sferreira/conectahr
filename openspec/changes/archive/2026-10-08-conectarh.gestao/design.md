@@ -132,6 +132,17 @@ Alem do envio por e-mail via outbox/Brevo, cada evento notificavel (ferias aprov
 
 Organograma, pesquisa global e timeline do colaborador sao vistas somente leitura sobre dados ja existentes (cargo, departamento, vinculo gestor-colaborador, historico profissional, ferias e avaliacoes concluidas) — nenhuma tabela nova e necessaria para esses tres. Comunicados internos e artigos de FAQ sao entidades de conteudo novas e simples (titulo, conteudo, publico-alvo ou categoria, vigencia quando aplicavel), mantidas por RH ou Admin.
 
+### Decisões da Parte 2 da `corrigir-brechas-e-alinhar-documentacao` (registradas em 2026-10-08)
+
+- **Gestor decide férias.** `ferias/{id}/aprovar|rejeitar` aceitam RH, Admin e o Gestor do departamento do colaborador (`departamento.gestor_colaborador_id`), como já era em `correcoes_ponto`. Ninguém decide a própria solicitação.
+- **Delegação por vigência.** O substituto decide férias e correções de ponto quando há uma `delegacao_aprovacao` não cancelada, dentro de `data_inicio`–`data_fim`, com escopo igual ao tipo (ou `todas`), cujo titular é o Gestor do departamento do colaborador. A vigência é calculada na leitura, sem rotina. A auditoria registra o titular. Os demais escopos ficam no backlog.
+- **Rotina diária manual.** O plano do Xano não tem tarefas agendadas; `rotinas/processar_diarias` (RH/Admin) aplica as transições dependentes de data, de forma idempotente, e `status_operacional` mostra o que está pendente pela mesma função. `task/concluir_desligamentos_agendados.xs` fica `active = false` (backlog até um upgrade).
+- **Ciclo de avaliação.** `ciclos_avaliacao/{id}/status` só aceita as transições válidas; `metas` e `avaliacoes` exigem ciclo `em_andamento`.
+- **Versionamento pelo grupo de API.** Não há prefixo `/api/v1/` nas rotas: uma mudança incompatível cria um grupo de API novo. A tarefa de versionamento `/api/v1/` foi retirada.
+- **Rastreamento no backlog.** O que não entra na entrega (escopos de delegação de ausência, documento, desligamento e solicitação ao RH; conformidade do ponto; upload de arquivo; telas) fica registrado em `tasks.md` e em `docs/backlog-rep.md`, com o motivo.
+- **Backup.** O projeto mantém o próprio backup (`pull` do código e, quando preciso, dos registros), documentado em `docs/monitoramento.md`.
+- **Retenção.** `documento.retencao_ate` é calculado pela regra do tipo; `documentos/retencao_vencida` lista, só para leitura; prazos e anonimização em `docs/lgpd/retencao.md`.
+
 ## Risks / Trade-offs
 
 - [Escopo amplo do MVP] -> Entregar por fatias verticais, priorizando identidade/autorizacao, cadastro, ponto, documentos, ferias/ausencias e avaliacao nessa ordem.
