@@ -25,7 +25,7 @@
 | F06 | Contrato, cargo e histórico profissional | 5 anos | Do desligamento | Anonimizar; manter o histórico sem identificar | Anonimização na tarefa 4.22 |
 | F07 | Controle de jornada (ponto e banco de horas) | 5 anos | Do desligamento | Anonimizar; manter o agregado | Anonimização na tarefa 4.22 |
 | F08 | Férias | 5 anos | Do desligamento | Anonimizar | Anonimização na tarefa 4.22 |
-| F09 | Ausências e atestados (**saúde**) | 5 anos para o registro; o arquivo do atestado pelo menor prazo legal admitido | Do desligamento | Eliminar o arquivo; anonimizar o registro | Arquivo privado; sem upload no plano atual (tarefa 4.27) |
+| F09 | Ausências e atestados (**saúde**) | 5 anos para o registro | Do desligamento | Anonimizar o registro | O sistema não guarda o arquivo do atestado (sem upload no plano atual, decisão da tarefa 4.27) |
 | F10 | SST: ASO, laudos e eventos (**saúde**) | **20 anos** (referência: NR-7, guarda do ASO depois do desligamento) | Do desligamento | Anonimizar ao fim | `retencao_ate` do documento; regra por tipo |
 | F11 | Desligamento (solicitação, motivo, decisão) | 5 anos | Da conclusão | Anonimizar o texto livre | Anonimização na tarefa 4.22 |
 | F12 | Avaliações, metas, PDI e reuniões | 2 anos depois do ciclo, ou 5 anos do desligamento, o que vier primeiro | Do fim do ciclo | Anonimizar; manter notas agregadas | Anonimização na tarefa 4.22 |
@@ -46,5 +46,5 @@
 ## Pendências
 
 - Validar **todos** os prazos com o jurídico. Os números acima servem para o sistema ter um valor de partida, não como orientação jurídica.
-- Decidir o prazo de guarda do arquivo de atestado, que hoje não pode ser enviado pelo sistema (limite do plano do Xano).
+- Se um dia houver upload de arquivo (outro plano do Xano), definir o prazo de guarda do atestado e rever a linha F09.
 - Implementar as linhas marcadas "A implementar" (F13, F16 e F19), que dependem da rotina de anonimização por categoria.

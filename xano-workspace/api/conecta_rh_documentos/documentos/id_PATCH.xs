@@ -14,8 +14,6 @@ query "documentos/{id}" verb=PATCH {
     text? estado_de_emissao? filters=trim|max:50
     date? data_emissao?
     date? data_validade?
-    image? imagem_frente?
-    image? imagem_verso?
     text? arquivo_url? filters=trim|min:10|max:2000
     text? observacao? filters=trim|max:1000
   }
@@ -175,7 +173,7 @@ query "documentos/{id}" verb=PATCH {
 
     precondition ($link_aprovado_patch) {
       error_type = "inputerror"
-      error = "Link de arquivo nao aceito. Envie o arquivo pelo sistema ou use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
+      error = "Link de arquivo nao aceito. Use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
     }
 
     var $imagem_frente_final {
@@ -183,40 +181,12 @@ query "documentos/{id}" verb=PATCH {
     }
   
     // Substitui a imagem da frente quando uma nova for enviada.
-    conditional {
-      if ($input.imagem_frente != null) {
-        storage.create_image {
-          value = $input.imagem_frente
-          access = "private"
-          filename = ""
-        } as $nova_imagem_frente
-      
-        var.update $imagem_frente_final {
-          value = $nova_imagem_frente
-        }
-      }
-    }
-  
     // Preserva a imagem do verso atual.
     var $imagem_verso_final {
       value = $documento_atual.imagem_verso
     }
   
     // Substitui a imagem do verso quando uma nova for enviada.
-    conditional {
-      if ($input.imagem_verso != null) {
-        storage.create_image {
-          value = $input.imagem_verso
-          access = "private"
-          filename = ""
-        } as $nova_imagem_verso
-      
-        var.update $imagem_verso_final {
-          value = $nova_imagem_verso
-        }
-      }
-    }
-  
     // Preserva o link atual.
     var $arquivo_url_final {
       value = $documento_atual.arquivo_url

@@ -123,7 +123,7 @@ query eventos_sst verb=POST {
 
     precondition ($link_aprovado_sst) {
       error_type = "inputerror"
-      error = "Link de arquivo nao aceito. Envie o arquivo pelo sistema ou use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
+      error = "Link de arquivo nao aceito. Use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
     }
 
     db.add evento_sst {

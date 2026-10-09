@@ -24,10 +24,10 @@ Dado **sensível** (art. 11). Quem acessa: o próprio colaborador, RH e Admin. O
 | Risco | Prob. | Imp. | Nível | Medida | Situação |
 |---|---|---|---|---|---|
 | **R1.1** O Gestor ou outro perfil lê o atestado ou o motivo da ausência | 1 | 3 | Médio | O Gestor não recebe motivo nem comprovante; escopo por perfil e propriedade; conferir todas as respostas acessíveis ao Gestor (tarefa 3.17) | Parcial: regra no backend **feita**; conferência pendente |
-| **R1.2** O campo de motivo da ausência recebe diagnóstico ou CID em texto livre | 3 | 3 | Alto | Lista fechada de motivos, recusa de CID na observação, aviso na tela e atestado só no arquivo privado (tarefa 4.11) | **Planejada** |
+| **R1.2** O campo de motivo da ausência recebe diagnóstico ou CID em texto livre | 3 | 3 | Alto | Lista fechada de motivos, recusa de CID na observação, aviso na tela; o atestado não entra no sistema (tarefa 4.11) | **Feita** (backend); aviso na tela depende do Figma |
 | **R1.3** Link público de compartilhamento no lugar do arquivo (`arquivo_url`, `documento_url`) | 2 | 3 | Alto | Aceitar só o armazenamento do Xano ou domínios aprovados (tarefa 4.12) | **Planejada** |
 | **R1.4** Abertura indevida de um arquivo sensível sem rastro | 2 | 3 | Alto | Auditoria `acessar_arquivo_documento` em toda abertura (tarefa 4.10) | **Planejada** |
-| **R1.5** Os arquivos de imagem (`ausencia.comprovante`, `documento.imagem_frente`) ficarem acessíveis por URL pública | 2 | 3 | Alto | Confirmar se o armazenamento é privado e corrigir (tarefa 4.12) | **A verificar** |
+| **R1.5** Os arquivos de imagem (`ausencia.comprovante`, `documento.imagem_frente`) ficarem acessíveis por URL pública | 2 | 3 | Alto | O sistema não guarda imagem nem arquivo: o upload foi retirado (plano gratuito do Xano) e o documento entra por link de domínio aprovado (tarefas 4.12 e 4.27) | **Eliminado** (enquanto não houver upload) |
 | **R1.6** Indicadores de absenteísmo de equipes pequenas identificam quem faltou ou adoeceu | 2 | 2 | Médio | Mínimo de pessoas por grupo, com supressão complementar (tarefa 4.14) | **Planejada** |
 | **R1.7** Conta de RH ou Admin invadida expõe todos os atestados | 2 | 3 | Alto | Guarda de acesso em todos os endpoints, sessão ligada ao token, revogação em massa e bloqueio de autoaprovação (tarefas 3.2 a 3.8); código de acesso protegido (tarefa 4.13) | Parcial: guarda **feita**; hash do código **planejado** |
 | **R1.8** Dados de saúde permanecem além do necessário | 2 | 2 | Médio | Prazos de guarda e anonimização (tarefas 4.20 a 4.22) | **Planejada** |
@@ -75,4 +75,4 @@ Dado comum, mas de **risco alto** porque monitora o trabalhador e pode embasar d
 
 ## Conclusão
 
-Com as medidas **feitas**, o acesso a dados sensíveis já está protegido contra os riscos mais prováveis (conta invadida, token vazado, autoaprovação). Os riscos **altos** que ainda dependem de implementação são: diagnóstico em texto livre (R1.2), link público de arquivo (R1.3), abertura de arquivo sem auditoria (R1.4), exposição de menores (R2.1 e R2.2) e os arquivos de imagem possivelmente públicos (R1.5). Eles têm tarefa própria e devem estar concluídos **antes da demonstração e de qualquer uso com dados reais**.
+Com as medidas **feitas**, o acesso a dados sensíveis já está protegido contra os riscos mais prováveis (conta invadida, token vazado, autoaprovação). Os riscos **altos** que ainda dependem de implementação são: diagnóstico em texto livre (R1.2), link público de arquivo (R1.3), abertura de arquivo sem auditoria (R1.4), exposição de menores (R2.1 e R2.2) e o upload de arquivos, que não existe hoje (R1.5). Eles têm tarefa própria e devem estar concluídos **antes da demonstração e de qualquer uso com dados reais**.
