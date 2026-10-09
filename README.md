@@ -140,6 +140,22 @@ criada e confirmada). O mesmo contato consta no aviso de privacidade.
 
 O repositório é **público**: não commite dado pessoal real, senha, token nem chave de serviço.
 
+## Ponto eletrônico: controle interno experimental
+
+O registro de ponto do MVP é um **controle interno experimental**. Ele **não é um REP** e **não possui
+certificação nem conformidade** com a Portaria MTP nº 671/2021 (REP-C, REP-A e REP-P). O backlog de
+conformidade está em [`docs/backlog-rep.md`](docs/backlog-rep.md).
+
+## Documentação para avaliar o projeto
+
+- [`docs/arquitetura.md`](docs/arquitetura.md): visão da arquitetura e dos padrões.
+- [`docs/demonstracao.md`](docs/demonstracao.md): roteiro para reproduzir o fluxo principal.
+- [`docs/deploy.md`](docs/deploy.md): ambientes, configuração, flags e plano de rollback.
+- [`docs/evidencias/`](docs/evidencias/): testes e evidências, sem dado pessoal.
+- [`docs/monitoramento.md`](docs/monitoramento.md): monitoramento, backup e recuperação.
+- O pipeline `Validar` (`.github/workflows/validar.yml`) roda a cada Pull Request: sintaxe do Python,
+  guarda dos endpoints, teste de fumaça do frontend e busca de segredos.
+
 ## Responsabilidades do grupo
 
 | Integrante | Área |

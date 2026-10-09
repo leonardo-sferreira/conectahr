@@ -96,3 +96,21 @@ Com colaboradores reais de teste nos status `Ferias` (1) e `Afastado` (1): ambos
 
 Depois do teste, os perfis e o gestor do departamento foram restaurados.
 
+## 3.26 Tarefa de desligamentos agendados
+
+A tarefa `concluir_desligamentos_agendados` ficou com `active = false`. O Xano recusa publicar qualquer tarefa neste plano ("Please upgrade to access tasks"), então ela nunca existiu no workspace; o desligamento agendado é concluído pela rotina diária.
+
+## Mapa: tarefa da Parte 2 → seção deste arquivo
+
+| Tarefa | Seção |
+|---|---|
+| 3.15, 3.16 (Gestor decide férias e delegação vigente) | 3.15 e 3.16 |
+| 3.18, 3.19 (rotina diária e status operacional) | 3.18 e 3.19 |
+| 3.20 (status do ciclo) | 3.20 |
+| 3.21 (encerrar pesquisa de clima) | 3.21 |
+| 3.22 (onboarding conclui sozinho) | 3.22 |
+| 3.23 (organograma e aniversariantes) | 3.23 |
+| 3.24, 3.25 (equipe e dashboard do Gestor) | 3.24 e 3.25 |
+| 3.26 (tarefa agendada desligada) | 3.26 |
+| 3.27 (retenção de documentos) | 3.27 |
+
