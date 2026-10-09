@@ -14,7 +14,7 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 - [ ] 1.3 [GE 7.1] Criar telas e endpoints dos fluxos por fatia vertical, aplicando estados de carregamento, erro, sucesso e acesso negado; verificar os principais caminhos por perfil.
 - [ ] 1.4 [GE 7.4] Preparar deploy com feature flags, dados sinteticos e plano de rollback sem importar registros das imagens; verificar smoke test em ambiente controlado e registrar a configuracao de producao.
 - [ ] 1.5 [GE 7.5] Realizar validacao inicial de mercado com usuarios/testadores, coletar feedback e medir uso basico; verificar relatorio de achados e backlog priorizado.
-- [ ] 1.6 [GE 7.6] Preparar a entrega final com README, arquitetura, especificacoes OpenSpec, evidencias de testes e demonstracao; verificar que um avaliador consegue reproduzir o fluxo principal.
+- [ ] 1.6 [GE 7.6] Preparar a entrega final com README, arquitetura, especificacoes OpenSpec, evidencias de testes (`docs/evidencias/`) e demonstracao; verificar que um avaliador consegue reproduzir o fluxo principal.
 - [ ] 1.7 [GE 7.10] Garantir acessibilidade do frontend Streamlit e versionamento `/api/v1/`; verificar teclado, contraste, labels, foco, responsividade, textos alternativos, erros compreensiveis e compatibilidade da API.
 - [ ] 1.8 [GE 7.12] Documentar no README que o ponto do MVP e controle interno experimental e criar backlog de conformidade REP-P, REP-A e REP-C conforme Portaria nº 671/2021; verificar que a interface nao declara certificacao inexistente.
 
@@ -245,25 +245,33 @@ Tarefas movidas das quatro changes arquivadas em 2026-10-08. O prefixo `[XX x.y]
 
 **3. Documentação desatualizada ou contraditória (Parte 3)**
 
-- [ ] 3.31 [CB 3.1] No `tasks.md` do `conectarh.gestao`:
+- [x] 3.31 [CB 3.1] No `tasks.md` do `conectarh.gestao`:
   - trocar SendGrid e `SENDGRID_API_KEY` por Brevo e `BREVO_API_KEY` nas tarefas 2.3, 3.2, 4.5, 5.3, 5.4, 5.5 e 5.6;
   - corrigir a nota "todos os 62 endpoints" da 2.3 para refletir a auditoria e a tarefa 1.8 desta change;
   - remover `/api/v1/` da 7.10;
   - reabrir a 4.6, com nota apontando para a tarefa 2.2 desta change.
 
   Verificar: `grep -i sendgrid` no arquivo não retorna nada, e a 4.6 está `[ ]`.
+  - Feito em 2026-10-08 no `tasks.md` arquivado do `conectarh.gestao`: SendGrid trocado por Brevo (`grep -i sendgrid` não retorna nada), nota dos "62 endpoints" corrigida, `/api/v1/` removido da 7.10 e a 4.6 reaberta, com nota apontando para a tarefa 3.16 desta change (a numeração "2.2" do texto original é a `[CB 2.2]`).
 - [ ] 3.32 [CB 3.2] Marcar de novo a 4.6 do `conectarh.gestao` como concluída, com referência à tarefa 2.2 desta change, depois que a 2.2 estiver concluída. Verificar: a nota da 4.6 não descreve mais o gap de integração com os endpoints de aprovação.
-- [ ] 3.33 [CB 3.3] Em `docs/figma-prototipo.md`, trocar a seção "Handoff para Reflex" por "Handoff para Streamlit", com as regras da Parte 4 e o link oficial do protótipo. Verificar: `grep -i reflex` no arquivo não retorna nada, e o link abre o arquivo `fph1M5tB4rA4gqfIysSmkn`.
-- [ ] 3.34 [CB 3.4] No `design.md` do `conectarh.gestao`:
+  - **Bloqueada:** depende da 3.16 (delegação vigente nas decisões de férias), que ainda não foi feita. Nada a remarcar antes disso.
+- [x] 3.33 [CB 3.3] Em `docs/figma-prototipo.md`, trocar a seção "Handoff para Reflex" por "Handoff para Streamlit", com as regras da Parte 4 e o link oficial do protótipo. Verificar: `grep -i reflex` no arquivo não retorna nada, e o link abre o arquivo `fph1M5tB4rA4gqfIysSmkn`.
+  - Feito em 2026-10-08: a seção virou "Handoff para Streamlit", com o link oficial e as regras de implementação (Figma antes da tela, 6 estados, alertas dentro do card, fontes, acessibilidade, frontend não é segurança). `grep -i reflex` não retorna nada. O link abrir o arquivo `fph1M5tB4rA4gqfIysSmkn` não foi aberto daqui; o Figma não estava conectado nesta sessão.
+- [x] 3.34 [CB 3.4] No `design.md` do `conectarh.gestao`:
   - atualizar a contagem de endpoints para 178;
   - remover a afirmação "nenhum endpoint aceita uma requisição fora do escopo autorizado";
   - depois da tarefa 1.8, substituir essa afirmação pela garantia verificada pelo `tools/checar_endpoints.py`.
 
   Verificar: a contagem bate com `find xano-workspace/api -name "*.xs"`, sem contar os arquivos de grupo.
-- [ ] 3.35 [CB 3.5] Em `docs/domain-model.md`, remover a frase que diz que RegraContrato e RegraAplicada não têm endpoint, citando `resolver_regra` e `regras_override/aplicar`. Verificar: a seção "RegraContrato / RegraAplicada" bate com o código.
-- [ ] 3.36 [CB 3.6] Atualizar o README (design D11): explicar que os grupos refletem a ordem histórica de criação, incluir a tabela de domínio por grupo de API e remover "organizados por domínio". Verificar: cada um dos 10 grupos aparece na tabela com seus módulos.
-- [ ] 3.37 [CB 3.7] Criar `docs/evidencias/`, versionada, com um `README.md` de regras (sem dados pessoais, mascaramento de e-mail e token). Migrar o conteúdo não sensível de `docs/testes-integracao.md`, `docs/testes-seguranca.md` e `docs/auditoria.md`. Ajustar a tarefa 7.6 do `conectarh.gestao` para apontar para essa pasta. Verificar: `git status` mostra `docs/evidencias/` rastreada, e `grep -E "@|Bearer "` na pasta não encontra dado real.
+  - Feito em 2026-10-08 no `design.md` arquivado: a contagem atual é 180 endpoints (190 arquivos `.xs` menos 10 de grupo; 175 autenticados e 5 públicos). Atenção: o texto da tarefa pedia 178, mas `find` dá 180, então vale o `find`. A frase "nenhum endpoint aceita..." foi trocada pela garantia verificada por `tools/checar_endpoints.py`.
+- [x] 3.35 [CB 3.5] Em `docs/domain-model.md`, remover a frase que diz que RegraContrato e RegraAplicada não têm endpoint, citando `resolver_regra` e `regras_override/aplicar`. Verificar: a seção "RegraContrato / RegraAplicada" bate com o código.
+  - Feito em 2026-10-08: a seção "RegraContrato / RegraAplicada" de `docs/domain-model.md` cita `resolver_regra` e `regras_override/aplicar`, `resolver` e `simular`. A afirmação sobre ponto e documentos pendentes foi conferida no código; a de férias não, e foi omitida.
+- [x] 3.36 [CB 3.6] Atualizar o README (design D11): explicar que os grupos refletem a ordem histórica de criação, incluir a tabela de domínio por grupo de API e remover "organizados por domínio". Verificar: cada um dos 10 grupos aparece na tabela com seus módulos.
+  - Feito em 2026-10-08: o README explica que os grupos seguem a ordem histórica e traz a tabela com os 10 grupos e seus módulos; "organizados por domínio" foi removido.
+- [x] 3.37 [CB 3.7] Criar `docs/evidencias/`, versionada, com um `README.md` de regras (sem dados pessoais, mascaramento de e-mail e token). Migrar o conteúdo não sensível de `docs/testes-integracao.md`, `docs/testes-seguranca.md` e `docs/auditoria.md`. Ajustar a tarefa 7.6 do `conectarh.gestao` para apontar para essa pasta. Verificar: `git status` mostra `docs/evidencias/` rastreada, e `grep -E "@|Bearer "` na pasta não encontra dado real.
+  - Feito em 2026-10-08: `docs/evidencias/README.md` com as regras (sem dado pessoal, e-mail mascarado, token nunca). `testes-integracao.md`, `testes-seguranca.md` e `auditoria.md` estavam no `.gitignore` e foram movidos para a pasta e passaram a ser versionados, depois de uma varredura que não achou e-mail, token nem CPF reais (só 2 exemplos fictícios). As entradas no `.gitignore` foram removidas e as referências em `AGENTS.md` e `openspec/config.yaml` atualizadas. A 7.6 do `conectarh.gestao` virou a 1.6, que agora aponta para `docs/evidencias/`.
 - [ ] 3.38 [CB 3.8] Remover do workspace e do Xano `function/getting_started_template/*` e `ai/agent`, que são exemplos do Xano sem uso. Verificar: `grep` não encontra referência a eles em `api/` nem em `function/conectahr/`; o dry-run com `--sync --delete` lista só esses itens, e o diff pós-pull está limpo.
+  - **Não feita (2026-10-08).** A remoção dos arquivos locais (`function/getting_started_template/*` e `ai/agent`) foi bloqueada pelo ambiente e ficou para o responsável autorizar. Conferido: nenhum arquivo de `api/`, `function/conectahr/`, `table/` ou `task/` os referencia. Falta apagar os 4 arquivos, rodar o dry-run com `--sync --delete` e conferir a lista (deve haver só esses itens, mais a função de depuração `depuracao_regex`) antes de empurrar.
 
 **4. Frontend segue o protótipo do Figma (Parte 4)**
 

@@ -74,5 +74,5 @@ trabalhar no projeto. Para entender **o que é** o projeto, leia primeiro:
   testar e como confirmar que o comportamento esperado foi atingido), já que o Xano não expõe
   um test runner tradicional para o backend.
 - Antes de concluir uma tarefa, verificar o comportamento no próprio workspace Xano (ou nos
-  testes documentados em `docs/testes-integracao.md` / `docs/testes-seguranca.md`) em vez de
+  testes documentados em `docs/evidencias/testes-integracao.md` / `docs/evidencias/testes-seguranca.md`) em vez de
   assumir que a implementação está correta apenas pela leitura do código.

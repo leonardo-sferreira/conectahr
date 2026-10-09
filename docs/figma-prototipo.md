@@ -33,11 +33,25 @@ e a "trilha de conexão" (pontos ligados por linha — âmbar para itens em aber
 verde para resolvidos) nas listas de pendências, férias, documentos, avaliações e
 regras.
 
-## Handoff para Reflex
+## Handoff para Streamlit
 
-Este protótipo é a referência visual para a implementação real do frontend (tarefa
-7.1, ainda não iniciada). A página Design System documenta os tokens e componentes
-que devem ser reproduzidos no Reflex; as 13 telas do protótipo documentam o
-conteúdo e a hierarquia de informação esperados em cada rota, alinhados à spec.md
-real do projeto (não são telas genéricas — os status, campos e ações mostrados
-batem com os enums e endpoints já implementados no backend).
+**Protótipo oficial:** https://www.figma.com/design/fph1M5tB4rA4gqfIysSmkn
+
+O frontend é feito em Streamlit (`frontend/`). Este protótipo é a referência visual e de
+conteúdo; a página Design System documenta os tokens e os componentes a reproduzir, e as
+telas mostram a hierarquia de informação de cada rota, alinhada aos status, campos e ações
+que o backend já implementa. O mapa de seções e nós está em `design.md` (C3) da change
+`concluir-mvp-conectarh`.
+
+Regras de implementação:
+
+- **O Figma é desenhado antes.** Tela nova só é construída depois de existir no protótipo.
+  Antes de codar, buscar o nó da tela e conferir o que ele mostra.
+- **Estados de interface:** toda tela trata os 6 estados do Design System (carregando, vazio,
+  sucesso, erro, bloqueado, permissão negada).
+- **Alertas dentro do card:** os avisos de erro e de sucesso ficam dentro do card, abaixo do
+  título, como no Figma.
+- **Fontes e cores:** Sora e Manrope, com os tokens do Design System (ver `frontend/theme.py`).
+- **Acessibilidade:** contraste, foco visível, cor nunca sozinha e navegação por teclado.
+- **O frontend não é mecanismo de segurança.** Perfil e escopo são sempre aplicados pelo
+  backend; esconder um botão não substitui a regra.
