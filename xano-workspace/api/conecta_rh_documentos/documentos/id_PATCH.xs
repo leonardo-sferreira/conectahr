@@ -149,6 +149,35 @@ query "documentos/{id}" verb=PATCH {
     }
   
     // Preserva a imagem da frente atual.
+    // Link de arquivo controlado (LGPD): so https e so de dominio aprovado. Links
+    // publicos de compartilhamento (drive, nuvem) nao entram. Lista aprovada = a
+    // propria instancia do Xano + $env.ARQUIVOS_DOMINIOS_APROVADOS (separada por
+    // virgula; sem a variavel, so a instancia vale). Comparacao exata do host.
+    var $link_aprovado_patch {
+      value = true
+    }
+
+    conditional {
+      if ($input.arquivo_url != null) {
+        var $link_host_patch {
+          value = $input.arquivo_url|replace:"https://":""|split:"/"|first|to_lower
+        }
+
+        var $link_lista_patch {
+          value = ("," ~ "x8ki-letl-twmt.n7.xano.io" ~ "," ~ ($env.ARQUIVOS_DOMINIOS_APROVADOS != null ? ($env.ARQUIVOS_DOMINIOS_APROVADOS|replace:" ":""|to_lower) : "") ~ ",")
+        }
+
+        var.update $link_aprovado_patch {
+          value = (($input.arquivo_url|starts_with:"https://") && ($link_lista_patch|contains:("," ~ $link_host_patch ~ ",")))
+        }
+      }
+    }
+
+    precondition ($link_aprovado_patch) {
+      error_type = "inputerror"
+      error = "Link de arquivo nao aceito. Envie o arquivo pelo sistema ou use um endereco https de um dominio aprovado. Links publicos de compartilhamento (drive, nuvem) nao sao aceitos."
+    }
+
     var $imagem_frente_final {
       value = $documento_atual.imagem_frente
     }
