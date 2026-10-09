@@ -45,3 +45,43 @@ O token de uma sessão da conta de teste vazou. Uma segunda sessão, a do titula
 ### Verificação
 
 Este arquivo não contém e-mail, token, CPF nem nome real.
+
+## 4.14 Mínimo de pessoas nos indicadores
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| `GET indicadores` com 13 ativos, um departamento com 10 e dois grupos pequenos (departamento e sem departamento) | Só o departamento com 10 aparece; `minimo_pessoas = 5`, `grupos_omitidos = 2` | Igual; os totais seguem visíveis, porque há mais de um grupo omitido |
+| `GET indicadores/exportar_csv` | Mesmo corte e as linhas `minimo_pessoas_por_grupo` e `grupos_omitidos` | Igual |
+
+**Não verificado:** o caso de um único grupo omitido, em que o total deve sumir (`totais_omitidos = true`, `omitido` no CSV). Os dados de teste não produzem esse caso com o mínimo 5.
+
+## 4.16 Exportação dos dados do titular
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| `GET meus_dados` (json) | Todas as categorias, sem senha nem código de acesso | 200; usuário, colaborador, histórico, documentos, férias, ausências, ponto, banco de horas, avaliações, metas, PDI, solicitações, notificações e sessões; nenhum campo de senha, `otp_` ou `reset_senha` |
+| `GET meus_dados?formato=csv` | Resumo por registro | 200; cabeçalho `categoria,id,tipo,status,data` |
+| `GET meus_dados?formato=xml` | Recusa | 400 |
+| Auditoria | Um evento `exportar_meus_dados` por exportação, com o formato | 2 eventos (json e csv) |
+
+A rota só devolve os dados de quem está autenticado: não recebe id de colaborador.
+
+## 3.49 Resultado da pesquisa de clima
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| `GET pesquisas_clima/{id}/resultados` com a pesquisa aberta | Recusa | 400 |
+| Mesma consulta depois de encerrar, com 1 resposta e mínimo de 2 | 200 sem nenhum grupo nem total | 200 e lista vazia |
+
+**Não verificado:** a supressão complementar com respostas suficientes para o total aparecer (precisa de pelo menos 3 respondentes em departamentos diferentes, e só há uma conta de teste disponível).
+
+## 4.27 Upload de arquivo privado
+
+| Cenário | Obtido |
+|---|---|
+| `POST documentos` multipart com `imagem_frente` (campo `image`) | 400 "Missing param: path" |
+| O mesmo com o campo declarado como `file` | 403 "Not supported. Please upgrade your Xano instance." |
+| O mesmo `POST documentos` só com `arquivo_url` aprovado | 200 |
+
+O upload de arquivo privado não é suportado no plano atual do Xano.
+

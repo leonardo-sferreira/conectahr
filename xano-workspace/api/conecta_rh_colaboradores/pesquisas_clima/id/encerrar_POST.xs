@@ -1,13 +1,13 @@
-// Painel de indicadores (item 7.7). Exclusivo de RH/ADMIN. Calculo
-// delegado a ConectaHR/calcular_indicadores, reaproveitada tambem pela
-// exportacao CSV.
-query indicadores verb=GET {
+// RH/ADMIN encerra uma pesquisa de clima: ela deixa de aceitar respostas
+// (`perguntas_clima/{id}/responder` exige pesquisa ativa) e os resultados
+// passam a poder ser consultados (`pesquisas_clima/{id}/resultados` so abre
+// depois do encerramento). Auditado.
+query "pesquisas_clima/{id}/encerrar" verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
 
   input {
-    date? data_inicio?
-    date? data_fim?
+    int id
   }
 
   stack {
@@ -63,45 +63,49 @@ query indicadores verb=GET {
 
     precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Somente RH ou ADMIN podem consultar indicadores."
+      error = "Somente RH ou ADMIN podem encerrar pesquisas de clima."
     }
 
-    function.run "ConectaHR/calcular_indicadores" {
-      input = {data_inicio: $input.data_inicio, data_fim: $input.data_fim}
-    } as $indicadores
+    db.get pesquisa_clima {
+      field_name = "id"
+      field_value = $input.id
+    } as $pesquisa
 
-    // Auditoria: consulta de indicadores (item 7.11).
+    precondition ($pesquisa != null) {
+      error_type = "notfound"
+      error = "Pesquisa de clima nao encontrada."
+    }
+
+    precondition ($pesquisa.ativo) {
+      error_type = "inputerror"
+      error = "Esta pesquisa ja esta encerrada."
+    }
+
+    db.edit pesquisa_clima {
+      field_name = "id"
+      field_value = $pesquisa.id
+      data = {
+        ativo     : false
+        updated_at: "now"
+      }
+    } as $pesquisa_encerrada
+
     db.add auditoria {
       data = {
-        user_id      : $usuario_autenticado.id
-        acao         : "consultar_indicadores"
-        recurso      : "indicadores"
-        justificativa: ("periodo=" ~ $indicadores.periodo.data_inicio ~ " a " ~ $indicadores.periodo.data_fim)
-        resultado    : "sucesso"
+        user_id    : $usuario_autenticado.id
+        acao       : "encerrar_pesquisa_clima"
+        recurso    : "pesquisa_clima"
+        registro_id: $pesquisa.id
+        resultado  : "sucesso"
       }
     } as $evento_auditoria
   }
 
   response = {
-    sucesso    : true
-    periodo    : $indicadores.periodo
-    headcount  : $indicadores.headcount
-    minimo_pessoas: $indicadores.minimo_pessoas
-    grupos_omitidos: $indicadores.grupos_omitidos
-    totais_omitidos: $indicadores.totais_omitidos
-    turnover   : $indicadores.turnover
-    absenteismo: $indicadores.absenteismo
-    distribuicao_departamento: $indicadores.distribuicao_departamento
-    horas_extras_periodo     : $indicadores.horas_extras_periodo
-    ponto      : $indicadores.ponto
-    ferias     : $indicadores.ferias
-    ausencias  : $indicadores.ausencias
-    documentos : $indicadores.documentos
-    auditoria  : $indicadores.auditoria
-    avaliacoes : $indicadores.avaliacoes
-    metas      : $indicadores.metas
-    pdis       : $indicadores.pdis
+    sucesso : true
+    mensagem: "Pesquisa de clima encerrada."
+    pesquisa: $pesquisa_encerrada
   }
 
-  guid = "conectahr-indicadores-get-0001"
+  guid = "conectahr-pesquisas-clima-encerrar-post-0001"
 }

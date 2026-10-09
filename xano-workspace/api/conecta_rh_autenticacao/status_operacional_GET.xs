@@ -107,6 +107,11 @@ query status_operacional verb=GET {
       return = {type: "count"}
     } as $documentos_vencidos_nao_processados
 
+    // ---------- Rotina diaria: o que ela aplicaria agora (sem gravar nada) ----------
+    function.run "ConectaHR/processar_transicoes_diarias" {
+      input = {aplicar: false, usuario_id: $usuario_autenticado.id}
+    } as $rotina_pendente
+
     // ---------- Acesso bloqueado ----------
     db.query user {
       where = $db.user.senha_bloqueada_ate != null && $db.user.senha_bloqueada_ate > now
@@ -121,6 +126,7 @@ query status_operacional verb=GET {
       desligamentos_vencidos_nao_concluidos  : $desligamentos_vencidos_nao_concluidos
       documentos_vencidos_nao_processados    : $documentos_vencidos_nao_processados
     }
+    rotina_diaria_pendente: $rotina_pendente
     acesso_bloqueado: {contas_bloqueadas_por_senha: $contas_bloqueadas_por_senha}
   }
 

@@ -1,13 +1,12 @@
-// Painel de indicadores (item 7.7). Exclusivo de RH/ADMIN. Calculo
-// delegado a ConectaHR/calcular_indicadores, reaproveitada tambem pela
-// exportacao CSV.
-query indicadores verb=GET {
+// Rotina diaria de acionamento manual (RH e Admin): aplica as transicoes de
+// status que dependem da data. O plano do Xano deste projeto nao tem tarefas
+// agendadas, entao quem aciona e uma pessoa. Idempotente: uma segunda execucao
+// seguida devolve contagens zeradas. Ver `ConectaHR/processar_transicoes_diarias`.
+query "rotinas/processar_diarias" verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
 
   input {
-    date? data_inicio?
-    date? data_fim?
   }
 
   stack {
@@ -63,45 +62,29 @@ query indicadores verb=GET {
 
     precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Somente RH ou ADMIN podem consultar indicadores."
+      error = "Somente RH ou ADMIN podem acionar a rotina diaria."
     }
 
-    function.run "ConectaHR/calcular_indicadores" {
-      input = {data_inicio: $input.data_inicio, data_fim: $input.data_fim}
-    } as $indicadores
+    function.run "ConectaHR/processar_transicoes_diarias" {
+      input = {aplicar: true, usuario_id: $usuario_autenticado.id}
+    } as $contagens
 
-    // Auditoria: consulta de indicadores (item 7.11).
     db.add auditoria {
       data = {
         user_id      : $usuario_autenticado.id
-        acao         : "consultar_indicadores"
-        recurso      : "indicadores"
-        justificativa: ("periodo=" ~ $indicadores.periodo.data_inicio ~ " a " ~ $indicadores.periodo.data_fim)
+        acao         : "processar_rotinas_diarias"
+        recurso      : "rotina"
+        justificativa: ("desligamentos=" ~ ($contagens.desligamentos_concluidos|to_text) ~ "; ferias_concluidas=" ~ ($contagens.ferias_concluidas|to_text) ~ "; ponto_incompleto=" ~ ($contagens.ponto_para_incompleto|to_text) ~ "; instrumentos_expirados=" ~ ($contagens.instrumentos_expirados|to_text) ~ "; para_ferias=" ~ ($contagens.colaboradores_para_ferias|to_text) ~ "; para_afastado=" ~ ($contagens.colaboradores_para_afastado|to_text) ~ "; para_ativo=" ~ ($contagens.colaboradores_para_ativo|to_text))
         resultado    : "sucesso"
       }
     } as $evento_auditoria
   }
 
   response = {
-    sucesso    : true
-    periodo    : $indicadores.periodo
-    headcount  : $indicadores.headcount
-    minimo_pessoas: $indicadores.minimo_pessoas
-    grupos_omitidos: $indicadores.grupos_omitidos
-    totais_omitidos: $indicadores.totais_omitidos
-    turnover   : $indicadores.turnover
-    absenteismo: $indicadores.absenteismo
-    distribuicao_departamento: $indicadores.distribuicao_departamento
-    horas_extras_periodo     : $indicadores.horas_extras_periodo
-    ponto      : $indicadores.ponto
-    ferias     : $indicadores.ferias
-    ausencias  : $indicadores.ausencias
-    documentos : $indicadores.documentos
-    auditoria  : $indicadores.auditoria
-    avaliacoes : $indicadores.avaliacoes
-    metas      : $indicadores.metas
-    pdis       : $indicadores.pdis
+    sucesso  : true
+    mensagem : "Rotina diaria processada."
+    aplicadas: $contagens
   }
 
-  guid = "conectahr-indicadores-get-0001"
+  guid = "conectahr-rotinas-processar-diarias-post-0001"
 }

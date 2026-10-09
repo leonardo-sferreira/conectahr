@@ -301,6 +301,48 @@ query documentos verb=POST {
       input = {arquivo_url: $input.arquivo_url}
     } as $verificacao_arquivo
 
+    // Retencao (LGPD): se houver regra ativa para este tipo de documento que
+    // se aplique ao colaborador (contrato, cargo e departamento) e que tenha prazo
+    // de retencao, calcula `retencao_ate` a partir do evento inicial da regra.
+    // Regras com faixa de idade nao sao avaliadas aqui (ficam de fora). Para o
+    // evento "desligamento" a data so existe no desligamento, entao fica vazia.
+    var $retencao_ate_final {
+      value = null
+    }
+
+    db.query documento_obrigatorio_regra {
+      where = $db.documento_obrigatorio_regra.ativo == true && $db.documento_obrigatorio_regra.tipo_documento == $input.tipo && $db.documento_obrigatorio_regra.retencao_prazo_dias != null
+      return = {type: "list"}
+    } as $regras_retencao
+
+    foreach ($regras_retencao) {
+      each as $regra_retencao {
+        var $retencao_aplica {
+          value = (($regra_retencao.tipo_contrato == null || $regra_retencao.tipo_contrato == $colaborador_destino.tipo_contrato) && ($regra_retencao.cargo_id == null || $regra_retencao.cargo_id == $colaborador_destino.cargo_id) && ($regra_retencao.departamento_id == null || $regra_retencao.departamento_id == $colaborador_destino.departamento_id) && $regra_retencao.idade_minima == null && $regra_retencao.idade_maxima == null)
+        }
+
+        var $retencao_base {
+          value = ($regra_retencao.retencao_evento_inicial == "data_validade" ? $data_validade_final : ($regra_retencao.retencao_evento_inicial == "data_emissao" ? $input.data_emissao : null))
+        }
+
+        conditional {
+          if ($retencao_aplica && $retencao_ate_final == null && $retencao_base != null) {
+            var $retencao_base_ts {
+              value = $retencao_base|to_timestamp
+            }
+
+            var $retencao_segundos {
+              value = $regra_retencao.retencao_prazo_dias * 86400
+            }
+
+            var.update $retencao_ate_final {
+              value = $retencao_base_ts|add_secs_to_timestamp:$retencao_segundos|format_timestamp:"Y-m-d":"UTC"
+            }
+          }
+        }
+      }
+    }
+
     // Localiza uma pendencia aberta deste tipo, para encerra-la automaticamente.
     db.query pendencia_documento {
       where = $db.pendencia_documento.colaborador_id == $colaborador_destino.id && $db.pendencia_documento.tipo_documento == $input.tipo && $db.pendencia_documento.status == "pendente"
@@ -319,6 +361,7 @@ query documentos verb=POST {
             estado_de_emissao        : $estado_de_emissao_final
             data_emissao             : $input.data_emissao
             data_validade            : $data_validade_final
+            retencao_ate             : $retencao_ate_final
             status                   : $status_inicial
             imagem_frente            : $imagem_frente_final
             imagem_verso             : $imagem_verso_final

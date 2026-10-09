@@ -138,6 +138,11 @@ query metas verb=POST {
       error = "Ciclo de avaliacao nao encontrado."
     }
 
+    precondition ($ciclo.status == "em_andamento") {
+      error_type = "inputerror"
+      error = "O ciclo de avaliacao precisa estar em andamento."
+    }
+
     db.add meta_avaliacao {
       data = {
         ciclo_avaliacao_id  : $ciclo.id
