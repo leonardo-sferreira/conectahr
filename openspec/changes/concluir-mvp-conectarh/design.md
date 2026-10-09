@@ -83,6 +83,12 @@ Os filtros `regex_matches`, `regex_get_first_match`, `regex_get_all_matches` e `
 
 Decisão: toda validação de formato de texto é feita sem regex, por palavras: `split`, `substr` e `contains`. A detecção de código CID segue esse modelo (letra, dois dígitos e fim da palavra ou `.`), testada com 10 textos. Qualquer nova validação deve ser exercitada com um caso que deve falhar, antes de ser dada como pronta.
 
+### C8. Códigos de acesso guardados como HMAC-SHA256 (2026-10-08)
+
+Spike: `hmac_sha256` funciona neste workspace (assim como `md5` e `sha*`), então não foi preciso recorrer a `md5`. Foi criada a função `ConectaHR/hash_codigo_acesso(user_id, codigo)`, que devolve `HMAC-SHA256(codigo, chave)`, com chave = `$env.CODIGO_ACESSO_PEPPER` + `:` + id do usuário. `auth/login`, `auth/otp/reenviar` e `auth/senha/esqueci` gravam só o hash; `auth/otp/validar` e `auth/senha/redefinir` recalculam o hash do que foi digitado e comparam. O texto do código só segue por e-mail. Os campos `user.otp_codigo` e `user.reset_senha_codigo` passaram de `max:6` para `max:64`.
+
+**Limite honesto:** com um espaço de só 900 mil códigos, o hash **sem segredo não protege** de quem lê o banco: o teste recuperou o código offline em segundos. A proteção real vem do pepper em `$env.CODIGO_ACESSO_PEPPER`, que fica fora do banco. Enquanto a variável não for definida no Xano, a função usa só o id do usuário e o ganho é limitado a não deixar o código legível a olho nu. Definir o pepper invalida os códigos pendentes (vencem em 5 e 15 min), o que é aceitável.
+
 ## Risks / Trade-offs
 
 - [Referências cruzadas antigas podem confundir] → A regra C1 e os prefixos `[XX x.y]` mantêm cada tarefa ligada à origem.

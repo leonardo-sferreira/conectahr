@@ -58,11 +58,16 @@ query "auth/otp/reenviar" verb=POST {
       value = $codigo_numerico|to_text
     }
 
+    // So o hash (HMAC-SHA256) do codigo vai para o banco; o texto so segue por e-mail.
+    function.run "ConectaHR/hash_codigo_acesso" {
+      input = {user_id: $user.id, codigo: $codigo_texto}
+    } as $codigo_hash
+
     db.edit user {
       field_name = "id"
       field_value = $user.id
       data = {
-        otp_codigo         : $codigo_texto
+        otp_codigo         : $codigo_hash
         otp_expira_em      : now|add_secs_to_timestamp:300
         otp_reenvios       : ($user.otp_reenvios == null ? 1 : $user.otp_reenvios + 1)
         otp_ultimo_envio_em: "now"
