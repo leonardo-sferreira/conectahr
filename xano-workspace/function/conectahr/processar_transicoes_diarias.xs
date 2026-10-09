@@ -49,6 +49,28 @@ function "ConectaHR/processar_transicoes_diarias" {
       value = 0
     }
 
+    var $n_sessoes_limpas {
+      value = 0
+    }
+
+    var $n_emails_limpos {
+      value = 0
+    }
+
+    // Prazos de retencao (docs/lgpd/retencao.md, a confirmar com o juridico). Cada
+    // um pode ser trocado por variavel de ambiente, em dias.
+    var $dias_sessao {
+      value = ($env.SESSAO_RETENCAO_DIAS != null ? ($env.SESSAO_RETENCAO_DIAS|to_int) : 180)
+    }
+
+    var $dias_email {
+      value = ($env.EMAIL_RETENCAO_DIAS != null ? ($env.EMAIL_RETENCAO_DIAS|to_int) : 180)
+    }
+
+    var $dias_desligado {
+      value = ($env.DESLIGADO_RETENCAO_DIAS != null ? ($env.DESLIGADO_RETENCAO_DIAS|to_int) : 1825)
+    }
+
     // ---------- 1. Desligamentos agendados com data efetiva atingida ----------
     db.query solicitacao_desligamento {
       where = $db.solicitacao_desligamento.status == "agendado" && $db.solicitacao_desligamento.data_efetiva != null && $db.solicitacao_desligamento.data_efetiva <= $hoje
@@ -466,6 +488,97 @@ function "ConectaHR/processar_transicoes_diarias" {
       }
     }
 
+    // ---------- 7. Retencao: IP e dispositivo de sessoes antigas ----------
+    // Sessao encerrada ou expirada ha mais que o prazo perde `endereco_ip` e
+    // `dispositivo`. A sessao em si fica (so deixa de identificar o aparelho).
+    var $segundos_sessao {
+      value = $dias_sessao * 86400
+    }
+
+    var $corte_sessao {
+      value = now|add_secs_to_timestamp:(0 - $segundos_sessao)
+    }
+
+    db.query sessao {
+      where = $db.sessao.expira_em < $corte_sessao
+      return = {type: "list"}
+      output = ["id", "endereco_ip", "dispositivo"]
+    } as $sessoes_antigas
+
+    foreach ($sessoes_antigas) {
+      each as $sessao_antiga {
+        conditional {
+          if ($sessao_antiga.endereco_ip != null || $sessao_antiga.dispositivo != null) {
+            var.update $n_sessoes_limpas {
+              value = $n_sessoes_limpas + 1
+            }
+
+            conditional {
+              if ($input.aplicar) {
+                db.edit sessao {
+                  field_name = "id"
+                  field_value = $sessao_antiga.id
+                  data = {endereco_ip: null, dispositivo: null, updated_at: "now"}
+                } as $sessao_limpa
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // ---------- 8. Retencao: e-mails ja enviados ha mais que o prazo ----------
+    // Destinatario e corpo viram marcadores; a linha (e a chave de idempotencia) fica.
+    var $segundos_email {
+      value = $dias_email * 86400
+    }
+
+    var $corte_email {
+      value = now|add_secs_to_timestamp:(0 - $segundos_email)
+    }
+
+    db.query email_outbox {
+      where = $db.email_outbox.status == "enviado" && $db.email_outbox.enviado_em != null && $db.email_outbox.enviado_em < $corte_email && $db.email_outbox.destinatario_email != "removido@anonimizado.invalid"
+      return = {type: "list"}
+      output = ["id"]
+    } as $emails_antigos
+
+    var.update $n_emails_limpos {
+      value = $emails_antigos|count
+    }
+
+    conditional {
+      if ($input.aplicar) {
+        foreach ($emails_antigos) {
+          each as $email_antigo {
+            db.edit email_outbox {
+              field_name = "id"
+              field_value = $email_antigo.id
+              data = {destinatario_email: "removido@anonimizado.invalid", destinatario_nome: null, corpo: "[conteudo removido por prazo de retencao]", updated_at: "now"}
+            } as $email_limpo
+          }
+        }
+      }
+    }
+
+    // ---------- 9. Retencao: desligados com prazo de guarda cumprido (so lista) ----------
+    // Nada e alterado aqui: a anonimizacao e uma decisao do RH, feita em
+    // `colaboradores/{id}/anonimizar`. Esta lista so avisa quem ja pode ser anonimizado.
+    var $segundos_desligado {
+      value = $dias_desligado * 86400
+    }
+
+    var $corte_desligado {
+      value = now|add_secs_to_timestamp:(0 - $segundos_desligado)|format_timestamp:"Y-m-d":"UTC"
+    }
+
+    db.query colaborador {
+      where = $db.colaborador.status == "Desligado" && $db.colaborador.data_desligamento != null && $db.colaborador.data_desligamento <= $corte_desligado && $db.colaborador.anonimizado_em == null
+      sort = {colaborador.data_desligamento: "asc"}
+      return = {type: "list"}
+      output = ["id", "data_desligamento"]
+    } as $desligados_prazo_cumprido
+
     var $contagens {
       value = {
         desligamentos_concluidos: $n_desligamentos
@@ -475,6 +588,9 @@ function "ConectaHR/processar_transicoes_diarias" {
         colaboradores_para_ferias  : $n_para_ferias
         colaboradores_para_afastado: $n_para_afastado
         colaboradores_para_ativo   : $n_para_ativo
+        sessoes_ip_dispositivo_limpos: $n_sessoes_limpas
+        emails_enviados_limpos     : $n_emails_limpos
+        desligados_prazo_cumprido  : $desligados_prazo_cumprido
       }
     }
   }

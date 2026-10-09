@@ -31,6 +31,9 @@ table colaborador {
     text estado? filters=trim
     date? data_admissao
     date? data_desligamento?
+
+    // Preenchido quando o RH anonimiza o colaborador (LGPD, arts. 15, 16 e 18, IV).
+    timestamp? anonimizado_em?
     int cargo_id {
       table = "cargo"
     }

@@ -80,6 +80,8 @@ Cada tratamento do [registro de operações](registro-de-operacoes.md) que usa o
 
 ## F01 e F02. Logs de segurança (IP, dispositivo e auditoria)
 
+> **Situação atual:** o login não grava IP nem dispositivo (os campos existem em `sessao`, vazios). Este teste vale para o dia em que forem gravados; até lá, só a auditoria de ações está em uso.
+
 | Pergunta | Resposta |
 |---|---|
 | Finalidade | Proteger as contas, mostrar ao usuário as suas sessões, investigar incidentes e prestar contas sobre ações importantes (LGPD, art. 46) |

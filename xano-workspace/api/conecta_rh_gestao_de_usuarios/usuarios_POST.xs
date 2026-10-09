@@ -73,7 +73,7 @@ query usuarios verb=POST {
     db.get colaborador {
       field_name = "id"
       field_value = $input.colaborador_id
-      output = ["id", "nome", "user_id", "status"]
+      output = ["id", "nome", "user_id", "status", "data_nascimento"]
     } as $colaborador
   
     precondition ($colaborador != null) {
@@ -130,6 +130,31 @@ query usuarios verb=POST {
       error = "Este e-mail já está vinculado a outra conta."
     }
   
+    // Menor de 18 anos (LGPD, art. 14; ECA Digital): o acesso so e liberado com um
+    // documento de responsavel legal aprovado. A idade vem da data de nascimento.
+    function.run "ConectaHR/idade_em_anos" {
+      input = {data_nascimento: $colaborador.data_nascimento}
+    } as $idade_colaborador
+
+    var $e_menor_de_idade {
+      value = ($idade_colaborador != null && $idade_colaborador < 18)
+    }
+
+    conditional {
+      if ($e_menor_de_idade) {
+        db.query documento {
+          where = $db.documento.colaborador_id == $colaborador.id && $db.documento.tipo == "documentacao_responsavel_legal" && $db.documento.status == "aprovado" && $db.documento.ativo == true
+          return = {type: "list"}
+          output = ["id"]
+        } as $documentos_responsavel
+
+        precondition (($documentos_responsavel|count) > 0) {
+          error_type = "inputerror"
+          error = "Colaborador menor de 18 anos: o acesso so pode ser criado com um documento de responsavel legal aprovado."
+        }
+      }
+    }
+
     // Cria a conta e vincula o colaborador na mesma transação.
     db.transaction {
       stack {
@@ -148,6 +173,28 @@ query usuarios verb=POST {
           field_value = $colaborador.id
           data = {user_id: $novo_usuario.id, updated_at: "now"}
         } as $colaborador_atualizado
+
+        // Menor de 18 anos nasce fora da lista de aniversariantes e do mural.
+        conditional {
+          if ($e_menor_de_idade) {
+            db.query preferencia_privacidade {
+              where = $db.preferencia_privacidade.colaborador_id == $colaborador.id
+              return = {type: "single"}
+            } as $preferencia_do_menor
+
+            conditional {
+              if ($preferencia_do_menor == null) {
+                db.add preferencia_privacidade {
+                  data = {
+                    colaborador_id     : $colaborador.id
+                    ocultar_aniversario: true
+                    ocultar_mural      : true
+                  }
+                } as $preferencia_criada_menor
+              }
+            }
+          }
+        }
       }
     }
   

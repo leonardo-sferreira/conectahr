@@ -53,7 +53,7 @@ Este arquivo não contém e-mail, token, CPF nem nome real.
 | `GET indicadores` com 13 ativos, um departamento com 10 e dois grupos pequenos (departamento e sem departamento) | Só o departamento com 10 aparece; `minimo_pessoas = 5`, `grupos_omitidos = 2` | Igual; os totais seguem visíveis, porque há mais de um grupo omitido |
 | `GET indicadores/exportar_csv` | Mesmo corte e as linhas `minimo_pessoas_por_grupo` e `grupos_omitidos` | Igual |
 
-**Não verificado:** o caso de um único grupo omitido, em que o total deve sumir (`totais_omitidos = true`, `omitido` no CSV). Os dados de teste não produzem esse caso com o mínimo 5.
+Caso de um único grupo omitido, com a variável `INDICADORES_MINIMO_PESSOAS` temporariamente em 2 (11 pessoas em um departamento, 2 em outro e 1 em um terceiro): `grupos_omitidos = 1`, `totais_omitidos = true`, `headcount` nulo e, no CSV, `headcount_ativos,omitido` e `headcount_total,omitido`. Com o mínimo em 3 havia 2 grupos omitidos e os totais seguiam visíveis. As variáveis de teste são temporárias e devem ser apagadas do Xano.
 
 ## 4.16 Exportação dos dados do titular
 
@@ -84,4 +84,67 @@ A rota só devolve os dados de quem está autenticado: não recebe id de colabor
 | O mesmo `POST documentos` só com `arquivo_url` aprovado | 200 |
 
 O upload de arquivo privado não é suportado no plano atual do Xano.
+
+## 4.17 Pedido LGPD
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Pedido `privacidade_lgpd` sem subtipo | Recusa | 400 |
+| Subtipo desconhecido | Recusa | 400 |
+| Subtipo em solicitação de outro tipo | Recusa | 400 |
+| Pedido com subtipo `correcao` | Aceito, com prazo de abertura + 15 dias | 200; `prazo_resposta` = abertura + 15 dias (UTC) |
+| Fila do RH (`solicitacoes`) | Mostra o pedido com o prazo | Sim |
+| RH atende o pedido | Aceito, com notificação ao colaborador | 200; notificação `solicitacao_respondida` recebida; auditoria com a justificativa |
+
+**Não verificado:** o alerta de prazo próximo (3 dias ou menos) na `central_de_tarefas`. O campo `pedidos_lgpd_prazo_proximo` está na resposta e veio vazio, porque um pedido recém-criado vence em 15 dias e não há como antecipar a data.
+
+## 4.18 Preferências de privacidade
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Preferência padrão de um adulto | Nada oculto, `padrao = true` | Igual |
+| Colaborador sai do mural | Outro usuário não vê o reconhecimento; o próprio colaborador vê no mural e em "recebidos"; Admin vê | Igual |
+| Menor de 18 anos sem linha gravada | Fora de aniversariantes e mural para os demais | Igual (ver 4.23) |
+
+**Não verificado:** o colaborador sair da lista de aniversariantes e continuar se vendo nela. Os dados de teste não permitem mudar a data de nascimento do colaborador usado (o CPF cadastrado não passa na validação). A ocultação em aniversariantes foi observada com o menor.
+
+## 4.21 Limpeza de retenção na rotina diária
+
+Com `EMAIL_RETENCAO_DIAS` e `SESSAO_RETENCAO_DIAS` temporariamente em 0:
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| `status_operacional` antes | `emails_enviados_limpos = 10` | 10 |
+| Primeira execução | Aplica a mesma contagem | 10 |
+| Segunda execução | Zerada | 0 |
+| Limpeza de sessões | Sem IP nem dispositivo para limpar | 0: o login não grava esses campos, então estão sempre vazios |
+
+**Não verificado:** a lista de desligados com prazo de guarda cumprido, porque os dois desligados de teste já haviam sido anonimizados.
+
+## 4.22 Anonimização
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Colaborador ativo | Recusa | 400 |
+| O próprio cadastro | Recusa | 403 |
+| Justificativa com menos de 5 caracteres | Recusa | 400 |
+| Perfil sem permissão (Colaborador) | Recusa | 403 |
+| Colaborador desligado, sem documentos em guarda | Anonimiza | 200 |
+| Nova tentativa no mesmo colaborador | Recusa | 400 |
+| Depois da anonimização | Nome, e-mail, telefone, nascimento e dados bancários trocados por marcadores; usuário desativado e renomeado; nenhum registro excluído; indicadores iguais; auditoria sem valores | Igual |
+
+**Não verificado:** a recusa por documento com prazo de guarda vigente, porque o sistema não permite cadastrar documento para colaborador já desligado, então não há como montar o caso com os dados de teste. A regra está no código (`retencao_ate` no futuro).
+
+## 4.23 Menor de 18 anos
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Pré-cadastro de aprendiz de 16 anos | Aceito | 200 |
+| Criar o acesso sem documento de responsável legal | Recusa | 400 |
+| Criar o acesso com o documento ainda pendente | Recusa | 500 na primeira rodada (defeito corrigido: o endpoint não lia a data de nascimento); repetido depois da correção: 400 |
+| Criar o acesso com o documento aprovado | Aceito | 200 |
+| Aniversariantes (aniversário em outubro) | O menor não aparece | Não aparece |
+| Mural para outro usuário | O menor não aparece; RH/Admin veem | Igual |
+
+A "ativação do contrato" foi interpretada como a criação do acesso (`usuarios POST`): o documento precisa de um colaborador para ser anexado, então o pré-cadastro não pode ser bloqueado.
 

@@ -36,16 +36,16 @@ Dado **sensível** (art. 11). Quem acessa: o próprio colaborador, RH e Admin. O
 
 ## 2. Adolescentes aprendizes (menores de 18 anos)
 
-Tratamento que exige o **melhor interesse** do menor (art. 14; ECA Digital). Hoje o sistema **não diferencia** colaboradores menores de idade.
+Tratamento que exige o **melhor interesse** do menor (art. 14; ECA Digital). O sistema diferencia colaboradores menores de 18 anos pela data de nascimento: o acesso só é criado com documento de responsável legal aprovado, e a exposição em aniversariantes e mural nasce oculta.
 
 | Risco | Prob. | Imp. | Nível | Medida | Situação |
 |---|---|---|---|---|---|
-| **R2.1** Contrato do menor ativado sem o documento do responsável legal | 2 | 3 | Alto | Bloquear a ativação sem o documento de responsável legal aprovado (tarefa 4.23) | **Planejada** |
-| **R2.2** O menor aparece para todos os colegas em aniversariantes e no mural | 3 | 2 | Alto | Preferências nascem ocultas para menores de 18 anos; botão de sair da lista (tarefas 4.18 e 4.23) | **Planejada** |
-| **R2.3** Dado do menor guardado por tempo indeterminado | 2 | 2 | Médio | Prazos e anonimização no desligamento (tarefas 4.20 a 4.22) | **Planejada** |
+| **R2.1** Contrato do menor ativado sem o documento do responsável legal | 2 | 3 | Alto | A criação do acesso (`usuarios POST`) exige o documento de responsável legal aprovado (tarefa 4.23). O pré-cadastro continua possível, porque o documento precisa de um colaborador para ser anexado | **Feita** |
+| **R2.2** O menor aparece para todos os colegas em aniversariantes e no mural | 3 | 2 | Alto | Preferências nascem ocultas para menores de 18 anos (padrão sem linha, e linha gravada na criação do acesso) e há opção de sair da lista (tarefas 4.18 e 4.23) | **Feita** (backend); a tela depende do Figma |
+| **R2.3** Dado do menor guardado por tempo indeterminado | 2 | 2 | Médio | Prazos e anonimização no desligamento (tarefas 4.20 a 4.22) | **Feita** (prazos a confirmar com o jurídico) |
 | **R2.4** O aviso de privacidade não é compreensível para um adolescente | 2 | 2 | Médio | Aviso em linguagem simples (já escrito, ver [aviso-de-privacidade.md](aviso-de-privacidade.md)) e revisão com o responsável legal | **Feita** (texto); revisão pendente |
 
-**Risco residual:** alto até as tarefas 4.18 e 4.23 serem publicadas. Enquanto isso, recomenda-se **não cadastrar aprendizes menores de idade no ambiente real**.
+**Risco residual:** médio. O backend está pronto; falta a tela de preferências e a validação dos prazos pelo jurídico. Por prudência, recomenda-se não cadastrar aprendizes menores de idade no ambiente real até a tela existir.
 
 ## 3. Controle de jornada (ponto, correções e banco de horas)
 
