@@ -17,12 +17,12 @@ As regras de apresentação ficam em `frontend/onboarding_modelo.py` (sem Stream
 ## Como repetir
 
 ```
-python tools/testar_onboarding.py    # 45 verificações
+python tools/testar_onboarding.py    # 52 verificações
 python tools/testar_login_f01.py     # 51 verificações (inclui o caminho de primeiro acesso até o Início)
 ```
 
 Os dois rodam sem rede, com uma API simulada (dados fictícios), e também no workflow `Validar`.
-**Resultado em 10/10/2026: 45 de 45 e 51 de 51.**
+**Resultado em 10/10/2026: 52 de 52 e 52 de 52.**
 
 ## O que os testes conferem
 
@@ -39,6 +39,8 @@ Os dois rodam sem rede, com uma API simulada (dados fictícios), e também no wo
 | Vazio | Onboarding concluído ou as 13 etapas feitas: o card do Início some | ok |
 | Erro | O onboarding não carrega: alerta no cartão, sem exceção; o Início continua sem o card | ok |
 | Carregando | Spinner dentro do cartão ou da página | verificado no navegador |
+| Permissão (tarefa 18) | A boas-vindas só conclui "Trocar a senha temporária", a única etapa da própria pessoa; um 403 do backend não trava a tela | ok |
+| Permissão (tarefa 18) | "Meu onboarding" não tem botão de concluir nas 11 etapas do RH e do gestor; abrir a tela não conclui nada | ok |
 
 O backend responde 403 a quem não pode ver o onboarding: a tela mostra esse erro como os demais, no cartão. Não
 há estado "bloqueado" próprio nesta tela.
