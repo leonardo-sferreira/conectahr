@@ -25,6 +25,7 @@ import streamlit as st
 
 from api_client import ApiError, auth_me, logout
 from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
+from pagina_conferencia_documentos import pagina_conferencia_documentos
 from pagina_configuracoes import pagina_configuracoes
 from pagina_documentos import pagina_documentos
 from pagina_entrar import pagina_entrar
@@ -46,6 +47,17 @@ _MENU = [
     ("Trajetória", False),
     ("Auditoria", True),
     ("Regras", True),
+]
+# Grupo "RH" do menu (Figma 418:1108 e Design System 314:786), só para RH e Admin.
+_MENU_RH = [
+    "Colaboradores",
+    "Ausências",
+    "Conferência de documentos",
+    "Desligamentos",
+    "Comunicados e FAQ",
+    "Pesquisas de clima",
+    "Ciclos de avaliação",
+    "Pedidos LGPD",
 ]
 
 logado = bool(st.session_state.get("token"))
@@ -112,8 +124,9 @@ PG_MEU_ONBOARDING = st.Page(pagina_meu_onboarding, title="Meu onboarding", url_p
 PG_DOCUMENTOS = st.Page(pagina_documentos, title="Documentos", url_path="documentos")
 PG_CONFIGURACOES = st.Page(pagina_configuracoes, title="Configurações", url_path="configuracoes")
 PG_AVISO = st.Page(pagina_aviso_logado, title="Aviso de privacidade", url_path="aviso-de-privacidade")
+PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de documentos", url_path="conferencia-de-documentos")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO], position="hidden"
+    [PG_INICIO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CONFERENCIA], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -129,7 +142,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Documentos": PG_DOCUMENTOS}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Documentos": PG_DOCUMENTOS, "Conferência de documentos": PG_CONFERENCIA}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
@@ -147,6 +160,15 @@ with st.sidebar:
             if rotulo in _PAGINAS_DO_MENU:
                 st.switch_page(_PAGINAS_DO_MENU[rotulo])
             st.toast(f"A tela {rotulo} ainda está em construção.")
+    if perfil in ("RH", "ADMIN"):
+        st.html('<p class="crh-nav-grupo">RH</p>')
+        for rotulo in _MENU_RH:
+            if rotulo == ativo_no_menu:
+                render_nav_ativo(rotulo)
+            elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
+                if rotulo in _PAGINAS_DO_MENU:
+                    st.switch_page(_PAGINAS_DO_MENU[rotulo])
+                st.toast(f"A tela {rotulo} ainda está em construção.")
 
 pagina_atual.run()
 

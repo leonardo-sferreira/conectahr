@@ -669,6 +669,26 @@ _APP_CSS = f"""
   .crh-doc-prazo {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
   .st-key-doc_pendentes button[kind="tertiary"] p {{ font-size: 13.5px !important; }}
 
+  /* Conferência de documentos do RH (Figma 418:1108): mesma tabela, ações em texto colorido. */
+  .st-key-rh_tabela {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 0; gap: 0; overflow: hidden; }}
+  .st-key-rh_tabela div[class*="st-key-rh_lin"] {{ border-bottom: 1px solid {BORDA}; padding: 12px 18px; gap: 0; }}
+  .st-key-rh_tabela div[class*="st-key-rh_linf_"] {{ background: #FFFBEB; }}
+  .st-key-rh_tabela .st-key-rh_cab {{ background: {MARFIM}; border-bottom: 1px solid {BORDA}; padding: 10px 18px; }}
+  .st-key-rh_tabela button[kind="tertiary"] p {{ font-size: 13.5px !important; }}
+  .st-key-rh_tabela div[class*="st-key-rh_recusar_"] button p {{ color: {ERRO} !important; }}
+  .st-key-rh_tabela div[class*="st-key-rh_arquivar_"] button p {{ color: {GRAFITE} !important; }}
+  .st-key-rh_tabela div[class*="st-key-rh_abrir_"] button p {{ color: {GRAFITE} !important; font-weight: 500 !important; }}
+  .st-key-rh_barra {{ gap: 12px; }}
+  .st-key-rh_barra button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1.1rem; }}
+  .st-key-rh_barra button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .st-key-rh_barra .stSelectbox > div > div {{ background: white !important; border: 1px solid {BORDA} !important; border-radius: 10px; }}
+  .st-key-rh_barra .stSelectbox div:has(> input[role="combobox"]), .st-key-rh_barra .stSelectbox div:has(> div > input[role="combobox"]) {{ background: transparent !important; }}
+  .st-key-rh_barra .stSelectbox div, .st-key-rh_barra .stSelectbox input {{ color: {GRAFITE} !important; }}
+  .crh-campos-direita .v {{ text-align: right; }}
+
+  /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
+  .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}
+
   /* Modais (st.dialog) claros como no Figma (286:1062, 224:2379, 309:1591): o tema base do app é
      escuro por causa da tela Entrar, então cada parte do modal ganha a cor do protótipo. */
   [data-testid="stDialog"] > div {{ background: white !important; border-radius: 20px !important; color: {GRAFITE}; }}
@@ -684,6 +704,14 @@ _APP_CSS = f"""
   }}
   [data-testid="stDialog"] .stSelectbox div:has(> input[role="combobox"]), [data-testid="stDialog"] .stSelectbox div:has(> div > input[role="combobox"]) {{ background: transparent !important; }}
   [data-testid="stDialog"] .stSelectbox [data-testid="stSelectboxVirtualDropdown"], [data-testid="stDialog"] .stSelectbox > div > div {{ background: {MARFIM} !important; color: {GRAFITE} !important; border-radius: 10px; }}
+  [data-testid="stDialog"] [data-testid="stTextAreaRootElement"], [data-testid="stDialog"] [data-testid="stNumberInputContainer"] {{
+    background: {MARFIM} !important; border: 1px solid {BORDA} !important; border-radius: 10px !important;
+  }}
+  [data-testid="stDialog"] [data-testid="stTextAreaRootElement"] > div, [data-testid="stDialog"] [data-testid="stNumberInputContainer"] > div {{ background: transparent !important; }}
+  [data-testid="stDialog"] .stSelectbox > div > div {{ border: 1px solid {BORDA} !important; }}
+  [data-testid="stDialog"] .stDateInput span {{ color: {GRAFITE} !important; }}
+  [data-testid="stDialog"] input, [data-testid="stDialog"] textarea {{ -webkit-text-fill-color: {GRAFITE}; }}
+  [data-testid="stDialog"] input::placeholder, [data-testid="stDialog"] textarea::placeholder {{ color: {GRAFITE_SECUNDARIO}; -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; opacity: 0.8; }}
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {GRAFITE} !important; background: transparent !important; }}
   [data-testid="stDialog"] button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.6rem 1.1rem; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {GRAFITE} !important; font-family: 'Manrope', sans-serif; font-weight: 600; }}
@@ -744,6 +772,14 @@ _ESCURO_CSS = f"""
   .crh-nota-ambar, .crh-aviso-pg .destaque {{ background: {ESC_AMBAR_SUAVE} !important; color: {ESC_TEXTO} !important; }}
   .st-key-doc_pendentes div[class*="st-key-doc_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
   .st-key-doc_pendentes div[class*="st-key-doc_lin"] {{ border-color: {ESC_BORDA}; }}
+  .st-key-rh_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-rh_tabela div[class*="st-key-rh_lin"] {{ border-color: {ESC_BORDA}; }}
+  .st-key-rh_tabela div[class*="st-key-rh_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
+  .st-key-rh_tabela .st-key-rh_cab {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
+  .st-key-rh_tabela div[class*="st-key-rh_arquivar_"] button p, .st-key-rh_tabela div[class*="st-key-rh_abrir_"] button p {{ color: {ESC_TEXTO} !important; }}
+  .st-key-rh_barra button[kind="secondary"], .st-key-rh_barra .stSelectbox > div > div {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-rh_barra button[kind="secondary"] p, .st-key-rh_barra .stSelectbox div, .st-key-rh_barra .stSelectbox input {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] [data-testid="stTextAreaRootElement"], [data-testid="stDialog"] [data-testid="stNumberInputContainer"] {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; }}
   .crh-aviso-pg .selo.n {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; color: {ESC_TEXTO}; }}
   .crh-aviso-pg .selo.a {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
 
@@ -768,7 +804,10 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] [data-baseweb="select"] > div, [data-testid="stDialog"] [data-baseweb="input"], [data-testid="stDialog"] [data-baseweb="textarea"],
   [data-testid="stDialog"] [data-testid="stDateInputField"], [data-testid="stDialog"] [data-testid="stTextInputRootElement"],
   [data-testid="stDialog"] .stSelectbox > div > div {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
-  [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {ESC_TEXTO} !important; -webkit-text-fill-color: {ESC_TEXTO}; }}
+  [data-testid="stDialog"] input::placeholder, [data-testid="stDialog"] textarea::placeholder {{ color: {ESC_TEXTO_2}; -webkit-text-fill-color: {ESC_TEXTO_2}; }}
+  [data-testid="stDialog"] .stSelectbox > div > div {{ border-color: {ESC_BORDA} !important; }}
+  [data-testid="stDialog"] .stDateInput span {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {ESC_TEXTO_2}; color: {ESC_TEXTO_2}; }}

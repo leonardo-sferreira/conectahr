@@ -38,6 +38,12 @@ _CHAVES_SESSAO = (
     "pref_mural",
     "modal_privacidade",
     "modal_documento",
+    # Conferência de documentos do RH.
+    "conferencia_cache",
+    "conferencia_regras_cache",
+    "modal_rh",
+    "rh_link_aberto",
+    "rh_vencidos_resultado",
 )
 
 
