@@ -256,3 +256,14 @@ Evidência em `docs/evidencias/frontend-perfil.md`.
 - **Dados pessoais por solicitação.** Seguem o Figma: só consulta, com mudança por solicitação ao RH. O PATCH de contato e endereço que o backend tem não é usado; a escolha entre os dois caminhos é a tarefa 72.
 - **Sem "Comprovante (opcional)".** O modal não tem esse campo, porque o sistema não recebe arquivo; o RH pede comprovante pela tela Documentos.
 - **Lista de bancos.** É fixa, com os mais comuns (código e nome) e "Outro banco". O backend guarda o texto.
+
+## Ponto (tarefas 19 a 21, 10/10/2026)
+
+Evidência em `docs/evidencias/frontend-ponto.md`.
+
+- **Horário de Brasília.** Os horários vêm em milissegundos UTC e a tela mostra em UTC-3, fixo, porque o Brasil não tem horário de verão desde 2019. Assim não depende do pacote `tzdata` no Windows.
+- **Data do dia.** O backend usa a data em UTC para o registro do dia (tarefa 73). A tela mostra o registro que o `ponto/marcar` vai alterar, e o título usa a data de Brasília.
+- **Ordem das marcações.** É do backend. A tela só destaca a próxima ("Marcar agora") e mostra a recusa como alerta.
+- **Ausência sem anexo.** O modal não tem o anexo do atestado (o sistema não recebe arquivo). O motivo é a lista do backend mais uma observação sem diagnóstico.
+- **Saldo do banco de horas.** É o total calculado pelo backend, não só o do mês.
+- **Aprovação das correções.** Fica para a tela do gestor e do RH (tarefas 20 e 21).
