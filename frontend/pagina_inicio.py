@@ -18,7 +18,9 @@ from datetime import date
 import streamlit as st
 
 from api_client import ApiError, aniversariantes, central_de_tarefas, meu_banco_horas, meus_comunicados
-from theme import render_topbar
+from onboarding_dados import carregar as carregar_onboarding
+from onboarding_modelo import card_inicio
+from theme import render_barra_progresso, render_linhas_onboarding, render_titulo_cartao, render_topbar
 
 _DIAS_SEMANA = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
 _MESES = [
@@ -63,12 +65,44 @@ def _meta_comunicado(comunicado: dict) -> str:
     return " · ".join(partes)
 
 
+def _card_onboarding(token: str, usuario: dict) -> None:
+    """Card "Seu onboarding: N de 13 etapas" no topo do Início enquanto o onboarding não termina
+    (Figma 309:1446). Falha de rede ou ausência de onboarding: o card simplesmente não aparece."""
+    try:
+        dados = carregar_onboarding(token, usuario.get("colaborador_id"), usar_cache=True)
+    except ApiError:
+        return
+    card = card_inicio(dados["itens"], dados["onboarding"], dados["docs"]) if dados else None
+    if not card:
+        return
+    esquerda, direita = st.columns([664, 420], gap="medium")
+    with esquerda:
+        with st.container(key="onb_inicio"):
+            render_titulo_cartao(card["titulo"])
+            render_barra_progresso("Progresso", card["percentual"])
+            render_linhas_onboarding([card["proxima"]])
+            if st.button("Continuar onboarding →", type="primary", key="btn_continuar_onb"):
+                st.session_state.ir_meu_onboarding = True
+                st.rerun()
+    with direita:
+        with st.container(key="onb_pendencias"):
+            render_titulo_cartao("Pendências")
+            if card["pendencias"]:
+                render_linhas_onboarding(
+                    [{"titulo": p["titulo"], "detalhe": p["detalhe"], "badge": p["badge"], "tipo": "amb"} for p in card["pendencias"]]
+                )
+            else:
+                st.html('<p class="crh-meta">Nenhuma pendência de documento.</p>')
+
+
 def pagina_inicio() -> None:
     token = st.session_state.token
     usuario = st.session_state.usuario
     primeiro_nome = usuario["nome"].split()[0]
 
     render_topbar(usuario["nome"])
+    if aviso := st.session_state.pop("aviso_toast", None):
+        st.toast(aviso)
 
     with st.spinner("Carregando..."):
         central = _consultar(central_de_tarefas, token)
@@ -87,6 +121,8 @@ def pagina_inicio() -> None:
         </div>
         """
     )
+
+    _card_onboarding(token, usuario)
 
     lista_aniv = aniv.get("aniversariantes", []) if aniv else []
     pendencias = str(_total_pendencias(central)) if central else "—"

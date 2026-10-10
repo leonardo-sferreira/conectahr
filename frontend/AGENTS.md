@@ -72,8 +72,24 @@ backend; esconder um botão não substitui a regra.
 ## Estrutura
 
 - `app.py`: ponto de entrada; `st.navigation`/`st.Page`, guarda de sessão e sidebar.
-- `pagina_*.py`: uma página por tela (`pagina_entrar.py`, `pagina_inicio.py`…).
+- `sessao.py`: token e prazo em `st.session_state`; o fim de sessão (logout, prazo, 401) volta a "Entrar" com o aviso
+  "Sua sessão terminou". Toda resposta 401 de uma chamada com token marca a sessão como terminada.
+- `pagina_*.py`: uma página por tela (`pagina_entrar.py`, `pagina_onboarding.py`, `pagina_meu_onboarding.py`,
+  `pagina_inicio.py`…).
+- `onboarding_modelo.py` (regras de apresentação, sem Streamlit, testadas em `tools/testar_onboarding.py`) e
+  `onboarding_dados.py` (consultas ao backend, com alguns segundos de cache em `st.session_state` para não
+  passar do limite de requisições do Xano).
 - `theme.py`, `api_client.py`, `validacao.py`, `assets/`.
 
 Uma tela nova entra com: nó do Figma conferido → página → função(ões) no `api_client.py` →
-teste dos 6 estados e do escopo por perfil.
+teste dos 6 estados e do escopo por perfil. O fluxo de entrada tem `python tools/testar_login_f01.py` como modelo
+(AppTest do Streamlit com a API simulada, sem rede).
+
+## Armadilhas do `st.html` e do CSS
+
+- O DOMPurify do Streamlit descarta o bloco inteiro de `style` ou `script` que tenha o caractere `<` seguido de
+  letra, número, `/` ou `!` no texto. No CSS, um SVG em `url(data:...)` vai com `<` e `>` codificados (`%3C`, `%3E`);
+  em JavaScript, evite o operador `<`.
+- O Streamlit 1.64 não usa `data-baseweb` nos campos: o alvo é `[data-testid="stTextInputRootElement"]`. O botão
+  principal de um formulário tem `kind="primaryFormSubmit"` e o link, `kind="tertiaryFormSubmit"`.
+- Regras de link (`kind="tertiary"`) valem só em `[data-testid="stMain"]`, para não pintar o menu lateral.

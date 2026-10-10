@@ -32,6 +32,12 @@ jobs:
           cp .streamlit/secrets.toml.example .streamlit/secrets.toml
           python tools/smoke_frontend.py
 
+      - name: Testes do fluxo de entrada (F01)
+        run: python tools/testar_login_f01.py
+
+      - name: Testes do Onboarding
+        run: python tools/testar_onboarding.py
+
       - name: Procurar segredos no repositorio
         run: |
           if git grep -n -E "xkeysib-[A-Za-z0-9]{20,}|SG\.[A-Za-z0-9_-]{20,}|Bearer eyJ[A-Za-z0-9_-]{20,}" -- . ':!.github'; then

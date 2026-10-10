@@ -44,8 +44,8 @@ Se for preciso uma flag real, o caminho é uma variável de ambiente lida pelo e
 
 ## Roteiro de publicação
 
-1. `python tools/checar_endpoints.py` e `python tools/smoke_frontend.py` passam (rodam também no
-   GitHub, no workflow `Validar`).
+1. `python tools/checar_endpoints.py`, `python tools/smoke_frontend.py`, `python tools/testar_login_f01.py` e
+   `python tools/testar_onboarding.py` passam (rodam também no GitHub, no workflow `Validar`).
 2. Backend: `xano workspace push --dry-run`, conferir a lista, `push`, depois `pull` e diff
    (ver `xano-workspace/AGENTS.md`).
 3. Frontend: merge do Pull Request em `master`; o serviço de hospedagem publica a partir do `master`.

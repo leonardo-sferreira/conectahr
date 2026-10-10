@@ -1,7 +1,7 @@
 # Roteiro de demonstração — ConectaRH
 
-Roteiro para um avaliador reproduzir o fluxo principal. O frontend hoje tem a **tela de entrada** e o
-**início**; as demais telas dependem do protótipo do Figma. Por isso o roteiro usa a tela para entrar
+Roteiro para um avaliador reproduzir o fluxo principal. O frontend hoje tem o **fluxo de entrada** (login, código de acesso, troca da senha temporária e
+Onboarding) e o **início**; as demais telas dependem do protótipo do Figma. Por isso o roteiro usa a tela para entrar
 e a **API** (HTTP) para o resto, e cada passo diz o que esperar. As evidências de cada comportamento
 estão em [`docs/evidencias/`](evidencias/).
 
