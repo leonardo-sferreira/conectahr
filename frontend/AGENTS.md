@@ -83,7 +83,9 @@ backend; esconder um botão não substitui a regra.
 - `documentos_modelo.py` e `privacidade_modelo.py` (regras de apresentação, sem Streamlit) e `aviso_privacidade.py`,
   que lê o texto do aviso de `docs/lgpd/aviso-de-privacidade.md`: o aviso tem uma fonte só, e mudar o texto é mudar
   esse arquivo (e o Figma, para continuarem iguais).
-- `theme.py`, `api_client.py`, `validacao.py`, `assets/`.
+- `theme.py`, `api_client.py`, `validacao.py`, `assets/`. O tema escuro é a camada `_ESCURO_CSS` de `theme.py`, só com
+  troca de cores (tokens do Figma 294:622). Classe nova de CSS precisa da cor escura também, ou o texto some no
+  fundo grafite.
 
 Uma tela nova entra com: nó do Figma conferido → página → função(ões) no `api_client.py` →
 teste dos 6 estados e do escopo por perfil. O fluxo de entrada tem `python tools/testar_login_f01.py` como modelo

@@ -215,6 +215,33 @@ conferir(("logout",) in chamadas and "token" not in at.session_state, "'Sair da 
 conferir("Você saiu da sua conta." in texto(at), "volta a Entrar com o aviso de saída")
 
 # ---------------------------------------------------------------------------
+caso("Tema claro e escuro (menu da conta, Figma 198:158)")
+
+
+def css(at: AppTest) -> str:
+    return " ".join(str(e.value) for e in at.get("html"))
+
+
+at = app_logado("inicio")
+conferir(at.button_group(key="menu_tema").value == "Claro" and "crh-tema-escuro" not in css(at), "sem escolha, o app abre no tema claro")
+at.button_group(key="menu_tema").set_value("Escuro")
+at = at.run()
+conferir(at.session_state["tema"] == "escuro" and "crh-tema-escuro" in css(at), "'Escuro' troca o tema na hora")
+conferir("crh_tema=escuro" in css(at), "a escolha fica num cookie de preferência (só \"claro\" ou \"escuro\")")
+at = abrir(at, "documentos")
+conferir("crh-tema-escuro" in css(at) and "Documentos cadastrais" in texto(at), "o tema vale nas outras telas")
+at.button_group(key="menu_tema").set_value("Claro")
+at = at.run()
+conferir(at.session_state["tema"] == "claro" and "crh-tema-escuro" not in css(at) and "crh_tema=claro" in css(at), "'Claro' volta e grava a nova escolha")
+at = AppTest.from_file(str(APP), default_timeout=30)
+at.session_state["tema"] = "escuro"
+at = at.run()
+conferir("crh-tema-escuro" not in css(at) and "Bem-vindo de volta" in texto(at), "a tela Entrar continua grafite no tema escuro")
+at.button(key="btn_link_aviso").click()
+at = at.run()
+conferir("crh-tema-escuro" in css(at), "o aviso sem login também segue o tema")
+
+# ---------------------------------------------------------------------------
 caso("Configurações → Privacidade: sucesso (Figma 286:878)")
 at = app_logado("configuracoes")
 t = texto(at)

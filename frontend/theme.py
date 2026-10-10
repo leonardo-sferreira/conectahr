@@ -65,7 +65,13 @@ _LOGO_ICON_SVG_BYTES = (_ASSETS_DIR / "logo-icon.svg").read_bytes()
 # "svg") - por isso vira <img> com data URI em vez de <svg> cru.
 _LOGO_ICON_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(_LOGO_ICON_SVG_BYTES).decode("ascii")
 # Sino de notificações da barra superior (asset exportado do nó 62:64).
-_BELL_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode((_ASSETS_DIR / "bell.svg").read_bytes()).decode("ascii")
+_BELL_SVG = (_ASSETS_DIR / "bell.svg").read_text(encoding="utf-8")
+_BELL_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(_BELL_SVG.encode("utf-8")).decode("ascii")
+# Sino no modo escuro (Figma 108:870): caixa #22252C, borda #33363E e traço #F2F2F0.
+_BELL_ESCURO_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(
+    _BELL_SVG.replace('fill="white"', 'fill="#22252C"').replace('stroke="#E4E3DF"', 'stroke="#33363E"')
+    .replace('stroke="#16181D"', 'stroke="#F2F2F0"').replace('stroke="white"', 'stroke="#22252C"').encode("utf-8")
+).decode("ascii")
 
 _BASE_CSS = f"""
 <style>
@@ -74,7 +80,8 @@ _BASE_CSS = f"""
   #MainMenu, header, footer {{visibility: hidden;}}
   /* O bloco que carrega este CSS nao deve ocupar espaco nem gap no layout. */
   div[data-testid="stElementContainer"]:has(#crh-styles-marker),
-  div[data-testid="stElementContainer"]:has(#crh-erro-marker) {{ display: none; }}
+  div[data-testid="stElementContainer"]:has(#crh-erro-marker),
+  div[data-testid="stElementContainer"]:has(#crh-tema-marker) {{ display: none; }}
 
   .crh-header {{
     display: flex;
@@ -596,6 +603,13 @@ _APP_CSS = f"""
   .crh-menu-conta .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-btn_menu_config button p {{ color: {GRAFITE} !important; font-size: 15px !important; font-weight: 500 !important; }}
   .st-key-btn_menu_sair button p {{ color: {ERRO} !important; font-size: 15px !important; font-weight: 500 !important; }}
+  .st-key-menu_tema_linha {{ justify-content: space-between; padding: 6px 0; border-top: 1px solid {BORDA}; border-bottom: 1px solid {BORDA}; }}
+  .crh-menu-tema {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 15px; color: {GRAFITE}; }}
+  .st-key-menu_tema [data-testid="stButtonGroup"] {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 8px; padding: 3px; }}
+  .st-key-menu_tema button {{ border: none !important; background: transparent; border-radius: 6px !important; padding: 2px 10px; min-height: 0; }}
+  .st-key-menu_tema button p {{ font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-menu_tema button[aria-checked="true"] {{ background: {AMBAR} !important; }}
+  .st-key-menu_tema button[aria-checked="true"] p {{ color: {GRAFITE} !important; }}
   .crh-menu-sub {{ margin: -6px 0 0 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
 
   /* Título de página sem faixa grafite (Configurações 286:878, aviso logado 285:1073). */
@@ -685,6 +699,125 @@ _APP_CSS = f"""
 """
 
 
+# ---------------------------------------------------------------------------
+# Modo escuro (tarefa 63 da change concluir-frontend-streamlit). Tokens do Design System
+# "Modo escuro e componentes" (Figma 294:622): card, modal e campo claro #FFFFFF -> #22252C;
+# fundo e campo #FAF9F6 -> #16181D; borda #E4E3DF -> #33363E; texto #16181D -> #F2F2F0;
+# secundário #4B5563 -> #A3A3AA; cinza neutro #F3F3F1 -> #2B2E36. Botão âmbar, selos pastel e
+# sidebar não mudam. É uma camada por cima do CSS claro: só troca cores.
+# ---------------------------------------------------------------------------
+ESC_FUNDO = "#16181D"
+ESC_CARTAO = "#22252C"
+ESC_BORDA = "#33363E"
+ESC_TEXTO = "#F2F2F0"
+ESC_TEXTO_2 = "#A3A3AA"
+ESC_NEUTRO = "#2B2E36"
+ESC_AMBAR_SUAVE = "#2A2417"
+
+_ESCURO_CSS = f"""
+<style>
+  /* crh-tema-escuro */
+  .stApp {{ background: {ESC_FUNDO} !important; }}
+  /* Faixa do título: no escuro ela some no fundo (Figma 108:870). */
+  .crh-hero {{ background: transparent; padding-left: 0; padding-right: 0; }}
+  .crh-painel, .st-key-onb_voce, .st-key-onb_rh, .st-key-onb_gestor, .st-key-onb_inicio, .st-key-onb_pendencias,
+  div[class*="st-key-cfg_card_"], .st-key-doc_lista, .st-key-doc_pendentes, .crh-aviso-pg .bloco {{
+    background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; box-shadow: none;
+  }}
+  .crh-stat .crh-stat-rotulo, .crh-meta, .crh-card-h .s, .crh-linha-onb .d, .crh-titulo-pagina .s, .crh-cfg-texto,
+  .crh-cfg-nota, .crh-menu-sub, .crh-menu-conta .s, .crh-campos .r, .crh-doc-cab, .crh-doc-cel .d, .crh-trilha-texto .s,
+  .crh-barra .topo span:last-child, .crh-incluso ul, .crh-incluso .n, .crh-aviso-pg p, .crh-aviso-pg li, .crh-aviso-pg td,
+  .crh-aviso-pg th, .crh-aviso-pg .cab .s, .crh-onb-resumo {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-stat .crh-stat-valor:not(.verde):not(.ambar):not(.azul):not(.positivo):not(.negativo), .crh-bloco-titulo,
+  .crh-comunicado .crh-com-titulo, .crh-aniv .crh-aniv-nome, .crh-faq .crh-faq-titulo, .crh-card-h .t, .crh-linha-onb .t,
+  .crh-barra .topo, .crh-titulo-pagina .t, .crh-cfg-titulo, .crh-campos .v, .crh-doc-cel .t, .crh-doc-prazo,
+  .crh-menu-conta .t, .crh-trilha-texto .t, .crh-incluso .t, .crh-aviso-pg h2, .crh-aviso-pg strong,
+  .crh-aviso-pg .cab .t, .crh-aviso-pg td:first-child, .crh-aviso-pg .campos .v, .crh-chip .crh-nome {{ color: {ESC_TEXTO} !important; }}
+  .crh-comunicado, .crh-linha-onb, .crh-aviso-pg td, .crh-aviso-pg th {{ border-color: {ESC_BORDA} !important; }}
+  .crh-linha-onb {{ background: transparent; }}
+  .crh-doc-item .crh-linha-onb {{ background: {ESC_CARTAO}; }}
+  .crh-campos, .crh-incluso, .crh-onb-resumo, .crh-aviso-pg .campos, .crh-aviso-pg th, .st-key-doc_pendentes .st-key-doc_cab {{
+    background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important;
+  }}
+  .crh-barra .trilho, .crh-doc-item .ponto .l, .crh-trilha-ponto .l {{ background: {ESC_BORDA}; }}
+  .crh-selo.neu {{ background: {ESC_NEUTRO}; color: {ESC_TEXTO_2}; }}
+  .crh-nota-ambar, .crh-aviso-pg .destaque {{ background: {ESC_AMBAR_SUAVE} !important; color: {ESC_TEXTO} !important; }}
+  .st-key-doc_pendentes div[class*="st-key-doc_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
+  .st-key-doc_pendentes div[class*="st-key-doc_lin"] {{ border-color: {ESC_BORDA}; }}
+  .crh-aviso-pg .selo.n {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; color: {ESC_TEXTO}; }}
+  .crh-aviso-pg .selo.a {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
+
+  /* Barra superior, menu da conta e abas (o sino escuro é outro SVG, ver render_topbar). */
+  .st-key-crh_topbar [data-testid="stPopover"] button {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-crh_topbar [data-testid="stPopover"] button p {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stPopoverBody"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .crh-menu-conta {{ border-color: {ESC_BORDA}; }}
+  .st-key-btn_menu_config button p, .crh-menu-tema {{ color: {ESC_TEXTO} !important; }}
+  .st-key-menu_tema_linha {{ border-color: {ESC_BORDA}; }}
+  .st-key-cfg_abas [data-testid="stButtonGroup"], .st-key-menu_tema [data-testid="stButtonGroup"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
+  .st-key-cfg_abas button p, .st-key-menu_tema button p {{ color: {ESC_TEXTO_2}; }}
+  .st-key-pref_aniversario [data-testid="stWidgetLabel"] p, .st-key-pref_mural [data-testid="stWidgetLabel"] p {{ color: {ESC_TEXTO} !important; }}
+  div[class*="st-key-cfg_card_"] button[kind="secondary"], .st-key-btn_aviso_voltar button {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  div[class*="st-key-cfg_card_"] button[kind="secondary"] p, .st-key-btn_aviso_voltar button p {{ color: {ESC_TEXTO} !important; }}
+
+  /* Modais. */
+  [data-testid="stDialog"] > div {{ background: {ESC_CARTAO} !important; color: {ESC_TEXTO}; }}
+  [data-testid="stDialog"] h2, [data-testid="stDialog"] h2 span {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] [data-testid="stWidgetLabel"] p, [data-testid="stDialog"] label p {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] [data-testid="stCaptionContainer"] p {{ color: {ESC_TEXTO_2} !important; }}
+  [data-testid="stDialog"] [data-baseweb="select"] > div, [data-testid="stDialog"] [data-baseweb="input"], [data-testid="stDialog"] [data-baseweb="textarea"],
+  [data-testid="stDialog"] [data-testid="stDateInputField"], [data-testid="stDialog"] [data-testid="stTextInputRootElement"],
+  [data-testid="stDialog"] .stSelectbox > div > div {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  [data-testid="stDialog"] button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {ESC_TEXTO_2}; color: {ESC_TEXTO_2}; }}
+</style>
+"""
+
+# Aviso sem login no escuro: fundo grafite em vez de marfim (Figma 292:1001).
+_AVISO_ESCURO_CSS = f"""
+<style>
+  .stApp {{ background: {ESC_FUNDO} !important; }}
+  .st-key-aviso_faixa {{ border-bottom: 1px solid {ESC_BORDA}; }}
+</style>
+"""
+
+TEMAS = ("claro", "escuro")
+_COOKIE_TEMA = "crh_tema"
+
+
+def tema_atual() -> str:
+    """"claro" ou "escuro": a escolha desta sessão; senão a guardada no navegador (cookie de
+    preferência, sem dado pessoal); senão claro."""
+    tema = st.session_state.get("tema")
+    if tema in TEMAS:
+        return tema
+    try:
+        tema = st.context.cookies.get(_COOKIE_TEMA)
+    except Exception:  # fora de um navegador (AppTest)
+        tema = None
+    return tema if tema in TEMAS else "claro"
+
+
+def _guardar_tema_no_navegador(tema: str) -> None:
+    """Grava a preferência num cookie de 1 ano, para o próximo acesso abrir no mesmo tema. O valor
+    é sempre "claro" ou "escuro" (nunca texto do usuário)."""
+    valor = "escuro" if tema == "escuro" else "claro"
+    st.html(
+        '<div id="crh-tema-marker" style="display:none"></div>'
+        f"<script>document.cookie='{_COOKIE_TEMA}={valor}; path=/; max-age=31536000; SameSite=Lax';</script>",
+        unsafe_allow_javascript=True,
+    )
+
+
+def _trocar_tema() -> None:
+    """Callback do seletor do menu da conta."""
+    escolha = st.session_state.get("menu_tema")
+    st.session_state.tema = "escuro" if escolha == "Escuro" else "claro"
+    st.session_state.tema_gravar = True
+
+
 def inject_base_styles(area: str = "auth") -> None:
     """Injeta o CSS comum mais o da área ("auth" = login/OTP, "app" = telas logadas)."""
     # Dois problemas empilhados, achados inspecionando o bundle JS do
@@ -705,10 +838,15 @@ def inject_base_styles(area: str = "auth") -> None:
     #    precisamos de JS de verdade aqui, so desse efeito colateral da
     #    flag para o CSS sobreviver.
     area_css = {"app": _APP_CSS, "aviso": _AVISO_CSS}.get(area, _AUTH_CSS)
+    # O tema escuro vale para a área logada e para o aviso; a tela Entrar já é grafite.
+    if tema_atual() == "escuro" and area in ("app", "aviso"):
+        area_css += _ESCURO_CSS + (_AVISO_ESCURO_CSS if area == "aviso" else "")
     st.html(
         '<div id="crh-styles-marker" style="display:none"></div>' + _BASE_CSS + area_css,
         unsafe_allow_javascript=True,
     )
+    if st.session_state.pop("tema_gravar", False):
+        _guardar_tema_no_navegador(tema_atual())
 
 
 def render_header(subtitle: str) -> None:
@@ -771,7 +909,8 @@ def render_topbar(nome: str) -> None:
     usuario = st.session_state.get("usuario") or {}
     perfil = _PERFIS.get(str(usuario.get("perfil", "")).upper(), str(usuario.get("perfil", "")).title())
     with st.container(horizontal=True, key="crh_topbar"):
-        st.html(f'<img src="{_BELL_DATA_URI}" alt="Notificações" class="crh-bell" style="width:40px;height:40px" />', width="content")
+        sino = _BELL_ESCURO_DATA_URI if tema_atual() == "escuro" else _BELL_DATA_URI
+        st.html(f'<img src="{sino}" alt="Notificações" class="crh-bell" style="width:40px;height:40px" />', width="content")
         with st.popover(nome, key="menu_conta"):
             st.html(
                 f"""
@@ -785,6 +924,17 @@ def render_topbar(nome: str) -> None:
                 st.session_state.ir_configuracoes = True
                 st.rerun()
             st.html('<p class="crh-menu-sub">Senha, sessões e notificações</p>')
+            with st.container(horizontal=True, vertical_alignment="center", key="menu_tema_linha"):
+                st.html('<p class="crh-menu-tema">Tema</p>', width="content")
+                st.segmented_control(
+                    "Tema",
+                    ["Claro", "Escuro"],
+                    default="Escuro" if tema_atual() == "escuro" else "Claro",
+                    required=True,
+                    key="menu_tema",
+                    on_change=_trocar_tema,
+                    label_visibility="collapsed",
+                )
             if st.button("Sair da conta", type="tertiary", key="btn_menu_sair"):
                 st.session_state.sair_da_conta = True
                 st.rerun()

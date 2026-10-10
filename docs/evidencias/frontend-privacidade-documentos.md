@@ -24,13 +24,13 @@ As regras de apresentação ficam em módulos sem Streamlit:
 ## Como repetir
 
 ```
-python tools/testar_privacidade_documentos.py   # 75 verificações
+python tools/testar_privacidade_documentos.py   # 82 verificações (75 destas telas e 7 do tema, ver frontend-tema-escuro.md)
 python tools/testar_login_f01.py                # 52 verificações
 python tools/testar_onboarding.py               # 45 verificações
 ```
 
 Rodam sem rede, com uma API simulada (dados fictícios), e também no workflow `Validar`.
-**Resultado em 10/10/2026: 75 de 75, 52 de 52 e 45 de 45.**
+**Resultado em 10/10/2026: 82 de 82, 52 de 52 e 45 de 45.**
 
 ## O que os testes conferem
 
