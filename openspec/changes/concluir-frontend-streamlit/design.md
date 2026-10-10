@@ -247,3 +247,12 @@ A tela foi construída a partir da seção 18. Evidência em `docs/evidencias/fr
 - **"Pedido por"** mostra "Você" ou "RH". O nome de quem pediu exigiria `usuarios`, que devolve o e-mail de todos (minimização).
 - **"Nova regra"** separa "Vale para" (contrato e cargo) e "Guardar por" (anos e evento), porque são campos separados no backend.
 - **Grupo "RH" no menu** (Design System 314:786). Só "Conferência de documentos" está construída; os outros itens do grupo mostram "em construção". Os grupos completos por perfil continuam na tarefa 65.
+
+## Meu Perfil (tarefas 14 a 16, 10/10/2026)
+
+Evidência em `docs/evidencias/frontend-perfil.md`.
+
+- **Só dados próprios.** A tela usa apenas endpoints sem id (`meu_perfil_colaborador`, `meus_dados_bancarios`, `solicitacoes`). Cada pessoa vê e altera só os próprios dados, inclusive o Gestor. O organograma mostra só nome, cargo e departamento dos colegas. O salário, que vem no registro do colaborador, não aparece.
+- **Dados pessoais por solicitação.** Seguem o Figma: só consulta, com mudança por solicitação ao RH. O PATCH de contato e endereço que o backend tem não é usado; a escolha entre os dois caminhos é a tarefa 72.
+- **Sem "Comprovante (opcional)".** O modal não tem esse campo, porque o sistema não recebe arquivo; o RH pede comprovante pela tela Documentos.
+- **Lista de bancos.** É fixa, com os mais comuns (código e nome) e "Outro banco". O backend guarda o texto.

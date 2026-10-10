@@ -44,6 +44,9 @@ _CHAVES_SESSAO = (
     "modal_rh",
     "rh_link_aberto",
     "rh_vencidos_resultado",
+    # Perfil (dados pessoais e bancários da própria pessoa).
+    "perfil_cache",
+    "modal_perfil",
 )
 
 

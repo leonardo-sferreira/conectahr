@@ -351,3 +351,23 @@ def arquivar_documento(token: str, documento_id: int, observacao: str | None = N
 def processar_vencimentos(token: str) -> dict:
     """POST documentos/processar_vencimentos -> {total_vencidos, total_alertas}. Idempotente no mesmo dia."""
     return _post("documentos/processar_vencimentos", {}, token, GRUPO_DOCUMENTOS)
+
+
+# ---------------------------------------------------------------------------
+# Perfil (tarefas 14 a 16). Nada aqui recebe id: tudo é do próprio usuário do token.
+# ---------------------------------------------------------------------------
+def salvar_dados_bancarios(token: str, banco: str, agencia: str, conta: str, digito: str, tipo_conta: str) -> dict:
+    """PATCH meus_dados_bancarios: só o próprio colaborador edita; a alteração vai para a auditoria com a
+    conta mascarada. `tipo_conta`: "corrente" ou "poupanca"."""
+    return _request(
+        "PATCH",
+        "meus_dados_bancarios",
+        token,
+        GRUPO_COLABORADORES,
+        {"banco": banco, "agencia": agencia, "conta": conta, "digito": digito, "tipo_conta": tipo_conta},
+    )
+
+
+def solicitar_alteracao_cadastral(token: str, descricao: str) -> dict:
+    """POST solicitacoes com tipo alteracao_cadastral: o RH confere e aplica no cadastro."""
+    return _post("solicitacoes", {"tipo": "alteracao_cadastral", "descricao": descricao}, token, GRUPO_COLABORADORES)
