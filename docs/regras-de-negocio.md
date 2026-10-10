@@ -232,6 +232,8 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 ### 5.2 Regras de validação
 
 - Férias — criação: `data_inicio`, `data_fim`, `quantidade_dias` (1-30); exige colaborador `ATIVO` e senha já trocada; `data_fim >= data_inicio`; bloqueia se já existir solicitação `Pendente` do mesmo colaborador (`xano-workspace/api/conecta_rh_ferias/ferias/solicitacoes_POST.xs`).
+- Férias — criação aceita também `observacao` (opcional, até 500), gravada em `observacao_colaborador` (desde 10/10/2026).
+- Férias — situação para o colaborador (`minha_situacao_ferias` GET, desde 10/10/2026): devolve, só para leitura, os números que a criação confere (limite de dias por pedido, períodos usados e máximo, mínimo do próximo período, antecedência mínima, pedido pendente). **Não há saldo de férias:** a criação não desconta os dias já tirados (tarefa 74 da change `concluir-frontend-streamlit`) (`xano-workspace/api/conecta_rh_ferias/minha_situacao_ferias_GET.xs`).
 - Férias — edição: só o dono, só enquanto `Pendente`, `data_fim >= data_inicio` (`xano-workspace/api/conecta_rh_ferias/ferias/id_PATCH.xs`).
 - Ausência — criação: `tipo` validado contra os 5 valores exatos; `motivo_tipo` escolhido da lista fechada (sem texto livre) e `observacao` sem código CID (recusa `J11`, `F32.1` e semelhantes, com a mensagem "O diagnóstico fica somente no atestado"); `data_fim >= data_inicio`; `comprovante` opcional, salvo como `private`; exige colaborador `ATIVO` (`xano-workspace/api/conecta_rh_ausencias/ausencias_POST.xs`).
 - Ausência — edição: mesmas validações; só dono, só enquanto `Pendente` (`xano-workspace/api/conecta_rh_ausencias/ausencias/id_PATCH.xs`).

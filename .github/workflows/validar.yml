@@ -53,6 +53,9 @@ jobs:
       - name: Testes do Ponto
         run: python tools/testar_ponto.py
 
+      - name: Testes de Férias
+        run: python tools/testar_ferias.py
+
       - name: Procurar segredos no repositorio
         run: |
           if git grep -n -E "xkeysib-[A-Za-z0-9]{20,}|SG\.[A-Za-z0-9_-]{20,}|Bearer eyJ[A-Za-z0-9_-]{20,}" -- . ':!.github'; then

@@ -225,6 +225,8 @@ _BASE_CSS = f"""
   .stButton button[kind="primary"]:hover, .stFormSubmitButton button[kind="primaryFormSubmit"]:hover {{
     background: {AMBAR_ESCURO};
   }}
+  /* Botão desligado: mais claro e sem o cursor de clique (a cor sozinha não basta, então também a opacidade). */
+  .stButton button:disabled {{ opacity: 0.45; cursor: not-allowed; }}
   .stButton button:focus-visible, .stFormSubmitButton button:focus-visible {{
     outline: 2px solid {AMBAR};
     outline-offset: 2px;
@@ -749,6 +751,25 @@ _APP_CSS = f"""
   .crh-ponto-status.err {{ color: {ERRO}; }}
   .crh-ponto-status.azul {{ color: #2663D9; }}
 
+  /* Férias (Figma 40:22): cartões no topo e histórico com linha do tempo. */
+  .st-key-ferias_topo {{ gap: 16px; }}
+  .st-key-ferias_topo .crh-painel.crh-stat {{ display: inline-flex; width: calc(50% - 8px); vertical-align: top; }}
+  .st-key-ferias_topo .stHtml {{ flex: 1 1 auto; }}
+  .st-key-ferias_topo .stHtml > div {{ display: flex; gap: 16px; }}
+  .st-key-ferias_topo button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.7rem 1.4rem; }}
+  .st-key-ferias_topo button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .st-key-ferias_topo button[kind="primary"] {{ width: auto; padding: 0.7rem 1.4rem; }}
+  .st-key-ferias_historico {{ gap: 8px; }}
+  div[class*="st-key-ferias_lin_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; gap: 14px; }}
+  div[class*="st-key-ferias_lin_"] button[kind="tertiary"] p {{ color: {ERRO} !important; font-size: 13px !important; }}
+  .crh-fe-item {{ display: flex; gap: 14px; align-items: center; }}
+  .crh-fe-item .p {{ width: 10px; height: 10px; border-radius: 999px; background: {CINZA_CLARO}; flex-shrink: 0; }}
+  .crh-fe-item .p.ok {{ background: {SUCESSO}; }}
+  .crh-fe-item .p.amb {{ background: {AMBAR}; }}
+  .crh-fe-item .p.err {{ background: {ERRO}; }}
+  .crh-fe-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
+  .crh-fe-item .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+
   /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
   .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}
 
@@ -844,6 +865,11 @@ _ESCURO_CSS = f"""
   .st-key-rh_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   div[class*="st-key-perfil_card_"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA}; }}
   .st-key-ponto_card_hoje, .st-key-ponto_card_saldo, .st-key-ponto_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  div[class*="st-key-ferias_lin_"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-fe-item .t {{ color: {ESC_TEXTO}; }}
+  .crh-fe-item .d {{ color: {ESC_TEXTO_2}; }}
+  .st-key-ferias_topo button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-ferias_topo button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   div[class*="st-key-ponto_box_proximo_"], div[class*="st-key-ponto_box_futuro_"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
   div[class*="st-key-ponto_box_feito_"] {{ background: #12301F; }}
   div[class*="st-key-ponto_box_feito_"] .crh-ponto-rotulo, div[class*="st-key-ponto_box_feito_"] .crh-ponto-hora, div[class*="st-key-ponto_box_feito_"] button[kind="tertiary"] p {{ color: #4ADE80 !important; }}

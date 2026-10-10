@@ -50,6 +50,9 @@ _CHAVES_SESSAO = (
     # Ponto.
     "ponto_cache",
     "modal_ponto",
+    # Férias.
+    "ferias_cache",
+    "modal_ferias",
 )
 
 

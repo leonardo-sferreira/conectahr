@@ -65,6 +65,7 @@ GRUPO_DEPARTAMENTOS = "wcbcMmlw"
 GRUPO_DOCUMENTOS = "DzPbmWVZ"
 GRUPO_PONTO = "4PXzu46t"
 GRUPO_AUSENCIAS = "x-LkEdmU"
+GRUPO_FERIAS = "AI-dSGch"
 
 
 def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
@@ -416,3 +417,31 @@ def registrar_ausencia(token: str, tipo: str, data_inicio: str, data_fim: str, m
     if observacao:
         corpo["observacao"] = observacao
     return _post("ausencias", corpo, token, GRUPO_AUSENCIAS)
+
+
+# ---------------------------------------------------------------------------
+# Férias (tarefas 22 a 25). Tudo do próprio colaborador, pelo token.
+# ---------------------------------------------------------------------------
+def minhas_ferias(token: str) -> dict:
+    """GET minhas_ferias -> {quantidade, ferias} do próprio colaborador, do início mais recente ao mais antigo."""
+    return _get("minhas_ferias", token, GRUPO_FERIAS)
+
+
+def minha_situacao_ferias(token: str) -> dict:
+    """GET minha_situacao_ferias -> os números que o pedido de férias confere: limite de dias por pedido,
+    períodos usados e máximo, mínimo do próximo período, antecedência mínima e se há pedido pendente.
+    Não é saldo: o backend ainda não desconta os dias já tirados (tarefa 74)."""
+    return _get("minha_situacao_ferias", token, GRUPO_FERIAS)
+
+
+def solicitar_ferias(token: str, data_inicio: str, data_fim: str, quantidade_dias: int, observacao: str | None) -> dict:
+    """POST ferias/solicitacoes -> {solicitacao}. Quem decide é o gestor ou o RH."""
+    corpo = {"data_inicio": data_inicio, "data_fim": data_fim, "quantidade_dias": int(quantidade_dias)}
+    if observacao:
+        corpo["observacao"] = observacao
+    return _post("ferias/solicitacoes", corpo, token, GRUPO_FERIAS)
+
+
+def cancelar_ferias(token: str, ferias_id: int) -> dict:
+    """POST ferias/{id}/cancelar: só a própria pessoa e só pedido pendente (o backend confere)."""
+    return _post(f"ferias/{int(ferias_id)}/cancelar", {}, token, GRUPO_FERIAS)
