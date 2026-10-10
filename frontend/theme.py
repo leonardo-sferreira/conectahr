@@ -75,7 +75,14 @@ _BELL_ESCURO_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(
 
 _BASE_CSS = f"""
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Manrope:wght@400;500;600&display=swap');
+  /* Fontes servidas pelo próprio app (frontend/static/fonts, licença OFL), e não pelo Google Fonts:
+     assim o navegador de quem usa não manda o IP ao Google (tarefa 4, LGPD). O caminho é relativo à
+     página e precisa de server.enableStaticServing = true em .streamlit/config.toml. */
+  @font-face {{ font-family: 'Sora'; font-style: normal; font-weight: 600; font-display: swap; src: url('app/static/fonts/sora-600.woff2') format('woff2'); }}
+  @font-face {{ font-family: 'Sora'; font-style: normal; font-weight: 800; font-display: swap; src: url('app/static/fonts/sora-800.woff2') format('woff2'); }}
+  @font-face {{ font-family: 'Manrope'; font-style: normal; font-weight: 400; font-display: swap; src: url('app/static/fonts/manrope-400.woff2') format('woff2'); }}
+  @font-face {{ font-family: 'Manrope'; font-style: normal; font-weight: 500; font-display: swap; src: url('app/static/fonts/manrope-500.woff2') format('woff2'); }}
+  @font-face {{ font-family: 'Manrope'; font-style: normal; font-weight: 600; font-display: swap; src: url('app/static/fonts/manrope-600.woff2') format('woff2'); }}
 
   #MainMenu, header, footer {{visibility: hidden;}}
   /* O bloco que carrega este CSS nao deve ocupar espaco nem gap no layout. */
