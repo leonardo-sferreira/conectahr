@@ -64,6 +64,7 @@ GRUPO_COLABORADORES = "ySciQ2YN"
 GRUPO_DEPARTAMENTOS = "wcbcMmlw"
 GRUPO_DOCUMENTOS = "DzPbmWVZ"
 GRUPO_PONTO = "4PXzu46t"
+GRUPO_AUSENCIAS = "x-LkEdmU"
 
 
 def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
@@ -371,3 +372,47 @@ def salvar_dados_bancarios(token: str, banco: str, agencia: str, conta: str, dig
 def solicitar_alteracao_cadastral(token: str, descricao: str) -> dict:
     """POST solicitacoes com tipo alteracao_cadastral: o RH confere e aplica no cadastro."""
     return _post("solicitacoes", {"tipo": "alteracao_cadastral", "descricao": descricao}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Ponto e ausências (tarefas 19 a 21). Nada aqui recebe id de colaborador: o backend usa o token.
+# ---------------------------------------------------------------------------
+def meu_ponto(token: str) -> dict:
+    """GET meu_ponto -> {quantidade, registros} do próprio colaborador, do mais recente para o mais antigo."""
+    return _get("meu_ponto", token, GRUPO_PONTO)
+
+
+def marcar_ponto(token: str) -> dict:
+    """POST ponto/marcar: registra o próximo marcador do dia, na ordem entrada -> início do intervalo ->
+    fim do intervalo -> saída. O backend decide qual é o próximo e recusa fora de ordem."""
+    return _post("ponto/marcar", {}, token, GRUPO_PONTO)
+
+
+def minhas_correcoes_ponto(token: str) -> dict:
+    """GET minhas_correcoes_ponto -> {correcoes} do próprio colaborador."""
+    return _get("minhas_correcoes_ponto", token, GRUPO_PONTO)
+
+
+def solicitar_correcao_ponto(token: str, registro_id: int, campo: str, valor_solicitado_ms: int, justificativa: str) -> dict:
+    """POST ponto/{id}/solicitar_correcao. `campo`: hora_entrada, inicio_intervalo, fim_intervalo ou hora_saida;
+    `valor_solicitado_ms`: o horário correto em milissegundos desde 1970 (UTC). Quem decide é o gestor ou o RH."""
+    return _post(
+        f"ponto/{int(registro_id)}/solicitar_correcao",
+        {"campo": campo, "valor_solicitado": int(valor_solicitado_ms), "justificativa": justificativa},
+        token,
+        GRUPO_PONTO,
+    )
+
+
+def minhas_ausencias(token: str) -> dict:
+    """GET minhas_ausencias -> {quantidade, ausencias} do próprio colaborador."""
+    return _get("minhas_ausencias", token, GRUPO_AUSENCIAS)
+
+
+def registrar_ausencia(token: str, tipo: str, data_inicio: str, data_fim: str, motivo_tipo: str, observacao: str | None) -> dict:
+    """POST ausencias -> {ausencia}. `tipo`: Falta, Atestado, Afastamento, Licenca ou Outro; `motivo_tipo`:
+    consulta, doenca, acompanhamento_familiar ou outro. Sem comprovante: o sistema não recebe arquivo."""
+    corpo = {"tipo": tipo, "data_inicio": data_inicio, "data_fim": data_fim, "motivo_tipo": motivo_tipo}
+    if observacao:
+        corpo["observacao"] = observacao
+    return _post("ausencias", corpo, token, GRUPO_AUSENCIAS)

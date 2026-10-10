@@ -47,6 +47,9 @@ _CHAVES_SESSAO = (
     # Perfil (dados pessoais e bancários da própria pessoa).
     "perfil_cache",
     "modal_perfil",
+    # Ponto.
+    "ponto_cache",
+    "modal_ponto",
 )
 
 

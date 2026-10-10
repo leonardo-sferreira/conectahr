@@ -718,6 +718,37 @@ _APP_CSS = f"""
   .crh-org-pessoa .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; }}
   .crh-org-pessoa .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; }}
 
+  /* Ponto (Figma 39:18): caixas do dia, saldo, aviso e espelho da semana. */
+  .st-key-ponto_card_hoje, .st-key-ponto_card_saldo {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 22px 24px; gap: 14px; }}
+  div[class*="st-key-ponto_box_"] {{ border-radius: 12px; padding: 18px 12px; gap: 6px; align-items: center; text-align: center; min-height: 108px; }}
+  div[class*="st-key-ponto_box_feito_"] {{ background: #DCFCE7; }}
+  div[class*="st-key-ponto_box_proximo_"], div[class*="st-key-ponto_box_futuro_"] {{ background: {MARFIM}; border: 1px solid {BORDA}; }}
+  div[class*="st-key-ponto_box_"] .stButton {{ display: flex; justify-content: center; }}
+  div[class*="st-key-ponto_box_"] button[kind="primary"] {{ width: auto; padding: 0.35rem 0.9rem; }}
+  div[class*="st-key-ponto_box_"] button[kind="primary"] p {{ font-size: 12.5px !important; }}
+  div[class*="st-key-ponto_box_feito_"] button[kind="tertiary"] p {{ color: {SUCESSO} !important; font-weight: 500 !important; }}
+  .crh-ponto-rotulo {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; }}
+  div[class*="st-key-ponto_box_feito_"] .crh-ponto-rotulo, div[class*="st-key-ponto_box_feito_"] .crh-ponto-hora {{ color: {SUCESSO}; }}
+  .crh-ponto-hora {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: {GRAFITE}; }}
+  .crh-ponto-saldo {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 24px; color: {GRAFITE}; }}
+  .crh-ponto-saldo.positivo {{ color: {SUCESSO}; }}
+  .crh-ponto-saldo.negativo {{ color: {ERRO}; }}
+  .crh-ponto-aviso {{ margin: 0; background: {AMBAR_BG}; border-radius: 8px; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: #B45309; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1.1rem; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .st-key-ponto_tabela {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 0; gap: 0; overflow: hidden; }}
+  .st-key-ponto_tabela div[class*="st-key-ponto_lin"] {{ border-bottom: 1px solid {BORDA}; padding: 10px 18px; gap: 0; }}
+  .st-key-ponto_tabela div[class*="st-key-ponto_lina_"] {{ background: #EEF4FF; }}
+  .st-key-ponto_tabela .st-key-ponto_cab {{ background: {MARFIM}; border-bottom: 1px solid {BORDA}; padding: 10px 18px; }}
+  .st-key-ponto_tabela button[kind="tertiary"] p {{ font-size: 13px !important; }}
+  .crh-ponto-marca {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-ponto-trab {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .crh-ponto-status {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 12.5px; letter-spacing: 0.02em; }}
+  .crh-ponto-status.ok {{ color: {SUCESSO}; }}
+  .crh-ponto-status.amb {{ color: {AMBAR_ESCURO}; }}
+  .crh-ponto-status.err {{ color: {ERRO}; }}
+  .crh-ponto-status.azul {{ color: #2663D9; }}
+
   /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
   .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}
 
@@ -743,6 +774,11 @@ _APP_CSS = f"""
   [data-testid="stDialog"] .stSelectbox > div > div {{ border: 1px solid {BORDA} !important; }}
   [data-testid="stDialog"] .stDateInput span {{ color: {GRAFITE} !important; }}
   [data-testid="stDialog"] input:disabled {{ -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; color: {GRAFITE_SECUNDARIO} !important; opacity: 1; cursor: default; }}
+  [data-testid="stDialog"] [data-testid="stTimeInputTimeDisplay"] {{ background: {MARFIM} !important; border: 1px solid {BORDA}; border-radius: 10px; color: {GRAFITE} !important; }}
+  [data-testid="stDialog"] [data-testid="stTimeInputTimeDisplay"] * {{ color: {GRAFITE} !important; }}
+  /* Bolinha do radio não marcado: anel cinza e miolo branco (o tema base escuro a pinta de preto). */
+  [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:has(> div:empty) {{ background: #C9C7C1 !important; }}
+  [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:empty {{ background: white !important; }}
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea {{ -webkit-text-fill-color: {GRAFITE}; }}
   [data-testid="stDialog"] input::placeholder, [data-testid="stDialog"] textarea::placeholder {{ color: {GRAFITE_SECUNDARIO}; -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; opacity: 0.8; }}
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {GRAFITE} !important; background: transparent !important; }}
@@ -807,6 +843,18 @@ _ESCURO_CSS = f"""
   .st-key-doc_pendentes div[class*="st-key-doc_lin"] {{ border-color: {ESC_BORDA}; }}
   .st-key-rh_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   div[class*="st-key-perfil_card_"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA}; }}
+  .st-key-ponto_card_hoje, .st-key-ponto_card_saldo, .st-key-ponto_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  div[class*="st-key-ponto_box_proximo_"], div[class*="st-key-ponto_box_futuro_"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
+  div[class*="st-key-ponto_box_feito_"] {{ background: #12301F; }}
+  div[class*="st-key-ponto_box_feito_"] .crh-ponto-rotulo, div[class*="st-key-ponto_box_feito_"] .crh-ponto-hora, div[class*="st-key-ponto_box_feito_"] button[kind="tertiary"] p {{ color: #4ADE80 !important; }}
+  .crh-ponto-rotulo, .crh-ponto-hora, .crh-ponto-trab, .crh-ponto-saldo:not(.positivo):not(.negativo) {{ color: {ESC_TEXTO}; }}
+  .crh-ponto-marca {{ color: {ESC_TEXTO_2}; }}
+  .crh-ponto-aviso {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
+  .st-key-ponto_tabela div[class*="st-key-ponto_lin"] {{ border-color: {ESC_BORDA}; }}
+  .st-key-ponto_tabela div[class*="st-key-ponto_lina_"] {{ background: #1B2436; }}
+  .st-key-ponto_tabela .st-key-ponto_cab {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   .st-key-perfil_card_pendencias {{ border-color: {AMBAR} !important; }}
   .crh-campos-grid .r, .crh-pf-item .d, .crh-org-seta, .crh-org-pessoa .d {{ color: {ESC_TEXTO_2} !important; }}
   .crh-campos-grid .v, .crh-pf-item .t, .crh-org-pessoa .t {{ color: {ESC_TEXTO} !important; }}
@@ -850,6 +898,10 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] .stSelectbox > div > div {{ border-color: {ESC_BORDA} !important; }}
   [data-testid="stDialog"] .stDateInput span {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] input:disabled {{ -webkit-text-fill-color: {ESC_TEXTO_2}; color: {ESC_TEXTO_2} !important; }}
+  [data-testid="stDialog"] [data-testid="stTimeInputTimeDisplay"] {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA}; }}
+  [data-testid="stDialog"] [data-testid="stTimeInputTimeDisplay"] * {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:has(> div:empty) {{ background: {ESC_TEXTO_2} !important; }}
+  [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:empty {{ background: {ESC_CARTAO} !important; }}
   [data-testid="stDialog"] button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {ESC_TEXTO_2}; color: {ESC_TEXTO_2}; }}
