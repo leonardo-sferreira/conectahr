@@ -216,3 +216,26 @@ Construção das tarefas 5, 26 a 28, 59, 62, 67, 68 e 70. Evidência em
 
 - Os modais (`st.dialog`) ficam abertos por uma marca em `st.session_state`. Por isso continuam na tela quando o app inteiro roda de novo e podem ser testados com o AppTest.
 - O tema base do app é escuro, por causa da tela Entrar, então `theme.py` pinta os modais e o menu da conta com as cores claras do protótipo.
+
+## Fila do RH de documentos e tema escuro (10/10/2026)
+
+### Conferência de documentos pelo RH (tarefa 27, desenho)
+
+A tela 244:586 e o fluxo F23 já existiam. O que mudou segue as regras do backend:
+
+- **O próprio documento não tem ação.** Ninguém decide o próprio documento (`aprovar` e `rejeitar` recusam), então a linha mostra "Seu: outro RH decide".
+- **Arquivo bloqueado só pode ser recusado.** `aprovar` recusa quando `estado_verificacao` é "bloqueado". Essa é a mesma decisão da tarefa 62.
+- **"Arquivar" só aparece em documento recusado, vencido ou substituído.** Pede confirmação no modal, com observação opcional, e explica que nada é apagado.
+- **"Aprovar" ganhou um modal.** Mostra o resumo e uma observação opcional (`observacao` do endpoint). O fluxo antigo dizia "direto na linha".
+- **"Processar vencidos" mostra o resultado.** O plano do Xano não roda a rotina sozinho, por isso o botão é manual e o resultado aparece num modal.
+- **Aba "Pendências pedidas".** Lista `pendencias_documento`. Não há como cancelar uma pendência pela tela, porque o backend não tem endpoint para isso.
+- **Aba "Obrigatórios por cargo".** Lista as regras e tem "Nova regra" (`documentos_obrigatorios` GET e POST). Não há edição de regra, porque o backend não tem endpoint para isso.
+- **Onde está.** Seção 18 do protótipo (claro 418:1106, escuro 420:1010) e fluxo F23, com os caminhos novos "Aprovar e arquivar" e "Pendências e regras".
+
+### Tema claro e escuro (tarefa 63)
+
+- **Decisão:** o modo escuro entra no app. O seletor fica no menu da conta (198:158 e 315:2120) e está documentado no Design System (314:786).
+- **Como as cores mudam:** o código troca só as cores, com os tokens de 294:622. É uma camada por cima do CSS claro (`_ESCURO_CSS`), para não duplicar o tema.
+- **O que fica igual:** a tela Entrar e o primeiro acesso continuam grafite.
+- **Como a escolha é lembrada:** na sessão e num cookie de preferência (`crh_tema`, 1 ano). O valor é sempre "claro" ou "escuro", sem dado pessoal. É um cookie necessário à preferência pedida pela própria pessoa, então não entra no aviso de privacidade como tratamento de dado pessoal.
+- **O que falta:** desenhar as seções escuras 1 a 4 e 6 a 8 antes de construir essas telas.

@@ -34,7 +34,7 @@ Visão completa em [`docs/project-overview.md`](docs/project-overview.md); arqui
 | **LGPD** | Documentação e controles concluídos (registro de operações, aviso, RIPD, retenção, direitos do titular, anonimização, menores de 18 anos). Prazos e bases legais são sugestões acadêmicas |
 | **Especificações (OpenSpec)** | Spec principal com 65 requisitos e 201 cenários; 6 changes arquivadas |
 | **Documentação e evidências** | Concluídas, com testes por HTTP por perfil em [`docs/evidencias/`](docs/evidencias/) |
-| **Frontend (Streamlit)** | Parcial: entrada (login em dois passos, troca de senha, redefinição), Onboarding, Início, Documentos, aviso de privacidade (com e sem login) e Configurações → Privacidade. As demais telas seguem o protótipo do Figma |
+| **Frontend (Streamlit)** | Parcial: entrada (login em dois passos, troca de senha, redefinição), Onboarding, Início, Documentos, aviso de privacidade (com e sem login) e Configurações → Privacidade, com tema claro e escuro (menu da conta). As demais telas seguem o protótipo do Figma |
 
 O que falta está na change [`concluir-frontend-streamlit`](openspec/changes/concluir-frontend-streamlit/):
 telas do Figma ainda não construídas, acessibilidade, deploy e fontes locais.
@@ -159,8 +159,8 @@ em [`docs/demonstracao.md`](docs/demonstracao.md).
 - `python tools/testar_login_f01.py` roda 52 verificações do fluxo de entrada (login, código de acesso,
   primeiro acesso, Onboarding e sessão que termina) com uma API simulada, sem rede, e
   `python tools/testar_onboarding.py` roda 45 verificações do Onboarding (boas-vindas, "Meu onboarding" e o card do Início), e
-  `python tools/testar_privacidade_documentos.py` roda 75 verificações do aviso de privacidade, de Configurações →
-  Privacidade, do menu da conta e de Documentos.
+  `python tools/testar_privacidade_documentos.py` roda 82 verificações do aviso de privacidade, de Configurações →
+  Privacidade, do menu da conta (incluindo o tema claro e escuro) e de Documentos.
 - O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
   fumaça do frontend, testes do fluxo de entrada, do Onboarding, de Privacidade e Documentos e busca de segredos
   no repositório.
