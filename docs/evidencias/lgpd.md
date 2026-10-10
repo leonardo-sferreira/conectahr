@@ -117,7 +117,7 @@ Com `EMAIL_RETENCAO_DIAS` e `SESSAO_RETENCAO_DIAS` temporariamente em 0:
 | `status_operacional` antes | `emails_enviados_limpos = 10` | 10 |
 | Primeira execução | Aplica a mesma contagem | 10 |
 | Segunda execução | Zerada | 0 |
-| Limpeza de sessões | Sem IP nem dispositivo para limpar | 0: o login não grava esses campos, então estão sempre vazios |
+| Limpeza de sessões | Sem IP nem dispositivo para limpar | 0: o login não gravava esses campos na época deste teste (passou a gravar em 10/10/2026, tarefa 70 da change `concluir-frontend-streamlit`) |
 
 **Não verificado:** a lista de desligados com prazo de guarda cumprido, porque os dois desligados de teste já haviam sido anonimizados.
 

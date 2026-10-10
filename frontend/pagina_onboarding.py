@@ -16,9 +16,8 @@ Dados reais do backend (onboarding_dados.py):
   departamento, contrato e nome do gestor.
 
 Quem não tem onboarding (conta de RH ou Admin sem colaborador, ou colaborador sem checklist
-iniciado) segue direto para o Início. O botão "Enviar documentos" levaria à tela Documentos,
-que ainda está em construção (tarefas 26 a 28 da change concluir-frontend-streamlit): por
-enquanto ele segue para o Início com um aviso.
+iniciado) segue direto para o Início. O botão "Enviar documentos" abre a tela Documentos
+(pagina_documentos.py, tarefas 26 a 28 da change concluir-frontend-streamlit).
 """
 
 import streamlit as st
@@ -38,12 +37,12 @@ from theme import (
 )
 
 
-def _seguir_para_o_inicio(aviso: str | None = None, abrir_meu_onboarding: bool = False) -> None:
+def _seguir_para_o_inicio(abrir_meu_onboarding: bool = False, abrir_documentos: bool = False) -> None:
     st.session_state.pop("onboarding_pendente", None)
-    if aviso:
-        st.session_state.aviso_toast = aviso
     if abrir_meu_onboarding:
         st.session_state.ir_meu_onboarding = True
+    if abrir_documentos:
+        st.session_state.ir_documentos = True
     st.rerun()
 
 
@@ -88,7 +87,7 @@ def pagina_onboarding() -> None:
         documentos_pendentes = any(i["categoria"] == "documentos_obrigatorios" and not i["concluido"] for i in itens)
         if documentos_pendentes:
             if st.button("Enviar documentos", type="primary", use_container_width=True, key="btn_onb_continuar"):
-                _seguir_para_o_inicio("A tela Documentos ainda está em construção. Os documentos pedidos aparecem no Início.")
+                _seguir_para_o_inicio(abrir_documentos=True)
         elif st.button("Ir para o início", type="primary", use_container_width=True, key="btn_onb_continuar"):
             _seguir_para_o_inicio()
         render_nota(nota_boas_vindas(itens))

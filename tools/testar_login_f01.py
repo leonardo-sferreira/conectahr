@@ -75,7 +75,7 @@ def _login(email, password):
     return {"aguardando_otp": True, "email": email}
 
 
-def _validar_otp(email, codigo):
+def _validar_otp(email, codigo, dispositivo=None, endereco_ip=None):
     chamadas.append("otp")
     if codigo != CODIGO_OK:
         raise ApiError("Código inválido ou expirado. Restam 4 tentativas.", 403)
@@ -139,6 +139,7 @@ def _instalar_api_simulada():
     api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
     api_client.aniversariantes = lambda token: {"aniversariantes": []}
     api_client.meus_comunicados = lambda token: {"comunicados": []}
+    api_client.meus_documentos = lambda token: {"documentos": []}
 
 
 falhas: list[str] = []
@@ -280,7 +281,10 @@ def main() -> int:
     conferir("Gestor: Ana Ribeiro · Departamento: Tecnologia · CLT · 44h/semana" in html_visivel(at), "resumo com gestor, departamento e contrato")
     at.button(key="btn_onb_continuar").click()
     at = at.run()
-    conferir(not at.session_state["onboarding_pendente"] if "onboarding_pendente" in at.session_state else True, "'Enviar documentos' sai do Onboarding (a tela Documentos ainda não existe)")
+    conferir(not at.session_state["onboarding_pendente"] if "onboarding_pendente" in at.session_state else True, "'Enviar documentos' sai do Onboarding")
+    conferir("Documentos obrigatórios da sua admissão" in html_visivel(at) and "CTPS" in html_visivel(at), "'Enviar documentos' abre a tela Documentos com o que falta")
+    at.button(key="nav_Início").click()
+    at = at.run()
     conferir("Olá, Leonardo" in html_visivel(at), "Início aparece depois do Onboarding")
     conferir("Seu onboarding: 3 de 13 etapas" in html_visivel(at), "Início mostra o card do onboarding em andamento")
 

@@ -75,10 +75,14 @@ backend; esconder um botão não substitui a regra.
 - `sessao.py`: token e prazo em `st.session_state`; o fim de sessão (logout, prazo, 401) volta a "Entrar" com o aviso
   "Sua sessão terminou". Toda resposta 401 de uma chamada com token marca a sessão como terminada.
 - `pagina_*.py`: uma página por tela (`pagina_entrar.py`, `pagina_onboarding.py`, `pagina_meu_onboarding.py`,
-  `pagina_inicio.py`…).
+  `pagina_inicio.py`, `pagina_documentos.py`, `pagina_configuracoes.py`, `pagina_aviso.py`…). Uma página pede a troca
+  de página com uma marca `ir_*` em `st.session_state`, tratada no `app.py`.
 - `onboarding_modelo.py` (regras de apresentação, sem Streamlit, testadas em `tools/testar_onboarding.py`) e
   `onboarding_dados.py` (consultas ao backend, com alguns segundos de cache em `st.session_state` para não
   passar do limite de requisições do Xano).
+- `documentos_modelo.py` e `privacidade_modelo.py` (regras de apresentação, sem Streamlit) e `aviso_privacidade.py`,
+  que lê o texto do aviso de `docs/lgpd/aviso-de-privacidade.md`: o aviso tem uma fonte só, e mudar o texto é mudar
+  esse arquivo (e o Figma, para continuarem iguais).
 - `theme.py`, `api_client.py`, `validacao.py`, `assets/`.
 
 Uma tela nova entra com: nó do Figma conferido → página → função(ões) no `api_client.py` →

@@ -8,7 +8,7 @@ Etapa 3 do F01), no frontend Streamlit da branch `feature/frontend-login-f01`.
 | 310:2477 | Onboarding, boas-vindas depois da troca da senha temporária | `frontend/pagina_onboarding.py` |
 | 309:1048 | Meu onboarding (as 13 etapas por responsável) | `frontend/pagina_meu_onboarding.py` |
 | 309:1446 | Início com o card do onboarding em andamento | `frontend/pagina_inicio.py` |
-| 309:1249 | Documentos pendentes | **não construída**: depende da tela Documentos (tarefas 26 a 28) |
+| 309:1249 | Documentos pendentes | `frontend/pagina_documentos.py` (construída em 10/10/2026, ver [frontend-privacidade-documentos.md](frontend-privacidade-documentos.md)) |
 
 As regras de apresentação ficam em `frontend/onboarding_modelo.py` (sem Streamlit) e as consultas, em
 `frontend/onboarding_dados.py` (`colaboradores/{id}/onboarding`, `onboarding_item/{id}/concluir`,
@@ -59,9 +59,9 @@ pessoa com e-mail pessoal (tarefa 60); compare abrindo os nós acima.
 
 - **Saudação neutra:** "Bem-vindo(a), Nome!". O exemplo do Figma ("Bem-vinda, Juliana!") é de uma pessoa; o
   cadastro não guarda gênero.
-- **"Enviar documentos"** ainda não abre a tela Documentos (tarefas 26 a 28): na boas-vindas leva ao Início com
-  o aviso "A tela Documentos ainda está em construção. Os documentos pedidos aparecem no Início."; em "Meu
-  onboarding" mostra o mesmo aviso. A tela "Documentos pendentes" (309:1249) fica para depois da tela Documentos.
+- **"Enviar documentos"** abre a tela Documentos, na boas-vindas e em "Meu onboarding". A tela de Documentos e
+  "Documentos pendentes" (309:1249) estão em [frontend-privacidade-documentos.md](frontend-privacidade-documentos.md).
+  Até 10/10/2026 o botão levava ao Início com um aviso, porque a tela ainda não existia.
 - **Card do Início:** entra no topo do Início existente (62:38), acima dos indicadores, em vez de substituir a
   página. O desenho 309:1446 mostra só o card e as pendências; manter o resto do Início é a escolha que não tira
   informação de ninguém e pode ser revista.

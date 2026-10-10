@@ -6,8 +6,7 @@ ser concluída pelo responsável dela (RH e Admin podem concluir qualquer uma, e
 
 Dados: colaboradores/{id}/onboarding e minhas_pendencias_documento (onboarding_dados.py); as
 regras de apresentação (agrupamentos, "previsto para" = início + 30, 60 e 90 dias) estão em
-onboarding_modelo.py. O botão "Enviar documentos" levaria à tela Documentos (tarefas 26 a 28),
-ainda em construção.
+onboarding_modelo.py. O botão "Enviar documentos" abre a tela Documentos (tarefas 26 a 28).
 """
 
 import streamlit as st
@@ -78,7 +77,8 @@ def pagina_meu_onboarding() -> None:
             if colunas["voce"]["enviar_documentos"] and st.button(
                 "Enviar documentos →", type="primary", key="btn_meu_enviar_documentos"
             ):
-                st.toast("A tela Documentos ainda está em construção.")
+                st.session_state.ir_documentos = True
+                st.rerun()
     with col_rh:
         with st.container(key="onb_rh"):
             render_titulo_cartao("Com o RH", colunas["rh"]["subtitulo"])

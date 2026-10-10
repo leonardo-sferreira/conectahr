@@ -243,6 +243,11 @@ _BASE_CSS = f"""
     width: auto !important; display: flex; justify-content: center;
   }}
 
+  /* Link do aviso abaixo do cartão de login (Figma 282:868). */
+  .st-key-crh_link_aviso {{ margin-top: 18px; align-items: center; gap: 6px; }}
+  .crh-link-aviso-rotulo {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {CINZA_CLARO}; }}
+  .st-key-btn_link_aviso button p {{ color: {AMBAR} !important; }}
+
   .crh-otp-caption {{
     font-family: 'Manrope', sans-serif;
     font-size: 12px;
@@ -336,6 +341,30 @@ _BASE_CSS = f"""
   .crh-trilha-texto .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 400; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-trilha-texto .s.ok {{ color: {SUCESSO}; }}
   .crh-trilha-texto .s.voce {{ color: {AMBAR_ESCURO}; }}
+  /* Aviso de privacidade (Figma 285:874 e 285:1073). */
+  .crh-aviso-pg {{ display: flex; flex-direction: column; gap: 20px; }}
+  .crh-aviso-pg .cab .t {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 30px; color: {GRAFITE}; }}
+  .crh-aviso-pg .cab .s {{ margin: 6px 0 10px 0; font-family: 'Manrope', sans-serif; font-size: 14.5px; line-height: 1.5; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-aviso-pg .selos {{ display: flex; gap: 8px; flex-wrap: wrap; }}
+  .crh-aviso-pg .selo {{ border-radius: 999px; padding: 4px 10px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; }}
+  .crh-aviso-pg .selo.a {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-aviso-pg .selo.n {{ background: white; border: 1px solid {BORDA}; color: {GRAFITE}; }}
+  .crh-aviso-pg .bloco {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 22px 28px; display: flex; flex-direction: column; gap: 10px; }}
+  .crh-aviso-pg .bloco.tab {{ padding: 0; overflow: hidden; gap: 0; }}
+  .crh-aviso-pg .bloco.tab h2 {{ padding: 22px 28px 12px 28px; }}
+  .crh-aviso-pg h2 {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 18px; color: {GRAFITE}; }}
+  .crh-aviso-pg p, .crh-aviso-pg li {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; line-height: 1.55; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-aviso-pg strong {{ color: {GRAFITE}; font-weight: 600; }}
+  .crh-aviso-pg ul, .crh-aviso-pg ol {{ margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }}
+  .crh-aviso-pg table {{ width: 100%; border-collapse: collapse; }}
+  .crh-aviso-pg th {{ background: {MARFIM}; text-align: left; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 12px; color: {GRAFITE_SECUNDARIO}; border-top: 1px solid {BORDA}; border-bottom: 1px solid {BORDA}; }}
+  .crh-aviso-pg td {{ vertical-align: top; padding: 14px; font-family: 'Manrope', sans-serif; font-size: 12.5px; line-height: 1.5; color: {GRAFITE_SECUNDARIO}; border-bottom: 1px solid {BORDA}; }}
+  .crh-aviso-pg td:first-child {{ color: {GRAFITE}; font-weight: 600; width: 24%; }}
+  .crh-aviso-pg tr:last-child td {{ border-bottom: none; }}
+  .crh-aviso-pg .destaque {{ background: {AMBAR_BG}; border-radius: 10px; padding: 12px 16px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-aviso-pg .campos {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 10px; padding: 10px 14px; display: grid; grid-template-columns: max-content 1fr; gap: 6px 24px; }}
+  .crh-aviso-pg .campos .r {{ font-size: 12.5px; }}
+  .crh-aviso-pg .campos .v {{ color: {GRAFITE}; font-weight: 600; }}
   .crh-onb-nota {{
     margin: 0; text-align: center; font-family: 'Manrope', sans-serif; font-weight: 400; font-size: 11px; color: {GRAFITE_SECUNDARIO};
   }}
@@ -352,6 +381,27 @@ _AUTH_CSS = f"""
     padding-top: 4rem;
     padding-bottom: 3rem;
   }}
+</style>
+"""
+
+# Aviso de privacidade sem login (Figma 285:874): faixa grafite com o logo e o botão Entrar,
+# conteúdo de 880px sobre fundo marfim.
+_AVISO_CSS = f"""
+<style>
+  .stApp {{ background: {MARFIM}; }}
+  .block-container {{ max-width: 928px; padding: 0 24px 48px 24px !important; }}
+  .st-key-aviso_faixa {{
+    background: {GRAFITE}; width: 100vw !important; max-width: 100vw; margin: 0 0 32px calc(50% - 50vw) !important;
+    padding: 14px max(24px, calc(50vw - 440px)); justify-content: space-between; align-items: center;
+  }}
+  .st-key-aviso_faixa .crh-side-logo {{ margin: 0; }}
+  .st-key-aviso_faixa .crh-side-logo span {{ font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: white; }}
+  .st-key-aviso_faixa .crh-side-logo .amber {{ color: {AMBAR}; }}
+  .st-key-aviso_faixa .crh-side-logo img {{ width: 30px; height: 30px; }}
+  .st-key-aviso_faixa .crh-side-logo {{ display: flex; align-items: center; gap: 8px; }}
+  .st-key-aviso_faixa button[kind="primary"] {{ padding: 0.45rem 1rem; width: auto; }}
+  .st-key-btn_aviso_voltar button {{ background: white !important; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1rem !important; }}
+  .st-key-btn_aviso_voltar button p {{ color: {GRAFITE} !important; font-size: 13px !important; }}
 </style>
 """
 
@@ -522,6 +572,115 @@ _APP_CSS = f"""
   .crh-barra .topo span:last-child {{ color: {GRAFITE_SECUNDARIO}; }}
   .crh-barra .trilho {{ height: 8px; border-radius: 4px; background: {BORDA}; overflow: hidden; }}
   .crh-barra .preenchido {{ height: 100%; border-radius: 4px; background: {AMBAR}; }}
+  .crh-selo.err {{ background: #FEE2E2; color: {ERRO}; }}
+
+  /* Menu da conta (Figma 198:158): o chip do nome abre um popover com o perfil, Configurações e Sair. */
+  .st-key-crh_topbar {{ justify-content: flex-end; align-items: center; gap: 16px; }}
+  .st-key-crh_topbar [data-testid="stPopover"] button {{
+    background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 6px 12px 6px 8px; min-height: 0;
+  }}
+  .st-key-crh_topbar [data-testid="stPopover"] button p {{
+    font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13px; color: {GRAFITE};
+  }}
+  [data-testid="stPopoverBody"] {{
+    background: white !important; border: 1px solid {BORDA}; border-radius: 16px;
+    box-shadow: 0px 12px 32px -8px rgba(22,24,29,0.25); min-width: 300px;
+  }}
+  [data-testid="stPopoverBody"] button[kind="tertiary"] {{ padding: 0 !important; min-height: 0 !important; background: transparent !important; }}
+  .crh-menu-conta {{ display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid {BORDA}; }}
+  .crh-menu-conta .crh-avatar-g {{
+    width: 40px; height: 40px; border-radius: 999px; background: {GRAFITE}; color: {AMBAR}; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px;
+  }}
+  .crh-menu-conta .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 15px; color: {GRAFITE}; }}
+  .crh-menu-conta .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-btn_menu_config button p {{ color: {GRAFITE} !important; font-size: 15px !important; font-weight: 500 !important; }}
+  .st-key-btn_menu_sair button p {{ color: {ERRO} !important; font-size: 15px !important; font-weight: 500 !important; }}
+  .crh-menu-sub {{ margin: -6px 0 0 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
+
+  /* Título de página sem faixa grafite (Configurações 286:878, aviso logado 285:1073). */
+  .crh-titulo-pagina {{ display: flex; flex-direction: column; gap: 6px; }}
+  .crh-titulo-pagina .t {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 30px; color: {GRAFITE}; }}
+  .crh-titulo-pagina .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 15px; color: {GRAFITE_SECUNDARIO}; }}
+
+  /* Abas de Configurações: controle segmentado no estilo do Figma (fundo marfim, ativa em âmbar). */
+  .st-key-cfg_abas [data-testid="stButtonGroup"] {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 4px; width: fit-content; }}
+  .st-key-cfg_abas button {{ border: none !important; background: transparent; border-radius: 10px !important; padding: 8px 18px; }}
+  .st-key-cfg_abas button p {{ font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-cfg_abas button[aria-checked="true"] {{ background: {AMBAR} !important; }}
+  .st-key-cfg_abas button[aria-checked="true"] p {{ color: {GRAFITE}; font-weight: 600; }}
+
+  /* Cartões de Configurações → Privacidade e de Documentos. */
+  div[class*="st-key-cfg_card_"], .st-key-doc_lista {{
+    background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 24px; gap: 14px;
+  }}
+  div[class*="st-key-cfg_card_"] button[kind="primary"], .st-key-doc_topo button[kind="primary"] {{ width: auto; padding: 0.6rem 1.1rem; }}
+  div[class*="st-key-cfg_card_"] button[kind="secondary"] {{ border: 1px solid {BORDA}; border-radius: 10px; padding: 0.6rem 1.1rem; background: white; }}
+  div[class*="st-key-cfg_card_"] button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .crh-cfg-titulo {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 18px; color: {GRAFITE}; }}
+  .crh-cfg-texto {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; line-height: 1.45; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cfg-nota {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; line-height: 1.45; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cfg-selos {{ display: flex; align-items: center; gap: 12px; }}
+  .crh-campos {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 10px; padding: 12px 16px; display: grid; grid-template-columns: max-content 1fr; gap: 6px 28px; }}
+  .crh-campos .r {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-campos .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  /* Botões liga/desliga com o texto à esquerda e o botão à direita (Figma 286:878). */
+  .st-key-pref_aniversario, .st-key-pref_mural {{ width: 100% !important; }}
+  .st-key-pref_aniversario label, .st-key-pref_mural label {{ flex-direction: row-reverse; justify-content: space-between; width: 100%; }}
+  .st-key-pref_aniversario [data-testid="stWidgetLabel"] p, .st-key-pref_mural [data-testid="stWidgetLabel"] p {{
+    font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE};
+  }}
+
+  /* Documentos (Figma 41:26): linha do tempo com um ponto colorido por documento. */
+  .st-key-doc_topo {{ justify-content: space-between; align-items: center; }}
+  .crh-doc-lista {{ display: flex; flex-direction: column; gap: 4px; }}
+  .crh-doc-item {{ display: flex; gap: 14px; align-items: stretch; }}
+  .crh-doc-item .ponto {{ width: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 4px; }}
+  .crh-doc-item .ponto .p {{ width: 10px; height: 10px; border-radius: 999px; background: {CINZA_CLARO}; flex-shrink: 0; }}
+  .crh-doc-item .ponto .p.ok {{ background: {SUCESSO}; }}
+  .crh-doc-item .ponto .p.amb, .crh-doc-item .ponto .p.azul {{ background: {AMBAR}; }}
+  .crh-doc-item .ponto .p.err {{ background: {ERRO}; }}
+  .crh-doc-item .ponto .l {{ width: 2px; flex: 1 1 auto; background: {BORDA}; }}
+  .crh-doc-item:last-child .ponto .l {{ display: none; }}
+  .crh-doc-item .crh-linha-onb {{ flex: 1 1 auto; margin-bottom: 6px; }}
+
+  /* Documentos pendentes (Figma 309:1249): tabela, pendências em fundo creme. */
+  .st-key-doc_pendentes {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 0; gap: 0; overflow: hidden; }}
+  .st-key-doc_pendentes div[class*="st-key-doc_lin"] {{ border-bottom: 1px solid {BORDA}; padding: 12px 18px; gap: 0; align-items: center; }}
+  .st-key-doc_pendentes div[class*="st-key-doc_linf_"] {{ background: #FFFBEB; }}
+  .st-key-doc_pendentes .st-key-doc_cab {{ background: {MARFIM}; border-bottom: 1px solid {BORDA}; padding: 10px 18px; }}
+  .crh-doc-cab {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-doc-cel .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE}; }}
+  .crh-doc-cel .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-doc-prazo {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
+  .st-key-doc_pendentes button[kind="tertiary"] p {{ font-size: 13.5px !important; }}
+
+  /* Modais (st.dialog) claros como no Figma (286:1062, 224:2379, 309:1591): o tema base do app é
+     escuro por causa da tela Entrar, então cada parte do modal ganha a cor do protótipo. */
+  [data-testid="stDialog"] > div {{ background: white !important; border-radius: 20px !important; color: {GRAFITE}; }}
+  [data-testid="stDialog"] h2, [data-testid="stDialog"] h2 span {{ font-family: 'Sora', sans-serif !important; font-weight: 800 !important; color: {GRAFITE} !important; }}
+  [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {GRAFITE_SECUNDARIO}; color: {GRAFITE_SECUNDARIO}; }}
+  [data-testid="stDialog"] [data-testid="stWidgetLabel"] p, [data-testid="stDialog"] label p {{
+    font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE} !important;
+  }}
+  [data-testid="stDialog"] [data-testid="stCaptionContainer"] p, [data-testid="stDialog"] .stRadio [data-testid="stCaptionContainer"] {{ color: {GRAFITE_SECUNDARIO} !important; }}
+  [data-testid="stDialog"] [data-baseweb="select"] > div, [data-testid="stDialog"] [data-baseweb="input"], [data-testid="stDialog"] [data-baseweb="textarea"],
+  [data-testid="stDialog"] [data-testid="stDateInputField"], [data-testid="stDialog"] [data-testid="stTextInputRootElement"] {{
+    background: {MARFIM} !important; border: 1px solid {BORDA} !important; border-radius: 10px !important; color: {GRAFITE} !important;
+  }}
+  [data-testid="stDialog"] .stSelectbox div:has(> input[role="combobox"]), [data-testid="stDialog"] .stSelectbox div:has(> div > input[role="combobox"]) {{ background: transparent !important; }}
+  [data-testid="stDialog"] .stSelectbox [data-testid="stSelectboxVirtualDropdown"], [data-testid="stDialog"] .stSelectbox > div > div {{ background: {MARFIM} !important; color: {GRAFITE} !important; border-radius: 10px; }}
+  [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {GRAFITE} !important; background: transparent !important; }}
+  [data-testid="stDialog"] button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.6rem 1.1rem; }}
+  [data-testid="stDialog"] button[kind="secondary"] p {{ color: {GRAFITE} !important; font-family: 'Manrope', sans-serif; font-weight: 600; }}
+  [data-testid="stDialog"] button[kind="primary"] {{ padding: 0.6rem 1.2rem; width: auto; }}
+  [data-testid="stDialog"] [data-testid="stTooltipIcon"] svg {{ stroke: {GRAFITE_SECUNDARIO}; }}
+  .crh-incluso {{ background: {MARFIM}; border-radius: 12px; padding: 14px 16px; }}
+  .crh-incluso .t {{ margin: 0 0 6px 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .crh-incluso ul {{ margin: 0; padding-left: 18px; font-family: 'Manrope', sans-serif; font-size: 13.5px; line-height: 1.75; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-incluso .n {{ margin: 6px 0 0 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-nota-verde {{ background: #DCFCE7; color: {SUCESSO}; border-radius: 10px; padding: 12px 14px; margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; line-height: 1.45; }}
+  .crh-nota-ambar {{ background: {AMBAR_BG}; color: {GRAFITE}; border-radius: 10px; padding: 12px 14px; margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; }}
 </style>
 """
 
@@ -545,7 +704,7 @@ def inject_base_styles(area: str = "auth") -> None:
     #    ADD_TAGS: ['script','style'], preservando o <style>. Nao
     #    precisamos de JS de verdade aqui, so desse efeito colateral da
     #    flag para o CSS sobreviver.
-    area_css = _APP_CSS if area == "app" else _AUTH_CSS
+    area_css = {"app": _APP_CSS, "aviso": _AVISO_CSS}.get(area, _AUTH_CSS)
     st.html(
         '<div id="crh-styles-marker" style="display:none"></div>' + _BASE_CSS + area_css,
         unsafe_allow_javascript=True,
@@ -597,20 +756,105 @@ def render_nav_ativo(rotulo: str) -> None:
     st.html(f'<div class="crh-nav-ativo">{html.escape(rotulo)}</div>')
 
 
+_PERFIS = {"RH": "RH", "ADMIN": "Admin", "GESTOR": "Gestor", "COLABORADOR": "Colaborador"}
+
+
+def iniciais(nome: str) -> str:
+    partes = [p for p in nome.split() if p[:1].isalpha()]
+    return (partes[0][0] + (partes[-1][0] if len(partes) > 1 else "")).upper() if partes else ""
+
+
 def render_topbar(nome: str) -> None:
-    partes = nome.split()
-    iniciais = (partes[0][0] + (partes[-1][0] if len(partes) > 1 else "")).upper() if partes else ""
+    """Sino e chip do nome (Figma 62:38). O chip abre o menu da conta (Figma 198:158): perfil,
+    "Configurações" e "Sair da conta". As ações só deixam um pedido em `st.session_state`
+    (`ir_configuracoes`, `sair_da_conta`), tratado pelo app.py."""
+    usuario = st.session_state.get("usuario") or {}
+    perfil = _PERFIS.get(str(usuario.get("perfil", "")).upper(), str(usuario.get("perfil", "")).title())
+    with st.container(horizontal=True, key="crh_topbar"):
+        st.html(f'<img src="{_BELL_DATA_URI}" alt="Notificações" class="crh-bell" style="width:40px;height:40px" />', width="content")
+        with st.popover(nome, key="menu_conta"):
+            st.html(
+                f"""
+                <div class="crh-menu-conta">
+                  <div class="crh-avatar-g">{html.escape(iniciais(nome))}</div>
+                  <div><p class="t">{html.escape(nome)}</p><p class="s">Perfil: {html.escape(perfil)}</p></div>
+                </div>
+                """
+            )
+            if st.button("Configurações", type="tertiary", key="btn_menu_config"):
+                st.session_state.ir_configuracoes = True
+                st.rerun()
+            st.html('<p class="crh-menu-sub">Senha, sessões e notificações</p>')
+            if st.button("Sair da conta", type="tertiary", key="btn_menu_sair"):
+                st.session_state.sair_da_conta = True
+                st.rerun()
+
+
+def render_titulo_pagina(titulo: str, subtitulo: str) -> None:
+    """Título grande sem a faixa grafite (Configurações 286:878)."""
     st.html(
-        f"""
-        <div class="crh-topbar">
-          <img src="{_BELL_DATA_URI}" alt="Notificações" class="crh-bell" />
-          <div class="crh-chip">
-            <div class="crh-avatar">{html.escape(iniciais)}</div>
-            <span class="crh-nome">{html.escape(nome)}</span>
-          </div>
-        </div>
-        """
+        f'<div class="crh-titulo-pagina"><p class="t">{html.escape(titulo)}</p>'
+        f'<p class="s">{html.escape(subtitulo)}</p></div>'
     )
+
+
+def render_logo_faixa() -> None:
+    st.html(
+        f'<div class="crh-side-logo"><img src="{_LOGO_ICON_DATA_URI}" alt="" />'
+        '<span>conecta<span class="amber">RH</span></span></div>',
+        width="content",
+    )
+
+
+def html_aviso(aviso: dict, em_html, subtitulo_extra: str = "") -> str:
+    """O aviso de privacidade inteiro (Figma 285:874), a partir de aviso_privacidade.carregar().
+
+    `em_html` converte cada trecho de Markdown em HTML seguro (escapado, só com negrito)."""
+    selos = "".join(
+        f'<span class="selo {"a" if i == 0 else "n"}">{html.escape(s)}</span>' for i, s in enumerate(aviso["selos"])
+    )
+    tabela = aviso["tabela"]
+    cab = "".join(f"<th>{html.escape(c)}</th>" for c in tabela["cabecalho"])
+    linhas = "".join("<tr>" + "".join(f"<td>{em_html(c)}</td>" for c in l) + "</tr>" for l in tabela["linhas"])
+    partes = [
+        '<div class="crh-aviso-pg">',
+        f'<div class="cab"><p class="t">{html.escape(aviso["titulo"].replace(" do ConectaRH", ""))}</p>'
+        f'<p class="s">{em_html(aviso["intro"])}{html.escape(subtitulo_extra)}</p><div class="selos">{selos}</div></div>',
+    ]
+    for secao in aviso["secoes"]:
+        if secao["titulo"].startswith("Quais dados"):
+            partes.append(
+                f'<div class="bloco tab"><h2>{html.escape(secao["titulo"])}</h2>'
+                f"<table><thead><tr>{cab}</tr></thead><tbody>{linhas}</tbody></table></div>"
+            )
+            if aviso["destaque"]:
+                partes.append(f'<p class="destaque">{em_html(aviso["destaque"]).replace("<strong>", "").replace("</strong>", "")}</p>')
+            continue
+        corpo = []
+        for tipo, conteudo in secao["blocos"]:
+            if tipo == "p":
+                corpo.append(f"<p>{em_html(conteudo)}</p>")
+            elif tipo in ("ul", "ol"):
+                corpo.append(f"<{tipo}>" + "".join(f"<li>{em_html(i)}</li>" for i in conteudo) + f"</{tipo}>")
+            elif tipo == "campos":
+                corpo.append(
+                    '<div class="campos">'
+                    + "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{em_html(v)}</p>' for r, v in conteudo)
+                    + "</div>"
+                )
+        partes.append(f'<div class="bloco"><h2>{html.escape(secao["titulo"])}</h2>{"".join(corpo)}</div>')
+    partes.append("</div>")
+    return "".join(partes)
+
+
+def render_lista_documentos(linhas: list[dict]) -> None:
+    """Lista com linha do tempo (Figma 41:26). Cada linha: {titulo, detalhe, badge, tipo}."""
+    itens = "".join(
+        f'<div class="crh-doc-item"><div class="ponto"><span class="p {l["tipo"]}"></span><span class="l"></span></div>'
+        f'{html_linha_onboarding(l["titulo"], l.get("detalhe"), l["badge"], l["tipo"])}</div>'
+        for l in linhas
+    )
+    st.html(f'<div class="crh-doc-lista">{itens}</div>')
 
 
 # ---------------------------------------------------------------------------
@@ -722,7 +966,7 @@ def html_linha_onboarding(titulo: str, detalhe: str | None, selo: str, tipo: str
     d = f'<p class="d">{html.escape(detalhe)}</p>' if detalhe else ""
     return (
         f'<div class="crh-linha-onb"><div class="txt"><p class="t">{html.escape(titulo)}</p>{d}</div>'
-        f'<span class="crh-selo {tipo if tipo in ("ok", "amb", "neu", "azul") else "neu"}">{html.escape(selo)}</span></div>'
+        f'<span class="crh-selo {tipo if tipo in ("ok", "amb", "neu", "azul", "err") else "neu"}">{html.escape(selo)}</span></div>'
     )
 
 

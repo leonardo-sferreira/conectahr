@@ -6,6 +6,14 @@ query "auth/otp/validar" verb=POST {
   input {
     email email filters=trim|lower
     text codigo filters=trim|max:6
+
+    // IP e navegador de quem esta entrando. O frontend Streamlit chama a API do proprio
+    // servidor, entao e ele quem repassa o que o navegador da pessoa informou (tarefa 70 da
+    // change concluir-frontend-streamlit). Opcionais: sem eles a sessao fica sem os campos.
+    // Uso: lista de sessoes, alerta de acesso suspeito e investigacao de incidente
+    // (docs/lgpd/legitimo-interesse.md); limpeza na rotina diaria (docs/lgpd/retencao.md).
+    text? dispositivo? filters=trim|max:120
+    text? endereco_ip? filters=trim|max:64
   }
 
   stack {
@@ -106,9 +114,11 @@ query "auth/otp/validar" verb=POST {
     // (requisitos "Autenticacao e ciclo de sessao" e "Sessoes e dispositivos").
     db.add sessao {
       data = {
-        user_id  : $user.id
-        expira_em: now|add_secs_to_timestamp:3600
-        ativa    : true
+        user_id    : $user.id
+        expira_em  : now|add_secs_to_timestamp:3600
+        ativa      : true
+        dispositivo: $input.dispositivo
+        endereco_ip: $input.endereco_ip
       }
     } as $sessao_criada
 
@@ -128,6 +138,7 @@ query "auth/otp/validar" verb=POST {
         recurso    : "user"
         registro_id: $user.id
         resultado  : "sucesso"
+        endereco_ip: $input.endereco_ip
       }
     } as $evento_auditoria
   }

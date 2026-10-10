@@ -153,12 +153,13 @@ Dados que o desenho novo pede e o backend já tem ou não tem:
   "enviados de obrigatórios" precisa ser calculada com `documentos_obrigatorios` e `meus_documentos`.
 - "previsto para 31/10/2026" nos acompanhamentos: **não há campo**. Só dá para calcular `onboarding.data_inicio` +
   30, 60 e 90 dias, e isso é uma regra nova para registrar.
-- O botão "Enviar documentos" e a tela "Documentos pendentes" dependem da tela Documentos (tarefas 26 a 28), que
-  ainda não existe, e o upload só entra por link (decisão registrada em `docs/regras-de-negocio.md`).
+- O botão "Enviar documentos" e a tela "Documentos pendentes" dependiam da tela Documentos (tarefas 26 a 28), que
+  foi construída em 10/10/2026 (ver "Privacidade e Documentos"); o upload só entra por link (decisão registrada em
+  `docs/regras-de-negocio.md`).
 - A saudação do desenho é "Bem-vinda, Juliana!": é de uma pessoa de exemplo. A tela deve usar texto neutro
   ("Bem-vindo(a)"), porque o cadastro não guarda gênero.
 
-### Divergências abertas (cada uma virou tarefa)
+### Divergências abertas (cada uma virou tarefa; as três primeiras foram resolvidas em 10/10/2026)
 
 - **Numeração dos fluxos repetida.** Existem dois "F37": "RH — Regras: criar, aprovar, simular e aplicar" (09/10)
   e "Onboarding e pendências do primeiro acesso" (10/10). Além disso, no aviso de privacidade os códigos F01 a F19
@@ -175,3 +176,43 @@ Dados que o desenho novo pede e o backend já tem ou não tem:
   card de onboarding entra no topo do Início existente ou o substitui (tarefa 68).
 - **Menu lateral por grupo.** O Design System novo documenta o rótulo de grupo em caixa alta (por exemplo
   "EQUIPE", para o Gestor, com Minha equipe e Delegações). O menu do `app.py` ainda não tem grupos (tarefa 65).
+
+## Privacidade e Documentos (10/10/2026)
+
+Construção das tarefas 5, 26 a 28, 59, 62, 67, 68 e 70. Evidência em
+`docs/evidencias/frontend-privacidade-documentos.md`.
+
+### Divergências da revalidação, resolvidas
+
+- **Numeração dos fluxos (tarefa 69).**
+  - Regras virou F40 e o índice não tem mais código repetido.
+  - No aviso, os códigos de finalidade saíram da tela. No documento, ficaram numa coluna "Registro", que não aparece no app. Essa coluna substitui a proposta de "Finalidade 1…19".
+- **IP e dispositivo (tarefa 70).** Decidido gravar, e spec, aviso e backend passam a dizer a mesma coisa.
+  - O login grava o IP e um dispositivo resumido ("Chrome no Windows", nunca o user agent inteiro). O IP também vai para a auditoria do `login_sucesso`.
+  - Como o Xano só vê o servidor do Streamlit, o frontend repassa os dois dados (`st.context`).
+  - Guarda de 6 meses, com a limpeza da rotina diária que já existia.
+- **Início em duas composições (tarefa 68).** Decidido em 10/10: o card fica no topo do Início existente.
+
+### Aviso de privacidade: uma fonte só
+
+- A tela lê `docs/lgpd/aviso-de-privacidade.md` (`frontend/aviso_privacidade.py`). Assim, documento, Figma e app mostram o mesmo texto.
+- Do arquivo, a tela deixa de fora só a nota da documentação e a coluna "Registro". Os links viram texto simples e o negrito fica só nos rótulos, como no Figma.
+- O backend não registra a leitura do aviso, então "lida por você em…" (285:1073 e 286:878) não aparece. A tela mostra a versão.
+
+### Menu da conta e Configurações
+
+- O chip do nome abre o menu 198:158: perfil, "Configurações" e "Sair da conta". "Sair da conta" chama `auth/logout`.
+- Configurações abre na aba Privacidade. Segurança e Notificações aparecem como "em construção".
+
+### Documentos: estados do anexo (tarefa 62)
+
+- O backend verifica o link no envio e grava `estado_verificacao` = "liberado" ou "bloqueado", com `motivo_bloqueio`. "enviado" e "em_verificacao" não chegam a ficar gravados.
+- Decisão: a tela mostra o selo do `status` do documento. Só quando o arquivo é bloqueado ela troca o selo por "Arquivo bloqueado" e mostra o motivo, porque é o único estado do anexo que pede uma ação da pessoa (enviar outro link). A spec não muda.
+- Figma: linha "CNH — Arquivo bloqueado" em 41:26 e 108:541.
+- O documento entra por link: o modal 309:1591 (e 313:1573 e 310:1438) passou a ter "Link do arquivo". O modal antigo com "Arraste o arquivo" (222:175, 225:2733 e 249:2032) ficou desatualizado; a referência é o 309:1591.
+- "Documentos pendentes" (309:1249) aparece no topo da tela Documentos enquanto houver pedido do RH em aberto.
+
+### Modais no Streamlit
+
+- Os modais (`st.dialog`) ficam abertos por uma marca em `st.session_state`. Por isso continuam na tela quando o app inteiro roda de novo e podem ser testados com o AppTest.
+- O tema base do app é escuro, por causa da tela Entrar, então `theme.py` pinta os modais e o menu da conta com as cores claras do protótipo.

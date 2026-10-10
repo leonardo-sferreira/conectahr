@@ -13,6 +13,10 @@ Sai com codigo 1 se houver excecao ou se a tela nao tiver o que se espera.
 import sys
 from pathlib import Path
 
+# Console do Windows em cp1252 não mostra "→" (rótulo de botão).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from streamlit.testing.v1 import AppTest
 
 RAIZ = Path(__file__).resolve().parent.parent

@@ -80,7 +80,7 @@ Cada tratamento do [registro de operações](registro-de-operacoes.md) que usa o
 
 ## F01 e F02. Logs de segurança (IP, dispositivo e auditoria)
 
-> **Situação atual:** o login não grava IP nem dispositivo (os campos existem em `sessao`, vazios). Este teste vale para o dia em que forem gravados; até lá, só a auditoria de ações está em uso.
+> **Situação atual (10/10/2026, tarefa 70 da change `concluir-frontend-streamlit`):** o login grava o IP e o dispositivo em `sessao`. O dispositivo é só um rótulo curto (navegador e sistema, por exemplo "Chrome no Windows"), não o user agent completo. Como o backend só enxerga o servidor do Streamlit, é o frontend que repassa o IP e o dispositivo de quem acessa.
 
 | Pergunta | Resposta |
 |---|---|

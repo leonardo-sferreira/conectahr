@@ -131,9 +131,17 @@ def login(email: str, password: str) -> dict:
     return _post("auth/login", {"email": email, "password": password})
 
 
-def validar_otp(email: str, codigo: str) -> dict:
-    """POST auth/otp/validar -> {token, tipo, expira_em_segundos, senha_primeiro_acesso, usuario}."""
-    return _post("auth/otp/validar", {"email": email, "codigo": codigo})
+def validar_otp(email: str, codigo: str, dispositivo: str | None = None, endereco_ip: str | None = None) -> dict:
+    """POST auth/otp/validar -> {token, tipo, expira_em_segundos, senha_primeiro_acesso, usuario}.
+
+    `dispositivo` ("Chrome no Windows") e `endereco_ip` vão para a sessão criada: o backend só vê o
+    servidor do Streamlit, então quem informa o navegador da pessoa é o frontend (sessao.py)."""
+    corpo = {"email": email, "codigo": codigo}
+    if dispositivo:
+        corpo["dispositivo"] = dispositivo[:120]
+    if endereco_ip:
+        corpo["endereco_ip"] = endereco_ip[:64]
+    return _post("auth/otp/validar", corpo)
 
 
 def reenviar_otp(email: str) -> dict:
@@ -224,3 +232,65 @@ def minhas_pendencias_documento(token: str) -> dict:
     """GET minhas_pendencias_documento -> {pendencias: [{tipo_documento, prazo, status, ...}]} do próprio colaborador."""
     return _get("minhas_pendencias_documento", token, GRUPO_DOCUMENTOS)
 
+
+
+# ---------------------------------------------------------------------------
+# Privacidade (tarefas 5 e 67): exportação, preferências e pedidos LGPD
+# ---------------------------------------------------------------------------
+def meus_dados(token: str, formato: str = "json") -> dict:
+    """GET meus_dados?formato=json|csv -> dados do próprio usuário (o CSV vem no campo `csv`).
+
+    Cada chamada grava `exportar_meus_dados` na auditoria."""
+    return _get(f"meus_dados?formato={'csv' if formato == 'csv' else 'json'}", token, GRUPO_COLABORADORES)
+
+
+def minhas_preferencias_privacidade(token: str) -> dict:
+    """GET minhas_preferencias_privacidade -> {ocultar_aniversario, ocultar_mural, padrao, menor_de_idade}."""
+    return _get("minhas_preferencias_privacidade", token, GRUPO_COLABORADORES)
+
+
+def salvar_preferencias_privacidade(token: str, ocultar_aniversario: bool, ocultar_mural: bool) -> dict:
+    """PATCH minhas_preferencias_privacidade (os dois campos são obrigatórios)."""
+    return _request(
+        "PATCH",
+        "minhas_preferencias_privacidade",
+        token,
+        GRUPO_COLABORADORES,
+        {"ocultar_aniversario": bool(ocultar_aniversario), "ocultar_mural": bool(ocultar_mural)},
+    )
+
+
+def minhas_solicitacoes(token: str) -> dict:
+    """GET minhas_solicitacoes -> {solicitacoes, ferias, ausencias} do próprio colaborador."""
+    return _get("minhas_solicitacoes", token, GRUPO_COLABORADORES)
+
+
+def criar_pedido_privacidade(token: str, subtipo: str, descricao: str) -> dict:
+    """POST solicitacoes com tipo privacidade_lgpd: o backend dá prazo de resposta de 15 dias."""
+    return _post(
+        "solicitacoes",
+        {"tipo": "privacidade_lgpd", "subtipo_lgpd": subtipo, "descricao": descricao},
+        token,
+        GRUPO_COLABORADORES,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Documentos (tarefas 26 a 28). Não existe função de exclusão: o backend recusa o DELETE e o
+# documento só é arquivado pelo RH (documentos/{id}/arquivar).
+# ---------------------------------------------------------------------------
+def meus_documentos(token: str) -> dict:
+    """GET meus_documentos -> {quantidade, documentos} do próprio colaborador, sem o link do arquivo."""
+    return _get("meus_documentos", token, GRUPO_DOCUMENTOS)
+
+
+def enviar_documento(token: str, dados: dict) -> dict:
+    """POST documentos -> {documento}. `dados`: colaborador_id, tipo, nome_documento, arquivo_url e,
+    opcionais, numero_documento e data_emissao (aaaa-mm-dd). Encerra a pendência aberta do mesmo tipo."""
+    return _post("documentos", {k: v for k, v in dados.items() if v not in (None, "")}, token, GRUPO_DOCUMENTOS)
+
+
+def abrir_arquivo_documento(token: str, documento_id: int) -> dict:
+    """GET documentos/{id}/arquivo -> {arquivo_url, expira_em_segundos}. Só o dono, o RH e o Admin; cada
+    abertura grava `acessar_arquivo_documento` na auditoria."""
+    return _get(f"documentos/{int(documento_id)}/arquivo", token, GRUPO_DOCUMENTOS)

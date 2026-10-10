@@ -15,7 +15,7 @@
 
 | Cód. | Categoria | Prazo sugerido (a confirmar) | Contagem | Tratamento no fim do prazo | Situação no sistema |
 |---|---|---|---|---|---|
-| F01 | Sessão: IP e dispositivo (`sessao`) | 6 meses, se vierem a ser gravados | Do encerramento ou expiração da sessão | Anular `endereco_ip` e `dispositivo` | Limpeza na rotina diária (tarefa 4.21); **hoje os campos ficam vazios**, o login não os grava |
+| F01 | Sessão: IP e dispositivo (`sessao`) | 6 meses | Do encerramento ou expiração da sessão | Anular `endereco_ip` e `dispositivo` | Limpeza na rotina diária (tarefa 4.21); o login grava os dois campos desde 10/10/2026 (tarefa 70) |
 | F01 | Código de acesso e de redefinição (`user`) | Minutos: 5 (login) e 15 (redefinição) | Da geração | O código vira vazio ao ser usado ou ao expirar; só o hash é guardado | Em vigor (hash dos códigos, tarefa 4.13) |
 | F01 | Conta de acesso (`user`) | Enquanto houver vínculo; depois, até o fim da guarda do colaborador | Do desligamento | Desativar e anonimizar nome e e-mail | Desativação em vigor; anonimização na tarefa 4.22 |
 | F02 | Auditoria (`auditoria`) | Prazo longo, igual ao da guarda trabalhista mais longa (ver F10) | Do evento | Mantida; já guarda dado mascarado | Em vigor (mascaramento, tarefa 4.9) |
