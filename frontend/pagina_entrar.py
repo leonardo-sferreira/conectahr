@@ -45,6 +45,7 @@ from api_client import (
 )
 from sessao import (
     ativar_token_pendente,
+    contexto_do_navegador,
     encerrar_com_aviso,
     guardar_token_pendente,
     iniciar_sessao,
@@ -144,6 +145,13 @@ def pagina_entrar() -> None:
                 entrar = st.form_submit_button("Entrar", type="primary", use_container_width=True, key="btn_entrar")
                 esqueci = st.form_submit_button("Esqueci minha senha", type="tertiary", key="btn_esqueci")
 
+        # Link para o aviso de privacidade, legível sem login (Figma 282:868; tarefa 5).
+        with st.container(horizontal=True, horizontal_alignment="center", key="crh_link_aviso"):
+            st.html('<p class="crh-link-aviso-rotulo">Como usamos seus dados:</p>', width="content")
+            if st.button("Aviso de privacidade →", type="tertiary", key="btn_link_aviso"):
+                st.session_state.ir_aviso = True
+                st.rerun()
+
         # Aviso deixado pela etapa anterior. Fica na sessão porque um aviso seguido de
         # st.rerun() some na hora. Alertas ficam dentro do card, abaixo do título
         # (Figma 193:139/224:583/224:619).
@@ -225,7 +233,8 @@ def pagina_entrar() -> None:
                 marcar_campo_erro("campo_codigo")
             else:
                 try:
-                    resultado = validar_otp(st.session_state.email, codigo.strip())
+                    dispositivo, endereco_ip = contexto_do_navegador()
+                    resultado = validar_otp(st.session_state.email, codigo.strip(), dispositivo, endereco_ip)
                     expira = resultado.get("expira_em_segundos")
                     if resultado["senha_primeiro_acesso"]:
                         # O token fica pendente, fora de st.session_state.token:

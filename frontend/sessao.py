@@ -9,6 +9,7 @@ o aviso "Sua sessão terminou" e o e-mail já preenchido. A autorização contin
 sendo do backend: o relógio daqui só poupa uma chamada que sabidamente falharia.
 """
 
+import re
 import time
 
 import streamlit as st
@@ -27,6 +28,16 @@ _CHAVES_SESSAO = (
     # Dados de onboarding guardados por alguns segundos (onboarding_dados.py): são da pessoa logada.
     "onboarding_cache",
     "perfil_onboarding_cache",
+    # Documentos e Privacidade: cache de 20 s, link aberto e arquivo exportado (dados pessoais).
+    "documentos_cache",
+    "doc_link_aberto",
+    "privacidade_cache",
+    "exportacao_gerada",
+    "exportacao_disparar",
+    "pref_aniversario",
+    "pref_mural",
+    "modal_privacidade",
+    "modal_documento",
 )
 
 
@@ -89,3 +100,35 @@ def limpar_sessao() -> None:
     for chave in _CHAVES_SESSAO:
         st.session_state.pop(chave, None)
     st.session_state.pop("sessao_expirada", None)
+
+
+# ---------------------------------------------------------------------------
+# IP e dispositivo do login (tarefa 70 da change concluir-frontend-streamlit)
+# ---------------------------------------------------------------------------
+# Só o resumo "navegador no sistema" é guardado, não o texto completo do User-Agent:
+# basta para a pessoa reconhecer as próprias sessões e é menos identificável.
+_NAVEGADORES = (("Edg/", "Edge"), ("OPR/", "Opera"), ("Firefox/", "Firefox"), ("Chrome/", "Chrome"), ("Safari/", "Safari"))
+_SISTEMAS = (("Android", "Android"), ("iPhone", "iPhone"), ("iPad", "iPad"), ("Windows", "Windows"), ("Mac OS X", "macOS"), ("Linux", "Linux"))
+
+
+def descrever_dispositivo(user_agent: str | None) -> str | None:
+    """'Chrome no Windows', 'Safari no iPhone'… ou None quando não há User-Agent."""
+    if not user_agent:
+        return None
+    navegador = next((nome for marca, nome in _NAVEGADORES if marca in user_agent), "Navegador")
+    sistema = next((nome for marca, nome in _SISTEMAS if marca in user_agent), None)
+    if navegador == "Safari" and re.search(r"Chrome/|Chromium/", user_agent):
+        navegador = "Chrome"
+    return f"{navegador} no {sistema}" if sistema else navegador
+
+
+def contexto_do_navegador() -> tuple[str | None, str | None]:
+    """(dispositivo, endereço IP) de quem está usando o app, lidos da requisição ao Streamlit."""
+    try:
+        cabecalhos = st.context.headers
+        user_agent = cabecalhos.get("User-Agent") if cabecalhos else None
+        ip = st.context.ip_address
+    except Exception:  # fora de um navegador (AppTest, script): sem contexto
+        return None, None
+    return descrever_dispositivo(user_agent), ip
+

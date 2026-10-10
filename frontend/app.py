@@ -13,18 +13,25 @@ dispositivo (resposta 401 da API), a pessoa volta para "Entrar" com o aviso
 temporária, quem tem onboarding passa pela página "Onboarding" antes do Início
 (Figma F01, caminho "Primeiro acesso").
 
+Sem login também existe o "Aviso de privacidade" (Figma 285:874), aberto pelo link da tela
+Entrar. As páginas pedem a troca de página deixando uma marca em `st.session_state` (`ir_*`),
+porque o st.Page só existe aqui; "Sair da conta" (menu da conta) também passa por aqui.
+
 A lista de itens por perfil é só conveniência de navegação — a autorização
 real continua sendo do backend.
 """
 
 import streamlit as st
 
-from api_client import ApiError, auth_me
+from api_client import ApiError, auth_me, logout
+from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
+from pagina_configuracoes import pagina_configuracoes
+from pagina_documentos import pagina_documentos
 from pagina_entrar import pagina_entrar
 from pagina_inicio import pagina_inicio
 from pagina_meu_onboarding import pagina_meu_onboarding
 from pagina_onboarding import pagina_onboarding
-from sessao import encerrar_com_aviso, sessao_terminou
+from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
 from theme import inject_base_styles, render_nav_ativo, render_sidebar_logo
 
 # (rótulo, restrito a RH/ADMIN) na ordem do Figma.
@@ -56,8 +63,26 @@ if logado and sessao_terminou():
     encerrar_com_aviso()
     st.rerun()
 
+# "Sair da conta" (menu da conta, Figma 198:158): encerra a sessão no backend e volta a Entrar.
+if logado and st.session_state.pop("sair_da_conta", False):
+    try:
+        logout(st.session_state.token)
+    except ApiError:
+        pass  # A sessão local é apagada de qualquer jeito; a do backend vence no prazo.
+    limpar_sessao()
+    st.session_state.auth_step = "login"
+    st.session_state.aviso_login = "Você saiu da sua conta."
+    st.rerun()
+
 if not logado:
-    st.navigation([st.Page(pagina_entrar, title="Entrar", url_path="entrar")], position="hidden").run()
+    PG_ENTRAR = st.Page(pagina_entrar, title="Entrar", url_path="entrar", default=True)
+    PG_AVISO_PUBLICO = st.Page(pagina_aviso_publico, title="Aviso de privacidade", url_path="aviso-de-privacidade")
+    pagina_publica = st.navigation([PG_ENTRAR, PG_AVISO_PUBLICO], position="hidden")
+    if st.session_state.pop("ir_aviso", False):
+        st.switch_page(PG_AVISO_PUBLICO)
+    if st.session_state.pop("ir_entrar", False):
+        st.switch_page(PG_ENTRAR)
+    pagina_publica.run()
     st.stop()
 
 # Uma consulta a auth/me por sessão confere que o token ainda vale (a sessão pode ter sido
@@ -84,15 +109,30 @@ inject_base_styles("app")
 
 PG_INICIO = st.Page(pagina_inicio, title="Início", url_path="inicio", default=True)
 PG_MEU_ONBOARDING = st.Page(pagina_meu_onboarding, title="Meu onboarding", url_path="meu-onboarding")
-pagina_atual = st.navigation([PG_INICIO, PG_MEU_ONBOARDING], position="hidden")
+PG_DOCUMENTOS = st.Page(pagina_documentos, title="Documentos", url_path="documentos")
+PG_CONFIGURACOES = st.Page(pagina_configuracoes, title="Configurações", url_path="configuracoes")
+PG_AVISO = st.Page(pagina_aviso_logado, title="Aviso de privacidade", url_path="aviso-de-privacidade")
+pagina_atual = st.navigation(
+    [PG_INICIO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO], position="hidden"
+)
 
-# Atalhos pedidos por uma página (o st.Page só existe aqui): Início <-> Meu onboarding.
-if st.session_state.pop("ir_meu_onboarding", False):
-    st.switch_page(PG_MEU_ONBOARDING)
-if st.session_state.pop("ir_inicio", False):
-    st.switch_page(PG_INICIO)
+# Atalhos pedidos por uma página (o st.Page só existe aqui).
+_ATALHOS = {
+    "ir_meu_onboarding": PG_MEU_ONBOARDING,
+    "ir_inicio": PG_INICIO,
+    "ir_documentos": PG_DOCUMENTOS,
+    "ir_configuracoes": PG_CONFIGURACOES,
+    "ir_aviso": PG_AVISO,
+}
+for marca, destino in _ATALHOS.items():
+    if st.session_state.pop(marca, False):
+        st.switch_page(destino)
+
+# Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Documentos": PG_DOCUMENTOS}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
+# Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
 ativo_no_menu = {"Meu onboarding": "Início"}.get(pagina_atual.title, pagina_atual.title)
 
 perfil = str(st.session_state.usuario.get("perfil", "")).upper()
@@ -104,6 +144,8 @@ with st.sidebar:
         if rotulo == ativo_no_menu:
             render_nav_ativo(rotulo)
         elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
+            if rotulo in _PAGINAS_DO_MENU:
+                st.switch_page(_PAGINAS_DO_MENU[rotulo])
             st.toast(f"A tela {rotulo} ainda está em construção.")
 
 pagina_atual.run()
