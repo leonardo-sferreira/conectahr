@@ -267,3 +267,12 @@ Evidência em `docs/evidencias/frontend-ponto.md`.
 - **Ausência sem anexo.** O modal não tem o anexo do atestado (o sistema não recebe arquivo). O motivo é a lista do backend mais uma observação sem diagnóstico.
 - **Saldo do banco de horas.** É o total calculado pelo backend, não só o do mês.
 - **Aprovação das correções.** Fica para a tela do gestor e do RH (tarefas 20 e 21).
+
+## Férias (tarefas 22 a 25, 10/10/2026)
+
+Evidência em `docs/evidencias/frontend-ferias.md`.
+
+- **Sem saldo de férias no backend.** O pedido só confere o limite por pedido e o número de períodos. Foi decidido mostrar o que existe: o novo `minha_situacao_ferias` (GET, só leitura) devolve os mesmos números que o pedido confere, e a tela mostra "Até N dias" por pedido em vez de "Dias disponíveis". O saldo de verdade é a tarefa 74.
+- **Observação no pedido.** `ferias/solicitacoes` ganhou a entrada opcional `observacao` (para `observacao_colaborador`), que é a "Observação para o gestor" do Figma.
+- **Conferência antes de enviar.** O modal aplica as mesmas regras do backend antes de enviar (até 30 dias, limite, mínimo do período, antecedência), e o backend confere de novo.
+- **Telas que ainda faltam.** O calendário (tarefa 56) e a decisão do gestor e do RH (tarefa 24) ficam para as telas próprias.

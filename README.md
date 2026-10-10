@@ -34,7 +34,7 @@ Visão completa em [`docs/project-overview.md`](docs/project-overview.md); arqui
 | **LGPD** | Documentação e controles concluídos (registro de operações, aviso, RIPD, retenção, direitos do titular, anonimização, menores de 18 anos). Prazos e bases legais são sugestões acadêmicas |
 | **Especificações (OpenSpec)** | Spec principal com 65 requisitos e 201 cenários; 6 changes arquivadas |
 | **Documentação e evidências** | Concluídas, com testes por HTTP por perfil em [`docs/evidencias/`](docs/evidencias/) |
-| **Frontend (Streamlit)** | Parcial: entrada (login em dois passos, troca de senha, redefinição), Onboarding, Início, Meu Perfil, Ponto, Documentos, conferência de documentos do RH, aviso de privacidade (com e sem login) e Configurações → Privacidade, com tema claro e escuro (menu da conta). As demais telas seguem o protótipo do Figma |
+| **Frontend (Streamlit)** | Parcial: entrada (login em dois passos, troca de senha, redefinição), Onboarding, Início, Meu Perfil, Ponto, Férias, Documentos, conferência de documentos do RH, aviso de privacidade (com e sem login) e Configurações → Privacidade, com tema claro e escuro (menu da conta). As demais telas seguem o protótipo do Figma |
 
 O que falta está na change [`concluir-frontend-streamlit`](openspec/changes/concluir-frontend-streamlit/):
 telas do Figma ainda não construídas, acessibilidade, deploy e fontes locais.
@@ -86,7 +86,7 @@ openspec/
   specs/            Comportamento consolidado do sistema (spec principal)
   changes/          Mudanças em andamento
     archive/        Histórico de mudanças concluídas e arquivadas
-tools/              checar_endpoints.py (guarda de acesso), checar_fontes_locais.py (fontes sem Google Fonts), smoke_frontend.py (tela de entrada), testar_login_f01.py (fluxo de entrada), testar_onboarding.py, testar_privacidade_documentos.py, testar_conferencia_documentos.py, testar_perfil.py e testar_ponto.py
+tools/              checar_endpoints.py (guarda de acesso), checar_fontes_locais.py (fontes sem Google Fonts), smoke_frontend.py (tela de entrada), testar_login_f01.py (fluxo de entrada), testar_onboarding.py, testar_privacidade_documentos.py, testar_conferencia_documentos.py, testar_perfil.py, testar_ponto.py e testar_ferias.py
 xano-workspace/     Backend Xano em XanoScript
   table/            Tabelas do banco relacional
   function/         Funções reutilizáveis (CPF, regras, rotina diária, hash dos códigos…)
@@ -164,7 +164,8 @@ em [`docs/demonstracao.md`](docs/demonstracao.md).
   Privacidade, do menu da conta (incluindo o tema claro e escuro) e de Documentos, e
   `python tools/testar_conferencia_documentos.py` roda 52 verificações da conferência de documentos do RH, e
   `python tools/testar_perfil.py` roda 44 verificações do Meu Perfil (incluindo "só dados próprios"), e
-  `python tools/testar_ponto.py` roda 36 verificações do Ponto (marcação na ordem, correção e ausência).
+  `python tools/testar_ponto.py` roda 36 verificações do Ponto (marcação na ordem, correção e ausência), e
+  `python tools/testar_ferias.py` roda 31 verificações de Férias (pedido, cancelamento e bloqueios).
 - O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
   fumaça do frontend, testes do fluxo de entrada, do Onboarding, de Privacidade e Documentos e busca de segredos
   no repositório.

@@ -9,6 +9,8 @@ query "ferias/solicitacoes" verb=POST {
     date data_inicio
     date data_fim
     int quantidade_dias filters=min:1|max:30
+    // Observacao opcional para quem decide (Figma 221:230); vai para observacao_colaborador.
+    text? observacao? filters=trim|max:500
   }
 
   stack {
@@ -221,6 +223,7 @@ query "ferias/solicitacoes" verb=POST {
         data_inicio     : $input.data_inicio
         data_fim        : $input.data_fim
         quantidade_dias : $input.quantidade_dias
+        observacao_colaborador: $input.observacao
         status          : "Pendente"
         regra_contrato_id: $regra_aplicavel_id
         updated_at      : "now"
