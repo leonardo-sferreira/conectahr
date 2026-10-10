@@ -33,6 +33,7 @@ from pagina_ferias import pagina_ferias
 from pagina_inicio import pagina_inicio
 from pagina_meu_onboarding import pagina_meu_onboarding
 from pagina_onboarding import pagina_onboarding
+from pagina_pagamento import pagina_pagamento
 from pagina_perfil import pagina_perfil
 from pagina_ponto import pagina_ponto
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
@@ -130,9 +131,10 @@ PG_AVISO = st.Page(pagina_aviso_logado, title="Aviso de privacidade", url_path="
 PG_PERFIL = st.Page(pagina_perfil, title="Perfil", url_path="perfil")
 PG_PONTO = st.Page(pagina_ponto, title="Ponto", url_path="ponto")
 PG_FERIAS = st.Page(pagina_ferias, title="Férias", url_path="ferias")
+PG_PAGAMENTO = st.Page(pagina_pagamento, title="Pagamento", url_path="pagamento")
 PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de documentos", url_path="conferencia-de-documentos")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CONFERENCIA], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CONFERENCIA], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -148,7 +150,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Conferência de documentos": PG_CONFERENCIA}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Conferência de documentos": PG_CONFERENCIA}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).

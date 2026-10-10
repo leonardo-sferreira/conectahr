@@ -53,6 +53,10 @@ _CHAVES_SESSAO = (
     # Férias.
     "ferias_cache",
     "modal_ferias",
+    # Pagamento.
+    "pagamento_cache",
+    "modal_pagamento",
+    "pg_link",
 )
 
 

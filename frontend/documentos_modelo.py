@@ -66,9 +66,13 @@ def linha_documento(documento: dict) -> dict:
     return {"id": documento.get("id"), "titulo": titulo, "detalhe": detalhe, "badge": selo, "tipo": tom}
 
 
+# Holerite e informe de rendimentos aparecem na tela Pagamento, não entre os documentos cadastrais.
+TIPOS_PAGAMENTO = ("holerite", "informe_rendimentos")
+
+
 def lista_documentos(documentos: list[dict]) -> list[dict]:
-    """Todos os documentos, do mais recente para o mais antigo (o backend já ordena)."""
-    return [linha_documento(d) for d in documentos]
+    """Os documentos cadastrais, do mais recente para o mais antigo (o backend já ordena)."""
+    return [linha_documento(d) for d in documentos if d.get("tipo") not in TIPOS_PAGAMENTO]
 
 
 def linhas_pendentes(pendencias: list[dict], documentos: list[dict]) -> list[dict]:

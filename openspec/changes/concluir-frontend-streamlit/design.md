@@ -276,3 +276,11 @@ Evidência em `docs/evidencias/frontend-ferias.md`.
 - **Observação no pedido.** `ferias/solicitacoes` ganhou a entrada opcional `observacao` (para `observacao_colaborador`), que é a "Observação para o gestor" do Figma.
 - **Conferência antes de enviar.** O modal aplica as mesmas regras do backend antes de enviar (até 30 dias, limite, mínimo do período, antecedência), e o backend confere de novo.
 - **Telas que ainda faltam.** O calendário (tarefa 56) e a decisão do gestor e do RH (tarefa 24) ficam para as telas próprias.
+
+## Pagamento (tarefas 29 e 30, 10/10/2026)
+
+Evidência em `docs/evidencias/frontend-pagamento.md`.
+
+- **Competência no nome do documento.** A tabela `documento` não tem campo de competência. A tela grava a competência no nome ("Holerite — Agosto/2026", "Informe de rendimentos 2025") e, sem esse padrão, usa a data de emissão.
+- **Link no lugar do upload**, como em Documentos.
+- **Holerite e informe só em Pagamento.** A tela Documentos deixou de listá-los.
