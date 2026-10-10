@@ -688,6 +688,8 @@ _APP_CSS = f"""
   .st-key-rh_tabela div[class*="st-key-rh_arquivar_"] button p {{ color: {GRAFITE} !important; }}
   .st-key-rh_tabela div[class*="st-key-rh_abrir_"] button p {{ color: {GRAFITE} !important; font-weight: 500 !important; }}
   .st-key-rh_barra {{ gap: 12px; }}
+  .st-key-rh_barra .stButton {{ flex-shrink: 0; }}
+  .st-key-rh_barra button[kind="primary"] {{ border-radius: 10px; padding: 0.55rem 1.1rem; white-space: nowrap; }}
   .st-key-rh_barra button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1.1rem; }}
   .st-key-rh_barra button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .st-key-rh_barra .stSelectbox > div > div {{ background: white !important; border: 1px solid {BORDA} !important; border-radius: 10px; }}
@@ -760,7 +762,10 @@ _APP_CSS = f"""
   .st-key-ferias_topo button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .st-key-ferias_topo button[kind="primary"] {{ width: auto; padding: 0.7rem 1.4rem; }}
   .st-key-ferias_historico {{ gap: 8px; }}
-  div[class*="st-key-ferias_lin_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; gap: 14px; }}
+  div[class*="st-key-ferias_lin_"], div[class*="st-key-pg_lin_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; gap: 14px; }}
+  div[class*="st-key-pg_lin_"] button[kind="tertiary"] p {{ font-size: 13px !important; }}
+  div[class*="_lista"][class*="st-key-hol"], div[class*="_lista"][class*="st-key-inf"] {{ gap: 8px; }}
+  .crh-pg-nota {{ margin: 0; background: {MARFIM}; border-radius: 8px; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
   div[class*="st-key-ferias_lin_"] button[kind="tertiary"] p {{ color: {ERRO} !important; font-size: 13px !important; }}
   .crh-fe-item {{ display: flex; gap: 14px; align-items: center; }}
   .crh-fe-item .p {{ width: 10px; height: 10px; border-radius: 999px; background: {CINZA_CLARO}; flex-shrink: 0; }}
@@ -865,7 +870,8 @@ _ESCURO_CSS = f"""
   .st-key-rh_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   div[class*="st-key-perfil_card_"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA}; }}
   .st-key-ponto_card_hoje, .st-key-ponto_card_saldo, .st-key-ponto_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
-  div[class*="st-key-ferias_lin_"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  div[class*="st-key-ferias_lin_"], div[class*="st-key-pg_lin_"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-pg-nota {{ background: {ESC_CARTAO}; color: {ESC_TEXTO_2}; }}
   .crh-fe-item .t {{ color: {ESC_TEXTO}; }}
   .crh-fe-item .d {{ color: {ESC_TEXTO_2}; }}
   .st-key-ferias_topo button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
