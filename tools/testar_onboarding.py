@@ -73,7 +73,21 @@ def _onboarding(token, colaborador_id):
 
 
 api_client.onboarding = _onboarding
-api_client.concluir_item_onboarding = lambda token, item_id: {"sucesso": True}
+concluidos_pela_tela: list[int] = []
+
+
+def _concluir(token, item_id):
+    """Simula a regra do backend (onboarding_item/{id}/concluir): só o responsável conclui; para o
+    colaborador, só os itens com responsavel = "colaborador". Fora disso, 403."""
+    concluidos_pela_tela.append(item_id)
+    item = next(i for i in itens(estado["concluidas"]) if i["id"] == item_id)
+    if estado.get("negar_concluir") or item["responsavel"] != "colaborador":
+        raise ApiError("Voce nao e o responsavel por este item de onboarding.", 403)
+    estado["concluidas"] = tuple(estado["concluidas"]) + (item["categoria"],)
+    return {"sucesso": True}
+
+
+api_client.concluir_item_onboarding = _concluir
 api_client.minhas_pendencias_documento = lambda token: {"pendencias": PENDENCIAS}
 api_client.meu_perfil_colaborador = lambda token: {
     "colaborador": {"tipo_contrato": "CLT", "carga_horaria_semanal": 44},
@@ -219,6 +233,31 @@ def main() -> int:
     estado["onboarding"] = "ok"
     at = rodar_pagina("pagina_meu_onboarding", "pagina_meu_onboarding", colaborador_id=None)
     conferir("Você não tem um onboarding em andamento" in html(at), "vazio: conta sem colaborador")
+
+    caso("Autorização por item (tarefa 18): a tela só conclui o que é da própria pessoa")
+    responsaveis = {i["id"]: i["responsavel"] for i in itens()}
+    estado.update(onboarding="ok", status="em_andamento", concluidas=("dados_pessoais", "acesso"))
+    concluidos_pela_tela.clear()
+    at = rodar_pagina("pagina_onboarding", "pagina_onboarding")
+    conferir(not len(at.exception), "boas-vindas renderiza sem exceção")
+    conferir(
+        len(concluidos_pela_tela) == 1 and responsaveis[concluidos_pela_tela[0]] == "colaborador"
+        and itens()[concluidos_pela_tela[0] - 1]["categoria"] == "troca_senha",
+        "depois da troca de senha, conclui só 'Trocar a senha temporária' (responsável: colaborador)",
+    )
+    conferir("3 de 13" in html(at), "o progresso já mostra a etapa concluída")
+    estado.update(concluidas=("dados_pessoais", "acesso"), negar_concluir=True)
+    concluidos_pela_tela.clear()
+    at = rodar_pagina("pagina_onboarding", "pagina_onboarding")
+    conferir(not len(at.exception) and "2 de 13" in html(at), "403 do backend ao concluir: a tela continua, com o checklist como está")
+    estado.update(concluidas=("dados_pessoais", "acesso", "troca_senha"), negar_concluir=False)
+    concluidos_pela_tela.clear()
+    at = rodar_pagina("pagina_meu_onboarding", "pagina_meu_onboarding")
+    rotulos = {b.label for b in at.button}
+    rotulos -= {"Configurações", "Sair da conta"}  # menu da conta, na barra superior
+    conferir(rotulos <= {"← Voltar ao Início", "Enviar documentos →"}, f"'Meu onboarding' não tem botão de concluir etapa ({sorted(rotulos)})")
+    conferir(not concluidos_pela_tela, "abrir 'Meu onboarding' não conclui nada")
+    conferir(sum(1 for r in responsaveis.values() if r != "colaborador") == 11, "as 11 etapas do RH e do gestor ficam só como acompanhamento")
 
     caso("Card do onboarding no Início (AppTest)")
     at = rodar_pagina("pagina_inicio", "pagina_inicio")

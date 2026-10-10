@@ -37,7 +37,6 @@ Usamos serviços de terceiros, chamados **operadores**, para o sistema funcionar
 
 - **Xano:** onde ficam o banco de dados e os arquivos do sistema.
 - **Brevo:** envia os e-mails (recebe seu nome, e-mail e o texto da mensagem).
-- **Google Fonts:** fornece as fontes das telas. Ao abrir o sistema, o seu navegador consulta o Google, que recebe o seu endereço IP.
 - **Hospedagem do aplicativo (Streamlit):** serve as telas.
 
 Alguns desses serviços ficam fora do Brasil. A forma de proteger essa transferência precisa de confirmação. Os detalhes estão no [documento de operadores](operadores.md).

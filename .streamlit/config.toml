@@ -10,4 +10,6 @@ font = "sans serif"
 
 [server]
 headless = true
+# Serve frontend/static (fontes Sora e Manrope, sem Google Fonts; tarefa 4).
+enableStaticServing = true
 runOnSave = true

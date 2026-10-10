@@ -27,6 +27,9 @@ jobs:
       - name: Guarda de acesso dos endpoints do Xano
         run: python tools/checar_endpoints.py
 
+      - name: Fontes servidas pelo proprio app (sem Google Fonts)
+        run: python tools/checar_fontes_locais.py
+
       - name: Teste de fumaca do frontend
         run: |
           cp .streamlit/secrets.toml.example .streamlit/secrets.toml

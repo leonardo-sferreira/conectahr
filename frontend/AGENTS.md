@@ -60,8 +60,10 @@ Todo acesso à API passa por `frontend/api_client.py`. Não chame `requests` dir
   `render_card_title`…). **Não** crie cor, fonte ou CSS solto em uma página.
 - HTML próprio só com `st.html()`, sempre escapando texto vindo de usuário ou da API
   (`html.escape`). Nunca use `unsafe_allow_html` com texto não escapado.
-- Fontes: Sora e Manrope. Hoje são carregadas do Google Fonts, o que envia o IP do usuário ao
-  Google; servir localmente está na tarefa 4 da change `concluir-frontend-streamlit` (origem 3.50).
+- Fontes: Sora e Manrope, servidas pelo próprio app a partir de `frontend/static/fonts` (licença OFL),
+  com `server.enableStaticServing = true` em `.streamlit/config.toml`. Não volte a carregar fonte, script ou
+  imagem de serviço externo pelo navegador: isso entrega o IP de quem usa a terceiros (LGPD, tarefa 4).
+  Peso novo de fonte = arquivo novo em `static/fonts` e mais um `@font-face` em `theme.py`.
 
 ## Os 6 estados de UI
 
