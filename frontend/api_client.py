@@ -18,6 +18,7 @@ _log = logging.getLogger(__name__)
 
 _MENSAGEM_SEM_CONEXAO = "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente em instantes."
 _MENSAGEM_GENERICA = "Erro inesperado. Tente novamente."
+_MENSAGEM_SESSAO_TERMINOU = "Sua sessão terminou. Entre de novo para continuar."
 
 # Mensagens de validação que o próprio Xano gera em inglês (tipos e filtros de
 # input), traduzidas para o usuário. As mensagens escritas nos endpoints já
@@ -25,6 +26,9 @@ _MENSAGEM_GENERICA = "Erro inesperado. Tente novamente."
 _TRADUCOES = [
     (re.compile(r"^Invalid email format\.?$", re.I), lambda m: "Informe um e-mail válido, no formato nome@empresa.com."),
     (re.compile(r"^Missing param: .*", re.I), lambda m: "Preencha todos os campos obrigatórios."),
+    # Token inválido (adulterado, de outro ambiente ou já invalidado): a resposta é 401,
+    # tratada como sessão encerrada em _request.
+    (re.compile(r"^Invalid token\.?$", re.I), lambda m: _MENSAGEM_SESSAO_TERMINOU),
     (
         re.compile(r"minimum length requirement of (\d+)", re.I),
         lambda m: f"O valor informado precisa ter pelo menos {m.group(1)} caracteres.",
@@ -57,6 +61,8 @@ class ApiError(Exception):
 # Todos os grupos vivem na mesma instancia; so o sufixo "api:<canonical>" muda.
 GRUPO_AUTENTICACAO = "kFmShhlY"
 GRUPO_COLABORADORES = "ySciQ2YN"
+GRUPO_DEPARTAMENTOS = "wcbcMmlw"
+GRUPO_DOCUMENTOS = "DzPbmWVZ"
 GRUPO_PONTO = "4PXzu46t"
 
 
@@ -108,6 +114,12 @@ def _request(method: str, path: str, token: str | None, canonical: str, payload:
         data = {}
 
     if not resp.ok:
+        if resp.status_code == 401 and token:
+            # 401 numa chamada autenticada: sessão encerrada, revogada ou vencida.
+            # O app.py (e a tela Entrar) veem a marca e levam a pessoa ao login com
+            # aviso. Um 401 sem token (credencial errada no login) não conta.
+            st.session_state["sessao_expirada"] = True
+            raise ApiError(_MENSAGEM_SESSAO_TERMINOU, 401)
         message = data.get("message") or data.get("error") or _MENSAGEM_GENERICA
         raise ApiError(_traduzir(str(message)), resp.status_code)
 
@@ -158,6 +170,11 @@ def trocar_senha(token: str, senha_atual: str, nova_senha: str, confirmar_senha:
     )
 
 
+def auth_me(token: str) -> dict:
+    """GET auth/me -> usuário da sessão (id, nome, perfil, colaborador_id…). 401 se a sessão terminou."""
+    return _get("auth/me", token, GRUPO_AUTENTICACAO)
+
+
 def logout(token: str) -> dict:
     """POST auth/logout -> encerra a sessão do usuário autenticado."""
     return _post("auth/logout", {}, token)
@@ -181,3 +198,29 @@ def aniversariantes(token: str) -> dict:
 def meus_comunicados(token: str) -> dict:
     """GET meus_comunicados -> {comunicados} (vigentes e visiveis ao usuario)."""
     return _get("meus_comunicados", token, GRUPO_COLABORADORES)
+
+
+def meu_perfil_colaborador(token: str) -> dict:
+    """GET meu_perfil_colaborador -> {colaborador, cargo, departamento, ...} do próprio usuário."""
+    return _get("meu_perfil_colaborador", token, GRUPO_COLABORADORES)
+
+
+def organograma(token: str) -> dict:
+    """GET organograma -> {departamentos, cargos, colaboradores} (campos não sensíveis, qualquer perfil)."""
+    return _get("organograma", token, GRUPO_DEPARTAMENTOS)
+
+
+def onboarding(token: str, colaborador_id: int) -> dict:
+    """GET colaboradores/{id}/onboarding -> {onboarding, itens, total_itens, itens_concluidos, percentual_concluido}."""
+    return _get(f"colaboradores/{int(colaborador_id)}/onboarding", token, GRUPO_COLABORADORES)
+
+
+def concluir_item_onboarding(token: str, item_id: int) -> dict:
+    """POST onboarding_item/{id}/concluir -> {sucesso, mensagem, item, onboarding_concluido}."""
+    return _post(f"onboarding_item/{int(item_id)}/concluir", {}, token, GRUPO_COLABORADORES)
+
+
+def minhas_pendencias_documento(token: str) -> dict:
+    """GET minhas_pendencias_documento -> {pendencias: [{tipo_documento, prazo, status, ...}]} do próprio colaborador."""
+    return _get("minhas_pendencias_documento", token, GRUPO_DOCUMENTOS)
+

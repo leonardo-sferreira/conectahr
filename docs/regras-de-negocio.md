@@ -618,6 +618,12 @@ Leitura: permitida a RH/ADMIN, ao próprio colaborador, ou ao Gestor do departam
 
 Máquina de estados do item: `pendente` (`concluido:false`) → `concluido:true`; bloqueado se já concluído. Autorização por item é por `responsavel`: item `rh` exige perfil RH/ADMIN; item `colaborador` exige que o usuário autenticado seja o colaborador do onboarding; item `gestor` exige perfil GESTOR gerenciando o departamento do colaborador; RH/ADMIN sempre podem concluir em nome de qualquer responsável (supervisão) (`xano-workspace/api/conecta_rh_colaboradores/onboarding_item/id/concluir_POST.xs`). Auditado como `concluir_item_onboarding`. A transição do `onboarding.status` para `concluido` na conclusão de todos os itens **não foi encontrada** — não mapeado.
 
+Apresentação no frontend (`frontend/onboarding_modelo.py`, Figma 310:2477, 309:1048 e 309:1446, 10/10/2026): as
+13 etapas aparecem agrupadas pelo responsável (2 do colaborador, 7 do RH, 4 do gestor). O backend não guarda
+prazo por etapa; a data "previsto para" dos acompanhamentos de 30, 60 e 90 dias é **calculada na tela** como
+`onboarding.data_inicio` + 30, 60 e 90 dias e não muda nada no backend. O card do Início some quando
+`onboarding.status` é `concluido` ou quando as 13 etapas estão concluídas.
+
 ### 12.8 Organograma e busca global
 
 Ambos **estão implementados**:

@@ -20,8 +20,22 @@ versionado neste repositório, o link abaixo é a fonte de verdade.
   estados exigidos pela tarefa 1.11 (carregando, vazio, sucesso, erro, bloqueado,
   permissão negada), com critérios de acessibilidade documentados (contraste WCAG,
   foco visível, cor nunca sozinha, navegação por teclado).
-- **Protótipo — Dark**: as mesmas 13 telas em modo escuro, com navegação própria
-  religada internamente.
+- **Protótipo — Dark**: as 13 telas originais em modo escuro, com navegação própria
+  religada internamente, mais as seções 5, 9 a 12 e 13 a 17 em modo escuro. Ainda só em
+  modo claro: as seções 1 a 4 e 6 a 8 e a página de fluxos.
+- **Fluxos — apresentação**: os fluxos F01 a F39, uma seção por fluxo, com as etapas
+  de cada caminho, um índice e um grupo por perfil. Há dois "F37" (Regras e Onboarding);
+  a renumeração está na tarefa 69 da change `concluir-frontend-streamlit`.
+
+**Atualização de 09/10/2026.** A página "ConectaRH — Protótipo" passou a ter seções
+numeradas de 0 a 17 (as seções 6 a 12 cobrem Perfil, menus por perfil e as áreas de RH,
+Gestor e Admin). As seções 13 a 16 trazem as telas que a spec exigia e faltavam: aviso de
+privacidade e exportação de dados, Regras (criar, aprovar, simular, aplicar), Rotina diária
+com Retenção e anonimização, e Reconhecimentos. A seção 17 (10/10/2026) redesenha o
+Onboarding do primeiro acesso com as 13 etapas do backend. O mapa de nós está no `design.md` da change
+`concluir-frontend-streamlit`. O quadro "Design System — Modo escuro e componentes" documenta
+os tokens do modo escuro e os componentes novos; o quadro "Senha, onboarding e menu"
+documenta o campo de senha com o olho, o menu por grupo de perfil e as etapas do onboarding.
 
 ## Identidade visual
 

@@ -15,6 +15,10 @@ uma, para a `concluir-mvp-conectarh` poder ser arquivada.
   - as 52 tarefas da seção 2 (telas do Figma, painel de notificações, configurações e as
     telas que ainda precisam ser desenhadas).
 - Cada tarefa leva, entre parênteses, a numeração original.
+- Em 09/10/2026 o Figma foi conferido e a lista de "telas a desenhar" estava desatualizada: quase tudo
+  já existia. As telas que faltavam (aviso de privacidade, Regras com criar/aprovar/simular/aplicar, Rotina
+  diária, Retenção e anonimização, Reconhecimentos) foram desenhadas em modo claro e escuro. A seção 3 do
+  `tasks.md` (tarefas 58 a 67) registra isso e as pendências que o levantamento encontrou.
 
 ## Regras que continuam valendo
 

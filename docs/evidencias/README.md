@@ -37,6 +37,8 @@ Como escrever:
 | `rotinas-e-fluxos.md` | Evidências da Parte 2: Gestor e delegação, rotina diária, ciclo, clima, equipe, retenção |
 | `backup.md` | Backup de código e schema e a restauração (pendente) |
 | `smoke-final.md` | Teste final por perfil (Admin, RH, Gestor e Colaborador) |
+| `frontend-login-f01.md` | Fluxo de entrada do frontend (Figma F01): casos, estados de UI e prints lado a lado em `frontend-f01/` |
+| `frontend-onboarding.md` | Onboarding do primeiro acesso, "Meu onboarding" e o card do Início (tarefa 68) |
 
 ## Checklist antes de cada commit nesta pasta
 

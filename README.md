@@ -86,7 +86,7 @@ openspec/
   specs/            Comportamento consolidado do sistema (spec principal)
   changes/          Mudanças em andamento
     archive/        Histórico de mudanças concluídas e arquivadas
-tools/              checar_endpoints.py (guarda de acesso) e smoke_frontend.py (tela de entrada)
+tools/              checar_endpoints.py (guarda de acesso), smoke_frontend.py (tela de entrada), testar_login_f01.py (fluxo de entrada) e testar_onboarding.py
 xano-workspace/     Backend Xano em XanoScript
   table/            Tabelas do banco relacional
   function/         Funções reutilizáveis (CPF, regras, rotina diária, hash dos códigos…)
@@ -156,8 +156,11 @@ em [`docs/demonstracao.md`](docs/demonstracao.md).
 - `python tools/checar_endpoints.py` confere a guarda de acesso em todo endpoint autenticado do Xano
   (184 endpoints, 0 falhas).
 - `python tools/smoke_frontend.py` confere que a tela de entrada renderiza.
+- `python tools/testar_login_f01.py` roda 51 verificações do fluxo de entrada (login, código de acesso,
+  primeiro acesso, Onboarding e sessão que termina) com uma API simulada, sem rede, e
+  `python tools/testar_onboarding.py` roda 45 verificações do Onboarding (boas-vindas, "Meu onboarding" e o card do Início).
 - O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
-  fumaça do frontend e busca de segredos no repositório.
+  fumaça do frontend, testes do fluxo de entrada e busca de segredos no repositório.
 - Os testes do backend são feitos por HTTP contra o Xano real, por perfil, e registrados em
   [`docs/evidencias/`](docs/evidencias/) (o teste final cobriu os quatro perfis: 43 de 43 chamadas como
   esperado, em [`smoke-final.md`](docs/evidencias/smoke-final.md)). Casos que não foram possíveis de testar
