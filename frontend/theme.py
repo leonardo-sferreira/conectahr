@@ -693,6 +693,31 @@ _APP_CSS = f"""
   .st-key-rh_barra .stSelectbox div, .st-key-rh_barra .stSelectbox input {{ color: {GRAFITE} !important; }}
   .crh-campos-direita .v {{ text-align: right; }}
 
+  /* Meu Perfil (Figma 202:175): cartões com campos em duas colunas, pendências e organograma. */
+  div[class*="st-key-perfil_card_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 24px 28px; gap: 14px; }}
+  .st-key-perfil_card_pendencias {{ border-color: {AMBAR} !important; }}
+  div[class*="st-key-perfil_card_"] button[kind="primary"] {{ width: auto; padding: 0.4rem 0.9rem; }}
+  div[class*="st-key-perfil_card_"] button[kind="primary"] p {{ font-size: 13px !important; }}
+  .crh-campos-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; }}
+  .crh-campos-grid .r {{ margin: 0 0 2px 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-campos-grid .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 15px; color: {GRAFITE}; }}
+  .crh-pf-titulo {{ display: flex; align-items: center; gap: 10px; }}
+  .crh-pf-contador {{ width: 24px; height: 24px; border-radius: 999px; background: {AMBAR_BG}; color: {AMBAR_ESCURO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }}
+  .crh-pf-lista {{ display: flex; flex-direction: column; }}
+  .crh-pf-item {{ display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid {BORDA}; }}
+  .crh-pf-item:last-child {{ border-bottom: none; }}
+  .crh-pf-item .p {{ width: 6px; height: 6px; border-radius: 999px; background: {AMBAR}; margin-top: 8px; flex-shrink: 0; }}
+  .crh-pf-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
+  .crh-pf-item .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-org {{ display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }}
+  .crh-org-linha {{ display: flex; gap: 10px; flex-wrap: wrap; }}
+  .crh-org-seta {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-org-pessoa {{ display: flex; gap: 10px; align-items: center; background: {MARFIM}; border: 1px solid transparent; border-radius: 10px; padding: 10px 14px 10px 12px; }}
+  .crh-org-pessoa.voce {{ background: {AMBAR_BG}; border-color: {AMBAR}; }}
+  .crh-org-pessoa .a {{ width: 30px; height: 30px; border-radius: 999px; background: {GRAFITE}; color: {AMBAR}; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }}
+  .crh-org-pessoa .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; }}
+  .crh-org-pessoa .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; }}
+
   /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
   .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}
 
@@ -717,6 +742,7 @@ _APP_CSS = f"""
   [data-testid="stDialog"] [data-testid="stTextAreaRootElement"] > div, [data-testid="stDialog"] [data-testid="stNumberInputContainer"] > div {{ background: transparent !important; }}
   [data-testid="stDialog"] .stSelectbox > div > div {{ border: 1px solid {BORDA} !important; }}
   [data-testid="stDialog"] .stDateInput span {{ color: {GRAFITE} !important; }}
+  [data-testid="stDialog"] input:disabled {{ -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; color: {GRAFITE_SECUNDARIO} !important; opacity: 1; cursor: default; }}
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea {{ -webkit-text-fill-color: {GRAFITE}; }}
   [data-testid="stDialog"] input::placeholder, [data-testid="stDialog"] textarea::placeholder {{ color: {GRAFITE_SECUNDARIO}; -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; opacity: 0.8; }}
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {GRAFITE} !important; background: transparent !important; }}
@@ -780,6 +806,14 @@ _ESCURO_CSS = f"""
   .st-key-doc_pendentes div[class*="st-key-doc_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
   .st-key-doc_pendentes div[class*="st-key-doc_lin"] {{ border-color: {ESC_BORDA}; }}
   .st-key-rh_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  div[class*="st-key-perfil_card_"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA}; }}
+  .st-key-perfil_card_pendencias {{ border-color: {AMBAR} !important; }}
+  .crh-campos-grid .r, .crh-pf-item .d, .crh-org-seta, .crh-org-pessoa .d {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-campos-grid .v, .crh-pf-item .t, .crh-org-pessoa .t {{ color: {ESC_TEXTO} !important; }}
+  .crh-pf-item {{ border-color: {ESC_BORDA}; }}
+  .crh-org-pessoa {{ background: {ESC_FUNDO}; }}
+  .crh-org-pessoa.voce {{ background: {ESC_AMBAR_SUAVE}; border-color: {AMBAR}; }}
+  .crh-pf-contador {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
   .st-key-rh_tabela div[class*="st-key-rh_lin"] {{ border-color: {ESC_BORDA}; }}
   .st-key-rh_tabela div[class*="st-key-rh_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
   .st-key-rh_tabela .st-key-rh_cab {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
@@ -815,6 +849,7 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] input::placeholder, [data-testid="stDialog"] textarea::placeholder {{ color: {ESC_TEXTO_2}; -webkit-text-fill-color: {ESC_TEXTO_2}; }}
   [data-testid="stDialog"] .stSelectbox > div > div {{ border-color: {ESC_BORDA} !important; }}
   [data-testid="stDialog"] .stDateInput span {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] input:disabled {{ -webkit-text-fill-color: {ESC_TEXTO_2}; color: {ESC_TEXTO_2} !important; }}
   [data-testid="stDialog"] button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {ESC_TEXTO_2}; color: {ESC_TEXTO_2}; }}
