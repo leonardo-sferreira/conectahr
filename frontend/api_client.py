@@ -294,3 +294,60 @@ def abrir_arquivo_documento(token: str, documento_id: int) -> dict:
     """GET documentos/{id}/arquivo -> {arquivo_url, expira_em_segundos}. Só o dono, o RH e o Admin; cada
     abertura grava `acessar_arquivo_documento` na auditoria."""
     return _get(f"documentos/{int(documento_id)}/arquivo", token, GRUPO_DOCUMENTOS)
+
+
+# ---------------------------------------------------------------------------
+# Conferência de documentos pelo RH (tarefa 27). Só RH e Admin: o backend recusa os demais perfis.
+# Nenhuma exclusão: o documento sai das listas por arquivamento.
+# ---------------------------------------------------------------------------
+def documentos_rh(token: str) -> dict:
+    """GET documentos -> {quantidade, documentos} de todos os colaboradores, sem o link do arquivo."""
+    return _get("documentos", token, GRUPO_DOCUMENTOS)
+
+
+def pendencias_documento(token: str) -> dict:
+    """GET pendencias_documento -> {pendencias} de todos os colaboradores."""
+    return _get("pendencias_documento", token, GRUPO_DOCUMENTOS)
+
+
+def pedir_documento(token: str, colaborador_id: int, tipo_documento: str, prazo: str, observacao: str | None) -> dict:
+    """POST pendencias_documento: o colaborador recebe a pendência por e-mail e na tela Documentos."""
+    corpo = {"colaborador_id": int(colaborador_id), "tipo_documento": tipo_documento, "prazo": prazo}
+    if observacao:
+        corpo["observacao"] = observacao
+    return _post("pendencias_documento", corpo, token, GRUPO_DOCUMENTOS)
+
+
+def documentos_obrigatorios(token: str) -> dict:
+    """GET documentos_obrigatorios -> {regras} ativas da matriz de documentos obrigatórios."""
+    return _get("documentos_obrigatorios", token, GRUPO_DOCUMENTOS)
+
+
+def criar_regra_documento(token: str, regra: dict) -> dict:
+    """POST documentos_obrigatorios -> {regra}. Campos vazios não são enviados."""
+    return _post("documentos_obrigatorios", {k: v for k, v in regra.items() if v not in (None, "")}, token, GRUPO_DOCUMENTOS)
+
+
+def _decidir(acao: str, token: str, documento_id: int, observacao: str | None) -> dict:
+    corpo = {"observacao": observacao} if observacao else {}
+    return _post(f"documentos/{int(documento_id)}/{acao}", corpo, token, GRUPO_DOCUMENTOS)
+
+
+def aprovar_documento(token: str, documento_id: int, observacao: str | None = None) -> dict:
+    """POST documentos/{id}/aprovar. Recusa o próprio documento e arquivo bloqueado."""
+    return _decidir("aprovar", token, documento_id, observacao)
+
+
+def rejeitar_documento(token: str, documento_id: int, motivo: str) -> dict:
+    """POST documentos/{id}/rejeitar. O motivo (5 a 1000 caracteres) é obrigatório e o colaborador vê."""
+    return _decidir("rejeitar", token, documento_id, motivo)
+
+
+def arquivar_documento(token: str, documento_id: int, observacao: str | None = None) -> dict:
+    """POST documentos/{id}/arquivar. Só recusado, vencido ou substituído; o documento não é apagado."""
+    return _decidir("arquivar", token, documento_id, observacao)
+
+
+def processar_vencimentos(token: str) -> dict:
+    """POST documentos/processar_vencimentos -> {total_vencidos, total_alertas}. Idempotente no mesmo dia."""
+    return _post("documentos/processar_vencimentos", {}, token, GRUPO_DOCUMENTOS)
