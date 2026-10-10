@@ -239,3 +239,11 @@ A tela 244:586 e o fluxo F23 já existiam. O que mudou segue as regras do backen
 - **O que fica igual:** a tela Entrar e o primeiro acesso continuam grafite.
 - **Como a escolha é lembrada:** na sessão e num cookie de preferência (`crh_tema`, 1 ano). O valor é sempre "claro" ou "escuro", sem dado pessoal. É um cookie necessário à preferência pedida pela própria pessoa, então não entra no aviso de privacidade como tratamento de dado pessoal.
 - **O que falta:** desenhar as seções escuras 1 a 4 e 6 a 8 antes de construir essas telas.
+
+### Conferência de documentos no Streamlit (tarefa 27)
+
+A tela foi construída a partir da seção 18. Evidência em `docs/evidencias/frontend-conferencia-documentos.md`.
+
+- **"Pedido por"** mostra "Você" ou "RH". O nome de quem pediu exigiria `usuarios`, que devolve o e-mail de todos (minimização).
+- **"Nova regra"** separa "Vale para" (contrato e cargo) e "Guardar por" (anos e evento), porque são campos separados no backend.
+- **Grupo "RH" no menu** (Design System 314:786). Só "Conferência de documentos" está construída; os outros itens do grupo mostram "em construção". Os grupos completos por perfil continuam na tarefa 65.

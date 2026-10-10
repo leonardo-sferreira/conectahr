@@ -51,7 +51,7 @@
 - [ ] 25 (origem: `concluir-mvp-conectarh` 2.20) [FE 8.4] Testar bloqueio de segunda solicitação pendente, exigência de senha já trocada, e os 6 estados de UI.
 - [x] 26 (origem: `concluir-mvp-conectarh` 2.21) [FE 9.1] Buscar o node "Documentos" no Figma e conferir antes de codar; construir upload/listagem por status.
   - **Feito (10/10/2026):** `frontend/pagina_documentos.py` conforme 41:26, 309:1249 e 309:1591: lista por status, documentos pendentes e envio. O "upload" é por link (`arquivo_url`), porque o plano do Xano não aceita arquivo (tarefa 62). Evidência em `docs/evidencias/frontend-privacidade-documentos.md`.
-- [ ] 27 (origem: `concluir-mvp-conectarh` 2.22) [FE 9.2] Integrar com `documentos` (POST/GET/PATCH), `documentos/{id}/aprovar-rejeitar-arquivar`, `pendencias_documento` e a consulta de documentos obrigatórios pendentes.
+- [x] 27 (origem: `concluir-mvp-conectarh` 2.22) [FE 9.2] Integrar com `documentos` (POST/GET/PATCH), `documentos/{id}/aprovar-rejeitar-arquivar`, `pendencias_documento` e a consulta de documentos obrigatórios pendentes.
   - **Parcial (10/10/2026):** o lado do colaborador está integrado: `meus_documentos`, `documentos` (POST), `documentos/{id}/arquivo` e `minhas_pendencias_documento`. Falta a fila do RH (aprovar, rejeitar, arquivar, `pendencias_documento` e documentos obrigatórios), que ainda não tem tela construída.
   - **Desenho (10/10/2026):** fila do RH desenhada.
     - Seção 18 do protótipo, clara (418:1106) e escura (420:1010):
@@ -60,6 +60,10 @@
       - modais "Aprovar", "Arquivar", "Nova regra" e "Vencidos processados".
     - Fluxo F23 com os caminhos "Aprovar e arquivar" e "Pendências e regras", e o modal de envio por link no passo 1.
     - Falta construir a tela no Streamlit.
+  - **Feito (10/10/2026):** tela do RH e do Admin construída em `frontend/pagina_conferencia_documentos.py` (regras em `frontend/conferencia_modelo.py`), conforme a seção 18.
+    - Integra `documentos`, `documentos/{id}/aprovar|rejeitar|arquivar|arquivo`, `pendencias_documento` (GET e POST), `documentos_obrigatorios` (GET e POST) e `documentos/processar_vencimentos`.
+    - Grupo "RH" no menu, só para RH e Admin.
+    - Verificação: `tools/testar_conferencia_documentos.py` (52 verificações, no CI) e `docs/evidencias/frontend-conferencia-documentos.md`.
 - [x] 28 (origem: `concluir-mvp-conectarh` 2.23) [FE 9.3] Testar que não existe opção de exclusão física (só arquivamento) e que o acesso ao arquivo respeita dono/RH/ADMIN.
   - **Feito (10/10/2026):** a tela não tem opção de excluir nem de arquivar e o `api_client.py` não tem função de exclusão; abrir o arquivo passa por `documentos/{id}/arquivo` (dono, RH ou Admin, auditado) e o 403 vira mensagem. Conferido em `tools/testar_privacidade_documentos.py`.
 - [ ] 29 (origem: `concluir-mvp-conectarh` 2.24) [FE 10.1] Buscar o node "Pagamento" no Figma e conferir antes de codar; construir a aba de holerite/informe de rendimentos, reaproveitando a integração de Documentos (mesmo módulo de backend).
