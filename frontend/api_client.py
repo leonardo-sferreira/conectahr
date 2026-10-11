@@ -627,3 +627,41 @@ def ajustar_ponto(token: str, colaborador_id: int, data: str, campo: str, valor_
 def definir_superior(token: str, colaborador_id: int, superior_colaborador_id: int | None) -> dict:
     """PATCH colaboradores/{id}/superior (RH e Admin). None limpa o superior direto."""
     return _request("PATCH", f"colaboradores/{int(colaborador_id)}/superior", token, GRUPO_COLABORADORES, {"superior_colaborador_id": superior_colaborador_id})
+
+
+# ---------------------------------------------------------------------------
+# Benefícios (tarefa 82). O RH e o Admin cuidam do catálogo e dos vínculos; o colaborador vê os seus.
+# ---------------------------------------------------------------------------
+def meus_beneficios(token: str) -> dict:
+    """GET meus_beneficios -> {beneficios} do próprio colaborador (ativos e encerrados)."""
+    return _get("meus_beneficios", token, GRUPO_COLABORADORES)
+
+
+def beneficios_catalogo(token: str) -> dict:
+    """GET beneficios -> {beneficios} do catálogo (RH e Admin)."""
+    return _get("beneficios", token, GRUPO_COLABORADORES)
+
+
+def cadastrar_beneficio(token: str, nome: str, tipo: str, operadora: str | None, descricao: str | None) -> dict:
+    """POST beneficios: novo benefício no catálogo (RH e Admin; nome não pode repetir)."""
+    return _post("beneficios", {"nome": nome, "tipo": tipo, "operadora": operadora, "descricao": descricao}, token, GRUPO_COLABORADORES)
+
+
+def status_beneficio(token: str, beneficio_id: int, ativo: bool) -> dict:
+    """PATCH beneficios/{id}/status: desativado não aceita novos vínculos."""
+    return _request("PATCH", f"beneficios/{int(beneficio_id)}/status", token, GRUPO_COLABORADORES, {"ativo": bool(ativo)})
+
+
+def beneficios_da_pessoa(token: str, colaborador_id: int) -> dict:
+    """GET colaboradores/{id}/beneficios -> {beneficios} (RH e Admin)."""
+    return _get(f"colaboradores/{int(colaborador_id)}/beneficios", token, GRUPO_COLABORADORES)
+
+
+def vincular_beneficio(token: str, colaborador_id: int, dados: dict) -> dict:
+    """POST colaboradores/{id}/beneficios: beneficio_id, valor_empresa, desconto_colaborador, data_inicio, data_fim e observação."""
+    return _post(f"colaboradores/{int(colaborador_id)}/beneficios", dados, token, GRUPO_COLABORADORES)
+
+
+def encerrar_beneficio(token: str, vinculo_id: int, data_fim: str, observacao: str | None = None) -> dict:
+    """POST colaborador_beneficios/{id}/encerrar: preenche a data de fim e desativa, sem apagar."""
+    return _post(f"colaborador_beneficios/{int(vinculo_id)}/encerrar", {"data_fim": data_fim, "observacao": observacao}, token, GRUPO_COLABORADORES)

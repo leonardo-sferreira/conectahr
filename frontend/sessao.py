@@ -76,6 +76,9 @@ _CHAVES_SESSAO = (
     # Folha de ponto da equipe e do RH.
     "folha_cache",
     "modal_folha",
+    # Benefícios.
+    "beneficios_cache",
+    "modal_beneficio",
 )
 
 
