@@ -238,7 +238,8 @@ def pagina_ponto() -> None:
         if erro.status_code == 404:
             st.html(
                 '<div class="crh-painel crh-bloco"><p class="crh-bloco-titulo">Sem cadastro de colaborador</p>'
-                '<p class="crh-meta">Sua conta não tem cadastro de colaborador, então não marca ponto.</p></div>'
+                '<p class="crh-meta">Sua conta ainda não está ligada a um cadastro de funcionário, então não marca ponto. '
+                'Peça ao Admin para vincular a sua ficha em Usuários e perfis → "Vincular ficha".</p></div>'
             )
         else:
             alerta(st.empty(), "erro", erro.message)

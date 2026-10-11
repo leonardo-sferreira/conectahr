@@ -79,6 +79,7 @@ query usuarios verb=GET {
         "perfil"
         "ativo"
         "ultimo_acesso"
+        "senha_primeiro_acesso"
       ]
     } as $usuarios
   }

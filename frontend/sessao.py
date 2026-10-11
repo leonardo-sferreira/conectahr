@@ -64,6 +64,10 @@ _CHAVES_SESSAO = (
     "ausencias_cache",
     "modal_ausencia",
     "aus_link",
+    # Colaboradores e Usuários e perfis.
+    "cadastro_cache",
+    "modal_cadastro",
+    "col_ficha",
 )
 
 

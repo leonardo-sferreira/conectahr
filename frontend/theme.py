@@ -785,9 +785,12 @@ _APP_CSS = f"""
   .crh-ct-item:last-child .l {{ display: none; }}
   .crh-ct-item .crh-linha-onb {{ flex: 1 1 auto; background: white; }}
   .crh-ct-item .crh-linha-onb .t {{ font-weight: 500; }}
+  /* Ficha do colaborador (Figma 243:580). */
+  .st-key-col_ficha_card {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 12px; }}
+  .st-key-col_ficha_card button[kind="primary"] {{ padding: 0.55rem 1.1rem; border-radius: 10px; white-space: nowrap; }}
   /* Botões de recusa nos modais de decisão (Figma 243:1127, 436:1473 e 436:1506): vermelhos. */
-  .st-key-central_fe_rejeitar button, .st-key-central_cor_ok button, .st-key-aus_rej_ok button, .st-key-rh_recusar_ok button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
-  .st-key-central_fe_rejeitar button[kind] p, .st-key-central_cor_ok button[kind] p, .st-key-aus_rej_ok button[kind] p, .st-key-rh_recusar_ok button[kind] p {{ color: white !important; }}
+  .st-key-central_fe_rejeitar button, .st-key-central_cor_ok button, .st-key-aus_rej_ok button, .st-key-rh_recusar_ok button, .st-key-usr_desat_ok button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
+  .st-key-central_fe_rejeitar button[kind] p, .st-key-central_cor_ok button[kind] p, .st-key-aus_rej_ok button[kind] p, .st-key-rh_recusar_ok button[kind] p, .st-key-usr_desat_ok button[kind] p {{ color: white !important; }}
 
   /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
   .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}
@@ -890,6 +893,8 @@ _ESCURO_CSS = f"""
   .crh-fe-item .d {{ color: {ESC_TEXTO_2}; }}
   .crh-ct-item .crh-linha-onb {{ background: {ESC_CARTAO}; }}
   .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}
+  .st-key-col_ficha_card {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .st-key-rh_barra [data-testid="stTextInputRootElement"], .st-key-rh_barra [data-testid="stTextInputRootElement"] input {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
   .st-key-ferias_topo button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-ferias_topo button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   div[class*="st-key-ponto_box_proximo_"], div[class*="st-key-ponto_box_futuro_"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}

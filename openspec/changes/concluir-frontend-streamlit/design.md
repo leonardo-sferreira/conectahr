@@ -295,3 +295,14 @@ Evidência em `docs/evidencias/frontend-central-decisoes.md`.
 - **Correção aprovada sem modal.** O horário pedido já está na linha. Rejeitar exige motivo e tem modal.
 - **Escopo do Gestor no backend.** `correcoes_ponto` e `central_de_tarefas` mostravam tudo ao Gestor sem departamento, e a central mandava ao Gestor os documentos da equipe. As duas falhas foram corrigidas e publicadas.
 - **Fora desta entrega.** As avaliações em "Minhas pendências" ficam para a Trajetória, Desligamentos para a tarefa 54, o dashboard do gestor para a tarefa 57 e a versão escura da seção 19 para a tarefa 75.
+
+## Colaboradores e Usuários e perfis (tarefas 50 e 53, 10/10/2026)
+
+Evidência em `docs/evidencias/frontend-cadastro.md`.
+
+- **O problema de partida.** Contas de RH e Admin criadas sem cadastro de colaborador não marcam ponto, porque `ponto/marcar` exige a ficha. Não havia como ligar uma conta existente a uma ficha.
+- **Vincular ficha.** Endpoint novo `usuarios/{id}/vincular_colaborador`: o Admin vincula qualquer conta, e o RH só contas de Colaborador. Ninguém vincula a própria conta, porque quem se ligasse à ficha de outra pessoa marcaria ponto e pediria férias como ela. O modal foi desenhado antes (440:1203).
+- **Senha temporária por e-mail.** O Figma diz que a pessoa recebe a senha por e-mail, e o backend não enviava. Agora `usuarios` POST envia a senha, que a tela sorteia e quem cria a conta não vê. Se o envio falhar, a conta fica criada e a tela orienta "Esqueci minha senha".
+- **Admitir com os campos do backend.** O modal do Figma não tinha telefone, endereço, nível, carga horária e salário, que `colaboradores` POST exige. O Figma foi ajustado antes.
+- **Grupo Admin no menu.** "Usuários e perfis" fica no grupo Admin (246:612). As outras telas do grupo ainda mostram "em construção".
+- **Fora desta entrega.** Editar cadastro, mudar cargo ou salário e linha do tempo (tarefa 53); edição de nome e e-mail da conta (tarefa 50); desbloquear, reenviar acesso e motivo da troca de perfil (tarefa 76).
