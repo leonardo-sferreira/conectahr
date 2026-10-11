@@ -86,7 +86,7 @@ openspec/
   specs/            Comportamento consolidado do sistema (spec principal)
   changes/          Mudanças em andamento
     archive/        Histórico de mudanças concluídas e arquivadas
-tools/              checar_endpoints.py (guarda de acesso), checar_fontes_locais.py (fontes sem Google Fonts), smoke_frontend.py (tela de entrada), testar_login_f01.py (fluxo de entrada), testar_onboarding.py, testar_privacidade_documentos.py, testar_conferencia_documentos.py, testar_perfil.py, testar_ponto.py, testar_ferias.py, testar_pagamento.py, testar_decisoes.py e testar_cadastro.py
+tools/              checar_endpoints.py (guarda de acesso), checar_fontes_locais.py (fontes sem Google Fonts), smoke_frontend.py (tela de entrada), testar_login_f01.py (fluxo de entrada), testar_onboarding.py, testar_privacidade_documentos.py, testar_conferencia_documentos.py, testar_perfil.py, testar_ponto.py, testar_ferias.py, testar_pagamento.py, testar_decisoes.py e testar_cadastro.py; cadastrar_departamentos.py (cadastra a lista padrão de departamentos, rodado por RH ou Admin)
 xano-workspace/     Backend Xano em XanoScript
   table/            Tabelas do banco relacional
   function/         Funções reutilizáveis (CPF, regras, rotina diária, hash dos códigos…)
