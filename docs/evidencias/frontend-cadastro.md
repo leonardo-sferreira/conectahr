@@ -9,7 +9,7 @@ O Figma foi ajustado antes de codar (ver "Figma" abaixo).
 | 243:580 | RH — Colaboradores: lista, filtros e ficha com "Criar acesso" (**botão novo**) | `frontend/pagina_colaboradores.py` |
 | 243:1075 | Modal "Admitir colaborador" (**campos novos**, os que o backend exige) | idem |
 | 246:612 | Admin — Usuários e perfis, com a situação "Sem ficha" e "Vincular ficha" (**novo**) | `frontend/pagina_usuarios.py` |
-| 246:1245 | Modal "Novo usuário" ("Criar acesso" quando aberto pela ficha) | `frontend/pagina_colaboradores.py` |
+| 246:1245 | Modal "Novo usuário" ("Criar acesso" quando aberto pela ficha), com o filtro de departamento (**novo**, 11/10/2026) | `frontend/pagina_colaboradores.py` |
 | 246:1280 | Modal "Trocar perfil" | `frontend/pagina_usuarios.py` |
 | 440:1203 | Modal "Vincular ficha" (**novo**) | idem |
 
@@ -51,11 +51,11 @@ A tela Ponto agora explica o que fazer quando a conta não tem ficha.
 ## Como repetir
 
 ```
-python tools/testar_cadastro.py   # 48 verificações
+python tools/testar_cadastro.py   # 52 verificações
 ```
 
 Roda sem rede, com uma API simulada (dados fictícios), e também no workflow `Validar`.
-**Resultado em 10/10/2026: 48 de 48.** Os outros testes do frontend continuam passando.
+**Resultado em 11/10/2026: 52 de 52.** Os outros testes do frontend continuam passando.
 
 ## O que os testes conferem
 
@@ -64,6 +64,7 @@ Roda sem rede, com uma API simulada (dados fictícios), e também no workflow `V
 | Sucesso | Lista sem desligados, por nome; busca por nome, CPF ou e-mail; filtros de departamento e situação | ok |
 | Sucesso | Ficha: gestor do departamento e conta de acesso, sem salário; "Criar acesso" só na ficha sem conta | ok |
 | Sucesso | Admitir envia o cadastro completo (CPF só com dígitos, datas ISO) e abre "Criar acesso" com a pessoa escolhida | ok |
+| Sucesso | "Criar acesso" tem filtro de departamento (só os que têm ficha sem conta); aberto pela ficha, já vem com o departamento e a pessoa (11/10/2026) | ok |
 | Sucesso | "Criar acesso" sorteia uma senha forte, diferente a cada vez; o RH não escolhe perfil | ok |
 | Sucesso | Admin: Novo usuário com perfil RH cria a conta e troca o perfil | ok |
 | Sucesso | "Vincular ficha" sugere a ficha com o mesmo nome e vincula; trocar perfil; desativar (com confirmação) e reativar | ok |

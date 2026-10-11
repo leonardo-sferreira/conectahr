@@ -55,6 +55,7 @@ def carregar(token: str) -> dict:
 
 def fechar() -> None:
     st.session_state.pop("modal_cadastro", None)
+    st.session_state.pop("acesso_dep", None)
 
 
 def concluir(aviso: str) -> None:
@@ -124,10 +125,15 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
     backend aplica em seguida (`usuarios/{id}/perfil`). A senha temporária é sorteada aqui e vai só por
     e-mail: quem cria a conta não a vê."""
     sem_conta = {c.get("id"): c for c in fichas_sem_conta(colabs)}
-    ids = list(sem_conta)
+    # Filtro de departamento: só os departamentos que têm ficha sem conta; aberto pela ficha, já vem com o dela.
+    deps_com_ficha = sorted({c.get("departamento_id") for c in sem_conta.values() if c.get("departamento_id")}, key=lambda d: deps.get(d) or "")
+    if colaborador_id in sem_conta and "acesso_dep" not in st.session_state:
+        st.session_state.acesso_dep = sem_conta[colaborador_id].get("departamento_id")
+    dep = st.selectbox("Departamento", [None] + deps_com_ficha, format_func=lambda d: "Todos os departamentos" if d is None else deps.get(d) or f"Departamento nº {d}", key="acesso_dep")
+    ids = [i for i, c in sem_conta.items() if not dep or c.get("departamento_id") == dep]
     rotulo = lambda i: f"{sem_conta[i].get('nome')} — {deps.get(sem_conta[i].get('departamento_id')) or '—'}"
     colab = st.selectbox("Colaborador", ids, index=ids.index(colaborador_id) if colaborador_id in ids else None, format_func=rotulo,
-                         placeholder="Escolha a pessoa (só fichas sem conta)", key="acesso_colab")
+                         placeholder="Escolha a pessoa (só fichas sem conta)" if ids else "Nenhuma ficha sem conta neste departamento", key="acesso_colab")
     email = st.text_input("E-mail de acesso", max_chars=120, placeholder="nome@empresa.com", key="acesso_email")
     admin = perfil(st.session_state.usuario.get("perfil")) == "ADMIN"
     escolhido = "COLABORADOR"
@@ -162,7 +168,7 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
                 aviso += ' O e-mail com a senha não saiu: peça à pessoa para usar "Esqueci minha senha" na tela Entrar.'
             else:
                 aviso += " A senha temporária foi por e-mail."
-            for chave in ("acesso_colab", "acesso_email", "acesso_perfil"):
+            for chave in ("acesso_dep", "acesso_colab", "acesso_email", "acesso_perfil"):
                 st.session_state.pop(chave, None)
             concluir(aviso)
 

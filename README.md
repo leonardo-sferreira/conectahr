@@ -168,7 +168,7 @@ em [`docs/demonstracao.md`](docs/demonstracao.md).
   `python tools/testar_ferias.py` roda 31 verificações de Férias (pedido, cancelamento e bloqueios), e
   `python tools/testar_pagamento.py` roda 40 verificações de Pagamento (só o dono vê, só RH lança), e
   `python tools/testar_decisoes.py` roda 50 verificações da Central de Pendências e de Ausências (escopo por perfil e decisões), e
-  `python tools/testar_cadastro.py` roda 48 verificações de Colaboradores e de Usuários e perfis (admitir, criar acesso e vincular ficha).
+  `python tools/testar_cadastro.py` roda 52 verificações de Colaboradores e de Usuários e perfis (admitir, criar acesso e vincular ficha).
 - O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
   fumaça do frontend, testes do fluxo de entrada, do Onboarding, de Privacidade e Documentos e busca de segredos
   no repositório.
