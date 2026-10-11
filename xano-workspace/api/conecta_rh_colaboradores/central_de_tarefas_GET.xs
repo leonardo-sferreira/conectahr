@@ -2,7 +2,8 @@
 // unica consulta: pendencias pessoais (senha temporaria, cadastro
 // incompleto, ponto do dia, minhas ferias pendentes), fila de decisao
 // para RH/ADMIN/GESTOR (ferias, documentos e desligamentos pendentes,
-// restritos ao departamento quando o perfil e GESTOR) e o dashboard do
+// restritos ao departamento quando o perfil e GESTOR; documentos so para
+// RH/ADMIN; Gestor sem departamento nao ve fila nenhuma) e o dashboard do
 // gestor (tamanho da equipe, ferias proximas, ausencias da equipe e
 // situacao do ponto do dia).
 // Gap consciente: correcao de ponto (item 4.2), avaliacoes e metas/PDI
@@ -175,7 +176,8 @@ query "central_de_tarefas" verb=GET {
         } as $desligamentos_pendentes_todos
 
         conditional {
-          if ($departamento_escopo_id == null) {
+          // Sem departamento gerenciado, o Gestor nao ve fila nenhuma (antes caia em "ve tudo").
+          if ($departamento_escopo_id == null && $perfil_autenticado != "GESTOR") {
             var.update $ferias_pendentes_fila {
               value = $ferias_pendentes_todas
             }
@@ -209,22 +211,8 @@ query "central_de_tarefas" verb=GET {
               }
             }
 
-            foreach ($documentos_pendentes_todos) {
-              each as $documento_item {
-                db.get colaborador {
-                  field_name = "id"
-                  field_value = $documento_item.colaborador_id
-                } as $colaborador_do_documento
-
-                conditional {
-                  if ($colaborador_do_documento != null && $colaborador_do_documento.departamento_id == $departamento_escopo_id) {
-                    var.update $documentos_pendentes_fila {
-                      value = $documentos_pendentes_fila|push:$documento_item
-                    }
-                  }
-                }
-              }
-            }
+            // Documentos nao entram na fila do Gestor: so RH e Admin decidem documentos, e o
+            // Gestor nunca recebe documentos pessoais da equipe (LGPD; Figma 241:560).
 
             foreach ($desligamentos_pendentes_todos) {
               each as $desligamento_item {

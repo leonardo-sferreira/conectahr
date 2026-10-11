@@ -57,6 +57,13 @@ _CHAVES_SESSAO = (
     "pagamento_cache",
     "modal_pagamento",
     "pg_link",
+    "central_cache",
+    "central_minhas_cache",
+    "modal_central",
+    "central_conflito",
+    "ausencias_cache",
+    "modal_ausencia",
+    "aus_link",
 )
 
 

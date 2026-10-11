@@ -180,7 +180,8 @@ def _cartao_pendencias(itens: list[dict]) -> None:
             )
             st.space("stretch")
             if st.button("Ver todas →", type="tertiary", key="pf_ver_pendencias"):
-                st.toast("A Central de Pendências ainda está em construção.")
+                st.session_state.ir_central = True
+                st.rerun()
         if not itens:
             st.html('<p class="crh-meta">Nada pendente com você agora.</p>')
             return

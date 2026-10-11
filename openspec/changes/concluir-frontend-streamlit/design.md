@@ -284,3 +284,14 @@ Evidência em `docs/evidencias/frontend-pagamento.md`.
 - **Competência no nome do documento.** A tabela `documento` não tem campo de competência. A tela grava a competência no nome ("Holerite — Agosto/2026", "Informe de rendimentos 2025") e, sem esse padrão, usa a data de emissão.
 - **Link no lugar do upload**, como em Documentos.
 - **Holerite e informe só em Pagamento.** A tela Documentos deixou de listá-los.
+
+## Central de Pendências e Ausências (tarefas 11 a 13, 20, 21 e 24, 10/10/2026)
+
+Evidência em `docs/evidencias/frontend-central-decisoes.md`.
+
+- **Tela desenhada antes de codar.** A decisão de férias e de correções de ponto não tinha tela no Figma, embora a seção 4 dissesse que as filas ficam na Central de Pendências. A seção 19 (436:1142) foi desenhada a partir de RH — Ausências (243:846): abas Férias, Correções de ponto e Minhas pendências, e os modais "Decidir férias" e "Rejeitar correção de ponto".
+- **Uma Central para todos.** O colaborador vê só "Minhas pendências" (31:37). Gestor, RH e Admin veem também as filas, no escopo que o backend devolve. A tela não oferece botão no próprio pedido; o backend bloqueia e audita.
+- **Conferência de conflitos só informa.** O modal "Decidir férias" mostra `verificar_conflito`. Se ela falhar, a decisão continua possível, como o backend prevê.
+- **Correção aprovada sem modal.** O horário pedido já está na linha. Rejeitar exige motivo e tem modal.
+- **Escopo do Gestor no backend.** `correcoes_ponto` e `central_de_tarefas` mostravam tudo ao Gestor sem departamento, e a central mandava ao Gestor os documentos da equipe. As duas falhas foram corrigidas e publicadas.
+- **Fora desta entrega.** As avaliações em "Minhas pendências" ficam para a Trajetória, Desligamentos para a tarefa 54, o dashboard do gestor para a tarefa 57 e a versão escura da seção 19 para a tarefa 75.

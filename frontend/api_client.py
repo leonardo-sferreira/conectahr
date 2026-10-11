@@ -445,3 +445,69 @@ def solicitar_ferias(token: str, data_inicio: str, data_fim: str, quantidade_dia
 def cancelar_ferias(token: str, ferias_id: int) -> dict:
     """POST ferias/{id}/cancelar: só a própria pessoa e só pedido pendente (o backend confere)."""
     return _post(f"ferias/{int(ferias_id)}/cancelar", {}, token, GRUPO_FERIAS)
+
+
+# ---------------------------------------------------------------------------
+# Decisões do gestor, do RH e do Admin (Central de Pendências e Ausências; tarefas 11 a 13, 20, 21 e 24).
+# O backend confere o escopo (Gestor só a própria equipe, RH e Admin todos) e bloqueia quem tenta
+# decidir o próprio pedido; a tela só deixa de oferecer o que ele recusaria.
+# ---------------------------------------------------------------------------
+def correcoes_ponto(token: str) -> dict:
+    """GET correcoes_ponto -> {correcoes} pendentes no escopo de quem pede (Gestor, RH ou Admin)."""
+    return _get("correcoes_ponto", token, GRUPO_PONTO)
+
+
+def aprovar_correcao_ponto(token: str, correcao_id: int) -> dict:
+    """POST correcoes_ponto/{id}/aprovar: troca o horário no registro do dia e recalcula o banco de horas."""
+    return _post(f"correcoes_ponto/{int(correcao_id)}/aprovar", {}, token, GRUPO_PONTO)
+
+
+def rejeitar_correcao_ponto(token: str, correcao_id: int, motivo: str) -> dict:
+    """POST correcoes_ponto/{id}/rejeitar com `motivo_decisao` (5 a 1000 caracteres)."""
+    return _post(f"correcoes_ponto/{int(correcao_id)}/rejeitar", {"motivo_decisao": motivo}, token, GRUPO_PONTO)
+
+
+def verificar_conflito_ferias(token: str, ferias_id: int) -> dict:
+    """GET ferias/{id}/verificar_conflito -> antecedência, período aquisitivo, sobreposições e colegas de
+    férias no período. Só informa: não bloqueia a decisão."""
+    return _get(f"ferias/{int(ferias_id)}/verificar_conflito", token, GRUPO_FERIAS)
+
+
+def aprovar_ferias(token: str, ferias_id: int) -> dict:
+    """POST ferias/{id}/aprovar."""
+    return _post(f"ferias/{int(ferias_id)}/aprovar", {}, token, GRUPO_FERIAS)
+
+
+def rejeitar_ferias(token: str, ferias_id: int) -> dict:
+    """POST ferias/{id}/rejeitar."""
+    return _post(f"ferias/{int(ferias_id)}/rejeitar", {}, token, GRUPO_FERIAS)
+
+
+def ausencias_rh(token: str, status: str) -> dict:
+    """GET ausencias?status=... -> {ausencias} (só RH e Admin). `status`: Pendente, Aprovada, Registrado ou Rejeitada."""
+    return _get(f"ausencias?status={status}", token, GRUPO_AUSENCIAS)
+
+
+def _decidir_ausencia(acao: str, token: str, ausencia_id: int, observacao: str | None) -> dict:
+    corpo = {"observacao": observacao} if observacao else {}
+    return _post(f"ausencias/{int(ausencia_id)}/{acao}", corpo, token, GRUPO_AUSENCIAS)
+
+
+def aprovar_ausencia(token: str, ausencia_id: int, observacao: str | None = None) -> dict:
+    """POST ausencias/{id}/aprovar (só RH e Admin)."""
+    return _decidir_ausencia("aprovar", token, ausencia_id, observacao)
+
+
+def rejeitar_ausencia(token: str, ausencia_id: int, justificativa: str) -> dict:
+    """POST ausencias/{id}/rejeitar com a justificativa obrigatória (5 a 1000 caracteres, sem CID)."""
+    return _decidir_ausencia("rejeitar", token, ausencia_id, justificativa)
+
+
+def registrar_ausencia_aprovada(token: str, ausencia_id: int, observacao: str | None = None) -> dict:
+    """POST ausencias/{id}/registrar: só ausência aprovada; o dia fica justificado no espelho de ponto."""
+    return _decidir_ausencia("registrar", token, ausencia_id, observacao)
+
+
+def abrir_comprovante_ausencia(token: str, ausencia_id: int) -> dict:
+    """GET ausencias/{id}/comprovante -> {comprovante_url} temporário. RH, Admin ou o próprio; o Gestor não."""
+    return _get(f"ausencias/{int(ausencia_id)}/comprovante", token, GRUPO_AUSENCIAS)
