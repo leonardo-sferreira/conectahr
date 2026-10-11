@@ -51,7 +51,8 @@ from ponto_modelo import (
     validar_correcao,
     valor_solicitado_ms,
 )
-from ponto_mensal_modelo import campos_livres, csv_do_mes, espelho_do_mes, meses_disponiveis, resumo_do_mes, rotulo_mes
+from pagamento_modelo import MESES
+from ponto_mensal_modelo import anos_disponiveis, campos_livres, csv_do_mes, espelho_do_mes, meses_disponiveis, meses_do_ano, resumo_do_mes
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _CACHE = "ponto_cache"
@@ -242,7 +243,7 @@ def _espelho(linhas: list[dict], vazio: str = "Nenhuma marcação nesta semana."
             with st.container(key="ponto_lin_vazio"):
                 st.html(f'<p class="crh-meta">{html.escape(vazio)}</p>')
         for i, l in enumerate(linhas):
-            destaque = l.get("ausencia") or l["status"] in ("FÉRIAS", "JUSTIFICADO", "AUSÊNCIA EM ANÁLISE", "FOLGA", "FERIADO")
+            destaque = l.get("ausencia") or l["status"] in ("FÉRIAS", "JUSTIFICADO", "ATESTADO", "FALTA JUSTIFICADA", "LICENÇA", "AFASTAMENTO", "AUSÊNCIA EM ANÁLISE", "FOLGA", "FERIADO")
             with st.container(key=f"ponto_lina_{i}" if destaque else f"ponto_lin_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
                 c[0].html(f'<p class="crh-doc-prazo">{html.escape(l["dia"])}</p>')
@@ -319,17 +320,23 @@ def pagina_ponto() -> None:
         extra = _carregar_mes(token)
         meses = meses_disponiveis(extra["admissao"], dados["registros"], hoje_local)
         with st.container(horizontal=True, vertical_alignment="center", key="rh_barra"):
-            ano_mes = st.selectbox("Mês", meses, format_func=lambda am: rotulo_mes(*am), key="pt_mes", label_visibility="collapsed", width=220)
+            ano = st.selectbox("Ano", anos_disponiveis(meses), format_func=lambda a: f"Ano: {a}", key="pt_ano", label_visibility="collapsed", width=150)
+            opcoes_mes = meses_do_ano(meses, ano)
+            if st.session_state.get("pt_mes") not in opcoes_mes:
+                st.session_state.pt_mes = opcoes_mes[0]
+            numero_mes = st.selectbox("Mês", opcoes_mes, format_func=lambda m: MESES[m - 1], key="pt_mes", label_visibility="collapsed", width=180)
             st.space("stretch")
+        ano_mes = (ano, numero_mes)
         linhas_mes = espelho_do_mes(dados["registros"], dados["ausencias"], dados["correcoes"], extra["ferias"], extra["feriados"],
                                     ano_mes[0], ano_mes[1], hoje_local, extra["admissao"])
         numeros = resumo_do_mes(linhas_mes)
         render_indicadores([
             ("Horas trabalhadas no mês", numeros["horas"], ""),
             ("Dias com marcação", str(numeros["dias_trabalhados"]), "verde"),
-            ("Dias sem registro ou incompletos", str(numeros["sem_registro"]), "negativo"),
-            ("Correções em análise", str(numeros["em_analise"]), "ambar"),
+            ("Sem registro ou incompletos", str(numeros["sem_registro"]), "ambar"),
+            ("Faltas injustificadas", str(numeros["faltas_injustificadas"]), "negativo"),
         ])
+        st.html(f'<p class="crh-meta">Atestados no mês: {numeros["atestados"]} · Correções em análise: {numeros["em_analise"]}</p>')
         _espelho(linhas_mes, "Nenhum dia neste mês ainda.")
         with st.container(horizontal=True, vertical_alignment="center"):
             st.html('<p class="crh-meta">Cada dia mostra as quatro marcações, o tempo trabalhado e a situação. Dia sem registro, '

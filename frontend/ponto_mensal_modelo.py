@@ -2,15 +2,19 @@
 Espelho de ponto mensal do colaborador (tarefa 78 da change concluir-frontend-streamlit). Funções puras, sem
 Streamlit. O fluxo completo, caso a caso, está em `docs/fluxos/ponto-mensal.md`.
 
-Cada dia do mês, da admissão até hoje, recebe exatamente uma situação, nesta ordem de precedência:
+Cada dia do mês, do primeiro ponto registrado (ou da admissão) até hoje, recebe exatamente uma situação, nesta
+ordem de precedência:
   1. tem registro de ponto        -> as marcações e a situação do registro; "corrigir" o que não estiver em análise
   2. é hoje e não tem registro    -> "Sem marcação hoje" (marca-se pelo "Marcar agora")
   3. férias aprovadas             -> "Férias", sem correção
-  4. ausência (não recusada)      -> "Justificado" ou "Ausência em análise", sem correção
-  5. feriado nacional             -> "Feriado", com "corrigir dia" (quem trabalhou pede a correção)
-  6. sábado ou domingo            -> "Folga", com "corrigir dia"
-  7. dia útil passado sem nada    -> "Sem registro", com "corrigir dia" ou "registrar ausência"
-Dias futuros e anteriores à admissão não aparecem.
+  4. ausência aprovada            -> pelo tipo: "Atestado", "Falta justificada", "Licença", "Afastamento"; sem correção
+     ausência em análise          -> "Ausência em análise", sem correção
+  5. ausência recusada            -> "Falta injustificada", com "corrigir dia"
+  6. feriado nacional             -> "Feriado", com "corrigir dia" (quem trabalhou pede a correção)
+  7. sábado ou domingo            -> "Folga", com "corrigir dia"
+  8. dia útil passado sem nada    -> "Sem registro" no mês corrente; "Falta injustificada" nos meses encerrados;
+                                     com "corrigir dia" ou "registrar ausência"
+Dias futuros não aparecem. Os meses vão do primeiro ponto registrado até hoje, sem limite.
 """
 
 import calendar
@@ -38,14 +42,32 @@ def rotulo_mes(ano: int, mes: int) -> str:
     return f"{MESES[mes - 1]}/{ano}"
 
 
-def meses_disponiveis(admissao, registros: list[dict], hoje: date, limite: int = 24) -> list[tuple[int, int]]:
-    """Do mês atual para trás, até o mês da admissão (ou do primeiro registro), no máximo `limite` meses."""
-    inicio = _dia(admissao) or min((d for d in (_dia(r.get("data")) for r in registros) if d), default=hoje)
+_ROTULO_AUSENCIA = {"Atestado": "ATESTADO", "Falta": "FALTA JUSTIFICADA", "Licenca": "LICENÇA", "Afastamento": "AFASTAMENTO"}
+
+
+def primeiro_dia(admissao, registros: list[dict]) -> date | None:
+    """O primeiro ponto registrado; sem registro, a admissão. Se houver registro antes da admissão, vale o registro."""
+    datas = [d for d in (_dia(r.get("data")) for r in registros) if d]
+    candidatos = [d for d in (min(datas) if datas else None, _dia(admissao)) if d]
+    return min(candidatos) if candidatos else None
+
+
+def meses_disponiveis(admissao, registros: list[dict], hoje: date) -> list[tuple[int, int]]:
+    """Do mês atual para trás, até o mês do primeiro ponto registrado (ou da admissão), sem limite."""
+    inicio = primeiro_dia(admissao, registros) or hoje
     ano, mes, saida = hoje.year, hoje.month, []
-    while (ano, mes) >= (inicio.year, inicio.month) and len(saida) < limite:
+    while (ano, mes) >= (inicio.year, inicio.month):
         saida.append((ano, mes))
         ano, mes = (ano, mes - 1) if mes > 1 else (ano - 1, 12)
     return saida or [(hoje.year, hoje.month)]
+
+
+def anos_disponiveis(meses: list[tuple[int, int]]) -> list[int]:
+    return sorted({a for a, _ in meses}, reverse=True)
+
+
+def meses_do_ano(meses: list[tuple[int, int]], ano: int) -> list[int]:
+    return [m for a, m in meses if a == ano]
 
 
 def _cobre(item: dict, d: date) -> bool:
@@ -57,12 +79,14 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
                    ano: int, mes: int, hoje: date, admissao=None) -> list[dict]:
     """Uma linha por dia: {'dia', 'data', 'marcas', 'trabalhado', 'horas', 'status', 'tom', 'registro_id', 'acao', 'nota',
     'pendentes'}. `acao`: 'corrigir' (há registro), 'corrigir_dia' (dia passado sem registro) ou None."""
-    inicio_valido = _dia(admissao)
+    inicio_valido = primeiro_dia(admissao, registros)
     por_dia = {_dia(r.get("data")): r for r in registros if _dia(r.get("data"))}
     feriados_nac = {_dia(f.get("data")): f.get("nome") or "Feriado" for f in feriados
                     if f.get("ativo", True) and (f.get("abrangencia") or "nacional") == "nacional" and _dia(f.get("data"))}
     ferias_ok = [f for f in ferias if f.get("status") in ("Aprovada", "Concluida")]
     aus_validas = [a for a in ausencias if a.get("status") != "Rejeitada"]
+    aus_recusadas = [a for a in ausencias if a.get("status") == "Rejeitada"]
+    mes_encerrado = (ano, mes) < (hoje.year, hoje.month)
     linhas = []
     for n in range(1, calendar.monthrange(ano, mes)[1] + 1):
         d = date(ano, mes, n)
@@ -98,8 +122,13 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
         aus = next((a for a in aus_validas if _cobre(a, d)), None)
         if aus:
             pendente = aus.get("status") == "Pendente"
-            linhas.append(dict(base, status="AUSÊNCIA EM ANÁLISE" if pendente else "JUSTIFICADO", tom="amb" if pendente else "azul",
-                               trabalhado=TIPOS_AUSENCIA.get(aus.get("tipo"), "Ausência")))
+            status = "AUSÊNCIA EM ANÁLISE" if pendente else _ROTULO_AUSENCIA.get(aus.get("tipo"), "JUSTIFICADO")
+            linhas.append(dict(base, status=status, tom="amb" if pendente else "azul", trabalhado=TIPOS_AUSENCIA.get(aus.get("tipo"), "Ausência")))
+            continue
+        recusada = next((a for a in aus_recusadas if _cobre(a, d)), None)
+        if recusada:
+            linhas.append(dict(base, status="FALTA INJUSTIFICADA", tom="err", acao="corrigir_dia",
+                               nota=f"{TIPOS_AUSENCIA.get(recusada.get('tipo'), 'Ausência')} recusada pelo RH. Se trabalhou, peça a correção."))
             continue
         if d in feriados_nac:
             linhas.append(dict(base, status="FERIADO", tom="neu", nota=f"{feriados_nac[d]}. Trabalhou? Peça a correção.", acao="corrigir_dia"))
@@ -107,8 +136,12 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
         if d.weekday() >= 5:
             linhas.append(dict(base, status="FOLGA", tom="neu", acao="corrigir_dia"))
             continue
-        linhas.append(dict(base, status="SEM REGISTRO", tom="err", acao="corrigir_dia",
-                           nota="Esqueceu de marcar? Peça a correção. Faltou? Registre a ausência."))
+        if mes_encerrado:
+            linhas.append(dict(base, status="FALTA INJUSTIFICADA", tom="err", acao="corrigir_dia",
+                               nota="Mês encerrado sem marcação nem ausência. Ainda dá para pedir a correção ou registrar a ausência."))
+        else:
+            linhas.append(dict(base, status="SEM REGISTRO", tom="err", acao="corrigir_dia",
+                               nota="Esqueceu de marcar? Peça a correção. Faltou? Registre a ausência."))
     return linhas
 
 
@@ -118,6 +151,8 @@ def resumo_do_mes(linhas: list[dict]) -> dict:
         "horas": horas_trabalhadas(horas) if horas else "0h00",
         "dias_trabalhados": sum(1 for l in linhas if l["registro_id"] and any(m != "—" for m in l["marcas"])),
         "sem_registro": sum(1 for l in linhas if l["status"] in ("SEM REGISTRO", "INCOMPLETO")),
+        "faltas_injustificadas": sum(1 for l in linhas if l["status"] == "FALTA INJUSTIFICADA"),
+        "atestados": sum(1 for l in linhas if l["status"] == "ATESTADO"),
         "em_analise": sum(len(l["pendentes"]) for l in linhas),
     }
 

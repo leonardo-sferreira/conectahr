@@ -8,8 +8,8 @@ Testes: `tools/testar_ponto_mensal.py`.
 
 ## 1. O que o colaborador vê
 
-- **Mês:** do mês atual para trás, até o mês da admissão (no máximo 24 meses).
-- **Resumo:** horas trabalhadas no mês, dias com marcação, dias sem registro ou incompletos e correções em análise.
+- **Ano e mês:** do mês atual para trás, até o mês do **primeiro ponto registrado** (ou da admissão, se não houver registro), **sem limite** (desde 11/10/2026).
+- **Resumo:** horas trabalhadas no mês, dias com marcação, dias sem registro ou incompletos, faltas injustificadas, atestados e correções em análise.
 - **Dias:** um por linha, da admissão até hoje. Dias futuros e anteriores à admissão não aparecem. Cada linha mostra o
   dia da semana e a data, as quatro marcações (entrada, saída para o almoço, volta e saída), o tempo trabalhado, a
   situação, uma observação e a ação possível.
@@ -24,14 +24,16 @@ As regras são aplicadas nesta ordem. A primeira que valer define o dia.
 | 1 | Existe registro de ponto no dia | Completo, Ajustado, Incompleto, ou "Em andamento" se for hoje. Registro aberto de dia passado vira **Incompleto** | "Solicitar correção" das marcações que não estão em análise |
 | 2 | É hoje e não há registro | Sem marcação hoje | Nenhuma: usa "Marcar agora" no topo |
 | 3 | Férias aprovadas ou concluídas cobrem o dia | Férias | Nenhuma |
-| 4 | Ausência aprovada ou registrada cobre o dia | Justificado (com o tipo: atestado, falta, licença…) | Nenhuma |
+| 4 | Ausência aprovada ou registrada cobre o dia | Pelo tipo: **Atestado**, Falta justificada, Licença, Afastamento | Nenhuma |
 | 4 | Ausência pendente cobre o dia | Ausência em análise | Nenhuma: aguarda o RH |
-| 5 | Feriado nacional | Feriado (com o nome) | "Solicitar correção", para quem trabalhou |
-| 6 | Sábado ou domingo | Folga | "Solicitar correção", para quem trabalhou |
-| 7 | Dia útil passado, sem nada | **Sem registro** | "Solicitar correção" (esqueceu de marcar) ou "Registrar ausência ou atestado" (faltou) |
+| 5 | Ausência recusada pelo RH | **Falta injustificada** | "Solicitar correção", se trabalhou |
+| 6 | Feriado nacional | Feriado (com o nome) | "Solicitar correção", para quem trabalhou |
+| 7 | Sábado ou domingo | Folga | "Solicitar correção", para quem trabalhou |
+| 8 | Dia útil passado, sem nada | **Sem registro** no mês corrente; **Falta injustificada** nos meses encerrados | "Solicitar correção" (esqueceu de marcar) ou "Registrar ausência ou atestado" (faltou) |
 
 Pontos que fecham brechas:
-- **Ausência recusada não justifica o dia.** O dia volta a ser "Sem registro" e pode ser corrigido.
+- **Ausência recusada não justifica o dia.** Vira "Falta injustificada" e ainda pode ser corrigida.
+- **Mês encerrado.** Dia útil sem marcação nem ausência vira "Falta injustificada"; no mês corrente, fica "Sem registro" enquanto a pessoa ainda pode resolver.
 - **Férias só pedidas não contam.** Só as aprovadas ou concluídas.
 - **Feriado estadual ou municipal não muda a situação.** O backend não sabe onde a pessoa trabalha; esses dias seguem
   as regras 6 e 7.
