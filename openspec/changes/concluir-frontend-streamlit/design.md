@@ -306,3 +306,12 @@ Evidência em `docs/evidencias/frontend-cadastro.md`.
 - **Admitir com os campos do backend.** O modal do Figma não tinha telefone, endereço, nível, carga horária e salário, que `colaboradores` POST exige. O Figma foi ajustado antes.
 - **Grupo Admin no menu.** "Usuários e perfis" fica no grupo Admin (246:612). As outras telas do grupo ainda mostram "em construção".
 - **Fora desta entrega.** Editar cadastro, mudar cargo ou salário e linha do tempo (tarefa 53); edição de nome e e-mail da conta (tarefa 50); desbloquear, reenviar acesso e motivo da troca de perfil (tarefa 76).
+
+## Solicitações ao RH (tarefa 47, 11/10/2026)
+
+Evidência em `docs/evidencias/frontend-solicitacoes.md`.
+
+- **Por que agora.** Um pedido de correção de CPF não aparecia para o RH: a tela não existia, e o menu do RH nem tinha o item.
+- **Feita sem o Figma à vista.** A conexão com o Figma caiu; a tela segue o padrão das telas de RH aprovadas e a descrição da seção 8. Precisa ser conferida com 225:5299 e 206:1072, e as diferenças registradas aqui.
+- **Aplicar antes de atender.** Atender não muda o cadastro (regra do backend). "Aplicar e atender" grava `colaboradores/{id}` primeiro e só atende se o cadastro for aceito.
+- **Menu.** "Solicitações ao RH" entra no grupo RH, logo depois de Colaboradores. A Central do RH e do Admin mostra quantas estão em aberto.

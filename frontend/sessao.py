@@ -68,6 +68,9 @@ _CHAVES_SESSAO = (
     "cadastro_cache",
     "modal_cadastro",
     "col_ficha",
+    # Solicitações ao RH.
+    "solicitacoes_cache",
+    "modal_solicitacao",
 )
 
 

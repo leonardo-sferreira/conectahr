@@ -789,8 +789,8 @@ _APP_CSS = f"""
   .st-key-col_ficha_card {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 12px; }}
   .st-key-col_ficha_card button[kind="primary"] {{ padding: 0.55rem 1.1rem; border-radius: 10px; white-space: nowrap; }}
   /* Botões de recusa nos modais de decisão (Figma 243:1127, 436:1473 e 436:1506): vermelhos. */
-  .st-key-central_fe_rejeitar button, .st-key-central_cor_ok button, .st-key-aus_rej_ok button, .st-key-rh_recusar_ok button, .st-key-usr_desat_ok button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
-  .st-key-central_fe_rejeitar button[kind] p, .st-key-central_cor_ok button[kind] p, .st-key-aus_rej_ok button[kind] p, .st-key-rh_recusar_ok button[kind] p, .st-key-usr_desat_ok button[kind] p {{ color: white !important; }}
+  .st-key-central_fe_rejeitar button, .st-key-central_cor_ok button, .st-key-aus_rej_ok button, .st-key-rh_recusar_ok button, .st-key-usr_desat_ok button, .st-key-sol_indeferir button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
+  .st-key-central_fe_rejeitar button[kind] p, .st-key-central_cor_ok button[kind] p, .st-key-aus_rej_ok button[kind] p, .st-key-rh_recusar_ok button[kind] p, .st-key-usr_desat_ok button[kind] p, .st-key-sol_indeferir button[kind] p {{ color: white !important; }}
 
   /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
   .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}

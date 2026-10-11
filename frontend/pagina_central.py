@@ -32,6 +32,7 @@ from api_client import (
     organograma,
     rejeitar_correcao_ponto,
     rejeitar_ferias,
+    solicitacoes_rh,
     verificar_conflito_ferias,
 )
 from decisoes_modelo import (
@@ -75,7 +76,15 @@ def _carregar_filas(token: str) -> dict:
     cache = st.session_state.get(_CACHE)
     if cache and time.time() - cache["em"] < _VALIDADE_CACHE_S:
         return cache["dados"]
-    dados = {"central": central_de_tarefas(token), "erro_correcoes": None}
+    dados = {"central": central_de_tarefas(token), "erro_correcoes": None, "solicitacoes": None}
+    if str(st.session_state.usuario.get("perfil", "")).upper() in ("RH", "ADMIN"):
+        try:
+            dados["solicitacoes"] = sum(
+                1 for s in solicitacoes_rh(token).get("solicitacoes") or []
+                if s.get("tipo") != "privacidade_lgpd" and (s.get("status") or "recebida") in ("recebida", "em_analise")
+            )
+        except ApiError:
+            dados["solicitacoes"] = None
     try:
         dados["correcoes"] = correcoes_ponto(token).get("correcoes") or []
     except ApiError as erro:
@@ -329,6 +338,14 @@ def pagina_central() -> None:
                 "Departamento", [None] + sorted(deps, key=deps.get), format_func=lambda d: "Departamento: Todos" if d is None else f"Departamento: {deps[d]}",
                 key="central_dep", label_visibility="collapsed", width=230,
             )
+
+    if dados.get("solicitacoes"):
+        with st.container(horizontal=True, vertical_alignment="center", key="central_solicitacoes"):
+            n = dados["solicitacoes"]
+            st.html(f'<p class="crh-nota-ambar">{n} solicitaç{"ões" if n != 1 else "ão"} ao RH em aberto (alteração cadastral, declarações e documentos).</p>', width="stretch")
+            if st.button("Abrir Solicitações ao RH →", type="tertiary", key="central_ir_solicitacoes"):
+                st.session_state.ir_solicitacoes = True
+                st.rerun()
 
     if erro_acao := st.session_state.pop("central_erro", None):
         alerta(st.empty(), "erro", erro_acao)

@@ -553,3 +553,28 @@ def alterar_status_usuario(token: str, usuario_id: int, ativo: bool) -> dict:
 def vincular_colaborador(token: str, usuario_id: int, colaborador_id: int) -> dict:
     """POST usuarios/{id}/vincular_colaborador: liga uma conta sem ficha a uma ficha sem conta."""
     return _post(f"usuarios/{int(usuario_id)}/vincular_colaborador", {"colaborador_id": int(colaborador_id)}, token, GRUPO_USUARIOS)
+
+
+# ---------------------------------------------------------------------------
+# Solicitações ao RH (tarefa 47). RH e Admin listam e decidem; aplicar uma alteração cadastral
+# no cadastro é `colaboradores/{id}` PATCH, que só o RH pode.
+# ---------------------------------------------------------------------------
+def solicitacoes_rh(token: str) -> dict:
+    """GET solicitacoes -> {solicitacoes} de todos os colaboradores (RH e Admin), mais recentes primeiro."""
+    return _get("solicitacoes", token, GRUPO_COLABORADORES)
+
+
+def atender_solicitacao(token: str, solicitacao_id: int, justificativa: str | None = None) -> dict:
+    """POST solicitacoes/{id}/atender. Para alteração cadastral, não muda o cadastro sozinho."""
+    corpo = {"justificativa_decisao": justificativa} if justificativa else {}
+    return _post(f"solicitacoes/{int(solicitacao_id)}/atender", corpo, token, GRUPO_COLABORADORES)
+
+
+def indeferir_solicitacao(token: str, solicitacao_id: int, justificativa: str) -> dict:
+    """POST solicitacoes/{id}/indeferir com a justificativa obrigatória (5 a 1000 caracteres)."""
+    return _post(f"solicitacoes/{int(solicitacao_id)}/indeferir", {"justificativa_decisao": justificativa}, token, GRUPO_COLABORADORES)
+
+
+def atualizar_dados_pessoais(token: str, colaborador_id: int, dados: dict) -> dict:
+    """PATCH colaboradores/{id}: dados pessoais completos (nome, CPF, e-mail, nascimento, telefone e endereço). Só o RH."""
+    return _request("PATCH", f"colaboradores/{int(colaborador_id)}", token, GRUPO_COLABORADORES, dados)

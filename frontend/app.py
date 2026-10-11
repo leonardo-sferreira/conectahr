@@ -39,6 +39,7 @@ from pagina_onboarding import pagina_onboarding
 from pagina_pagamento import pagina_pagamento
 from pagina_perfil import pagina_perfil
 from pagina_ponto import pagina_ponto
+from pagina_solicitacoes import pagina_solicitacoes
 from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
 from theme import inject_base_styles, render_nav_ativo, render_sidebar_logo
@@ -59,6 +60,7 @@ _MENU = [
 # Grupo "RH" do menu (Figma 418:1108 e Design System 314:786), só para RH e Admin.
 _MENU_RH = [
     "Colaboradores",
+    "Solicitações ao RH",
     "Ausências",
     "Conferência de documentos",
     "Desligamentos",
@@ -148,9 +150,10 @@ PG_CENTRAL = st.Page(pagina_central, title="Central de Pendências", url_path="c
 PG_AUSENCIAS = st.Page(pagina_ausencias, title="Ausências", url_path="ausencias")
 PG_COLABORADORES = st.Page(pagina_colaboradores, title="Colaboradores", url_path="colaboradores")
 PG_USUARIOS = st.Page(pagina_usuarios, title="Usuários e perfis", url_path="usuarios-e-perfis")
+PG_SOLICITACOES = st.Page(pagina_solicitacoes, title="Solicitações ao RH", url_path="solicitacoes-ao-rh")
 PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de documentos", url_path="conferencia-de-documentos")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_CONFERENCIA], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_CONFERENCIA], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -161,13 +164,14 @@ _ATALHOS = {
     "ir_configuracoes": PG_CONFIGURACOES,
     "ir_aviso": PG_AVISO,
     "ir_central": PG_CENTRAL,
+    "ir_solicitacoes": PG_SOLICITACOES,
 }
 for marca, destino in _ATALHOS.items():
     if st.session_state.pop(marca, False):
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
