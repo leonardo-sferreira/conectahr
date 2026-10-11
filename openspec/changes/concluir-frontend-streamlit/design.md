@@ -336,3 +336,11 @@ Evidência em `docs/evidencias/frontend-folha-ponto.md`.
 - **Uma consulta por mês.** `folha_ponto/mes` devolve o mês de todas as pessoas visíveis (para o resumo) ou de uma (com as correções), respeitando o limite de chamadas do Xano.
 - **Escopo único.** `folha_ponto/pessoas`, `folha_ponto/mes` e `folha_ponto/ajustar` calculam quem a pessoa pode ver do mesmo jeito.
 - **Figma.** Feito com o Figma fora do ar; precisa ser desenhado.
+
+## Benefícios (tarefa 82, 11/10/2026)
+
+Evidência em `docs/evidencias/frontend-beneficios.md`.
+
+- **Catálogo + vínculo por pessoa** (decidido em 11/10/2026): o RH cadastra cada benefício uma vez e vincula à pessoa com valor da empresa, desconto e vigência. Encerrar não apaga, para guardar o histórico.
+- **Um vínculo vigente por benefício e pessoa**; benefício desativado não aceita novos vínculos.
+- **Figma.** Feito com o Figma fora do ar; precisa ser desenhado.
