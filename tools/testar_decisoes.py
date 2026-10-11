@@ -103,6 +103,7 @@ def _instalar():
         "meu_ponto_status_hoje": estado.get("ponto_hoje"),
         "fila_ferias_pendentes": estado["fila"], "fila_documentos_pendentes": [{"id": 1}, {"id": 2}], "fila_desligamentos_pendentes": [],
     })
+    api_client.solicitacoes_rh = lambda token: _falha_ou("solicitacoes", {"solicitacoes": estado.get("solicitacoes", [])})
     api_client.correcoes_ponto = lambda token: chamadas.append(("correcoes",)) or _falha_ou("correcoes", {"correcoes": estado["correcoes"]})
     api_client.verificar_conflito_ferias = lambda token, fid: chamadas.append(("conflito", fid)) or _falha_ou("conflito", {
         "antecedencia_dias": 148, "periodo_aquisitivo_cumprido": True, "ferias_sobrepostas": [], "ausencias_sobrepostas": [],

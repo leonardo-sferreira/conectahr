@@ -18,6 +18,7 @@ Uso (na raiz do repositório):
 
 import getpass
 import sys
+import time
 import tomllib
 import unicodedata
 from pathlib import Path
@@ -30,6 +31,8 @@ if hasattr(sys.stdout, "reconfigure"):
 RAIZ = Path(__file__).resolve().parent.parent
 GRUPO_AUTENTICACAO = "kFmShhlY"
 GRUPO_DEPARTAMENTOS = "wcbcMmlw"
+# O plano do Xano aceita 10 chamadas a cada 20 segundos: uma pausa entre as chamadas evita o limite.
+PAUSA_S = 2.2
 
 # (nome, descrição, apelidos que já contam como o mesmo departamento)
 DEPARTAMENTOS = [
@@ -71,6 +74,7 @@ def _base(canonical: str) -> str:
 
 
 def _chamar(metodo: str, canonical: str, caminho: str, token: str | None = None, corpo: dict | None = None) -> dict:
+    time.sleep(PAUSA_S)
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     resp = requests.request(metodo, f"{_base(canonical)}/{caminho}", json=corpo, headers=headers, timeout=15)
     try:
