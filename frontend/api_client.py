@@ -578,3 +578,22 @@ def indeferir_solicitacao(token: str, solicitacao_id: int, justificativa: str) -
 def atualizar_dados_pessoais(token: str, colaborador_id: int, dados: dict) -> dict:
     """PATCH colaboradores/{id}: dados pessoais completos (nome, CPF, e-mail, nascimento, telefone e endereço). Só o RH."""
     return _request("PATCH", f"colaboradores/{int(colaborador_id)}", token, GRUPO_COLABORADORES, dados)
+
+
+# ---------------------------------------------------------------------------
+# Espelho mensal do ponto (tarefa 78).
+# ---------------------------------------------------------------------------
+def calendario(token: str) -> dict:
+    """GET calendario -> {feriados, ferias, ausencias}. Os feriados valem para todos."""
+    return _get("calendario", token, GRUPO_COLABORADORES)
+
+
+def solicitar_correcao_dia(token: str, data: str, campo: str, valor_solicitado_ms: int, justificativa: str) -> dict:
+    """POST ponto/solicitar_correcao_dia: pede a correção de um dia passado sem nenhuma marcação. O backend cria o
+    registro do dia (Incompleto) e o pedido; responde `registro_id` para os outros campos do mesmo dia."""
+    return _post(
+        "ponto/solicitar_correcao_dia",
+        {"data": data, "campo": campo, "valor_solicitado": int(valor_solicitado_ms), "justificativa": justificativa},
+        token,
+        GRUPO_PONTO,
+    )
