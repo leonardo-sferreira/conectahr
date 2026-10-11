@@ -73,12 +73,17 @@ fer = [{"data_inicio": "2026-10-08", "data_fim": "2026-10-09", "status": "Aprova
 feri = [{"data": "2026-10-12", "nome": "Nossa Senhora Aparecida", "abrangencia": "nacional"}, {"data": "2026-10-05", "nome": "Feriado municipal", "abrangencia": "municipal"}]
 linhas = m.espelho_do_mes(regs, aus, cor, fer, feri, 2026, 10, H, "2026-10-01")
 por = {l["data"].day: l for l in linhas}
-conferir(min(por) == 1 and max(por) == 15 and 16 not in por, "do dia 1 (admissão) até hoje; futuro fora")
+conferir(min(por) == 1 and max(por) == 15 and 16 not in por, "do primeiro ponto até hoje; futuro fora")
 conferir(por[1]["status"] == "COMPLETO" and por[1]["marcas"] == ["08:00", "12:00", "13:00", "17:30"] and por[1]["acao"] == "corrigir", "registro completo: marcações e 'corrigir'")
 conferir(por[2]["status"] == "INCOMPLETO" and por[2]["tom"] == "err", "registro aberto em dia passado vira incompleto")
 conferir(por[3]["status"] == "FOLGA" and por[3]["acao"] == "corrigir_dia", "sábado sem registro: folga, com correção do dia")
-conferir(por[5]["status"] == "SEM REGISTRO" and por[5]["acao"] == "corrigir_dia" and "Registre a ausência" in por[5]["nota"], "dia útil sem nada: sem registro (ausência recusada e feriado municipal não justificam)")
-conferir(por[6]["status"] == "JUSTIFICADO" and por[6]["acao"] is None and por[6]["trabalhado"] == "Atestado", "ausência aprovada: justificado, sem correção")
+conferir(por[5]["status"] == "FALTA INJUSTIFICADA" and por[5]["acao"] == "corrigir_dia" and "recusada pelo RH" in por[5]["nota"], "ausência recusada: falta injustificada, com correção (feriado municipal não justifica)")
+so_sem = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 10, H, "2026-10-01")}
+conferir(so_sem[5]["status"] == "SEM REGISTRO" and "Registre a ausência" in so_sem[5]["nota"], "dia útil sem nada no mês corrente: sem registro")
+fechado = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 9, H, "2026-09-01")}
+conferir(fechado[1]["status"] == "FALTA INJUSTIFICADA" and fechado[1]["acao"] == "corrigir_dia" and fechado[5]["status"] == "FOLGA", "mês encerrado: dia útil sem nada vira falta injustificada; fim de semana segue folga")
+conferir(por[6]["status"] == "ATESTADO" and por[6]["acao"] is None and por[6]["trabalhado"] == "Atestado", "atestado aprovado: aparece como atestado, sem correção")
+conferir(m.espelho_do_mes([], [{"tipo": "Falta", "data_inicio": "2026-10-05", "data_fim": "2026-10-05", "status": "Registrado"}], [], [], [], 2026, 10, H, "2026-10-01")[4]["status"] == "FALTA JUSTIFICADA", "falta aprovada e registrada: falta justificada")
 conferir(por[7]["status"] == "AUSÊNCIA EM ANÁLISE" and por[7]["acao"] is None, "ausência pendente: em análise, sem correção")
 conferir(por[8]["status"] == "FÉRIAS" and por[9]["status"] == "FÉRIAS" and por[10]["status"] == "FOLGA", "férias aprovadas; férias pendentes não contam")
 conferir(por[12]["status"] == "FERIADO" and "Nossa Senhora Aparecida" in por[12]["nota"] and por[12]["acao"] == "corrigir_dia", "feriado nacional, com correção para quem trabalhou")
@@ -89,9 +94,11 @@ todas_pendentes = [{"registro_ponto_id": 1, "campo": c, "status": "pendente"} fo
 conferir(m.espelho_do_mes(regs, [], todas_pendentes, [], [], 2026, 10, H)[0]["acao"] is None, "as quatro marcações em análise: sem botão")
 conferir(len(m.espelho_do_mes([], [], [], [], [], 2026, 10, H, "2026-10-10")) == 6, "dias antes da admissão não aparecem")
 r = m.resumo_do_mes(linhas)
-conferir(r == {"horas": "25h30", "dias_trabalhados": 4, "sem_registro": 2, "em_analise": 1}, "resumo do mês")
+conferir(r == {"horas": "25h30", "dias_trabalhados": 4, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1}, "resumo do mês")
 conferir(m.meses_disponiveis("2026-08-20", [], H) == [(2026, 10), (2026, 9), (2026, 8)] and m.meses_disponiveis(None, [], H) == [(2026, 10)], "meses da admissão até hoje")
-conferir(len(m.meses_disponiveis("2020-01-01", [], H)) == 24, "no máximo 24 meses")
+conferir(len(m.meses_disponiveis("2020-01-01", [], H)) == 82, "sem limite: de janeiro de 2020 a outubro de 2026")
+conferir(m.meses_disponiveis("2026-09-01", [{"data": "2025-12-03"}], H)[-1] == (2025, 12), "começa no primeiro ponto registrado, mesmo antes da admissão")
+conferir(m.anos_disponiveis(m.meses_disponiveis(None, [{"data": "2025-11-03"}], H)) == [2026, 2025] and m.meses_do_ano(m.meses_disponiveis(None, [{"data": "2025-11-03"}], H), 2025) == [12, 11], "anos e meses de cada ano")
 conferir(m.rotulo_mes(2026, 10) == "Outubro/2026", "rótulo do mês")
 c = m.csv_do_mes(linhas)
 conferir(c.startswith("﻿".encode()) and "Dia;Data;Entrada;Saída almoço;Volta almoço;Saída;Trabalhado;Situação;Observação" in c.decode("utf-8-sig") and "Qui;01/10/2026;08:00" in c.decode("utf-8-sig"), "CSV com BOM, ';' e o dia")
@@ -146,14 +153,16 @@ def app(**extra) -> AppTest:
     at = at.run()
     at.button_group(key="pt_visao").set_value("Mês")
     at = at.run()
-    at.selectbox(key="pt_mes").set_value((ANT.year, ANT.month))
+    at.selectbox(key="pt_ano").set_value(ANT.year)
+    at = at.run()
+    at.selectbox(key="pt_mes").set_value(ANT.month)
     return at.run()
 
 
 caso("Tela: espelho do mês anterior")
 at = app()
 t = texto(at)
-conferir("Horas trabalhadas no mês" in t and "8h30" in t and "SEM REGISTRO" in t and "Em análise: Saída" in t, "resumo, horas, dia sem registro e correção em análise")
+conferir("Horas trabalhadas no mês" in t and "8h30" in t and "FALTA INJUSTIFICADA" in t and "Em análise: Saída" in t and "Faltas injustificadas" in t, "resumo, horas, falta injustificada no mês encerrado e correção em análise")
 conferir(any(b.key == "pt_baixar_mes" for b in at.get("download_button")), "botão de baixar o espelho do mês")
 chaves = {b.key for b in at.button}
 conferir(f"pt_corrigir_dia_{D_SEM.isoformat()}" in chaves and "pt_corrigir_50" in chaves, "correção no dia sem registro e no dia com registro")
@@ -191,9 +200,13 @@ at.button(key="pt_corr_enviar").click()
 at = at.run()
 conferir(("registro", 50, "hora_entrada", ms(D_REG, 7, 55), "Cheguei mais cedo.") in chamadas, "pede pelo endpoint do registro")
 
+caso("Menu: Vagas internas")
+at = app()
+conferir("nav_Vagas internas" in {b.key for b in at.button}, "a opção Vagas internas aparece no menu (sem destino por enquanto)")
+
 caso("Tela: falhas parciais")
 at = app(erro_calendario=ApiError("Erro inesperado.", 500))
-conferir("SEM REGISTRO" in texto(at) and not at.exception, "sem o calendário, o mês aparece do mesmo jeito")
+conferir("FALTA INJUSTIFICADA" in texto(at) and not at.exception, "sem o calendário, o mês aparece do mesmo jeito")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

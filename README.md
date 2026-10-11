@@ -170,7 +170,7 @@ em [`docs/demonstracao.md`](docs/demonstracao.md).
   `python tools/testar_decisoes.py` roda 50 verificações da Central de Pendências e de Ausências (escopo por perfil e decisões), e
   `python tools/testar_cadastro.py` roda 52 verificações de Colaboradores e de Usuários e perfis (admitir, criar acesso e vincular ficha), e
   `python tools/testar_solicitacoes.py` roda 34 verificações de Solicitações ao RH, e
-  `python tools/testar_ponto_mensal.py` roda 29 verificações do espelho de ponto mensal.
+  `python tools/testar_ponto_mensal.py` roda 35 verificações do espelho de ponto mensal.
 - O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
   fumaça do frontend, testes do fluxo de entrada, do Onboarding, de Privacidade e Documentos e busca de segredos
   no repositório.

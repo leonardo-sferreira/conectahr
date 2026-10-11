@@ -54,6 +54,8 @@ _MENU = [
     ("Pagamento", False),
     ("Central de Pendências", False),
     ("Trajetória", False),
+    # Vagas internas: o sistema de vagas fica em outro endereço, ainda não ligado; a opção só aparece no menu.
+    ("Vagas internas", False),
     ("Auditoria", True),
     ("Regras", True),
 ]
@@ -188,7 +190,10 @@ with st.sidebar:
         elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
             if rotulo in _PAGINAS_DO_MENU:
                 st.switch_page(_PAGINAS_DO_MENU[rotulo])
-            st.toast(f"A tela {rotulo} ainda está em construção.")
+            if rotulo == "Vagas internas":
+                st.toast("Vagas internas: em breve, as vagas abertas da empresa vão abrir aqui.")
+            else:
+                st.toast(f"A tela {rotulo} ainda está em construção.")
     if perfil in ("RH", "ADMIN"):
         st.html('<p class="crh-nav-grupo">RH</p>')
         for rotulo in _MENU_RH:
