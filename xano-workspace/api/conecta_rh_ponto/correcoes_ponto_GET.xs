@@ -101,7 +101,8 @@ query correcoes_ponto verb=GET {
     }
 
     conditional {
-      if ($departamento_escopo_id == null) {
+      // Sem departamento gerenciado, o Gestor nao ve fila nenhuma (antes caia em "ve tudo").
+      if ($departamento_escopo_id == null && $perfil_autenticado != "GESTOR") {
         var.update $correcoes_no_escopo {
           value = $correcoes_pendentes
         }

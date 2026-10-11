@@ -774,6 +774,20 @@ _APP_CSS = f"""
   .crh-fe-item .p.err {{ background: {ERRO}; }}
   .crh-fe-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
   .crh-fe-item .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  /* Central de Pendências, "Minhas pendências" (Figma 31:37): trilha de pontos ligando os cartões. */
+  .crh-ct {{ display: flex; flex-direction: column; gap: 6px; margin: 0 0 6px; }}
+  .crh-ct-item {{ display: flex; gap: 14px; align-items: stretch; }}
+  .crh-ct-ponto {{ width: 12px; display: flex; flex-direction: column; align-items: center; padding-top: 22px; flex-shrink: 0; }}
+  .crh-ct-ponto .p {{ width: 9px; height: 9px; border-radius: 999px; background: {AMBAR}; flex-shrink: 0; }}
+  .crh-ct-ponto .p.ok {{ background: {SUCESSO}; }}
+  .crh-ct-ponto .p.err {{ background: {ERRO}; }}
+  .crh-ct-ponto .l {{ width: 2px; flex: 1 1 auto; background: {BORDA}; margin: 4px 0 -28px; }}
+  .crh-ct-item:last-child .l {{ display: none; }}
+  .crh-ct-item .crh-linha-onb {{ flex: 1 1 auto; background: white; }}
+  .crh-ct-item .crh-linha-onb .t {{ font-weight: 500; }}
+  /* Botões de recusa nos modais de decisão (Figma 243:1127, 436:1473 e 436:1506): vermelhos. */
+  .st-key-central_fe_rejeitar button, .st-key-central_cor_ok button, .st-key-aus_rej_ok button, .st-key-rh_recusar_ok button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
+  .st-key-central_fe_rejeitar button[kind] p, .st-key-central_cor_ok button[kind] p, .st-key-aus_rej_ok button[kind] p, .st-key-rh_recusar_ok button[kind] p {{ color: white !important; }}
 
   /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
   .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}
@@ -874,6 +888,8 @@ _ESCURO_CSS = f"""
   .crh-pg-nota {{ background: {ESC_CARTAO}; color: {ESC_TEXTO_2}; }}
   .crh-fe-item .t {{ color: {ESC_TEXTO}; }}
   .crh-fe-item .d {{ color: {ESC_TEXTO_2}; }}
+  .crh-ct-item .crh-linha-onb {{ background: {ESC_CARTAO}; }}
+  .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}
   .st-key-ferias_topo button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-ferias_topo button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   div[class*="st-key-ponto_box_proximo_"], div[class*="st-key-ponto_box_futuro_"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
