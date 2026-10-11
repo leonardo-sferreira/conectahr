@@ -27,6 +27,7 @@ from api_client import ApiError, auth_me, logout
 from pagina_ausencias import pagina_ausencias
 from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
 from pagina_central import pagina_central
+from pagina_colaboradores import pagina_colaboradores
 from pagina_conferencia_documentos import pagina_conferencia_documentos
 from pagina_configuracoes import pagina_configuracoes
 from pagina_documentos import pagina_documentos
@@ -38,6 +39,7 @@ from pagina_onboarding import pagina_onboarding
 from pagina_pagamento import pagina_pagamento
 from pagina_perfil import pagina_perfil
 from pagina_ponto import pagina_ponto
+from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
 from theme import inject_base_styles, render_nav_ativo, render_sidebar_logo
 
@@ -64,6 +66,14 @@ _MENU_RH = [
     "Pesquisas de clima",
     "Ciclos de avaliação",
     "Pedidos LGPD",
+]
+# Grupo "Admin" do menu (Figma 246:612), só para o Admin.
+_MENU_ADMIN = [
+    "Usuários e perfis",
+    "Sessões ativas",
+    "Estrutura da empresa",
+    "Indicadores gerais",
+    "Integrações e e-mails",
 ]
 
 logado = bool(st.session_state.get("token"))
@@ -136,9 +146,11 @@ PG_FERIAS = st.Page(pagina_ferias, title="Férias", url_path="ferias")
 PG_PAGAMENTO = st.Page(pagina_pagamento, title="Pagamento", url_path="pagamento")
 PG_CENTRAL = st.Page(pagina_central, title="Central de Pendências", url_path="central-de-pendencias")
 PG_AUSENCIAS = st.Page(pagina_ausencias, title="Ausências", url_path="ausencias")
+PG_COLABORADORES = st.Page(pagina_colaboradores, title="Colaboradores", url_path="colaboradores")
+PG_USUARIOS = st.Page(pagina_usuarios, title="Usuários e perfis", url_path="usuarios-e-perfis")
 PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de documentos", url_path="conferencia-de-documentos")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_CONFERENCIA], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_CONFERENCIA], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -155,7 +167,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Conferência de documentos": PG_CONFERENCIA}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
@@ -176,6 +188,15 @@ with st.sidebar:
     if perfil in ("RH", "ADMIN"):
         st.html('<p class="crh-nav-grupo">RH</p>')
         for rotulo in _MENU_RH:
+            if rotulo == ativo_no_menu:
+                render_nav_ativo(rotulo)
+            elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
+                if rotulo in _PAGINAS_DO_MENU:
+                    st.switch_page(_PAGINAS_DO_MENU[rotulo])
+                st.toast(f"A tela {rotulo} ainda está em construção.")
+    if perfil == "ADMIN":
+        st.html('<p class="crh-nav-grupo">Admin</p>')
+        for rotulo in _MENU_ADMIN:
             if rotulo == ativo_no_menu:
                 render_nav_ativo(rotulo)
             elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):

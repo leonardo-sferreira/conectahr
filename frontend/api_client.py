@@ -66,6 +66,7 @@ GRUPO_DOCUMENTOS = "DzPbmWVZ"
 GRUPO_PONTO = "4PXzu46t"
 GRUPO_AUSENCIAS = "x-LkEdmU"
 GRUPO_FERIAS = "AI-dSGch"
+GRUPO_USUARIOS = "GjsM93yp"
 
 
 def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
@@ -511,3 +512,44 @@ def registrar_ausencia_aprovada(token: str, ausencia_id: int, observacao: str | 
 def abrir_comprovante_ausencia(token: str, ausencia_id: int) -> dict:
     """GET ausencias/{id}/comprovante -> {comprovante_url} temporário. RH, Admin ou o próprio; o Gestor não."""
     return _get(f"ausencias/{int(ausencia_id)}/comprovante", token, GRUPO_AUSENCIAS)
+
+
+# ---------------------------------------------------------------------------
+# Colaboradores (RH) e Usuários e perfis (Admin) — tarefas 50 e 53. O backend decide quem pode:
+# admitir é só do RH; criar conta, RH ou Admin; trocar perfil, só Admin; vincular, Admin (qualquer
+# conta) ou RH (contas de colaborador), nunca a própria.
+# ---------------------------------------------------------------------------
+def colaboradores(token: str) -> dict:
+    """GET colaboradores -> {colaboradores} (RH e Admin), com `user_id` quando a ficha tem conta."""
+    return _get("colaboradores", token, GRUPO_COLABORADORES)
+
+
+def admitir_colaborador(token: str, dados: dict) -> dict:
+    """POST colaboradores: pré-cadastro (só RH). Não cria conta de acesso; o próximo passo é `criar_usuario`."""
+    return _post("colaboradores", dados, token, GRUPO_COLABORADORES)
+
+
+def usuarios(token: str) -> dict:
+    """GET usuarios -> {usuarios} com perfil, situação, último acesso e se ainda usa a senha temporária."""
+    return _get("usuarios", token, GRUPO_USUARIOS)
+
+
+def criar_usuario(token: str, colaborador_id: int, email: str, senha_temporaria: str) -> dict:
+    """POST usuarios: cria a conta de um colaborador; o backend manda a senha temporária por e-mail e
+    responde `email_enviado`. A conta nasce com o perfil Colaborador."""
+    return _post("usuarios", {"colaborador_id": int(colaborador_id), "email": email, "senha_temporaria": senha_temporaria}, token, GRUPO_USUARIOS)
+
+
+def trocar_perfil(token: str, usuario_id: int, perfil: str) -> dict:
+    """PATCH usuarios/{id}/perfil (só Admin; ninguém troca o próprio). `perfil`: COLABORADOR, GESTOR, RH ou ADMIN."""
+    return _request("PATCH", f"usuarios/{int(usuario_id)}/perfil", token, GRUPO_USUARIOS, {"perfil": perfil})
+
+
+def alterar_status_usuario(token: str, usuario_id: int, ativo: bool) -> dict:
+    """PATCH usuarios/{id}/status: ativa ou desativa sem apagar o histórico."""
+    return _request("PATCH", f"usuarios/{int(usuario_id)}/status", token, GRUPO_USUARIOS, {"ativo": bool(ativo)})
+
+
+def vincular_colaborador(token: str, usuario_id: int, colaborador_id: int) -> dict:
+    """POST usuarios/{id}/vincular_colaborador: liga uma conta sem ficha a uma ficha sem conta."""
+    return _post(f"usuarios/{int(usuario_id)}/vincular_colaborador", {"colaborador_id": int(colaborador_id)}, token, GRUPO_USUARIOS)

@@ -1,5 +1,9 @@
 // Criação de acesso para um colaborador
 // Cria uma conta de acesso para um colaborador. Operação exclusiva do RH.
+// Envia a senha temporaria por e-mail para o endereco de acesso (Figma 246:1245,
+// "a pessoa recebe uma senha temporaria por e-mail"); quem cria a conta nao precisa
+// repassar a senha. Se o envio falhar, a conta continua criada e a resposta avisa
+// (email_enviado = false): a pessoa usa "Esqueci minha senha".
 query usuarios verb=POST {
   api_group = "ConectaRH — Gestão de Usuários"
   auth = "user"
@@ -232,11 +236,33 @@ query usuarios verb=POST {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Senha temporaria por e-mail (template generico id 1, o mesmo do outbox; ver
+    // docs/emails-templates.md). A senha nunca vai para a auditoria nem para o log.
+    api.request {
+      url = "https://api.brevo.com/v3/smtp/email"
+      method = "POST"
+      headers = ["Content-Type: application/json", "api-key: " ~ $env.BREVO_API_KEY]
+      params = {
+        to        : [{email: $usuario_criado.email, name: $usuario_criado.nome}]
+        templateId: 1
+        params    : {
+          nome    : $usuario_criado.nome
+          titulo  : "Seu acesso ao ConectaRH"
+          mensagem: "Sua conta no ConectaRH foi criada. Entre com o e-mail " ~ $usuario_criado.email ~ " e a senha temporaria " ~ $input.senha_temporaria ~ ". No primeiro acesso voce troca a senha."
+        }
+      }
+    } as $resposta_email_acesso
+
+    var $email_enviado {
+      value = ($resposta_email_acesso.response.status >= 200 && $resposta_email_acesso.response.status < 300)
+    }
   }
 
   response = {
     sucesso : true
     mensagem: "Conta de acesso criada com sucesso. O colaborador deve alterar a senha no primeiro login."
+    email_enviado: $email_enviado
     usuario : ```
       {
         id: $usuario_criado.id
