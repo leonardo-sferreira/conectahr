@@ -315,3 +315,14 @@ Evidência em `docs/evidencias/frontend-solicitacoes.md`.
 - **Feita sem o Figma à vista.** A conexão com o Figma caiu; a tela segue o padrão das telas de RH aprovadas e a descrição da seção 8. Precisa ser conferida com 225:5299 e 206:1072, e as diferenças registradas aqui.
 - **Aplicar antes de atender.** Atender não muda o cadastro (regra do backend). "Aplicar e atender" grava `colaboradores/{id}` primeiro e só atende se o cadastro for aceito.
 - **Menu.** "Solicitações ao RH" entra no grupo RH, logo depois de Colaboradores. A Central do RH e do Admin mostra quantas estão em aberto.
+
+## Espelho de ponto mensal (tarefa 78, 11/10/2026)
+
+Evidência em `docs/evidencias/frontend-ponto-mensal.md`; fluxo em `docs/fluxos/ponto-mensal.md`.
+
+- **Uma situação por dia, com precedência fixa:** registro, hoje, férias, ausência, feriado nacional, folga, sem registro. Isso evita que um dia fique sem caminho ou com dois.
+- **Dia sem nenhuma marcação.** O backend não tinha como corrigir; o endpoint novo cria o registro do dia (Incompleto) e o pedido, e as outras marcações seguem pelo registro.
+- **Correção mais segura.** O pedido agora confere a janela do dia (com folga para a virada de data em UTC, tarefa 73), o futuro e a ordem das marcações.
+- **Feriados estaduais e municipais** não mudam a situação, porque o backend não sabe onde a pessoa trabalha.
+- **Prazo para correção** fica para a tarefa 79 (decisão do RH).
+- **Figma.** Feito com o Figma fora do ar; a visão mensal precisa ser desenhada lá.

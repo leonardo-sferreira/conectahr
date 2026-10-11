@@ -23,13 +23,17 @@ from datetime import date, datetime, timezone
 import streamlit as st
 
 from api_client import (
+    calendario,
     ApiError,
     marcar_ponto,
+    meu_perfil_colaborador,
     meu_banco_horas,
     meu_ponto,
     minhas_ausencias,
     minhas_correcoes_ponto,
+    minhas_ferias,
     registrar_ausencia,
+    solicitar_correcao_dia,
     solicitar_correcao_ponto,
 )
 from ponto_modelo import (
@@ -47,7 +51,8 @@ from ponto_modelo import (
     validar_correcao,
     valor_solicitado_ms,
 )
-from theme import alerta, render_hero, render_topbar
+from ponto_mensal_modelo import campos_livres, csv_do_mes, espelho_do_mes, meses_disponiveis, resumo_do_mes, rotulo_mes
+from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _CACHE = "ponto_cache"
 _VALIDADE_CACHE_S = 20
@@ -74,6 +79,29 @@ def _carregar(token: str) -> dict:
     return dados
 
 
+def _carregar_mes(token: str) -> dict:
+    """{'ferias', 'feriados', 'admissao'} para o espelho mensal, por 20 s. Cada uma que falhar fica vazia: o
+    mês aparece do mesmo jeito, só sem marcar férias, feriados ou o início na admissão."""
+    cache = st.session_state.get("ponto_mes_cache")
+    if cache and time.time() - cache["em"] < _VALIDADE_CACHE_S:
+        return cache["dados"]
+    dados = {"ferias": [], "feriados": [], "admissao": None}
+    try:
+        dados["ferias"] = minhas_ferias(token).get("ferias") or []
+    except ApiError:
+        pass
+    try:
+        dados["feriados"] = calendario(token).get("feriados") or []
+    except ApiError:
+        pass
+    try:
+        dados["admissao"] = (meu_perfil_colaborador(token).get("colaborador") or {}).get("data_admissao")
+    except ApiError:
+        pass
+    st.session_state["ponto_mes_cache"] = {"em": time.time(), "dados": dados}
+    return dados
+
+
 def _invalidar() -> None:
     st.session_state.pop(_CACHE, None)
 
@@ -86,13 +114,18 @@ def _fechar() -> None:
 # Modais
 # ---------------------------------------------------------------------------
 @st.dialog("Solicitar correção de ponto", width="small", on_dismiss=_fechar)
-def _modal_correcao(registro: dict, linha: dict, campo_inicial: str | None) -> None:
+def _modal_correcao(registro: dict | None, linha: dict, campo_inicial: str | None) -> None:
+    """Com registro: `ponto/{id}/solicitar_correcao`. Sem registro (dia passado sem nenhuma marcação):
+    `ponto/solicitar_correcao_dia`, que cria o registro do dia. As marcações já em análise ficam fora."""
     st.html(
         '<div class="crh-campos crh-campos-direita">'
         f'<p class="r">Dia</p><p class="v">{html.escape(linha["dia"])}</p>'
         f'<p class="r">Situação</p><p class="v">{html.escape(linha["status"].capitalize())}</p></div>'
     )
-    campos = [c for c, _ in MARCACOES]
+    campos = campos_livres(linha)
+    if registro is None:
+        st.html('<p class="crh-nota-ambar">Neste dia não há nenhuma marcação. Peça uma marcação por vez: o dia fica '
+                '"Incompleto" até a decisão, e as outras marcações você pede depois, na mesma linha.</p>')
     c1, c2 = st.columns(2)
     campo = c1.selectbox(
         "Marcação", campos, format_func=ROTULO_CAMPO.get, key="pt_corr_campo",
@@ -112,9 +145,12 @@ def _modal_correcao(registro: dict, linha: dict, campo_inicial: str | None) -> N
                 alerta(slot, "erro", erro_campo)
                 return
             try:
-                solicitar_correcao_ponto(
-                    st.session_state.token, registro["id"], campo, valor_solicitado_ms(linha["data"], horario), motivo.strip()
-                )
+                if registro is None:
+                    solicitar_correcao_dia(st.session_state.token, linha["data"].isoformat(), campo, valor_solicitado_ms(linha["data"], horario), motivo.strip())
+                else:
+                    solicitar_correcao_ponto(
+                        st.session_state.token, registro["id"], campo, valor_solicitado_ms(linha["data"], horario), motivo.strip()
+                    )
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
@@ -196,7 +232,7 @@ def _marcar(rotulo: str) -> None:
     st.rerun()
 
 
-def _espelho(linhas: list[dict]) -> None:
+def _espelho(linhas: list[dict], vazio: str = "Nenhuma marcação nesta semana.") -> None:
     pesos = [1.7, 1, 1.2, 1, 1, 1.1, 1.3, 1.7]
     with st.container(key="ponto_tabela"):
         with st.container(key="ponto_cab"):
@@ -204,19 +240,25 @@ def _espelho(linhas: list[dict]) -> None:
                 coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
         if not linhas:
             with st.container(key="ponto_lin_vazio"):
-                st.html('<p class="crh-meta">Nenhuma marcação nesta semana.</p>')
+                st.html(f'<p class="crh-meta">{html.escape(vazio)}</p>')
         for i, l in enumerate(linhas):
-            with st.container(key=f"ponto_lina_{i}" if l["ausencia"] else f"ponto_lin_{i}"):
+            destaque = l.get("ausencia") or l["status"] in ("FÉRIAS", "JUSTIFICADO", "AUSÊNCIA EM ANÁLISE", "FOLGA", "FERIADO")
+            with st.container(key=f"ponto_lina_{i}" if destaque else f"ponto_lin_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
                 c[0].html(f'<p class="crh-doc-prazo">{html.escape(l["dia"])}</p>')
                 for coluna, marca in zip(c[1:5], l["marcas"]):
                     coluna.html(f'<p class="crh-ponto-marca">{html.escape(marca)}</p>')
                 c[5].html(f'<p class="crh-ponto-trab">{html.escape(l["trabalhado"])}</p>')
-                c[6].html(f'<p class="crh-ponto-status {l["tom"]}">{html.escape(l["status"])}</p>')
+                nota = f'<p class="crh-meta" style="margin:2px 0 0;font-size:11.5px">{html.escape(l["nota"])}</p>' if l.get("nota") else ""
+                c[6].html(f'<p class="crh-ponto-status {l["tom"]}">{html.escape(l["status"])}</p>{nota}')
                 with c[7]:
                     if l["acao"] == "corrigir":
                         if st.button("Solicitar correção", type="tertiary", key=f"pt_corrigir_{l['registro_id']}"):
                             st.session_state.modal_ponto = ("correcao", l["registro_id"], None)
+                            st.rerun()
+                    elif l["acao"] == "corrigir_dia":
+                        if st.button("Solicitar correção", type="tertiary", key=f"pt_corrigir_dia_{l['data'].isoformat()}"):
+                            st.session_state.modal_ponto = ("correcao_dia", l["data"].isoformat(), None)
                             st.rerun()
                     elif l["acao"] == "em_analise":
                         st.html('<p class="crh-meta">Correção em análise</p>')
@@ -263,14 +305,39 @@ def pagina_ponto() -> None:
     )
 
     with st.container(horizontal=True, vertical_alignment="center", key="ponto_topo_espelho"):
-        st.html('<p class="crh-bloco-titulo">Espelho de ponto — semana</p>', width="content")
+        st.html('<p class="crh-bloco-titulo">Espelho de ponto</p>', width="content")
+        with st.container(key="cfg_abas", width="content"):
+            visao = st.segmented_control("Visão", ["Semana", "Mês"], default="Semana", required=True, key="pt_visao", label_visibility="collapsed")
         st.space("stretch")
         if st.button("Registrar ausência ou atestado", key="pt_btn_ausencia"):
             st.session_state.modal_ponto = ("ausencia",)
 
     hoje_local = datetime.now(timezone.utc).date()
-    linhas = espelho_da_semana(dados["registros"], dados["ausencias"], dados["correcoes"], hoje_local)
-    _espelho(linhas)
+    linhas_semana = espelho_da_semana(dados["registros"], dados["ausencias"], dados["correcoes"], hoje_local)
+    linhas_mes = []
+    if visao == "Mês":
+        extra = _carregar_mes(token)
+        meses = meses_disponiveis(extra["admissao"], dados["registros"], hoje_local)
+        with st.container(horizontal=True, vertical_alignment="center", key="rh_barra"):
+            ano_mes = st.selectbox("Mês", meses, format_func=lambda am: rotulo_mes(*am), key="pt_mes", label_visibility="collapsed", width=220)
+            st.space("stretch")
+        linhas_mes = espelho_do_mes(dados["registros"], dados["ausencias"], dados["correcoes"], extra["ferias"], extra["feriados"],
+                                    ano_mes[0], ano_mes[1], hoje_local, extra["admissao"])
+        numeros = resumo_do_mes(linhas_mes)
+        render_indicadores([
+            ("Horas trabalhadas no mês", numeros["horas"], ""),
+            ("Dias com marcação", str(numeros["dias_trabalhados"]), "verde"),
+            ("Dias sem registro ou incompletos", str(numeros["sem_registro"]), "negativo"),
+            ("Correções em análise", str(numeros["em_analise"]), "ambar"),
+        ])
+        _espelho(linhas_mes, "Nenhum dia neste mês ainda.")
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.html('<p class="crh-meta">Cada dia mostra as quatro marcações, o tempo trabalhado e a situação. Dia sem registro, '
+                    'folga ou feriado em que você trabalhou: "Solicitar correção". Faltou: "Registrar ausência ou atestado".</p>', width="stretch")
+            st.download_button("Baixar espelho do mês (CSV)", csv_do_mes(linhas_mes), file_name=f"espelho-ponto-{ano_mes[0]}-{ano_mes[1]:02d}.csv",
+                               mime="text/csv", key="pt_baixar_mes")
+    else:
+        _espelho(linhas_semana)
 
     modal = st.session_state.get("modal_ponto")
     if not modal:
@@ -278,10 +345,22 @@ def pagina_ponto() -> None:
     if modal[0] == "ausencia":
         _modal_ausencia()
         return
+    if modal[0] == "correcao_dia":
+        linha = next((l for l in linhas_mes if l["data"].isoformat() == modal[1] and l["acao"] == "corrigir_dia"), None)
+        if linha is None:
+            _fechar()
+            return
+        _modal_correcao(None, linha, None)
+        return
     _, registro_id, campo = modal
     registro_alvo = next((r for r in dados["registros"] if r.get("id") == registro_id), None)
-    linha = next((l for l in linhas if l["registro_id"] == registro_id), None)
-    if registro_alvo is None or linha is None:
+    linha = next((l for l in linhas_mes + linhas_semana if l["registro_id"] == registro_id), None)
+    if registro_alvo is None:
+        _fechar()
+        return
+    if linha is None:  # "Editar" no cartão de hoje
+        linha = next((l for l in espelho_da_semana([registro_alvo], [], dados["correcoes"], hoje_local) if l["registro_id"] == registro_id), None)
+    if linha is None:
         _fechar()
         return
     _modal_correcao(registro_alvo, linha, campo)

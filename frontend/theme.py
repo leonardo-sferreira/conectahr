@@ -752,6 +752,7 @@ _APP_CSS = f"""
   .crh-ponto-status.amb {{ color: {AMBAR_ESCURO}; }}
   .crh-ponto-status.err {{ color: {ERRO}; }}
   .crh-ponto-status.azul {{ color: #2663D9; }}
+  .crh-ponto-status.neu {{ color: {GRAFITE_SECUNDARIO}; }}
 
   /* Férias (Figma 40:22): cartões no topo e histórico com linha do tempo. */
   .st-key-ferias_topo {{ gap: 16px; }}

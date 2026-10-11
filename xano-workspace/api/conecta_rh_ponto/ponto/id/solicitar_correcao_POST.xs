@@ -1,6 +1,8 @@
 // Colaborador solicita a correcao de um marcador do proprio registro
 // de ponto, com justificativa. O valor original e preservado no
 // momento da solicitacao (Requirement: Registro de ponto e correcao).
+// O horario pedido precisa ser do dia do registro, nao pode ser no futuro e respeita a
+// ordem das marcacoes que ja existem (desde 11/10/2026, tarefa 78).
 query "ponto/{id}/solicitar_correcao" verb=POST {
   api_group = "ConectaRH - Ponto"
   auth = "user"
@@ -88,6 +90,87 @@ query "ponto/{id}/solicitar_correcao" verb=POST {
     precondition ($input.campo == "hora_entrada" || $input.campo == "inicio_intervalo" || $input.campo == "fim_intervalo" || $input.campo == "hora_saida") {
       error_type = "inputerror"
       error = "Campo invalido. Use hora_entrada, inicio_intervalo, fim_intervalo ou hora_saida."
+    }
+
+    // Horario pedido: dentro da janela do dia e nunca no futuro. A janela vai da meia-noite
+    // UTC do dia ate as 06:00 (Brasilia) do dia seguinte, para cobrir a virada de data
+    // em UTC do registro (tarefa 73) e jornadas que passam da meia-noite.
+    var $inicio_janela {
+      value = ($registro_alvo.data|to_timestamp)
+    }
+
+    var $fim_janela {
+      value = $inicio_janela + 86400000 + 32400000
+    }
+
+    precondition ($input.valor_solicitado >= $inicio_janela && $input.valor_solicitado <= $fim_janela) {
+      error_type = "inputerror"
+      error = "O horario pedido precisa ser do mesmo dia do registro."
+    }
+
+    precondition ($input.valor_solicitado <= now) {
+      error_type = "inputerror"
+      error = "O horario pedido nao pode ser no futuro."
+    }
+
+    // Ordem das marcacoes: entrada < saida para o almoco < volta < saida. O horario pedido
+    // precisa ficar depois da marcacao anterior e antes da seguinte que ja existem.
+    var $limite_inferior {
+      value = null
+    }
+
+    var $limite_superior {
+      value = null
+    }
+
+    conditional {
+      if ($input.campo == "hora_entrada") {
+        var.update $limite_superior {
+          value = ($registro_alvo.inicio_intervalo != null ? $registro_alvo.inicio_intervalo : ($registro_alvo.fim_intervalo != null ? $registro_alvo.fim_intervalo : $registro_alvo.hora_saida))
+        }
+      }
+    }
+
+    conditional {
+      if ($input.campo == "inicio_intervalo") {
+        var.update $limite_inferior {
+          value = $registro_alvo.hora_entrada
+        }
+
+        var.update $limite_superior {
+          value = ($registro_alvo.fim_intervalo != null ? $registro_alvo.fim_intervalo : $registro_alvo.hora_saida)
+        }
+      }
+    }
+
+    conditional {
+      if ($input.campo == "fim_intervalo") {
+        var.update $limite_inferior {
+          value = ($registro_alvo.inicio_intervalo != null ? $registro_alvo.inicio_intervalo : $registro_alvo.hora_entrada)
+        }
+
+        var.update $limite_superior {
+          value = $registro_alvo.hora_saida
+        }
+      }
+    }
+
+    conditional {
+      if ($input.campo == "hora_saida") {
+        var.update $limite_inferior {
+          value = ($registro_alvo.fim_intervalo != null ? $registro_alvo.fim_intervalo : ($registro_alvo.inicio_intervalo != null ? $registro_alvo.inicio_intervalo : $registro_alvo.hora_entrada))
+        }
+      }
+    }
+
+    precondition ($limite_inferior == null || $input.valor_solicitado > $limite_inferior) {
+      error_type = "inputerror"
+      error = "O horario pedido precisa ser depois da marcacao anterior do dia."
+    }
+
+    precondition ($limite_superior == null || $input.valor_solicitado < $limite_superior) {
+      error_type = "inputerror"
+      error = "O horario pedido precisa ser antes da marcacao seguinte do dia."
     }
 
     // Bloqueia correcao duplicada em aberto para o mesmo campo.
