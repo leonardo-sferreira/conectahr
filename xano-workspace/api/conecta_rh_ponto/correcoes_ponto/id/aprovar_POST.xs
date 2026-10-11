@@ -124,8 +124,18 @@ query "correcoes_ponto/{id}/aprovar" verb=POST {
       value = false
     }
 
+    // Hierarquia (tarefa 81): com superior direto definido, so ele decide (alem de RH e
+    // Admin); sem superior, vale o Gestor do departamento do colaborador.
     conditional {
-      if ($perfil_autenticado == "GESTOR" && $colaborador_autenticado != null) {
+      if ($colaborador_autenticado != null && $colaborador_da_correcao.superior_colaborador_id != null) {
+        var.update $e_gestor_da_equipe {
+          value = ($colaborador_da_correcao.superior_colaborador_id == $colaborador_autenticado.id)
+        }
+      }
+    }
+
+    conditional {
+      if ($perfil_autenticado == "GESTOR" && $colaborador_autenticado != null && $colaborador_da_correcao.superior_colaborador_id == null) {
         db.query departamento {
           where = $db.departamento.gestor_colaborador_id == $colaborador_autenticado.id
           return = {type: "single"}

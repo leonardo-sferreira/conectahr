@@ -41,6 +41,12 @@ table colaborador {
     int departamento_id {
       table = "departamento"
     }
+
+    // Superior direto (tarefa 81): quem aprova as alteracoes de ponto desta pessoa.
+    // Sem superior, vale o Gestor do departamento; RH e Admin decidem sempre.
+    int? superior_colaborador_id? {
+      table = "colaborador"
+    }
   
     enum tipo_contrato {
       values = ["CLT", "PJ", "ESTAGIO", "APRENDIZ", "TEMPORARIO", "OUTRO"]

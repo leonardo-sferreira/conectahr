@@ -73,6 +73,9 @@ _CHAVES_SESSAO = (
     "modal_solicitacao",
     # Ponto: espelho mensal.
     "ponto_mes_cache",
+    # Folha de ponto da equipe e do RH.
+    "folha_cache",
+    "modal_folha",
 )
 
 

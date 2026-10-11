@@ -895,6 +895,7 @@ _ESCURO_CSS = f"""
   .crh-ct-item .crh-linha-onb {{ background: {ESC_CARTAO}; }}
   .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}
   .st-key-col_ficha_card {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-ponto-status.neu {{ color: {ESC_TEXTO_2}; }}
   .st-key-rh_barra [data-testid="stTextInputRootElement"], .st-key-rh_barra [data-testid="stTextInputRootElement"] input {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
   .st-key-ferias_topo button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-ferias_topo button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}

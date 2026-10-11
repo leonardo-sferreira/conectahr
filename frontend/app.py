@@ -33,6 +33,7 @@ from pagina_configuracoes import pagina_configuracoes
 from pagina_documentos import pagina_documentos
 from pagina_entrar import pagina_entrar
 from pagina_ferias import pagina_ferias
+from pagina_folha_ponto import pagina_folha_ponto
 from pagina_inicio import pagina_inicio
 from pagina_meu_onboarding import pagina_meu_onboarding
 from pagina_onboarding import pagina_onboarding
@@ -63,6 +64,7 @@ _MENU = [
 _MENU_RH = [
     "Colaboradores",
     "Solicitações ao RH",
+    "Folha de ponto",
     "Ausências",
     "Conferência de documentos",
     "Desligamentos",
@@ -70,6 +72,15 @@ _MENU_RH = [
     "Pesquisas de clima",
     "Ciclos de avaliação",
     "Pedidos LGPD",
+]
+# Grupo "Equipe" do menu (Figma 241:560), só para o Gestor.
+_MENU_EQUIPE = [
+    "Minha equipe",
+    "Folha de ponto da equipe",
+    "Avaliações da equipe",
+    "Metas e PDI da equipe",
+    "Delegações",
+    "Indicadores da equipe",
 ]
 # Grupo "Admin" do menu (Figma 246:612), só para o Admin.
 _MENU_ADMIN = [
@@ -152,10 +163,11 @@ PG_CENTRAL = st.Page(pagina_central, title="Central de Pendências", url_path="c
 PG_AUSENCIAS = st.Page(pagina_ausencias, title="Ausências", url_path="ausencias")
 PG_COLABORADORES = st.Page(pagina_colaboradores, title="Colaboradores", url_path="colaboradores")
 PG_USUARIOS = st.Page(pagina_usuarios, title="Usuários e perfis", url_path="usuarios-e-perfis")
+PG_FOLHA = st.Page(pagina_folha_ponto, title="Folha de ponto", url_path="folha-de-ponto")
 PG_SOLICITACOES = st.Page(pagina_solicitacoes, title="Solicitações ao RH", url_path="solicitacoes-ao-rh")
 PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de documentos", url_path="conferencia-de-documentos")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_CONFERENCIA], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_CONFERENCIA], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -173,11 +185,13 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
 ativo_no_menu = {"Meu onboarding": "Início"}.get(pagina_atual.title, pagina_atual.title)
+if ativo_no_menu == "Folha de ponto" and str(st.session_state.usuario.get("perfil", "")).upper() == "GESTOR":
+    ativo_no_menu = "Folha de ponto da equipe"
 
 perfil = str(st.session_state.usuario.get("perfil", "")).upper()
 with st.sidebar:
@@ -197,6 +211,15 @@ with st.sidebar:
     if perfil in ("RH", "ADMIN"):
         st.html('<p class="crh-nav-grupo">RH</p>')
         for rotulo in _MENU_RH:
+            if rotulo == ativo_no_menu:
+                render_nav_ativo(rotulo)
+            elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
+                if rotulo in _PAGINAS_DO_MENU:
+                    st.switch_page(_PAGINAS_DO_MENU[rotulo])
+                st.toast(f"A tela {rotulo} ainda está em construção.")
+    if perfil == "GESTOR":
+        st.html('<p class="crh-nav-grupo">Equipe</p>')
+        for rotulo in _MENU_EQUIPE:
             if rotulo == ativo_no_menu:
                 render_nav_ativo(rotulo)
             elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
