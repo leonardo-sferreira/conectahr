@@ -326,3 +326,13 @@ Evidência em `docs/evidencias/frontend-ponto-mensal.md`; fluxo em `docs/fluxos/
 - **Feriados estaduais e municipais** não mudam a situação, porque o backend não sabe onde a pessoa trabalha.
 - **Prazo para correção** fica para a tarefa 79 (decisão do RH).
 - **Figma.** Feito com o Figma fora do ar; a visão mensal precisa ser desenhada lá.
+
+## Hierarquia e folha de ponto (tarefa 81, 11/10/2026)
+
+Evidência em `docs/evidencias/frontend-folha-ponto.md`.
+
+- **Superior direto na ficha** (decidido em 11/10/2026, entre "departamento acima", "superior na ficha" e "só RH"). Com superior, só ele (e RH e Admin) decide o ponto da pessoa; sem superior, vale o gestor do departamento. Assim o gestor não fica sem aprovador e a cadeia é respeitada.
+- **Ajuste direto do gestor** (decidido em 11/10/2026): vale na hora porque quem ajusta é quem aprovaria; fica como correção aprovada no histórico do dia, na auditoria, e a pessoa é avisada. Ninguém ajusta o próprio ponto.
+- **Uma consulta por mês.** `folha_ponto/mes` devolve o mês de todas as pessoas visíveis (para o resumo) ou de uma (com as correções), respeitando o limite de chamadas do Xano.
+- **Escopo único.** `folha_ponto/pessoas`, `folha_ponto/mes` e `folha_ponto/ajustar` calculam quem a pessoa pode ver do mesmo jeito.
+- **Figma.** Feito com o Figma fora do ar; precisa ser desenhado.

@@ -109,8 +109,10 @@ query correcoes_ponto verb=GET {
       }
     }
 
+    // Gestor (tarefa 81): as correcoes de quem tem ele como superior direto e, de quem nao
+    // tem superior, as do departamento que ele gerencia. Nunca as proprias.
     conditional {
-      if ($departamento_escopo_id != null) {
+      if ($perfil_autenticado == "GESTOR" && $colaborador_autenticado != null) {
         foreach ($correcoes_pendentes) {
           each as $correcao_item {
             db.get colaborador {
@@ -118,8 +120,12 @@ query correcoes_ponto verb=GET {
               field_value = $correcao_item.colaborador_id
             } as $colaborador_da_correcao
 
+            var $no_escopo {
+              value = ($colaborador_da_correcao != null && $colaborador_da_correcao.id != $colaborador_autenticado.id && ($colaborador_da_correcao.superior_colaborador_id == $colaborador_autenticado.id || ($colaborador_da_correcao.superior_colaborador_id == null && $departamento_escopo_id != null && $colaborador_da_correcao.departamento_id == $departamento_escopo_id)))
+            }
+
             conditional {
-              if ($colaborador_da_correcao != null && $colaborador_da_correcao.departamento_id == $departamento_escopo_id) {
+              if ($no_escopo) {
                 var.update $correcoes_no_escopo {
                   value = $correcoes_no_escopo|push:$correcao_item
                 }

@@ -14,12 +14,13 @@ from datetime import date
 
 import streamlit as st
 
-from api_client import ApiError, admitir_colaborador, colaboradores, criar_usuario, organograma, trocar_perfil, usuarios
+from api_client import ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, organograma, trocar_perfil, usuarios
 from cadastro_modelo import (
     CONTRATOS,
     NIVEIS,
     PERFIS,
     SITUACOES_COLAB,
+    candidatos_superior,
     corpo_admissao,
     ficha,
     fichas_sem_conta,
@@ -196,13 +197,43 @@ def _tabela(linhas: list[dict]) -> None:
                         st.rerun()
 
 
+@st.dialog("Superior direto", width="small", on_dismiss=fechar)
+def _modal_superior(colab: dict, colabs: list[dict], deps: dict) -> None:
+    candidatos = {c.get("id"): c for c in candidatos_superior(colabs, colab.get("id"))}
+    opcoes = [None] + list(candidatos)
+    atual = colab.get("superior_colaborador_id")
+    escolhido = st.selectbox(
+        f"Superior direto de {colab.get('nome')}", opcoes, index=opcoes.index(atual) if atual in opcoes else 0,
+        format_func=lambda i: "Sem superior (vale o gestor do departamento)" if i is None else f"{candidatos[i].get('nome')} — {deps.get(candidatos[i].get('departamento_id')) or '—'}",
+        key="col_sup_escolha",
+    )
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O superior direto aprova as correções de ponto da pessoa, consulta a folha '
+            'dela e pode ajustá-la. Use o perfil Gestor para quem é superior de alguém. A mudança fica na auditoria.</p></div>')
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="col_sup_cancelar"):
+            fechar()
+            st.rerun()
+        if st.button("Salvar", type="primary", key="col_sup_ok"):
+            try:
+                definir_superior(st.session_state.token, colab.get("id"), escolhido)
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            st.session_state.pop("col_sup_escolha", None)
+            concluir(f"Superior direto de {colab.get('nome')} atualizado.")
+
+
 def _ficha(colab: dict, dados: dict) -> None:
     with st.container(key="col_ficha_card"):
         st.html(f'<p class="crh-cfg-titulo">Ficha — {html.escape(colab.get("nome") or "")}</p>')
-        campos = "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in ficha(colab, dados["organograma"], dados["usuarios"]))
+        campos = "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in ficha(colab, dados["organograma"], dados["usuarios"], dados["colaboradores"]))
         st.html(f'<div class="crh-campos crh-campos-direita">{campos}</div>')
         with st.container(horizontal=True, vertical_alignment="center", gap="small"):
             st.html('<p class="crh-meta">Editar cadastro, mudar cargo ou salário e a linha do tempo chegam depois (tarefa 53).</p>', width="stretch")
+            if st.button("Definir superior", key="col_definir_superior"):
+                st.session_state.modal_cadastro = ("superior", colab.get("id"))
+                st.rerun()
             if not colab.get("user_id") and str(colab.get("status") or "").upper() != "DESLIGADO":
                 if st.button("Criar acesso", type="primary", key="col_criar_acesso"):
                     st.session_state.modal_cadastro = ("acesso", colab.get("id"))
@@ -260,5 +291,11 @@ def pagina_colaboradores() -> None:
         _modal_admitir(org)
     elif acao == "acesso":
         modal_criar_acesso(colabs, deps, alvo)
+    elif acao == "superior":
+        alvo_colab = next((c for c in colabs if c.get("id") == alvo), None)
+        if alvo_colab is None:
+            fechar()
+        else:
+            _modal_superior(alvo_colab, colabs, deps)
     else:
         fechar()

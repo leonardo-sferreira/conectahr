@@ -76,10 +76,11 @@ def _cobre(item: dict, d: date) -> bool:
 
 
 def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list[dict], ferias: list[dict], feriados: list[dict],
-                   ano: int, mes: int, hoje: date, admissao=None) -> list[dict]:
+                   ano: int, mes: int, hoje: date, admissao=None, inicio: date | None = None) -> list[dict]:
     """Uma linha por dia: {'dia', 'data', 'marcas', 'trabalhado', 'horas', 'status', 'tom', 'registro_id', 'acao', 'nota',
     'pendentes'}. `acao`: 'corrigir' (há registro), 'corrigir_dia' (dia passado sem registro) ou None."""
-    inicio_valido = primeiro_dia(admissao, registros)
+    # `inicio`: quando os registros são só do mês (folha da equipe), a data do primeiro ponto vem de fora.
+    inicio_valido = inicio or primeiro_dia(admissao, registros)
     por_dia = {_dia(r.get("data")): r for r in registros if _dia(r.get("data"))}
     feriados_nac = {_dia(f.get("data")): f.get("nome") or "Feriado" for f in feriados
                     if f.get("ativo", True) and (f.get("abrangencia") or "nacional") == "nacional" and _dia(f.get("data"))}

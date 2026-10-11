@@ -597,3 +597,33 @@ def solicitar_correcao_dia(token: str, data: str, campo: str, valor_solicitado_m
         token,
         GRUPO_PONTO,
     )
+
+
+# ---------------------------------------------------------------------------
+# Folha de ponto da equipe e do RH, e hierarquia (tarefa 81). O escopo é do backend: RH e Admin veem todos;
+# os demais, a si mesmos, quem os tem como superior direto e, de quem não tem superior, o departamento que gerenciam.
+# ---------------------------------------------------------------------------
+def folha_pessoas(token: str) -> dict:
+    """GET folha_ponto/pessoas -> {ve_todos, pessoas} com a data do primeiro ponto de cada uma."""
+    return _get("folha_ponto/pessoas", token, GRUPO_PONTO)
+
+
+def folha_mes(token: str, ano: int, mes: int, colaborador_id: int | None = None) -> dict:
+    """GET folha_ponto/mes -> {registros, ausencias, ferias, correcoes} do mês (correções só com colaborador_id)."""
+    caminho = f"folha_ponto/mes?ano={int(ano)}&mes={int(mes)}" + (f"&colaborador_id={int(colaborador_id)}" if colaborador_id else "")
+    return _get(caminho, token, GRUPO_PONTO)
+
+
+def ajustar_ponto(token: str, colaborador_id: int, data: str, campo: str, valor_solicitado_ms: int, motivo: str) -> dict:
+    """POST folha_ponto/ajustar: ajuste direto, auditado, no ponto de outra pessoa (nunca no próprio)."""
+    return _post(
+        "folha_ponto/ajustar",
+        {"colaborador_id": int(colaborador_id), "data": data, "campo": campo, "valor_solicitado": int(valor_solicitado_ms), "motivo": motivo},
+        token,
+        GRUPO_PONTO,
+    )
+
+
+def definir_superior(token: str, colaborador_id: int, superior_colaborador_id: int | None) -> dict:
+    """PATCH colaboradores/{id}/superior (RH e Admin). None limpa o superior direto."""
+    return _request("PATCH", f"colaboradores/{int(colaborador_id)}/superior", token, GRUPO_COLABORADORES, {"superior_colaborador_id": superior_colaborador_id})

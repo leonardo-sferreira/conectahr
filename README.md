@@ -86,7 +86,7 @@ openspec/
   specs/            Comportamento consolidado do sistema (spec principal)
   changes/          Mudanças em andamento
     archive/        Histórico de mudanças concluídas e arquivadas
-tools/              checar_endpoints.py (guarda de acesso), checar_fontes_locais.py (fontes sem Google Fonts), smoke_frontend.py (tela de entrada), testar_login_f01.py (fluxo de entrada), testar_onboarding.py, testar_privacidade_documentos.py, testar_conferencia_documentos.py, testar_perfil.py, testar_ponto.py, testar_ferias.py, testar_pagamento.py, testar_decisoes.py, testar_cadastro.py, testar_solicitacoes.py e testar_ponto_mensal.py; cadastrar_departamentos.py (cadastra a lista padrão de departamentos, rodado por RH ou Admin)
+tools/              checar_endpoints.py (guarda de acesso), checar_fontes_locais.py (fontes sem Google Fonts), smoke_frontend.py (tela de entrada), testar_login_f01.py (fluxo de entrada), testar_onboarding.py, testar_privacidade_documentos.py, testar_conferencia_documentos.py, testar_perfil.py, testar_ponto.py, testar_ferias.py, testar_pagamento.py, testar_decisoes.py, testar_cadastro.py, testar_solicitacoes.py, testar_ponto_mensal.py e testar_folha_ponto.py; cadastrar_departamentos.py (cadastra a lista padrão de departamentos, rodado por RH ou Admin)
 xano-workspace/     Backend Xano em XanoScript
   table/            Tabelas do banco relacional
   function/         Funções reutilizáveis (CPF, regras, rotina diária, hash dos códigos…)
@@ -170,7 +170,8 @@ em [`docs/demonstracao.md`](docs/demonstracao.md).
   `python tools/testar_decisoes.py` roda 50 verificações da Central de Pendências e de Ausências (escopo por perfil e decisões), e
   `python tools/testar_cadastro.py` roda 52 verificações de Colaboradores e de Usuários e perfis (admitir, criar acesso e vincular ficha), e
   `python tools/testar_solicitacoes.py` roda 34 verificações de Solicitações ao RH, e
-  `python tools/testar_ponto_mensal.py` roda 35 verificações do espelho de ponto mensal.
+  `python tools/testar_ponto_mensal.py` roda 35 verificações do espelho de ponto mensal, e
+  `python tools/testar_folha_ponto.py` roda 28 verificações da folha de ponto do gestor e do RH e da hierarquia.
 - O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
   fumaça do frontend, testes do fluxo de entrada, do Onboarding, de Privacidade e Documentos e busca de segredos
   no repositório.

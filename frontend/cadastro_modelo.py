@@ -86,7 +86,7 @@ def linhas_colaboradores(colabs: list[dict], organograma: dict, busca: str = "",
     return linhas
 
 
-def ficha(c: dict, organograma: dict, usuarios_lista: list[dict]) -> list[tuple[str, str]]:
+def ficha(c: dict, organograma: dict, usuarios_lista: list[dict], colabs: list[dict] | None = None) -> list[tuple[str, str]]:
     """Linhas do cartão "Ficha" (243:580). Sem salário: ele fica só no cadastro."""
     deps, cargos = mapas(organograma)
     dep = deps.get(c.get("departamento_id")) or {}
@@ -94,13 +94,29 @@ def ficha(c: dict, organograma: dict, usuarios_lista: list[dict]) -> list[tuple[
     gestor = nomes.get(dep.get("gestor_colaborador_id"))
     conta = next((u for u in usuarios_lista if u.get("id") == c.get("user_id")), None) if c.get("user_id") else None
     carga = c.get("carga_horaria_semanal")
+    nomes_todos = {x.get("id"): x.get("nome") for x in (colabs or [])} or nomes
+    superior = nomes_todos.get(c.get("superior_colaborador_id")) if c.get("superior_colaborador_id") else None
     return [
         ("Cargo e nível", " — ".join(x for x in (cargos.get(c.get("cargo_id")), NIVEIS.get(str(c.get("nivel") or "").lower())) if x) or "—"),
         ("Departamento / gestor", " · ".join(x for x in (dep.get("nome"), gestor) if x) or "—"),
+        ("Superior direto", superior or "Não definido (vale o gestor do departamento)"),
         ("Contrato", " · ".join(x for x in (CONTRATOS.get(c.get("tipo_contrato"), c.get("tipo_contrato")), f"{float(carga):g}h semanais" if carga else None) if x) or "—"),
         ("Admissão", data_br(c.get("data_admissao")) or "—"),
         ("Conta de acesso", (conta.get("email") if conta else "Tem conta") if c.get("user_id") else "Sem conta: use \"Criar acesso\""),
     ]
+
+
+def candidatos_superior(colabs: list[dict], alvo_id) -> list[dict]:
+    """Quem pode ser superior direto do alvo: não desligado, não o próprio e ninguém abaixo dele na hierarquia
+    (isso criaria um ciclo). O backend confere de novo."""
+    abaixo, fila = set(), [alvo_id]
+    while fila:
+        atual = fila.pop()
+        for c in colabs:
+            if c.get("superior_colaborador_id") == atual and c.get("id") not in abaixo:
+                abaixo.add(c.get("id"))
+                fila.append(c.get("id"))
+    return sorted((c for c in colabs if c.get("id") != alvo_id and c.get("id") not in abaixo and _status(c) != "DESLIGADO"), key=lambda c: _norm(c.get("nome")))
 
 
 def fichas_sem_conta(colabs: list[dict]) -> list[dict]:
