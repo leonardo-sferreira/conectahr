@@ -1,7 +1,9 @@
-// Registra o proximo marcador de ponto do dia para o colaborador autenticado.
-// Ordem: entrada -> inicio do intervalo -> fim do intervalo -> saida.
-// Cria o registro do dia na primeira marcacao (entrada) e calcula as
-// horas trabalhadas quando a saida e registrada.
+// Marca o ponto do colaborador autenticado no REP-P (Portaria MTP 671/2021, change
+// ponto-rep-p-e-ferias-clt). Grava a marcacao na ARP (marcacao_ponto, registro tipo 7, com NSR
+// e hash encadeado), recalcula o dia (registro_ponto, cache) e devolve os dados do comprovante
+// de registro de ponto (art. 79). Sem restricao de horario nem de quantidade de marcacoes
+// (art. 74): so recusa quem nao tem ficha, nao esta ativo, tem a admissao CLT com eSocial ou
+// CTPS pendentes, marca antes da data de admissao ou quando o empregador nao foi cadastrado.
 query "ponto/marcar" verb=POST {
   api_group = "ConectaRH - Ponto"
   auth = "user"
@@ -105,230 +107,52 @@ query "ponto/marcar" verb=POST {
       }
     }
 
-    // Data de hoje, usada para localizar ou criar o registro do dia.
-    var $hoje {
-      value = now|format_timestamp:"Y-m-d":"UTC"
-    }
-
-    // Localiza o registro de ponto do dia, se existir.
-    db.query registro_ponto {
-      where = $db.registro_ponto.colaborador_id == $colaborador_autenticado.id && $db.registro_ponto.data == $hoje
+    // Empregador cadastrado: sem ele nao ha comprovante nem AFD validos.
+    db.query empregador {
+      sort = {empregador.id: "asc"}
       return = {type: "single"}
-    } as $registro_hoje
+    } as $empregador
 
-    // Guarda o id do registro final, definido em um dos ramos abaixo.
-    var $registro_ponto_id {
-      value = 0
+    precondition ($empregador != null) {
+      error_type = "accessdenied"
+      error = "O ponto ainda nao esta liberado: o RH precisa cadastrar os dados do empregador em Ponto eletronico (REP-P)."
     }
 
-    // Guarda qual marcador foi registrado nesta chamada, para a auditoria.
-    var $marcador_registrado {
-      value = ""
+    // Antes da admissao a pessoa ainda nao e empregada: nao ha marcacao.
+    var $hoje {
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
-    // Ramo 1: primeira marcacao do dia, registra a entrada.
-    conditional {
-      if ($registro_hoje == null) {
-        db.add registro_ponto {
-          data = {
-            colaborador_id: $colaborador_autenticado.id
-            data          : $hoje
-            hora_entrada  : now
-            status        : "Aberto"
-            updated_at    : "now"
-          }
-        } as $registro_criado
-
-        var.update $registro_ponto_id {
-          value = $registro_criado.id
-        }
-
-        var.update $marcador_registrado {
-          value = "entrada"
-        }
-      }
+    var $admissao {
+      value = ($colaborador_autenticado.data_admissao != null ? ($colaborador_autenticado.data_admissao|format_timestamp:"Y-m-d":"UTC") : null)
     }
 
-    // Ramo 2: segunda marcacao, inicio do intervalo.
-    conditional {
-      if ($registro_hoje != null && $registro_hoje.inicio_intervalo == null) {
-        db.edit registro_ponto {
-          field_name = "id"
-          field_value = $registro_hoje.id
-          data = {inicio_intervalo: now, updated_at: "now"}
-        } as $registro_intervalo_iniciado
-
-        var.update $registro_ponto_id {
-          value = $registro_intervalo_iniciado.id
-        }
-
-        var.update $marcador_registrado {
-          value = "inicio_intervalo"
-        }
-      }
+    precondition ($admissao == null || $hoje >= $admissao) {
+      error_type = "accessdenied"
+      error = "Sua admissao e em " ~ ($colaborador_autenticado.data_admissao|format_timestamp:"d/m/Y":"UTC") ~ ". O ponto pode ser marcado a partir dessa data."
     }
 
-    // Ramo 3: terceira marcacao, fim do intervalo.
-    conditional {
-      if ($registro_hoje != null && $registro_hoje.inicio_intervalo != null && $registro_hoje.fim_intervalo == null) {
-        // Intervalo minimo da matriz (item 4.13) — bloqueia fechar o
-        // intervalo antes do minimo, sem override aprovado.
-        db.query regra_contrato {
-          where = $db.regra_contrato.tipo_contrato == $colaborador_autenticado.tipo_contrato && $db.regra_contrato.ativo == true
-          return = {type: "single"}
-        } as $regra_intervalo
+    function.run "ConectaHR/somente_digitos" {
+      input = {texto: $colaborador_autenticado.cpf}
+    } as $cpf
 
-        var $inicio_intervalo_extraido {
-          value = $registro_hoje.inicio_intervalo
-        }
+    // Grava a marcacao na ARP (registro tipo 7).
+    function.run "ConectaHR/gravar_registro_rep" {
+      input = {tipo_registro: 7, colaborador_id: $colaborador_autenticado.id, cpf: $cpf}
+    } as $marcacao
 
-        var $agora_intervalo {
-          value = now
-        }
+    // Recalcula o dia a partir de todas as marcacoes e tratamentos.
+    function.run "ConectaHR/atualizar_dia_ponto" {
+      input = {colaborador_id: $colaborador_autenticado.id, data: $hoje}
+    } as $dia
 
-        var $duracao_intervalo_atual_min {
-          value = (($agora_intervalo - $inicio_intervalo_extraido) / 60000)
-        }
-
-        conditional {
-          if ($regra_intervalo != null && $regra_intervalo.intervalo_minutos != null && $duracao_intervalo_atual_min < $regra_intervalo.intervalo_minutos) {
-            function.run "ConectaHR/resolver_regra" {
-              input = {colaborador_id: $colaborador_autenticado.id, parametro: "intervalo_minutos"}
-            } as $resolucao_intervalo
-
-            precondition ($resolucao_intervalo.override_aplicado != null) {
-              error_type = "accessdenied"
-              error = "O intervalo minimo da matriz ainda nao foi cumprido e nao ha override aprovado para este colaborador."
-            }
-          }
-        }
-
-        db.edit registro_ponto {
-          field_name = "id"
-          field_value = $registro_hoje.id
-          data = {fim_intervalo: now, updated_at: "now"}
-        } as $registro_intervalo_finalizado
-
-        var.update $registro_ponto_id {
-          value = $registro_intervalo_finalizado.id
-        }
-
-        var.update $marcador_registrado {
-          value = "fim_intervalo"
-        }
-      }
-    }
-
-    // Ramo 4: quarta marcacao, saida. Calcula as horas trabalhadas.
-    conditional {
-      if ($registro_hoje != null && $registro_hoje.fim_intervalo != null && $registro_hoje.hora_saida == null) {
-        var $hora_entrada_extraida {
-          value = $registro_hoje.hora_entrada
-        }
-
-        var $agora_saida {
-          value = now
-        }
-
-        var $duracao_bruta_ms {
-          value = ($agora_saida - $hora_entrada_extraida)
-        }
-
-        var $duracao_intervalo_ms {
-          value = $registro_hoje.fim_intervalo - $registro_hoje.inicio_intervalo
-        }
-
-        var $duracao_trabalhada_ms {
-          value = $duracao_bruta_ms - $duracao_intervalo_ms
-        }
-
-        var $horas_trabalhadas_calculadas {
-          value = $duracao_trabalhada_ms / 3600000
-        }
-
-        // Horas extras parametrizadas pela matriz regra_contrato (item
-        // 4.1) — so calcula, nao bloqueia (bloqueio de excesso sobre o
-        // limite fica para o motor de regras da tarefa 4.13).
-        db.query regra_contrato {
-          where = $db.regra_contrato.tipo_contrato == $colaborador_autenticado.tipo_contrato && $db.regra_contrato.ativo == true
-          return = {type: "single"}
-        } as $regra_ponto_saida
-
-        var $horas_extras_calculadas {
-          value = 0
-        }
-
-        conditional {
-          if ($regra_ponto_saida != null && $regra_ponto_saida.permite_hora_extra == true && $regra_ponto_saida.horas_diarias != null && $horas_trabalhadas_calculadas > $regra_ponto_saida.horas_diarias) {
-            var.update $horas_extras_calculadas {
-              value = $horas_trabalhadas_calculadas - $regra_ponto_saida.horas_diarias
-            }
-          }
-        }
-
-        // Bloqueia horas extras acima do limite da matriz sem override
-        // aprovado (item 4.13) — a presenca de uma regra_override
-        // vigente para limite_hora_extra_diaria aplicavel a este
-        // colaborador e a autorizacao (o valor exato ja foi decidido no
-        // fluxo de aprovacao do override; aqui so se verifica que existe).
-        conditional {
-          if ($regra_ponto_saida != null && $regra_ponto_saida.limite_hora_extra_diaria != null && $horas_extras_calculadas > $regra_ponto_saida.limite_hora_extra_diaria) {
-            function.run "ConectaHR/resolver_regra" {
-              input = {colaborador_id: $colaborador_autenticado.id, parametro: "limite_hora_extra_diaria"}
-            } as $resolucao_limite_extra
-
-            precondition ($resolucao_limite_extra.override_aplicado != null) {
-              error_type = "accessdenied"
-              error = "Horas extras excedem o limite diario da matriz e nao ha override aprovado para este colaborador. Registre a saida com o RH."
-            }
-          }
-        }
-
-        db.edit registro_ponto {
-          field_name = "id"
-          field_value = $registro_hoje.id
-          data = {
-            hora_saida       : now
-            horas_trabalhadas: $horas_trabalhadas_calculadas
-            horas_extras     : $horas_extras_calculadas
-            status           : "Completo"
-            updated_at       : "now"
-          }
-        } as $registro_finalizado
-
-        var.update $registro_ponto_id {
-          value = $registro_finalizado.id
-        }
-
-        var.update $marcador_registrado {
-          value = "saida"
-        }
-      }
-    }
-
-    // Ramo 5: todos os quatro marcadores do dia ja foram registrados.
-    conditional {
-      if ($registro_hoje != null && $registro_hoje.hora_saida != null) {
-        precondition (false) {
-          error_type = "inputerror"
-          error = "Todos os marcadores de ponto de hoje ja foram registrados."
-        }
-      }
-    }
-
-    // Recarrega o registro final para a resposta.
-    db.get registro_ponto {
-      field_name = "id"
-      field_value = $registro_ponto_id
-    } as $registro_atualizado
-
-    // Auditoria: marcacao de ponto (item 7.11).
     db.add auditoria {
       data = {
         user_id    : $usuario_autenticado.id
-        acao       : "marcar_ponto_" ~ $marcador_registrado
-        recurso    : "registro_ponto"
-        registro_id: $registro_ponto_id
+        acao       : "marcar_ponto"
+        recurso    : "marcacao_ponto"
+        registro_id: $marcacao.id
+        valor_novo : "nsr=" ~ ($marcacao.nsr|to_text) ~ "; marcacao_do_dia=" ~ ($dia.quantidade|to_text)
         resultado  : "sucesso"
       }
     } as $evento_auditoria
@@ -336,8 +160,13 @@ query "ponto/marcar" verb=POST {
 
   response = {
     sucesso : true
-    mensagem: "Marcacao de ponto registrada com sucesso."
-    registro: $registro_atualizado
+    mensagem: "Ponto marcado."
+    registro: $dia.registro
+    marcacao: {id: $marcacao.id, nsr: $marcacao.nsr, data_hora_marcacao: $marcacao.data_hora_marcacao, data_hora_marcacao_txt: $marcacao.data_hora_marcacao_txt, hash: $marcacao.hash, ordem_no_dia: $dia.quantidade}
+    comprovante: {
+      empregador: {razao_social: $empregador.razao_social, tipo_identificador: $empregador.tipo_identificador, identificador: $empregador.identificador, cno_caepf: $empregador.cno_caepf, local_prestacao: $empregador.local_prestacao, inpi_registro: $empregador.inpi_registro}
+      trabalhador: {nome: $colaborador_autenticado.nome, cpf: $cpf}
+    }
   }
 
   guid = "conectahr-ponto-marcar-0001"

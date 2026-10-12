@@ -16,6 +16,8 @@ table ferias {
     date? data_inicio
     date? data_fim
     int quantidade_dias
+    // Dias vendidos junto com este periodo (abono pecuniario, CLT art. 143): 0 a 10.
+    int dias_abono?=0
     enum status?=Pendente {
       values = ["Pendente", "Aprovada", "Rejeitada", "Cancelada", "Concluida"]
     }

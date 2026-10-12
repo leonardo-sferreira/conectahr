@@ -32,7 +32,7 @@ from api_client import ApiError  # noqa: E402
 
 APP = RAIZ / "frontend" / "app.py"
 BR = timezone(timedelta(hours=-3))
-HOJE = datetime.now(timezone.utc).date()
+HOJE = datetime.now(BR).date()
 ANT = HOJE.replace(day=1) - timedelta(days=1)
 UTEIS = [d for d in (ANT.replace(day=n) for n in range(1, ANT.day + 1)) if d.weekday() < 5]
 falhas: list[str] = []
@@ -58,8 +58,13 @@ def ms(d: date, h: int, mi: int = 0) -> int:
 
 
 def reg(rid, cid, d):
-    return {"id": rid, "colaborador_id": cid, "data": d.isoformat(), "status": "Completo", "hora_entrada": ms(d, 8), "inicio_intervalo": ms(d, 12),
-            "fim_intervalo": ms(d, 13), "hora_saida": ms(d, 17, 30), "horas_trabalhadas": 8.5}
+    return {"id": rid, "colaborador_id": cid, "data": d.isoformat(), "status": "Completo", "horas_trabalhadas": 8.5}
+
+
+def marcacoes(rid, cid, d):
+    """As quatro marcações da ARP do registro `rid` (sem CPF nem hash, como a folha devolve)."""
+    return [{"id": rid * 10 + i, "nsr": rid * 10 + i, "colaborador_id": cid, "data": d.isoformat(), "data_hora_marcacao": ms(d, h, mi)}
+            for i, (h, mi) in enumerate(((8, 0), (12, 0), (13, 0), (17, 30)))]
 
 
 INICIO = (ANT.replace(day=1) - timedelta(days=60)).isoformat()
@@ -68,13 +73,18 @@ PESSOAS_GESTOR = [
     {"id": 9, "nome": "Leonardo dos Santos", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False},
     {"id": 11, "nome": "Juliana Prado", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False},
 ]
+REGISTROS = [reg(100 + i, 9, d) for i, d in enumerate(UTEIS)] + [reg(200 + i, 11, d) for i, d in enumerate(UTEIS[2:], 2)] + [reg(300, 12, UTEIS[0])]
 MES_EQUIPE = {
-    "registros": [reg(100 + i, 9, d) for i, d in enumerate(UTEIS)] + [reg(200 + i, 11, d) for i, d in enumerate(UTEIS[2:], 2)] + [reg(300, 12, UTEIS[0])],
+    "registros": REGISTROS,
+    "marcacoes": [mc for r in REGISTROS for mc in marcacoes(r["id"], r["colaborador_id"], date.fromisoformat(r["data"]))],
+    "tratamentos": [{"id": 1, "colaborador_id": 9, "data": UTEIS[1].isoformat(), "tipo": "desconsideracao", "marcacao_id": 1010, "motivo": "Marcou duas vezes"},
+                    {"id": 2, "colaborador_id": 9, "data": UTEIS[1].isoformat(), "tipo": "inclusao", "data_hora": ms(UTEIS[1], 8, 5), "motivo": "Entrada certa"}],
     "ausencias": [{"colaborador_id": 11, "tipo": "Atestado", "data_inicio": UTEIS[0].isoformat(), "data_fim": UTEIS[0].isoformat(), "status": "Aprovada"}],
     "ferias": [], "correcoes": [],
 }
 MES_PESSOA_9 = dict(MES_EQUIPE, registros=[r for r in MES_EQUIPE["registros"] if r["colaborador_id"] == 9][:-1],
-                    correcoes=[{"id": 77, "registro_ponto_id": 100, "colaborador_id": 9, "campo": "hora_saida", "valor_solicitado": ms(UTEIS[0], 18), "justificativa": "Saí mais tarde.", "status": "pendente"}])
+                    marcacoes=[mc for mc in MES_EQUIPE["marcacoes"] if mc["colaborador_id"] == 9 and mc["data"] != UTEIS[-1].isoformat()],
+                    correcoes=[{"id": 77, "registro_ponto_id": 100, "colaborador_id": 9, "tipo": "inclusao", "valor_solicitado": ms(UTEIS[0], 18), "justificativa": "Saí mais tarde.", "status": "pendente"}])
 
 # ---------------------------------------------------------------------------
 caso("Hierarquia e modelo")
@@ -90,9 +100,16 @@ por = {l["id"]: l for l in resumo}
 conferir(por[9]["horas"] == f"{int(8.5 * len(UTEIS))}h{int(8.5 * len(UTEIS) * 60) % 60:02d}" and por[9]["faltas"] == 0, "resumo: horas do mês de quem marcou todos os dias")
 conferir(por[11]["atestados"] == 1 and por[11]["faltas"] == 1 and por[12]["faltas"] == len(UTEIS) - 1, "resumo: atestado e faltas injustificadas no mês encerrado")
 conferir(resumo[0]["id"] == 12, "quem tem mais faltas aparece primeiro")
-conferir(fm.meses_da_equipe(PESSOAS_GESTOR, HOJE)[-1] == (date.fromisoformat(INICIO).year, date.fromisoformat(INICIO).month), "meses desde o primeiro ponto da equipe")
+conferir(fm.meses_da_equipe(PESSOAS_GESTOR, HOJE)[-1] == (date.fromisoformat(INICIO).year, date.fromisoformat(INICIO).month), "meses desde a admissão de quem começou primeiro")
 esp = fm.espelho_da_pessoa(PESSOAS_GESTOR[2], MES_EQUIPE, [], ANT.year, ANT.month, HOJE)
-conferir(esp[0]["data"] == ANT.replace(day=1), "a folha começa no dia 1 mesmo que o primeiro registro do mês seja depois (o primeiro ponto vem de fora)")
+conferir(len(esp) == ANT.day and esp[0]["data"] == ANT.replace(day=1) and not esp[0]["em_branco"], "a folha tem todos os dias; admitida antes, nada em branco")
+esp9 = {l["data"]: l for l in fm.espelho_da_pessoa(PESSOAS_GESTOR[1], MES_EQUIPE, [], ANT.year, ANT.month, HOJE)}
+conferir([b["hora"] + (" (I)" if b["incluida"] else "") for b in esp9[UTEIS[1]]["batidas"]] == ["08:05 (I)", "12:00", "13:00", "17:30"]
+         and [b["hora"] for b in esp9[UTEIS[1]]["desconsideradas"]] == ["08:00"], "marcações e tratamentos da pessoa na mesma planilha")
+novo = dict(PESSOAS_GESTOR[1], data_admissao=UTEIS[3].isoformat())
+esp_novo = fm.espelho_da_pessoa(novo, MES_EQUIPE, [], ANT.year, ANT.month, HOJE)
+conferir(all(l["em_branco"] for l in esp_novo if l["data"] < UTEIS[3]) and fm.linhas_resumo([novo], MES_EQUIPE, [], ANT.year, ANT.month, HOJE, {}, {})[0]["faltas"] == 0,
+         "admitida no meio do mês: antes em branco, sem falta")
 conferir(fm.csv_resumo(resumo, ANT.year, ANT.month).decode("utf-8-sig").startswith("Competência;Pessoa;Departamento"), "CSV do resumo")
 
 # ---------------------------------------------------------------------------
@@ -119,7 +136,8 @@ api_client.organograma = lambda token: {"departamentos": [{"id": 1, "nome": "Rec
 api_client.calendario = lambda token: {"feriados": []}
 api_client.folha_pessoas = lambda token: chamadas.append(("pessoas",)) or _falha_ou("pessoas", {"ve_todos": estado.get("ve_todos", False), "pessoas": estado["pessoas"]})
 api_client.folha_mes = lambda token, a, m, cid=None: chamadas.append(("mes", a, m, cid)) or _falha_ou("mes", MES_PESSOA_9 if cid == 9 else MES_EQUIPE)
-api_client.ajustar_ponto = lambda token, cid, d, c, v, mot: chamadas.append(("ajustar", cid, d, c, v, mot)) or _falha_ou("ajustar", {"sucesso": True})
+api_client.tratar_ponto = lambda token, cid, d, tipo, mot, marcacao_id=None, data_hora_ms=None: (
+    chamadas.append(("tratar", cid, d, tipo, mot, marcacao_id, data_hora_ms)) or _falha_ou("ajustar", {"sucesso": True}))
 api_client.aprovar_correcao_ponto = lambda token, cid: chamadas.append(("aprovar", cid)) or _falha_ou("decidir", {"sucesso": True})
 api_client.rejeitar_correcao_ponto = lambda token, cid, mot: chamadas.append(("rejeitar", cid, mot)) or _falha_ou("decidir", {"sucesso": True})
 api_client.colaboradores = lambda token: {"colaboradores": [dict(c, departamento_id=2, cargo_id=2) for c in colabs]}
@@ -156,6 +174,15 @@ def app(perfil="GESTOR", pagina="folha-de-ponto", **extra) -> AppTest:
     return at.run()
 
 
+def ajustar_dia(at: AppTest, dia: date, pid: int = 9) -> AppTest:
+    """Seleciona o dia na planilha e clica em "Ajustar o dia" (o AppTest não guarda a seleção entre as rodadas)."""
+    at.session_state[f"fp_planilha_{pid}_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [dia.day - 1], "columns": [], "cells": []}}
+    at = at.run()
+    at.session_state[f"fp_planilha_{pid}_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [dia.day - 1], "columns": [], "cells": []}}
+    at.button(key="fp_ajustar_dia").click()
+    return at.run()
+
+
 def para_mes_anterior(at: AppTest, prefixo: str) -> AppTest:
     at.selectbox(key=f"{prefixo}_ano").set_value(ANT.year)
     at = at.run()
@@ -177,7 +204,9 @@ conferir(at.button_group(key="fp_aba").value == "Por pessoa" and at.selectbox(ke
 caso("Folha de uma pessoa: pedidos e ajuste")
 at = para_mes_anterior(at, "fp_p")
 t = texto(at)
-conferir("Pedidos de correção pendentes (1)" in t and "Saída para 18:00" in t, "pedido pendente da pessoa")
+conferir("Pedidos de correção pendentes (1)" in t and f"{UTEIS[0]:%d/%m}: inclusão de 18:00" in t, "pedido pendente da pessoa")
+df = at.dataframe[0].value
+conferir(df.iloc[UTEIS[1].day - 1]["Ent. 1"] == "08:05 (I)" and df.iloc[UTEIS[1].day - 1]["Desconsideradas"] == "08:00 (D)", "planilha com (I) e (D)")
 at.button(key="fp_aprovar_77").click()
 at = at.run()
 conferir(("aprovar", 77) in chamadas, "aprovar o pedido")
@@ -191,21 +220,25 @@ at.button(key="central_cor_ok").click()
 at = at.run()
 conferir(("rejeitar", 77, "Não confere com a portaria.") in chamadas, "recusar com motivo")
 ultimo = UTEIS[-1]
-conferir(f"fp_ajustar_{ultimo.isoformat()}" in chaves(at), "dia sem marcação tem 'Ajustar'")
-at.button(key=f"fp_ajustar_{ultimo.isoformat()}").click()
-at = at.run()
-at.selectbox(key="fp_aj_campo").set_value("hora_entrada")
+at = ajustar_dia(at, ultimo)
+conferir(at.radio(key="fp_aj_tipo").options == ["Incluir uma marcação que faltou"], "dia sem marcação: o ajuste é uma inclusão")
 at.time_input(key="fp_aj_hora").set_value(time(8, 0))
-at.text_area(key="fp_aj_motivo").set_value("Esqueceu de marcar; confirmado na portaria.")
+at.text_area(key="fp_aj_motivo").set_value("Esqueceu de marcar; portaria.")
 at.button(key="fp_aj_ok").click()
 at = at.run()
-conferir(("ajustar", 9, ultimo.isoformat(), "hora_entrada", ms(ultimo, 8), "Esqueceu de marcar; confirmado na portaria.") in chamadas, "ajuste direto com a data, o horário de Brasília e o motivo")
+conferir(("tratar", 9, ultimo.isoformat(), "inclusao", "Esqueceu de marcar; portaria.", None, ms(ultimo, 8)) in chamadas, "inclusão com a data, o horário de Brasília e o motivo")
+at = ajustar_dia(at, UTEIS[0])
+at.radio(key="fp_aj_tipo").set_value("desconsideracao")
+at = at.run()
+at.selectbox(key="fp_aj_marcacao").set_value(1001)
+at.text_area(key="fp_aj_motivo").set_value("Saída para o almoço duplicada.")
+at.button(key="fp_aj_ok").click()
+at = at.run()
+conferir(("tratar", 9, UTEIS[0].isoformat(), "desconsideracao", "Saída para o almoço duplicada.", 1001, None) in chamadas, "desconsideração da marcação escolhida")
 at = para_mes_anterior(app(erro_ajustar=ApiError("Voce nao pode ajustar o ponto desta pessoa.", 403)), "fp_r")
 at.button(key="fp_abrir_9").click()
 at = para_mes_anterior(at.run(), "fp_p")
-at.button(key=f"fp_ajustar_{ultimo.isoformat()}").click()
-at = at.run()
-at.selectbox(key="fp_aj_campo").set_value("hora_saida")
+at = ajustar_dia(at, ultimo)
 at.time_input(key="fp_aj_hora").set_value(time(17, 0))
 at.text_area(key="fp_aj_motivo").set_value("Saída confirmada.")
 at.button(key="fp_aj_ok").click()
@@ -218,7 +251,9 @@ at.button_group(key="fp_aba").set_value("Por pessoa")
 at = at.run()
 at.selectbox(key="fp_pessoa").set_value(12)
 at = para_mes_anterior(at.run(), "fp_p")
-conferir("Esta é a sua folha: só consulta" in texto(at) and not any(k and k.startswith("fp_ajustar_") for k in chaves(at)), "sem 'Ajustar' na própria folha")
+at.session_state[f"fp_planilha_12_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [UTEIS[0].day - 1], "columns": [], "cells": []}}
+at = at.run()
+conferir("Esta é a sua folha: só consulta" in texto(at) and "Dia selecionado" in texto(at) and "fp_ajustar_dia" not in chaves(at), "sem 'Ajustar o dia' na própria folha")
 
 caso("Escopo")
 at = app(pessoas=[PESSOAS_GESTOR[0]])

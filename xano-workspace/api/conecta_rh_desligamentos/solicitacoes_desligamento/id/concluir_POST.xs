@@ -203,6 +203,11 @@ query "solicitacoes_desligamento/{id}/concluir" verb=POST {
           }
         } as $colaborador_desligado
 
+    // REP-P: exclusao do empregado na ARP (AFD registro tipo 5, operacao "E").
+    function.run "ConectaHR/registrar_empregado_rep" {
+      input = {colaborador_id: $colaborador_alvo.id, operacao: "E", responsavel_user_id: $usuario_rh.id}
+    } as $registro_rep_empregado
+
         // Desativa somente o acesso ao ConectaRH.
         db.edit user {
           field_name = "id"

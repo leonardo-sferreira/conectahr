@@ -176,6 +176,10 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 
 ## 4. Ponto e correção de ponto
 
+> **Desde 12/10/2026 o ponto segue o REP-P (seção 4.7).** As seções 4.1 a 4.6 descrevem o modelo anterior, de quatro
+> marcações por dia. O que mudou: marcação sem ordem nem limite, correção como tratamento e os endpoints de correção
+> antigos desativados.
+
 ### 4.1 Entidades e campos-chave
 
 - **registro_ponto**: `colaborador_id`, `data?`, `hora_entrada?`, `inicio_intervalo?`, `fim_intervalo?`, `hora_saida?`, `horas_trabalhadas?`, `horas_extras?`, `status` (enum `Aberto`/`Completo`/`Incompleto`/`Ajustado`), `observacao?`; índice único composto `(colaborador_id, data)` (`xano-workspace/table/registro_ponto.xs`).
@@ -224,6 +228,24 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 ### 4.6 O que é auditado
 
 `solicitar_correcao_ponto`, `aprovar_correcao_ponto` (com `valor_anterior`/`valor_novo`), `rejeitar_correcao_ponto` (com `justificativa`). **Não auditado:** `ponto/marcar` não grava evento em `auditoria` — não mapeado.
+
+### 4.7 REP-P (em implantação desde 12/10/2026)
+
+Change `ponto-rep-p-e-ferias-clt`; detalhes e fontes em `docs/ponto/rep-p.md`.
+
+- **ARP** (`marcacao_ponto`): só inclusão. `ConectaHR/gravar_registro_rep` grava o próximo NSR (índice único; numa colisão, a gravação falha e a marcação é tentada de novo) com a data e hora de gravação no formato DH do AFD. Tipos: 2 (empregador), 5 (empregado), 6 (evento do serviço: 07 disponível, 08 indisponível) e 7 (marcação, com CPF, data e hora, coletor "02", on-line e hash SHA-256 encadeado com o registro 7 anterior, `ConectaHR/hash_registro_rep`). `tools/checar_endpoints.py` falha se algum `.xs` editar, apagar ou truncar `marcacao_ponto` ou `tratamento_ponto` (`xano-workspace/table/marcacao_ponto.xs`, `xano-workspace/function/conectahr/gravar_registro_rep.xs`).
+- **Empregador** (`empregador`, uma linha): `empregador` GET e PUT só para RH e Admin; CNPJ com 14 dígitos ou CPF com 11; quando mudam identificador, CNO/CAEPF, razão social ou local, grava o registro tipo 2 com o CPF de quem alterou; auditado (`cadastrar_empregador`, `alterar_empregador`) (`xano-workspace/api/conecta_rh_ponto/empregador_*.xs`).
+- **Empregado**: `colaboradores` POST grava o registro 5 "I"; `colaboradores/{id}` PATCH grava "A" quando muda nome ou CPF; a conclusão do desligamento (`solicitacoes_desligamento/{id}/aprovar` e `concluir`) grava "E" (`ConectaHR/registrar_empregado_rep`).
+- **Eventos do serviço**: `rep/eventos` POST (RH e Admin, `07` ou `08`) grava o registro 6, atualiza `empregador.servico_disponivel` e audita.
+- **Marcação** (`ponto/marcar`): grava o registro 7 e recalcula o dia; sem ordem nem limite de marcações e sem recusar por horário (art. 74). Só recusa: sem ficha, desligado, antes da admissão e empregador não cadastrado. Devolve a marcação (NSR, data e hora, hash) e os dados do comprovante.
+- **Pedido de correção** (`ponto/correcao`): só o próprio colaborador, não desligado; dia já passado (Brasília), não anterior à admissão e dentro do prazo do RH; `tipo` `inclusao` (com `data_hora` dentro do dia e nunca no futuro) ou `desconsideracao` (com `marcacao_id` da pessoa e do dia, ainda não desconsiderada e sem outro pedido pendente); `justificativa` de 5 a 150. Na desconsideração, `valor_original` guarda o horário da marcação (`xano-workspace/api/conecta_rh_ponto/ponto/correcao_POST.xs`).
+- **Decisão** (`correcoes_ponto/{id}/aprovar`): a aprovação de um pedido do REP-P cria o tratamento e recalcula o dia (AJUSTADO); a marcação original fica na ARP.
+- **Ajuste direto** (`folha_ponto/tratar`): superior direto, Gestor do departamento (para quem não tem superior), RH ou Admin; nunca o próprio ponto; inclusão ou desconsideração com motivo de 5 a 150; vale na hora como tratamento, fica como correção aprovada, é auditado e avisa a pessoa. Sem prazo.
+- **Tratamento** (`tratamento_ponto`): só inclusão; desfazer cria outro tratamento (`anula_tratamento_id`). Nasce só de um pedido aprovado ou de um ajuste direto (art. 82).
+- **Endpoints antigos desativados (12/10/2026):** `ponto/{id}/solicitar_correcao`, `ponto/solicitar_correcao_dia` e `folha_ponto/ajustar` exigem a sessão e recusam com 400, indicando `ponto/correcao` e `folha_ponto/tratar`. Eles gravavam o horário direto em `registro_ponto`, fora da ARP.
+- **Leitura:** `meu_ponto` devolve os dias, as marcações (com NSR) e os tratamentos do próprio colaborador. `ponto/comprovantes` devolve as marcações dos últimos 7 dias, o empregador e o trabalhador (nome, CPF, admissão, cargo) e a jornada da regra do contrato, só do próprio usuário. `folha_ponto/mes` devolve as marcações sem CPF nem hash e os tratamentos das pessoas que quem consulta pode ver; o filtro compara os ids em texto (",9,12,") desde 12/10/2026.
+- **Espelho** (frontend): todos os dias do mês, com os anteriores à admissão e os futuros em branco (sem situação nem falta); cabeçalho do art. 84; CSV com o cabeçalho e o NSR de cada marcação; comprovante em PDF de cada marcação (`frontend/comprovante_ponto.py`). Detalhes em `docs/fluxos/ponto-mensal.md`.
+- **Dia de ponto**: `ConectaHR/calcular_dia_ponto` junta as marcações válidas (originais menos as desconsideradas, mais as incluídas por tratamento), ordena, forma pares e soma as horas; status `Ajustado` com tratamento, `Completo` com número par, `Aberto` com ímpar hoje, `Incompleto` com ímpar em dia anterior. `ConectaHR/atualizar_dia_ponto` grava o resultado em `registro_ponto`, que passa a ser um cache do dia.
 
 ---
 

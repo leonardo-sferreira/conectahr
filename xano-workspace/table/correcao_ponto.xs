@@ -13,11 +13,20 @@ table correcao_ponto {
     int colaborador_id {
       table = "colaborador"
     }
-    enum campo {
+    // REP-P (change ponto-rep-p-e-ferias-clt): "inclusao" pede uma marcacao que faltou
+    // (valor_solicitado = data e hora pedida); "desconsideracao" pede para desconsiderar
+    // a marcacao marcacao_id. "ajuste_campo" e o formato antigo, por campo do dia.
+    enum tipo?=ajuste_campo {
+      values = ["ajuste_campo", "inclusao", "desconsideracao"]
+    }
+    int? marcacao_id {
+      table = "marcacao_ponto"
+    }
+    enum? campo? {
       values = ["hora_entrada", "inicio_intervalo", "fim_intervalo", "hora_saida"]
     }
     timestamp? valor_original
-    timestamp valor_solicitado
+    timestamp? valor_solicitado
     text justificativa filters=trim|min:5|max:1000
     enum status?=pendente {
       values = ["pendente", "aprovada", "rejeitada"]

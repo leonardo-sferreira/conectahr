@@ -226,109 +226,141 @@ query "correcoes_ponto/{id}/aprovar" verb=POST {
 
     db.transaction {
       stack {
-        // Aplica o valor solicitado no campo correto (sem campo dinamico em XanoScript).
+        // Pedido do REP-P (change ponto-rep-p-e-ferias-clt): inclusao ou desconsideracao vira um
+        // tratamento ao lado da marcacao original, que nao e alterada (Portaria 671/2021, art. 82).
+        var $e_tratamento {
+          value = ($correcao_atual.tipo == "inclusao" || $correcao_atual.tipo == "desconsideracao")
+        }
+
         conditional {
-          if ($correcao_atual.campo == "hora_entrada") {
-            db.edit registro_ponto {
-              field_name = "id"
-              field_value = $registro_alvo.id
-              data = {hora_entrada: $correcao_atual.valor_solicitado, updated_at: "now"}
-            } as $registro_editado_1
+          if ($e_tratamento) {
+            db.add tratamento_ponto {
+              data = {
+                colaborador_id   : $correcao_atual.colaborador_id
+                data             : $registro_alvo.data
+                tipo             : $correcao_atual.tipo
+                marcacao_id      : $correcao_atual.marcacao_id
+                data_hora        : ($correcao_atual.tipo == "inclusao" ? $correcao_atual.valor_solicitado : null)
+                motivo           : $correcao_atual.justificativa|substr:0:150
+                autor_user_id    : $usuario_autenticado.id
+                correcao_ponto_id: $correcao_atual.id
+              }
+            } as $tratamento_criado
+
+            function.run "ConectaHR/atualizar_dia_ponto" {
+              input = {colaborador_id: $correcao_atual.colaborador_id, data: ($registro_alvo.data|format_timestamp:"Y-m-d":"UTC")}
+            } as $dia_recalculado
           }
         }
 
+        // Pedido antigo (por campo do dia): aplica o valor no registro, como antes.
         conditional {
-          if ($correcao_atual.campo == "inicio_intervalo") {
-            db.edit registro_ponto {
-              field_name = "id"
-              field_value = $registro_alvo.id
-              data = {inicio_intervalo: $correcao_atual.valor_solicitado, updated_at: "now"}
-            } as $registro_editado_2
-          }
-        }
-
-        conditional {
-          if ($correcao_atual.campo == "fim_intervalo") {
-            db.edit registro_ponto {
-              field_name = "id"
-              field_value = $registro_alvo.id
-              data = {fim_intervalo: $correcao_atual.valor_solicitado, updated_at: "now"}
-            } as $registro_editado_3
-          }
-        }
-
-        conditional {
-          if ($correcao_atual.campo == "hora_saida") {
-            db.edit registro_ponto {
-              field_name = "id"
-              field_value = $registro_alvo.id
-              data = {hora_saida: $correcao_atual.valor_solicitado, updated_at: "now"}
-            } as $registro_editado_4
-          }
-        }
-
-        db.get registro_ponto {
-          field_name = "id"
-          field_value = $registro_alvo.id
-        } as $registro_apos_correcao
-
-        // Recalcula horas trabalhadas somente quando os quatro marcadores existem.
-        var $todos_marcadores_presentes {
-          value = ($registro_apos_correcao.hora_entrada != null && $registro_apos_correcao.inicio_intervalo != null && $registro_apos_correcao.fim_intervalo != null && $registro_apos_correcao.hora_saida != null)
-        }
-
-        conditional {
-          if ($todos_marcadores_presentes) {
-            var $duracao_bruta_ms {
-              value = $registro_apos_correcao.hora_saida - $registro_apos_correcao.hora_entrada
-            }
-
-            var $duracao_intervalo_ms {
-              value = $registro_apos_correcao.fim_intervalo - $registro_apos_correcao.inicio_intervalo
-            }
-
-            var $horas_trabalhadas_recalculadas {
-              value = ($duracao_bruta_ms - $duracao_intervalo_ms) / 3600000
-            }
-
-            // Horas extras parametrizadas pela matriz regra_contrato (item 4.1).
-            db.query regra_contrato {
-              where = $db.regra_contrato.tipo_contrato == $colaborador_da_correcao.tipo_contrato && $db.regra_contrato.ativo == true
-              return = {type: "single"}
-            } as $regra_correcao
-
-            var $horas_extras_recalculadas {
-              value = 0
+          if ($e_tratamento == false) {
+            // Aplica o valor solicitado no campo correto (sem campo dinamico em XanoScript).
+            conditional {
+              if ($correcao_atual.campo == "hora_entrada") {
+                db.edit registro_ponto {
+                  field_name = "id"
+                  field_value = $registro_alvo.id
+                  data = {hora_entrada: $correcao_atual.valor_solicitado, updated_at: "now"}
+                } as $registro_editado_1
+              }
             }
 
             conditional {
-              if ($regra_correcao != null && $regra_correcao.permite_hora_extra == true && $regra_correcao.horas_diarias != null && $horas_trabalhadas_recalculadas > $regra_correcao.horas_diarias) {
-                var.update $horas_extras_recalculadas {
-                  value = $horas_trabalhadas_recalculadas - $regra_correcao.horas_diarias
-                }
+              if ($correcao_atual.campo == "inicio_intervalo") {
+                db.edit registro_ponto {
+                  field_name = "id"
+                  field_value = $registro_alvo.id
+                  data = {inicio_intervalo: $correcao_atual.valor_solicitado, updated_at: "now"}
+                } as $registro_editado_2
               }
             }
 
-            db.edit registro_ponto {
-              field_name = "id"
-              field_value = $registro_apos_correcao.id
-              data = {
-                horas_trabalhadas: $horas_trabalhadas_recalculadas
-                horas_extras     : $horas_extras_recalculadas
-                status            : "Ajustado"
-                updated_at        : "now"
+            conditional {
+              if ($correcao_atual.campo == "fim_intervalo") {
+                db.edit registro_ponto {
+                  field_name = "id"
+                  field_value = $registro_alvo.id
+                  data = {fim_intervalo: $correcao_atual.valor_solicitado, updated_at: "now"}
+                } as $registro_editado_3
               }
-            } as $registro_final_completo
-          }
-        }
+            }
 
-        conditional {
-          if ($todos_marcadores_presentes == false) {
-            db.edit registro_ponto {
+            conditional {
+              if ($correcao_atual.campo == "hora_saida") {
+                db.edit registro_ponto {
+                  field_name = "id"
+                  field_value = $registro_alvo.id
+                  data = {hora_saida: $correcao_atual.valor_solicitado, updated_at: "now"}
+                } as $registro_editado_4
+              }
+            }
+
+            db.get registro_ponto {
               field_name = "id"
-              field_value = $registro_apos_correcao.id
-              data = {status: "Ajustado", updated_at: "now"}
-            } as $registro_final_incompleto
+              field_value = $registro_alvo.id
+            } as $registro_apos_correcao
+
+            // Recalcula horas trabalhadas somente quando os quatro marcadores existem.
+            var $todos_marcadores_presentes {
+              value = ($registro_apos_correcao.hora_entrada != null && $registro_apos_correcao.inicio_intervalo != null && $registro_apos_correcao.fim_intervalo != null && $registro_apos_correcao.hora_saida != null)
+            }
+
+            conditional {
+              if ($todos_marcadores_presentes) {
+                var $duracao_bruta_ms {
+                  value = $registro_apos_correcao.hora_saida - $registro_apos_correcao.hora_entrada
+                }
+
+                var $duracao_intervalo_ms {
+                  value = $registro_apos_correcao.fim_intervalo - $registro_apos_correcao.inicio_intervalo
+                }
+
+                var $horas_trabalhadas_recalculadas {
+                  value = ($duracao_bruta_ms - $duracao_intervalo_ms) / 3600000
+                }
+
+                // Horas extras parametrizadas pela matriz regra_contrato (item 4.1).
+                db.query regra_contrato {
+                  where = $db.regra_contrato.tipo_contrato == $colaborador_da_correcao.tipo_contrato && $db.regra_contrato.ativo == true
+                  return = {type: "single"}
+                } as $regra_correcao
+
+                var $horas_extras_recalculadas {
+                  value = 0
+                }
+
+                conditional {
+                  if ($regra_correcao != null && $regra_correcao.permite_hora_extra == true && $regra_correcao.horas_diarias != null && $horas_trabalhadas_recalculadas > $regra_correcao.horas_diarias) {
+                    var.update $horas_extras_recalculadas {
+                      value = $horas_trabalhadas_recalculadas - $regra_correcao.horas_diarias
+                    }
+                  }
+                }
+
+                db.edit registro_ponto {
+                  field_name = "id"
+                  field_value = $registro_apos_correcao.id
+                  data = {
+                    horas_trabalhadas: $horas_trabalhadas_recalculadas
+                    horas_extras     : $horas_extras_recalculadas
+                    status            : "Ajustado"
+                    updated_at        : "now"
+                  }
+                } as $registro_final_completo
+              }
+            }
+
+            conditional {
+              if ($todos_marcadores_presentes == false) {
+                db.edit registro_ponto {
+                  field_name = "id"
+                  field_value = $registro_apos_correcao.id
+                  data = {status: "Ajustado", updated_at: "now"}
+                } as $registro_final_incompleto
+              }
+            }
           }
         }
 

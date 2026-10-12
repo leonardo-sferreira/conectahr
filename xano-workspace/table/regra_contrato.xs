@@ -28,6 +28,8 @@ table regra_contrato {
     int? minimo_periodo_principal
     int? minimo_outros_periodos
     int? antecedencia_ferias
+    // Maximo de dias que podem ser vendidos por periodo aquisitivo (CLT: 10).
+    int? maximo_abono
     bool? permite_solicitacao_ferias
     date data_inicio
     date? data_fim

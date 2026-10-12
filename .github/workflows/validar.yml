@@ -77,6 +77,11 @@ jobs:
       - name: Testes de Benefícios
         run: python tools/testar_beneficios.py
 
+      - name: Testes do REP-P (hash e cadeia) e do comprovante em PDF
+        run: |
+          python tools/testar_rep_p.py
+          python tools/testar_comprovante.py
+
       - name: Procurar segredos no repositorio
         run: |
           if git grep -n -E "xkeysib-[A-Za-z0-9]{20,}|SG\.[A-Za-z0-9_-]{20,}|Bearer eyJ[A-Za-z0-9_-]{20,}" -- . ':!.github'; then

@@ -1,5 +1,11 @@
 # Ponto eletrônico: controle interno experimental e backlog de conformidade
 
+> **Atualização (12/10/2026):** a change `ponto-rep-p-e-ferias-clt` passou a implementar os requisitos
+> técnicos do REP-P (ARP com NSR e hash, comprovante, tratamento, AFD e AEJ). O estado atual, as fontes
+> oficiais e o que continua fora estão em [`ponto/rep-p.md`](ponto/rep-p.md). Continua valendo a regra
+> abaixo: nenhuma tela diz que o ponto é "certificado", "homologado" ou "em conformidade", porque faltam
+> o registro no INPI, a assinatura ICP-Brasil e o atestado técnico.
+
 **Situação:** o registro de ponto do ConectaRH é um **controle interno experimental** de um trabalho
 acadêmico. Ele **não é um REP** (Registrador Eletrônico de Ponto) e **não declara nem possui
 certificação ou conformidade** com a Portaria MTP nº 671/2021. A interface e a documentação não devem

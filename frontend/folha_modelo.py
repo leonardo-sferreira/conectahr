@@ -19,7 +19,7 @@ def _da_pessoa(itens: list[dict], colaborador_id) -> list[dict]:
 
 
 def inicio_da_pessoa(pessoa: dict) -> date | None:
-    """O primeiro ponto registrado da pessoa (ou a admissão, se ela ainda não marcou ponto)."""
+    """A admissão da pessoa; sem admissão no cadastro, o primeiro ponto registrado (change ponto-rep-p-e-ferias-clt, D7)."""
     registros = [{"data": pessoa["primeiro_registro"]}] if pessoa.get("primeiro_registro") else []
     return primeiro_dia(pessoa.get("data_admissao"), registros)
 
@@ -30,7 +30,7 @@ def meses_da_pessoa(pessoa: dict, hoje: date) -> list[tuple[int, int]]:
 
 
 def meses_da_equipe(pessoas: list[dict], hoje: date) -> list[tuple[int, int]]:
-    """Do mês atual até o primeiro ponto de qualquer pessoa da lista, sem limite."""
+    """Do mês atual até o início (admissão) de quem começou primeiro na lista, sem limite."""
     inicios = [d for d in (inicio_da_pessoa(p) for p in pessoas) if d]
     return meses_disponiveis(min(inicios).isoformat() if inicios else None, [], hoje)
 
@@ -41,6 +41,8 @@ def espelho_da_pessoa(pessoa: dict, mes_dados: dict, feriados: list[dict], ano: 
         _da_pessoa(mes_dados.get("registros") or [], pid), _da_pessoa(mes_dados.get("ausencias") or [], pid),
         _da_pessoa(mes_dados.get("correcoes") or [], pid), _da_pessoa(mes_dados.get("ferias") or [], pid),
         feriados, ano, mes, hoje, pessoa.get("data_admissao"), inicio=inicio_da_pessoa(pessoa),
+        marcacoes=_da_pessoa(mes_dados["marcacoes"], pid) if "marcacoes" in mes_dados else None,
+        tratamentos=_da_pessoa(mes_dados.get("tratamentos") or [], pid),
     )
 
 
@@ -57,8 +59,8 @@ def linhas_resumo(pessoas: list[dict], mes_dados: dict, feriados: list[dict], an
         linhas.append({
             "id": p.get("id"), "nome": p.get("nome") or "—", "e_voce": bool(p.get("e_voce")),
             "departamento": departamentos.get(p.get("departamento_id")) or "—", "cargo": cargos.get(p.get("cargo_id")) or "—",
-            "horas": r["horas"] if espelho else "—", "dias": r["dias_trabalhados"], "sem_registro": r["sem_registro"],
-            "faltas": r["faltas_injustificadas"], "atestados": r["atestados"], "tem_dias": bool(espelho),
+            "horas": r["horas"] if any(not l["em_branco"] for l in espelho) else "—", "dias": r["dias_trabalhados"], "sem_registro": r["sem_registro"],
+            "faltas": r["faltas_injustificadas"], "atestados": r["atestados"], "tem_dias": any(not l["em_branco"] for l in espelho),
         })
     # Quem tem falta injustificada ou dia sem registro primeiro: é o que o RH precisa olhar no fechamento.
     linhas.sort(key=lambda l: (-(l["faltas"] + l["sem_registro"]), l["nome"].casefold()))

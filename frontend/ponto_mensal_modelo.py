@@ -1,34 +1,47 @@
 """
-Espelho de ponto mensal do colaborador (tarefa 78 da change concluir-frontend-streamlit). Funções puras, sem
-Streamlit. O fluxo completo, caso a caso, está em `docs/fluxos/ponto-mensal.md`.
+Espelho de ponto mensal no REP-P (Portaria MTP nº 671/2021, art. 84; change ponto-rep-p-e-ferias-clt, tarefas 4.2 a
+4.4; Figma 464:826). Funções puras, sem Streamlit. O fluxo, caso a caso, está em `docs/fluxos/ponto-mensal.md`.
 
-Cada dia do mês, do primeiro ponto registrado (ou da admissão) até hoje, recebe exatamente uma situação, nesta
-ordem de precedência:
-  1. tem registro de ponto        -> as marcações e a situação do registro; "corrigir" o que não estiver em análise
-  2. é hoje e não tem registro    -> "Sem marcação hoje" (marca-se pelo "Marcar agora")
-  3. férias aprovadas             -> "Férias", sem correção
-  4. ausência aprovada            -> pelo tipo: "Atestado", "Falta justificada", "Licença", "Afastamento"; sem correção
-     ausência em análise          -> "Ausência em análise", sem correção
-  5. ausência recusada            -> "Falta injustificada", com "corrigir dia"
-  6. feriado nacional             -> "Feriado", com "corrigir dia" (quem trabalhou pede a correção)
-  7. sábado ou domingo            -> "Folga", com "corrigir dia"
-  8. dia útil passado sem nada    -> "Sem registro" no mês corrente; "Falta injustificada" nos meses encerrados;
-                                     com "corrigir dia" ou "registrar ausência"
-Dias futuros não aparecem. Os meses vão do primeiro ponto registrado até hoje, sem limite.
+As marcações vêm da ARP (`marcacoes`, com NSR) e os tratamentos ao lado (`tratamentos`): a incluída aparece como
+"18:05 (I)" entre as outras, e a desconsiderada sai dos pares e vai para a coluna "Desconsideradas" como "08:01 (D)".
+As horas e o status do dia são os que o backend calculou (`registro_ponto`, o resumo do dia).
+
+Todos os dias do mês aparecem, um por linha. Antes da admissão e depois de hoje, a linha fica em branco. Os demais
+recebem exatamente uma situação, nesta ordem de precedência:
+  1. tem marcação ou tratamento  -> os pares e a situação do dia ("corrigir" se já passou)
+  2. é hoje e não tem marcação   -> "HOJE · sem marcação"
+  3. férias aprovadas            -> "Férias"
+  4. ausência aprovada           -> pelo tipo: "Atestado", "Falta justificada", "Licença", "Afastamento"
+     ausência em análise         -> "Ausência em análise"
+  5. ausência recusada           -> "Falta injustificada", com "corrigir"
+  6. feriado ou ponto facultativo -> "Feriado — nome" ou "Ponto facultativo — nome", com "corrigir"
+  7. sábado ou domingo           -> "Folga", com "corrigir"
+  8. dia útil passado sem nada   -> "Sem registro" no mês corrente; "Falta injustificada" nos meses encerrados
 """
 
 import calendar
 import csv
 import io
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
+from comprovante_ponto import formatar_cnpj, formatar_cpf, formatar_nsr
 from onboarding_modelo import data_br
 from pagamento_modelo import MESES
-from ponto_modelo import MARCACOES, ROTULO_CAMPO, TIPOS_AUSENCIA, hora, horas_trabalhadas
+from ponto_modelo import _DIAS_LONGOS, MARCACOES, ROTULO_CAMPO, TIPOS_AUSENCIA, hora, hora_gravada, horas_trabalhadas
 
-_DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-_STATUS_REGISTRO = {"Completo": ("COMPLETO", "ok"), "Ajustado": ("AJUSTADO", "amb"), "Incompleto": ("INCOMPLETO", "err"), "Aberto": ("EM ANDAMENTO", "amb")}
+SEMANA = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 CAMPOS = [c for c, _ in MARCACOES]
+LEGENDA = ("(I) incluída por correção aprovada · (D) desconsiderada, não conta nas horas · Em branco: antes da admissão"
+           "{admissao} ou dias que ainda não chegaram")
+_STATUS_REGISTRO = {"Completo": ("COMPLETO", "ok"), "Ajustado": ("AJUSTADO", "amb"), "Incompleto": ("INCOMPLETO", "err"), "Aberto": ("EM JORNADA", "amb")}
+_ROTULO_AUSENCIA = {"Atestado": "ATESTADO", "Falta": "FALTA JUSTIFICADA", "Licenca": "LICENÇA", "Afastamento": "AFASTAMENTO"}
+# Situação como aparece na planilha (Figma 464:826).
+_SITUACAO = {
+    "COMPLETO": "COMPLETO", "AJUSTADO": "AJUSTADO", "INCOMPLETO": "INCOMPLETO", "EM JORNADA": "HOJE · em jornada",
+    "SEM MARCAÇÃO HOJE": "HOJE · sem marcação", "FÉRIAS": "Férias", "ATESTADO": "Atestado", "FALTA JUSTIFICADA": "Falta justificada",
+    "LICENÇA": "Licença", "AFASTAMENTO": "Afastamento", "JUSTIFICADO": "Justificado", "AUSÊNCIA EM ANÁLISE": "Ausência em análise",
+    "FALTA INJUSTIFICADA": "Falta injustificada", "FOLGA": "Folga", "SEM REGISTRO": "Sem registro",
+}
 
 
 def _dia(valor) -> date | None:
@@ -42,18 +55,16 @@ def rotulo_mes(ano: int, mes: int) -> str:
     return f"{MESES[mes - 1]}/{ano}"
 
 
-_ROTULO_AUSENCIA = {"Atestado": "ATESTADO", "Falta": "FALTA JUSTIFICADA", "Licenca": "LICENÇA", "Afastamento": "AFASTAMENTO"}
-
-
 def primeiro_dia(admissao, registros: list[dict]) -> date | None:
-    """O primeiro ponto registrado; sem registro, a admissão. Se houver registro antes da admissão, vale o registro."""
+    """A admissão. Sem admissão no cadastro, o primeiro ponto registrado (design D7)."""
+    if inicio := _dia(admissao):
+        return inicio
     datas = [d for d in (_dia(r.get("data")) for r in registros) if d]
-    candidatos = [d for d in (min(datas) if datas else None, _dia(admissao)) if d]
-    return min(candidatos) if candidatos else None
+    return min(datas) if datas else None
 
 
 def meses_disponiveis(admissao, registros: list[dict], hoje: date) -> list[tuple[int, int]]:
-    """Do mês atual para trás, até o mês do primeiro ponto registrado (ou da admissão), sem limite."""
+    """Do mês atual para trás, até o mês da admissão (sem admissão, o do primeiro ponto), sem limite."""
     inicio = primeiro_dia(admissao, registros) or hoje
     ano, mes, saida = hoje.year, hoje.month, []
     while (ano, mes) >= (inicio.year, inicio.month):
@@ -75,75 +86,165 @@ def _cobre(item: dict, d: date) -> bool:
     return bool(a and b and a <= d <= b)
 
 
+# ---------------------------------------------------------------------------
+# Marcações e tratamentos de um dia
+# ---------------------------------------------------------------------------
+def tratamentos_validos(tratamentos: list[dict]) -> list[dict]:
+    """Os que valem: nem desfazem outro nem foram desfeitos (como em `ConectaHR/atualizar_dia_ponto`)."""
+    anulados = {t.get("anula_tratamento_id") for t in tratamentos if t.get("anula_tratamento_id")}
+    return [t for t in tratamentos if not t.get("anula_tratamento_id") and t.get("id") not in anulados]
+
+
+def batidas_do_dia(marcacoes: list[dict], tratamentos: list[dict]) -> tuple[list[dict], list[dict]]:
+    """(válidas em ordem, desconsideradas). Cada uma: {'hora', 'ms', 'incluida', 'marcacao_id', 'nsr'}."""
+    validos = tratamentos_validos(tratamentos)
+    descartar = {t.get("marcacao_id") for t in validos if t.get("tipo") == "desconsideracao" and t.get("marcacao_id")}
+    batidas, desconsideradas = [], []
+    for mc in marcacoes:
+        item = {"hora": hora_gravada(mc), "ms": mc.get("data_hora_marcacao") or 0, "incluida": False, "marcacao_id": mc.get("id"), "nsr": mc.get("nsr")}
+        (desconsideradas if mc.get("id") in descartar else batidas).append(item)
+    for t in validos:
+        if t.get("tipo") == "inclusao" and t.get("data_hora") is not None:
+            batidas.append({"hora": hora(t["data_hora"]) or "", "ms": t["data_hora"], "incluida": True, "marcacao_id": None, "nsr": None})
+    batidas.sort(key=lambda b: (b["ms"] or 0, b["hora"]))
+    desconsideradas.sort(key=lambda b: (b["ms"] or 0, b["hora"]))
+    return batidas, desconsideradas
+
+
+def texto_batida(batida: dict) -> str:
+    return f"{batida['hora']} (I)" if batida.get("incluida") else batida["hora"]
+
+
+def texto_desconsiderada(batida: dict) -> str:
+    return f"{batida['hora']} (D)"
+
+
+def horas_dos_pares(batidas: list[dict]) -> float:
+    """Soma dos pares completos (entrada e saída), em horas."""
+    total = 0
+    for i in range(0, len(batidas) - 1, 2):
+        total += max(0, (batidas[i + 1]["ms"] or 0) - (batidas[i]["ms"] or 0))
+    return total / 3_600_000
+
+
+def _batidas_antigas(reg: dict) -> list[dict]:
+    """Sem as marcações da ARP (resposta antiga), os quatro campos do registro do dia."""
+    return [{"hora": hora(reg.get(c)), "ms": reg.get(c), "incluida": False, "marcacao_id": None, "nsr": None} for c in CAMPOS if reg.get(c)]
+
+
+def descricao_pedido(c: dict, marcacoes_por_id: dict) -> str:
+    if c.get("tipo") == "inclusao":
+        return f"inclusão de {hora(c.get('valor_solicitado')) or 'um horário'}"
+    if c.get("tipo") == "desconsideracao":
+        mc = marcacoes_por_id.get(c.get("marcacao_id"))
+        return f"desconsiderar {hora_gravada(mc)}" if mc else "desconsiderar uma marcação"
+    return ROTULO_CAMPO.get(c.get("campo"), "marcação")
+
+
+# ---------------------------------------------------------------------------
+# O mês
+# ---------------------------------------------------------------------------
+def _linha_base(d: date) -> dict:
+    return {"data": d, "dia": f"{d:%d}", "semana": SEMANA[d.weekday()], "em_branco": False, "batidas": [], "desconsideradas": [],
+            "trabalhado": "", "horas": 0.0, "status": "", "situacao": "", "tom": "neu", "registro_id": None, "acao": None, "nota": "",
+            "pendentes": []}
+
+
 def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list[dict], ferias: list[dict], feriados: list[dict],
-                   ano: int, mes: int, hoje: date, admissao=None, inicio: date | None = None, prazo_dias: int | None = None) -> list[dict]:
-    """Uma linha por dia: {'dia', 'data', 'marcas', 'trabalhado', 'horas', 'status', 'tom', 'registro_id', 'acao', 'nota',
-    'pendentes'}. `acao`: 'corrigir' (há registro), 'corrigir_dia' (dia passado sem registro) ou None."""
-    # `inicio`: quando os registros são só do mês (folha da equipe), a data do primeiro ponto vem de fora.
-    # `prazo_dias` (tarefa 79): prazo do RH para o colaborador pedir correção; o backend recusa fora dele. Vazio = sem limite.
+                   ano: int, mes: int, hoje: date, admissao=None, inicio: date | None = None, prazo_dias: int | None = None,
+                   marcacoes: list[dict] | None = None, tratamentos: list[dict] | None = None) -> list[dict]:
+    """Uma linha por dia do mês (ver o cabeçalho do módulo). `acao` é 'corrigir' ou None; `pendentes`, os pedidos de
+    correção em análise do dia. `inicio`: quando os registros são só do mês (folha da equipe), a admissão vem de fora.
+    `prazo_dias` (tarefa 79): prazo do RH para o colaborador pedir correção; vazio = sem limite. Sem `marcacoes`
+    (None), usa os quatro campos do registro do dia."""
     inicio_valido = inicio or primeiro_dia(admissao, registros)
     por_dia = {_dia(r.get("data")): r for r in registros if _dia(r.get("data"))}
-    feriados_nac = {_dia(f.get("data")): f.get("nome") or "Feriado" for f in feriados
-                    if f.get("ativo", True) and (f.get("abrangencia") or "nacional") == "nacional" and _dia(f.get("data"))}
+    data_do_registro = {r.get("id"): d for d, r in por_dia.items()}
+    marc_dia, trat_dia = {}, {}
+    for mc in marcacoes or []:
+        marc_dia.setdefault(_dia(mc.get("data")), []).append(mc)
+    for t in tratamentos or []:
+        trat_dia.setdefault(_dia(t.get("data")), []).append(t)
+    marcacoes_por_id = {mc.get("id"): mc for mc in marcacoes or []}
+    cor_dia = {}
+    for c in correcoes:
+        cor_dia.setdefault(data_do_registro.get(c.get("registro_ponto_id")), []).append(c)
+    dias_sem_expediente = {}
+    for f in feriados:
+        if f.get("ativo", True) and _dia(f.get("data")):
+            rotulo = "Ponto facultativo" if f.get("tipo") == "ponto_facultativo" else "Feriado"
+            dias_sem_expediente[_dia(f["data"])] = f"{rotulo} — {f.get('nome') or rotulo}"
     ferias_ok = [f for f in ferias if f.get("status") in ("Aprovada", "Concluida")]
     aus_validas = [a for a in ausencias if a.get("status") != "Rejeitada"]
     aus_recusadas = [a for a in ausencias if a.get("status") == "Rejeitada"]
     mes_encerrado = (ano, mes) < (hoje.year, hoje.month)
+
+    def situacao(linha, status, tom, texto=None, **extra):
+        linha.update(status=status, tom=tom, situacao=texto or _SITUACAO.get(status, status.capitalize()), **extra)
+        return linha
+
     linhas = []
     for n in range(1, calendar.monthrange(ano, mes)[1] + 1):
         d = date(ano, mes, n)
+        base = _linha_base(d)
         if d > hoje or (inicio_valido and d < inicio_valido):
+            linhas.append(dict(base, em_branco=True))
             continue
-        rotulo = f"{_DIAS[d.weekday()]}, {d:%d/%m}"
-        base = {"dia": rotulo, "data": d, "marcas": ["—"] * 4, "trabalhado": "—", "horas": 0.0, "registro_id": None, "acao": None, "nota": "", "pendentes": []}
         reg = por_dia.get(d)
-        if reg:
-            cor = [c for c in correcoes if c.get("registro_ponto_id") == reg.get("id")]
-            pendentes = [c.get("campo") for c in cor if c.get("status") == "pendente"]
-            recusadas = [c for c in cor if c.get("status") == "rejeitada"]
-            status, tom = _STATUS_REGISTRO.get(reg.get("status"), (str(reg.get("status") or "—").upper(), "neu"))
-            if reg.get("status") == "Aberto" and d < hoje:
+        if marcacoes is None:
+            batidas, desconsideradas = (_batidas_antigas(reg) if reg else []), []
+        else:
+            batidas, desconsideradas = batidas_do_dia(marc_dia.get(d, []), trat_dia.get(d, []))
+        cor = cor_dia.get(d, [])
+        pendentes = [c for c in cor if c.get("status") == "pendente"]
+        recusadas = [c for c in cor if c.get("status") == "rejeitada"]
+        if batidas or desconsideradas or reg and (reg.get("status") in ("Ajustado",) or trat_dia.get(d)):
+            horas = float(reg.get("horas_trabalhadas") or 0) if reg else horas_dos_pares(batidas)
+            status, tom = _STATUS_REGISTRO.get((reg or {}).get("status"), ("COMPLETO" if len(batidas) % 2 == 0 else "INCOMPLETO", "ok" if len(batidas) % 2 == 0 else "err"))
+            if status == "EM JORNADA" and d < hoje:
                 status, tom = "INCOMPLETO", "err"
             nota = ""
             if pendentes:
-                nota = "Em análise: " + ", ".join(ROTULO_CAMPO.get(c, c) for c in CAMPOS if c in pendentes)
+                nota = "Em análise: " + ", ".join(descricao_pedido(c, marcacoes_por_id) for c in pendentes)
             elif recusadas:
                 ultima = max(recusadas, key=lambda c: str(c.get("data_decisao") or ""))
-                nota = f"Correção recusada ({ROTULO_CAMPO.get(ultima.get('campo'), 'marcação')}): {ultima.get('motivo_decisao') or 'sem motivo informado'}"
-            linhas.append(dict(base, marcas=[hora(reg.get(c)) or "—" for c in CAMPOS], trabalhado=horas_trabalhadas(reg.get("horas_trabalhadas")),
-                               horas=float(reg.get("horas_trabalhadas") or 0), status=status, tom=tom, registro_id=reg.get("id"),
-                               acao="corrigir" if len(pendentes) < 4 else None, nota=nota, pendentes=pendentes))
+                nota = f"Correção recusada ({descricao_pedido(ultima, marcacoes_por_id)}): {ultima.get('motivo_decisao') or 'sem motivo informado'}"
+            texto = "INCOMPLETO · corrigir" if status == "INCOMPLETO" and d < hoje else None
+            linhas.append(situacao(base, status, tom, texto, batidas=batidas, desconsideradas=desconsideradas,
+                                   trabalhado=horas_trabalhadas(horas) if horas or batidas else "", horas=horas,
+                                   registro_id=(reg or {}).get("id"), acao="corrigir" if d < hoje else None, nota=nota, pendentes=pendentes))
             continue
+        base["pendentes"] = pendentes
+        if pendentes:
+            base["nota"] = "Em análise: " + ", ".join(descricao_pedido(c, marcacoes_por_id) for c in pendentes)
         if d == hoje:
-            linhas.append(dict(base, status="SEM MARCAÇÃO HOJE", tom="neu", nota='Use "Marcar agora" no topo da tela.'))
+            linhas.append(situacao(base, "SEM MARCAÇÃO HOJE", "neu"))
             continue
-        fer = next((f for f in ferias_ok if _cobre(f, d)), None)
-        if fer:
-            linhas.append(dict(base, status="FÉRIAS", tom="azul", trabalhado="Férias"))
+        if any(_cobre(f, d) for f in ferias_ok):
+            linhas.append(situacao(base, "FÉRIAS", "azul"))
             continue
         aus = next((a for a in aus_validas if _cobre(a, d)), None)
         if aus:
             pendente = aus.get("status") == "Pendente"
-            status = "AUSÊNCIA EM ANÁLISE" if pendente else _ROTULO_AUSENCIA.get(aus.get("tipo"), "JUSTIFICADO")
-            linhas.append(dict(base, status=status, tom="amb" if pendente else "azul", trabalhado=TIPOS_AUSENCIA.get(aus.get("tipo"), "Ausência")))
+            linhas.append(situacao(base, "AUSÊNCIA EM ANÁLISE" if pendente else _ROTULO_AUSENCIA.get(aus.get("tipo"), "JUSTIFICADO"), "amb" if pendente else "azul"))
             continue
         recusada = next((a for a in aus_recusadas if _cobre(a, d)), None)
         if recusada:
-            linhas.append(dict(base, status="FALTA INJUSTIFICADA", tom="err", acao="corrigir_dia",
-                               nota=f"{TIPOS_AUSENCIA.get(recusada.get('tipo'), 'Ausência')} recusada pelo RH. Se trabalhou, peça a correção."))
+            linhas.append(situacao(base, "FALTA INJUSTIFICADA", "err", acao="corrigir",
+                                   nota=base["nota"] or f"{TIPOS_AUSENCIA.get(recusada.get('tipo'), 'Ausência')} recusada pelo RH. Se trabalhou, peça a correção."))
             continue
-        if d in feriados_nac:
-            linhas.append(dict(base, status="FERIADO", tom="neu", nota=f"{feriados_nac[d]}. Trabalhou? Peça a correção.", acao="corrigir_dia"))
+        if d in dias_sem_expediente:
+            linhas.append(situacao(base, "FERIADO", "neu", dias_sem_expediente[d], acao="corrigir"))
             continue
         if d.weekday() >= 5:
-            linhas.append(dict(base, status="FOLGA", tom="neu", acao="corrigir_dia"))
+            linhas.append(situacao(base, "FOLGA", "neu", acao="corrigir"))
             continue
         if mes_encerrado:
-            linhas.append(dict(base, status="FALTA INJUSTIFICADA", tom="err", acao="corrigir_dia",
-                               nota="Mês encerrado sem marcação nem ausência. Ainda dá para pedir a correção ou registrar a ausência."))
+            linhas.append(situacao(base, "FALTA INJUSTIFICADA", "err", acao="corrigir",
+                                   nota=base["nota"] or "Mês encerrado sem marcação nem ausência. Ainda dá para pedir a correção ou registrar a ausência."))
         else:
-            linhas.append(dict(base, status="SEM REGISTRO", tom="err", acao="corrigir_dia",
-                               nota="Esqueceu de marcar? Peça a correção. Faltou? Registre a ausência."))
+            linhas.append(situacao(base, "SEM REGISTRO", "err", acao="corrigir",
+                                   nota=base["nota"] or "Esqueceu de marcar? Peça a correção. Faltou? Registre a ausência."))
     return aplicar_prazo(linhas, hoje, prazo_dias)
 
 
@@ -162,17 +263,19 @@ def aplicar_prazo(linhas: list[dict], hoje: date, prazo_dias: int | None) -> lis
     limite = limite_prazo(hoje, prazo_dias)
     if limite is None:
         return linhas
-    for l in linhas:  # o aviso completo (gestor ou RH ajustam) fica acima da tabela: aviso_prazo()
+    for l in linhas:  # o aviso completo (gestor ou RH ajustam) fica acima da planilha: aviso_prazo()
         if l["acao"] and l["data"] < limite:
             l["acao"] = None
             l["nota"] = f'{l["nota"]} · {NOTA_PRAZO}' if l["nota"] and not l["nota"].startswith(("Esqueceu", "Mês encerrado")) else NOTA_PRAZO
+            if l["situacao"] == "INCOMPLETO · corrigir":
+                l["situacao"] = "INCOMPLETO"
     return linhas
 
 
 def aviso_prazo(linhas: list[dict], hoje: date, prazo_dias: int | None) -> str:
     """Aviso acima do espelho quando algum dia do mês já passou do prazo; vazio quando não há."""
     limite = limite_prazo(hoje, prazo_dias)
-    if limite is None or not any(l["data"] < limite for l in linhas):
+    if limite is None or not any(l["data"] < limite and not l["em_branco"] for l in linhas):
         return ""
     return (f"Dias antes de {data_br(limite.isoformat())} passaram do prazo de {texto_prazo(prazo_dias)} para pedir correção. "
             "Se algo estiver errado, fale com o seu gestor ou com o RH, que podem ajustar.")
@@ -188,7 +291,7 @@ def resumo_do_mes(linhas: list[dict]) -> dict:
     horas = sum(l["horas"] for l in linhas)
     return {
         "horas": horas_trabalhadas(horas) if horas else "0h00",
-        "dias_trabalhados": sum(1 for l in linhas if l["registro_id"] and any(m != "—" for m in l["marcas"])),
+        "dias_trabalhados": sum(1 for l in linhas if l["batidas"]),
         "sem_registro": sum(1 for l in linhas if l["status"] in ("SEM REGISTRO", "INCOMPLETO")),
         "faltas_injustificadas": sum(1 for l in linhas if l["status"] == "FALTA INJUSTIFICADA"),
         "atestados": sum(1 for l in linhas if l["status"] == "ATESTADO"),
@@ -196,17 +299,129 @@ def resumo_do_mes(linhas: list[dict]) -> dict:
     }
 
 
-def campos_livres(linha: dict) -> list[str]:
-    """As marcações que ainda podem ser corrigidas no dia (as que já estão em análise ficam fora)."""
-    return [c for c in CAMPOS if c not in linha.get("pendentes", [])]
+def desconsideraveis(linha: dict) -> list[dict]:
+    """As marcações originais do dia que ainda podem ser desconsideradas (sem pedido em análise para elas)."""
+    em_analise = {c.get("marcacao_id") for c in linha.get("pendentes", []) if c.get("tipo") == "desconsideracao"}
+    return [b for b in linha["batidas"] if not b["incluida"] and b["marcacao_id"] and b["marcacao_id"] not in em_analise]
 
 
-def csv_do_mes(linhas: list[dict]) -> bytes:
-    """O espelho do mês em CSV (separador ';', com BOM, para abrir direto em planilha)."""
+def dia_longo(d: date, com_ano: bool = True) -> str:
+    """"Sexta-feira, 09/10/2026" (ou "sexta-feira, 09/10" sem o ano, no meio de uma frase)."""
+    if com_ano:
+        return f"{_DIAS_LONGOS[d.weekday()].capitalize()}, {d:%d/%m/%Y}"
+    return f"{_DIAS_LONGOS[d.weekday()]}, {d:%d/%m}"
+
+
+def situacao_curta(linha: dict) -> str:
+    """A situação para uma frase: "Incompleto (falta a saída)", "Folga", "Feriado — Tiradentes"..."""
+    if linha["status"] == "INCOMPLETO":
+        return "Incompleto (falta a saída)" if len(linha["batidas"]) % 2 else "Incompleto"
+    texto = linha["situacao"].replace(" · corrigir", "")
+    return texto.capitalize() if texto.isupper() else texto
+
+
+def descricao_dia(linha: dict) -> str:
+    """Barra do dia selecionado (Figma 464:826): "sexta-feira, 09/10 — Incompleto (falta a saída)"."""
+    return f"{dia_longo(linha['data'], com_ano=False)} — {situacao_curta(linha)}"
+
+
+def marcacoes_texto(linha: dict) -> str:
+    """Todas as marcações do dia em ordem, com (I) e (D): "08:01 (D) · 08:03 · 12:02"."""
+    todas = [(b["ms"] or 0, texto_batida(b)) for b in linha["batidas"]] + [(b["ms"] or 0, texto_desconsiderada(b)) for b in linha["desconsideradas"]]
+    return " · ".join(t for _, t in sorted(todas)) or "Nenhuma"
+
+
+def linha_selecionada(linhas: list[dict], linhas_tabela: list[int]) -> dict | None:
+    """A linha do mês escolhida na planilha (`selection.rows` do st.dataframe); linha em branco não conta."""
+    if not linhas_tabela or not 0 <= linhas_tabela[0] < len(linhas):
+        return None
+    linha = linhas[linhas_tabela[0]]
+    return None if linha["em_branco"] else linha
+
+
+# ---------------------------------------------------------------------------
+# Planilha, cabeçalho do art. 84 e CSV
+# ---------------------------------------------------------------------------
+def pares_do_mes(linhas: list[dict]) -> int:
+    """Quantos pares de colunas "Ent."/"Saí." a planilha precisa (pelo menos 2)."""
+    return max([2] + [(len(l["batidas"]) + 1) // 2 for l in linhas])
+
+
+def colunas_planilha(pares: int) -> list[str]:
+    marcas = [f"{t} {i}" for i in range(1, pares + 1) for t in ("Ent.", "Saí.")]
+    return ["Data", "Dia", *marcas, "Desconsideradas", "Horas", "Situação"]
+
+
+def linhas_planilha(linhas: list[dict], pares: int | None = None) -> list[list[str]]:
+    """As linhas da planilha (Figma 464:826), na ordem de `colunas_planilha`."""
+    pares = pares or pares_do_mes(linhas)
+    saida = []
+    for l in linhas:
+        marcas = [texto_batida(b) for b in l["batidas"]] + [""] * (2 * pares - len(l["batidas"]))
+        saida.append([l["dia"], l["semana"], *marcas, " ".join(texto_desconsiderada(b) for b in l["desconsideradas"]),
+                      l["trabalhado"], l["situacao"]])
+    return saida
+
+
+def legenda(admissao) -> str:
+    texto = data_br(str(admissao)) if admissao else None
+    return LEGENDA.format(admissao=f" ({texto})" if texto else "")
+
+
+def horario_contratual(jornada: dict | None) -> str:
+    """Jornada da regra do contrato: '8h00 por dia · 44h00 por semana · intervalo de 1h00'. O cadastro não guarda
+    os horários de entrada e saída, só a duração."""
+    if not jornada:
+        return "Não informado"
+    partes = []
+    if jornada.get("horas_diarias"):
+        partes.append(f"{horas_trabalhadas(jornada['horas_diarias'])} por dia")
+    if jornada.get("horas_semanais"):
+        partes.append(f"{horas_trabalhadas(jornada['horas_semanais'])} por semana")
+    if jornada.get("intervalo_minutos"):
+        partes.append(f"intervalo de {horas_trabalhadas(jornada['intervalo_minutos'] / 60)}")
+    return " · ".join(partes) or "Não informado"
+
+
+def cabecalho_espelho(dados_rep: dict, ano: int, mes: int, emitido_em: datetime) -> dict:
+    """Cabeçalho do espelho (art. 84): {'titulo', 'emissao', 'campos': [(rótulo, valor)]}. `dados_rep` é a resposta de
+    `ponto/comprovantes` (empregador, trabalhador com admissão e cargo, jornada)."""
+    emp = dados_rep.get("empregador") or {}
+    trab = dados_rep.get("trabalhador") or {}
+    ultimo = calendar.monthrange(ano, mes)[1]
+    tipo = str(emp.get("tipo_identificador") or "cnpj").lower()
+    doc_rotulo, doc = ("CPF do empregador", formatar_cpf(emp.get("identificador"))) if tipo in ("cpf", "2") else ("CNPJ", formatar_cnpj(emp.get("identificador")))
+    campos = [
+        ("Empregador", emp.get("razao_social") or "Não cadastrado"), ("Trabalhador", trab.get("nome") or ""),
+        ("Admissão", data_br(trab.get("data_admissao")) or "Não informada"), ("Horário contratual", horario_contratual(dados_rep.get("jornada"))),
+        (doc_rotulo, doc), ("CPF", formatar_cpf(trab.get("cpf"))), ("Cargo", trab.get("cargo") or "Não informado"),
+        ("Local", emp.get("local_prestacao") or ""),
+    ]
+    if emp.get("cno_caepf"):
+        campos.append(("CNO/CAEPF", str(emp["cno_caepf"])))
+    return {
+        "titulo": "Espelho de ponto eletrônico",
+        "emissao": f"Emitido em {emitido_em:%d/%m/%Y %H:%M} · Período 01/{mes:02d}/{ano} a {ultimo:02d}/{mes:02d}/{ano}",
+        "campos": campos,
+    }
+
+
+def csv_do_mes(linhas: list[dict], cabecalho: dict | None = None) -> bytes:
+    """O espelho do mês em CSV (separador ';', com BOM, para abrir direto em planilha), com o cabeçalho do art. 84
+    quando houver, a planilha, a observação de cada dia e a legenda."""
     saida = io.StringIO()
     escritor = csv.writer(saida, delimiter=";")
-    escritor.writerow(["Dia", "Data", *[r for _, r in MARCACOES], "Trabalhado", "Situação", "Observação"])
-    for l in linhas:
-        escritor.writerow([l["dia"].split(",")[0], data_br(l["data"].isoformat()), *l["marcas"], l["trabalhado"], l["status"], l["nota"]])
+    if cabecalho:
+        escritor.writerow([cabecalho["titulo"]])
+        escritor.writerow([cabecalho["emissao"]])
+        for rotulo, valor in cabecalho["campos"]:
+            escritor.writerow([rotulo, valor])
+        escritor.writerow([])
+    pares = pares_do_mes(linhas)
+    escritor.writerow([*colunas_planilha(pares), "Observação", "NSR"])
+    for l, valores in zip(linhas, linhas_planilha(linhas, pares)):
+        nsrs = " ".join(formatar_nsr(b["nsr"]) for b in l["batidas"] + l["desconsideradas"] if b.get("nsr"))
+        escritor.writerow([data_br(l["data"].isoformat()), *valores[1:], l["nota"], nsrs])
+    escritor.writerow([])
+    escritor.writerow([LEGENDA.format(admissao="")])
     return saida.getvalue().encode("utf-8-sig")
-

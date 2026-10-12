@@ -83,7 +83,7 @@ backend; esconder um botão não substitui a regra.
 - `onboarding_modelo.py` (regras de apresentação, sem Streamlit, testadas em `tools/testar_onboarding.py`) e
   `onboarding_dados.py` (consultas ao backend, com alguns segundos de cache em `st.session_state` para não
   passar do limite de requisições do Xano).
-- `documentos_modelo.py`, `privacidade_modelo.py`, `conferencia_modelo.py`, `perfil_modelo.py`, `ponto_modelo.py`, `ferias_modelo.py`, `pagamento_modelo.py`, `decisoes_modelo.py`, `cadastro_modelo.py`, `solicitacoes_modelo.py`, `ponto_mensal_modelo.py`, `folha_modelo.py` e `beneficios_modelo.py` (regras de apresentação, sem Streamlit) e `aviso_privacidade.py`,
+- `documentos_modelo.py`, `privacidade_modelo.py`, `conferencia_modelo.py`, `perfil_modelo.py`, `ponto_modelo.py`, `ferias_modelo.py`, `pagamento_modelo.py`, `decisoes_modelo.py`, `cadastro_modelo.py`, `solicitacoes_modelo.py`, `ponto_mensal_modelo.py`, `folha_modelo.py`, `beneficios_modelo.py` e `rep_modelo.py` (regras de apresentação, sem Streamlit), `comprovante_ponto.py` (PDF do comprovante de ponto, com `fpdf2`), `planilha_ponto.py` (planilha do mês, cabeçalho do art. 84 e formulário de correção, comuns ao Ponto e à folha da equipe) e `aviso_privacidade.py`,
   que lê o texto do aviso de `docs/lgpd/aviso-de-privacidade.md`: o aviso tem uma fonte só, e mudar o texto é mudar
   esse arquivo (e o Figma, para continuarem iguais).
 - `theme.py`, `api_client.py`, `validacao.py`, `assets/`. O tema escuro é a camada `_ESCURO_CSS` de `theme.py`, só com

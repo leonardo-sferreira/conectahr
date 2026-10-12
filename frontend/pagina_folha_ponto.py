@@ -4,21 +4,22 @@ que estava fora do ar quando a tela foi feita (ver design.md).
 
 - "Resumo do mês": uma linha por pessoa que quem está logado pode ver, com horas, dias com marcação, sem registro,
   faltas injustificadas e atestados — o fechamento do mês para o pagamento. CSV do resumo.
-- "Por pessoa": a folha mensal da pessoa (o mesmo espelho do colaborador), desde o primeiro ponto, com os pedidos de
-  correção pendentes (aprovar ou recusar) e "Ajustar" por dia (ajuste direto, auditado; a pessoa é avisada).
+- "Por pessoa": a folha mensal da pessoa na mesma planilha do colaborador (change ponto-rep-p-e-ferias-clt, tarefa
+  4.5): marcações da ARP e tratamentos juntos, a incluída como "(I)" e a desconsiderada como "(D)"; os pedidos de
+  correção pendentes (aprovar ou recusar) e o ajuste direto pela seleção do dia, como inclusão ou desconsideração de
+  uma marcação, com motivo (auditado; a pessoa é avisada). A marcação original nunca muda.
 Ninguém ajusta nem decide o próprio ponto: o pedido de quem tem superior vai para o superior. O escopo é do backend
-(`folha_ponto/pessoas`, `folha_ponto/mes`, `folha_ponto/ajustar`, `correcoes_ponto/{id}/aprovar|rejeitar`).
+(`folha_ponto/pessoas`, `folha_ponto/mes`, `folha_ponto/tratar`, `correcoes_ponto/{id}/aprovar|rejeitar`).
 """
 
 import html
 import time
-from datetime import date, datetime, timezone
+from datetime import date
 
 import streamlit as st
 
 from api_client import (
     ApiError,
-    ajustar_ponto,
     aprovar_correcao_ponto,
     calendario,
     definir_prazo_correcao,
@@ -27,12 +28,14 @@ from api_client import (
     organograma,
     prazo_correcao,
     rejeitar_correcao_ponto,
+    tratar_ponto,
 )
 from decisoes_modelo import validar_motivo
 from folha_modelo import csv_resumo, espelho_da_pessoa, linhas_resumo, meses_da_equipe, meses_da_pessoa, pendentes_da_pessoa
 from pagamento_modelo import MESES
-from ponto_mensal_modelo import anos_disponiveis, campos_livres, csv_do_mes, meses_do_ano, resumo_do_mes, texto_prazo
-from ponto_modelo import MARCACOES, ROTULO_CAMPO, hora, validar_correcao, valor_solicitado_ms
+from planilha_ponto import formulario_pedido, limpar_formulario, render_planilha, resumo_do_dia
+from ponto_mensal_modelo import anos_disponiveis, csv_do_mes, descricao_dia, descricao_pedido, legenda, meses_do_ano, resumo_do_mes, texto_prazo
+from ponto_modelo import hoje_brasilia, validar_pedido, valor_solicitado_ms
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _VALIDADE_CACHE_S = 20
@@ -86,38 +89,31 @@ def _seletor_ano_mes(meses: list[tuple[int, int]], prefixo: str) -> tuple[int, i
 # ---------------------------------------------------------------------------
 # Modais
 # ---------------------------------------------------------------------------
-@st.dialog("Ajustar ponto", width="small", on_dismiss=_fechar)
+@st.dialog("Ajustar o ponto do dia", width="small", on_dismiss=_fechar)
 def _modal_ajustar(pessoa: dict, linha: dict) -> None:
-    st.html(
-        '<div class="crh-campos crh-campos-direita">'
-        f'<p class="r">Pessoa</p><p class="v">{html.escape(pessoa.get("nome") or "")}</p>'
-        f'<p class="r">Dia</p><p class="v">{html.escape(linha["dia"])}</p>'
-        f'<p class="r">Situação</p><p class="v">{html.escape(linha["status"].capitalize())}</p></div>'
-    )
-    campos = campos_livres(linha)
-    c1, c2 = st.columns(2)
-    campo = c1.selectbox("Marcação", campos, format_func=ROTULO_CAMPO.get, index=None, placeholder="Escolha", key="fp_aj_campo")
-    horario = c2.time_input("Horário correto", value=None, step=60, key="fp_aj_hora")
-    motivo = st.text_area("Motivo (vai para a auditoria e a pessoa vê)", max_chars=1000, key="fp_aj_motivo", height=80)
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O ajuste vale na hora, fica no histórico do dia e a pessoa é avisada. '
-            'Marcações com pedido pendente ficam fora: decida o pedido.</p></div>')
+    """`folha_ponto/tratar`: inclui ou desconsidera uma marcação, com motivo. Vale na hora, como tratamento."""
+    st.html(f'<p class="crh-meta" style="margin:0">Pessoa: <b>{html.escape(pessoa.get("nome") or "")}</b></p>')
+    resumo_do_dia(linha)
+    tipo, horario, marcacao_id, motivo = formulario_pedido(linha, "fp_aj")
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O ajuste vale na hora como tratamento: a marcação original não muda, '
+            'o motivo fica no histórico do dia e a pessoa é avisada. Marcações com pedido pendente ficam fora: decida o pedido.</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="fp_aj_cancelar"):
             _fechar()
             st.rerun()
         if st.button("Ajustar", type="primary", key="fp_aj_ok"):
-            erro_campo = validar_correcao(campo, horario, motivo)
+            erro_campo = validar_pedido(tipo, horario, marcacao_id, motivo)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
             try:
-                ajustar_ponto(st.session_state.token, pessoa["id"], linha["data"].isoformat(), campo, valor_solicitado_ms(linha["data"], horario), motivo.strip())
+                tratar_ponto(st.session_state.token, pessoa["id"], linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=marcacao_id,
+                             data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo == "inclusao" else None)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
-            for chave in ("fp_aj_campo", "fp_aj_hora", "fp_aj_motivo"):
-                st.session_state.pop(chave, None)
+            limpar_formulario("fp_aj")
             _invalidar()
             _fechar()
             st.session_state.aviso_toast = f"Ponto de {pessoa.get('nome')} ajustado. A pessoa foi avisada."
@@ -125,11 +121,11 @@ def _modal_ajustar(pessoa: dict, linha: dict) -> None:
 
 
 @st.dialog("Recusar correção de ponto", width="small", on_dismiss=_fechar)
-def _modal_recusar(pessoa: dict, correcao: dict) -> None:
+def _modal_recusar(pessoa: dict, correcao: dict, marcacoes: dict) -> None:
     st.html(
         '<div class="crh-campos crh-campos-direita">'
         f'<p class="r">Pessoa</p><p class="v">{html.escape(pessoa.get("nome") or "")}</p>'
-        f'<p class="r">Marcação</p><p class="v">{html.escape(ROTULO_CAMPO.get(correcao.get("campo"), "—"))} · pedido {html.escape(hora(correcao.get("valor_solicitado")) or "—")}</p></div>'
+        f'<p class="r">Pedido</p><p class="v">{html.escape(descricao_pedido(correcao, marcacoes))}</p></div>'
     )
     motivo = st.text_area("Motivo (obrigatório, 5 caracteres ou mais)", max_chars=1000, key="fp_rec_motivo", height=80)
     slot = st.empty()
@@ -268,13 +264,15 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
         st.html('<p class="crh-nota-ambar">Esta é a sua folha: só consulta. Para corrigir o seu ponto, peça a correção na tela Ponto; quem decide é o seu superior.</p>')
 
     pendentes = pendentes_da_pessoa(dados)
+    marcacoes = {mc.get("id"): mc for mc in dados.get("marcacoes") or []}
+    linha_do_registro = {l["registro_id"]: f'{l["data"]:%d/%m}' for l in linhas if l["registro_id"]}
     if pendentes:
         st.html(f'<p class="crh-bloco-titulo">Pedidos de correção pendentes ({len(pendentes)})</p>')
         with st.container(key="rh_tabela_pend"):
             for c in pendentes:
-                momento = hora(c.get("valor_solicitado")) or "—"
+                quando = linha_do_registro.get(c.get("registro_ponto_id")) or ""
                 with st.container(horizontal=True, vertical_alignment="center", key=f"fp_pend_{c['id']}"):
-                    st.html(f'<p class="crh-doc-prazo">{html.escape(ROTULO_CAMPO.get(c.get("campo"), "—"))} para {html.escape(momento)} · '
+                    st.html(f'<p class="crh-doc-prazo">{html.escape(quando)}: {html.escape(descricao_pedido(c, marcacoes))} · '
                             f'{html.escape((c.get("justificativa") or "").strip() or "sem motivo")}</p>', width="stretch")
                     if not proprio:
                         if st.button("Recusar", type="tertiary", key=f"rh_recusar_fp_{c['id']}"):
@@ -287,42 +285,33 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
                                 st.session_state.folha_erro = erro.message
                                 st.rerun()
                             _invalidar()
-                            st.session_state.aviso_toast = "Correção aprovada. O horário do dia foi trocado."
+                            st.session_state.aviso_toast = "Correção aprovada. Virou um tratamento no dia; a marcação original não muda."
                             st.rerun()
 
     if erro_acao := st.session_state.pop("folha_erro", None):
         alerta(st.empty(), "erro", erro_acao)
 
-    pesos = [1.6, 1, 1.2, 1, 1, 1.1, 2.2, 1.1]
-    with st.container(key="ponto_tabela"):
-        with st.container(key="ponto_cab"):
-            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Dia", *[r for _, r in MARCACOES], "Trabalhado", "Situação", ""]):
-                coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
-        if not linhas:
-            with st.container(key="ponto_lin_vazio"):
-                st.html('<p class="crh-meta">Nenhum dia neste mês ainda.</p>')
-        destacados = ("FÉRIAS", "JUSTIFICADO", "ATESTADO", "FALTA JUSTIFICADA", "LICENÇA", "AFASTAMENTO", "AUSÊNCIA EM ANÁLISE", "FOLGA", "FERIADO")
-        for i, l in enumerate(linhas):
-            with st.container(key=f"ponto_lina_{i}" if l["status"] in destacados else f"ponto_lin_{i}"):
-                c = st.columns(pesos, vertical_alignment="center")
-                c[0].html(f'<p class="crh-doc-prazo">{html.escape(l["dia"])}</p>')
-                for coluna, marca in zip(c[1:5], l["marcas"]):
-                    coluna.html(f'<p class="crh-ponto-marca">{html.escape(marca)}</p>')
-                c[5].html(f'<p class="crh-ponto-trab">{html.escape(l["trabalhado"])}</p>')
-                nota = f'<p class="crh-meta" style="margin:2px 0 0;font-size:11.5px">{html.escape(l["nota"])}</p>' if l.get("nota") and not l["nota"].startswith("Use ") else ""
-                c[6].html(f'<p class="crh-ponto-status {l["tom"]}">{html.escape(l["status"])}</p>{nota}')
-                with c[7]:
-                    if not proprio and campos_livres(l) and l["status"] not in ("FÉRIAS",):
-                        if st.button("Ajustar", type="tertiary", key=f"fp_ajustar_{l['data'].isoformat()}"):
-                            st.session_state.modal_folha = ("ajustar", l["data"].isoformat())
-                            st.rerun()
+    escolhida = render_planilha(linhas, f"fp_planilha_{pid}_{ano}_{mes}")
+    st.html(f'<p class="crh-legenda-ponto">{html.escape(legenda(pessoa.get("data_admissao")))}</p>')
+    if escolhida:
+        with st.container(horizontal=True, vertical_alignment="center", key="ponto_selecionado"):
+            nota = escolhida["nota"] if escolhida["nota"] and not escolhida["nota"].startswith(("Esqueceu", "Mês encerrado")) else ""
+            nota_html = f'<br><span class="crh-meta">{html.escape(nota)}</span>' if nota else ""
+            st.html(f'<p class="crh-doc-prazo" style="margin:0"><b>Dia selecionado: {html.escape(descricao_dia(escolhida))}</b>{nota_html}</p>', width="stretch")
+            if not proprio and escolhida["data"] <= hoje:
+                if st.button("Ajustar o dia", type="primary", key="fp_ajustar_dia"):
+                    st.session_state.modal_folha = ("ajustar", escolhida["data"].isoformat())
+                    st.rerun()
+    elif not proprio:
+        st.html('<div class="crh-incluso"><p class="n" style="margin:0">Selecione uma linha da planilha para incluir ou desconsiderar uma marcação '
+                'do dia. A marcação original nunca é alterada: o ajuste fica ao lado dela, com o motivo.</p></div>')
     st.download_button("Baixar folha do mês (CSV)", csv_do_mes(linhas), file_name=f"folha-ponto-{pessoa.get('id')}-{ano}-{mes:02d}.csv", mime="text/csv", key="fp_baixar_pessoa")
 
     modal = st.session_state.get("modal_folha")
     if not modal or proprio:
         return
     if modal[0] == "ajustar":
-        linha = next((l for l in linhas if l["data"].isoformat() == modal[1]), None)
+        linha = next((l for l in linhas if l["data"].isoformat() == modal[1] and not l["em_branco"] and l["data"] <= hoje), None)
         if linha is None:
             _fechar()
             return
@@ -332,7 +321,7 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
         if correcao is None:
             _fechar()
             return
-        _modal_recusar(pessoa, correcao)
+        _modal_recusar(pessoa, correcao, marcacoes)
 
 
 def pagina_folha_ponto() -> None:
@@ -363,7 +352,7 @@ def pagina_folha_ponto() -> None:
     deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or []}
     cargos = {c.get("id"): c.get("nome") for c in org.get("cargos") or []}
     feriados = (base.get("cal") or {}).get("feriados") or []
-    hoje = datetime.now(timezone.utc).date()
+    hoje = hoje_brasilia()
     with st.container(key="cfg_abas", width="content"):
         if st.session_state.get("fp_aba") not in _ABAS:
             st.session_state.fp_aba = _ABAS[0]
