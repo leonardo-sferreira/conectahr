@@ -64,6 +64,8 @@ Para copiar o padrão, use um endpoint recente como modelo, por exemplo
 - `contains` numa lista de ids montada com `push` (ou vinda de `json`) não reconhece o id. Monte um texto com
   vírgulas nas pontas e compare em texto: `("," ~ ($ids|join:",") ~ ",")|contains:("," ~ ($id|to_text) ~ ",")`.
 - Numa lista literal (`[{v: $x.campo}]`) as variáveis não são avaliadas: monte com `[]|push:{...}`.
+- O operador `%` falha com "Not numeric.": para o resto, use `$x - (($x / 60)|floor) * 60`.
+- `var` depois do `}` que fecha o `stack` dá "Syntax error: unexpected 'var'" no push: tudo fica dentro do `stack`.
 - O teste estático (`tools/checar_endpoints.py`) não pega erro de execução: endpoint novo ou alterado precisa de
   uma chamada por HTTP com login (ex.: `tools/testar_rep_p_http.py`).
 - Variável de ambiente não definida vale `null`: trate o padrão (`$env.X != null ? ... : padrão`).
