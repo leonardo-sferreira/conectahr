@@ -738,8 +738,9 @@ _APP_CSS = f"""
   .crh-ponto-saldo.positivo {{ color: {SUCESSO}; }}
   .crh-ponto-saldo.negativo {{ color: {ERRO}; }}
   .crh-ponto-aviso {{ margin: 0; background: {AMBAR_BG}; border-radius: 8px; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: #B45309; }}
-  .st-key-ponto_topo_espelho button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1.1rem; }}
-  .st-key-ponto_topo_espelho button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"], .st-key-ponto_card_ausencia button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1.1rem; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"] p, .st-key-ponto_card_ausencia button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .st-key-ponto_card_hoje button[kind="primary"] {{ padding: 0.6rem 1.3rem; }}
   .st-key-ponto_tabela {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 0; gap: 0; overflow: hidden; }}
   .st-key-ponto_tabela div[class*="st-key-ponto_lin"] {{ border-bottom: 1px solid {BORDA}; padding: 10px 18px; gap: 0; }}
   .st-key-ponto_tabela div[class*="st-key-ponto_lina_"] {{ background: #EEF4FF; }}
@@ -753,6 +754,22 @@ _APP_CSS = f"""
   .crh-ponto-status.err {{ color: {ERRO}; }}
   .crh-ponto-status.azul {{ color: #2663D9; }}
   .crh-ponto-status.neu {{ color: {GRAFITE_SECUNDARIO}; }}
+  /* Ponto REP-P (Figma 463:825 e 464:826) */
+  .crh-relogio {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.1; color: {GRAFITE}; font-variant-numeric: tabular-nums; }}
+  .crh-relogio-nota {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 10px; }}
+  .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-bottom: 1px solid {BORDA}; padding: 4px 0; }}
+  .st-key-ponto_comprovantes button p, .st-key-ponto_tabela .stDownloadButton button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600 !important; font-size: 13px !important; }}
+  .crh-espelho-cab {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 24px; margin: 0; }}
+  .crh-espelho-cab .r {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-espelho-cab .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; }}
+  .st-key-ponto_selecionado {{ background: {AMBAR_BG}; border-radius: 12px; padding: 12px 16px; }}
+  .crh-legenda-ponto {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-pt_planilha [data-testid="stDataFrame"], div[class*="st-key-fp_planilha_"] [data-testid="stDataFrame"] {{ filter: invert(1) hue-rotate(180deg); border-radius: 12px; }}
+  .st-key-ponto_selecionado button[kind="primary"] {{ padding: 0.6rem 1.3rem; white-space: nowrap; }}
+  .st-key-ponto_topo_espelho .stSelectbox > div > div {{ background: white !important; border: 1px solid {BORDA} !important; border-radius: 10px; }}
+  .st-key-ponto_topo_espelho .stSelectbox div:has(> input[role="combobox"]), .st-key-ponto_topo_espelho .stSelectbox div:has(> div > input[role="combobox"]) {{ background: transparent !important; }}
+  .st-key-ponto_topo_espelho .stSelectbox div, .st-key-ponto_topo_espelho .stSelectbox input {{ color: {GRAFITE} !important; }}
 
   /* Férias (Figma 40:22): cartões no topo e histórico com linha do tempo. */
   .st-key-ferias_topo {{ gap: 16px; }}
@@ -908,8 +925,15 @@ _ESCURO_CSS = f"""
   .st-key-ponto_tabela div[class*="st-key-ponto_lin"] {{ border-color: {ESC_BORDA}; }}
   .st-key-ponto_tabela div[class*="st-key-ponto_lina_"] {{ background: #1B2436; }}
   .st-key-ponto_tabela .st-key-ponto_cab {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
-  .st-key-ponto_topo_espelho button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
-  .st-key-ponto_topo_espelho button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"], .st-key-ponto_card_ausencia button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-ponto_topo_espelho button[kind="secondary"] p, .st-key-ponto_card_ausencia button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
+  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .crh-relogio, .crh-espelho-cab .v {{ color: {ESC_TEXTO}; }}
+  .crh-relogio-nota, .crh-espelho-cab .r, .crh-legenda-ponto {{ color: {ESC_TEXTO_2}; }}
+  .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-color: {ESC_BORDA}; }}
+  .st-key-ponto_selecionado {{ background: {ESC_AMBAR_SUAVE}; }}
+  .st-key-pt_planilha [data-testid="stDataFrame"], div[class*="st-key-fp_planilha_"] [data-testid="stDataFrame"] {{ filter: none; }}
+  .st-key-ponto_selecionado p {{ color: {ESC_TEXTO}; }}
   .st-key-perfil_card_pendencias {{ border-color: {AMBAR} !important; }}
   .crh-campos-grid .r, .crh-pf-item .d, .crh-org-seta, .crh-org-pessoa .d {{ color: {ESC_TEXTO_2} !important; }}
   .crh-campos-grid .v, .crh-pf-item .t, .crh-org-pessoa .t {{ color: {ESC_TEXTO} !important; }}
@@ -923,6 +947,8 @@ _ESCURO_CSS = f"""
   .st-key-rh_tabela div[class*="st-key-rh_arquivar_"] button p, .st-key-rh_tabela div[class*="st-key-rh_abrir_"] button p {{ color: {ESC_TEXTO} !important; }}
   .st-key-rh_barra button[kind="secondary"], .st-key-rh_barra .stSelectbox > div > div {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-rh_barra button[kind="secondary"] p, .st-key-rh_barra .stSelectbox div, .st-key-rh_barra .stSelectbox input {{ color: {ESC_TEXTO} !important; }}
+  .st-key-ponto_topo_espelho .stSelectbox > div > div {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-ponto_topo_espelho .stSelectbox div, .st-key-ponto_topo_espelho .stSelectbox input {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] [data-testid="stTextAreaRootElement"], [data-testid="stDialog"] [data-testid="stNumberInputContainer"] {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; }}
   .crh-aviso-pg .selo.n {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; color: {ESC_TEXTO}; }}
   .crh-aviso-pg .selo.a {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
@@ -1321,3 +1347,29 @@ def render_barra_progresso(rotulo: str, percentual: int) -> None:
         f'<div class="trilho"><div class="preenchido" style="width:{pct}%"></div></div></div>'
     )
 
+
+# Cor da coluna "Situação" da planilha do ponto (Figma 464:826), pelo tom de cada linha.
+_TOM_PLANILHA = {"ok": SUCESSO, "amb": AMBAR_ESCURO, "err": ERRO, "azul": "#2663D9", "neu": GRAFITE_SECUNDARIO}
+_TOM_PLANILHA_ESCURO = {"ok": "#4ADE80", "amb": AMBAR, "err": "#F87171", "azul": "#7AA7FF", "neu": "#A3A3AA"}
+
+
+def _antes_do_filtro(cor: str) -> str:
+    """A cor que, depois do filtro `invert(1) hue-rotate(180deg)` do modo claro, aparece como `cor`."""
+    r, g, b = (int(cor[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    # hue-rotate(180deg) do CSS (matriz da especificação de filtros); ele é o próprio inverso.
+    h = ((-0.574, 1.43, 0.144), (0.426, 0.43, 0.144), (0.426, 1.43, -0.856))
+    antes = [1 - sum(c * v for c, v in zip(linha, (r, g, b))) for linha in h]
+    return "#" + "".join(f"{round(min(1, max(0, v)) * 255):02X}" for v in antes)
+
+
+def estilo_planilha_ponto(tabela, tons: list[str], coluna: str = "Situação"):
+    """A planilha (pandas.DataFrame) com a cor da situação de cada dia. Devolve um Styler para o st.dataframe.
+
+    O st.dataframe desenha num canvas com as cores do tema base do Streamlit (escuro, em `.streamlit/config.toml`),
+    que o CSS não alcança. No modo claro a planilha recebe o filtro `invert(1) hue-rotate(180deg)` (classe
+    `crh-planilha` em `_APP_CSS`) e as cores daqui vão já "invertidas", para saírem certas depois do filtro."""
+    if tema_atual() == "escuro":
+        return tabela.style.apply(lambda col: [f"color: {_TOM_PLANILHA_ESCURO.get(t, _TOM_PLANILHA_ESCURO['neu'])}; font-weight: 600" for t in tons], subset=[coluna])
+    fundo, texto = _antes_do_filtro("#FFFFFF"), _antes_do_filtro(GRAFITE)
+    estilo = tabela.style.set_properties(**{"background-color": fundo, "color": texto})
+    return estilo.apply(lambda col: [f"color: {_antes_do_filtro(_TOM_PLANILHA.get(t, _TOM_PLANILHA['neu']))}; font-weight: 600" for t in tons], subset=[coluna])

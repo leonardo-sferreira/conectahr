@@ -1,15 +1,14 @@
 """
-Regras de apresentação do Ponto (Figma 39:18; modais 221:196 "Solicitar correção de ponto" e 221:285
-"Registrar ausência"; fluxo F06; tarefas 19 a 21 da change concluir-frontend-streamlit). Funções puras,
-sem Streamlit.
+Regras de apresentação do Ponto no REP-P (Portaria MTP nº 671/2021; change ponto-rep-p-e-ferias-clt, tarefa 4.2;
+Figma 463:825 "Hoje", modais 465:856 e 465:894 "Pedir correção do dia" e 221:285 "Registrar ausência"). Funções
+puras, sem Streamlit.
 
-Dados: `meu_ponto`, `meu_banco_horas`, `minhas_correcoes_ponto` e `minhas_ausencias`, todos do próprio
-colaborador. Os horários vêm em milissegundos (UTC) e aparecem no horário de Brasília (UTC-3, sem
-horário de verão desde 2019).
+Dados: `meu_ponto` (marcações da ARP com NSR e tratamentos), `ponto/comprovantes`, `meu_banco_horas`,
+`minhas_correcoes_ponto` e `minhas_ausencias`, todos do próprio colaborador. Os horários vêm em milissegundos (UTC)
+e aparecem no horário de Brasília (UTC-3, sem horário de verão desde 2019); o backend também usa a data de Brasília
+para o dia da marcação.
 
-A ordem das marcações é do backend (`ponto/marcar` decide qual é a próxima e recusa fora de ordem); a
-tela só mostra qual será a próxima. O backend usa a data em UTC para achar o registro do dia, então a
-tela usa a mesma data para saber qual registro é "hoje".
+Não há ordem fixa nem limite de marcações (art. 74): cada marcação é lida em ordem, como pares de entrada e saída.
 """
 
 from datetime import date, datetime, time, timedelta, timezone
@@ -24,26 +23,13 @@ MARCACOES = [
     ("hora_saida", "Saída"),
 ]
 ROTULO_CAMPO = dict(MARCACOES)
-_DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
 _DIAS_LONGOS = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"]
-_STATUS = {
-    "Completo": ("COMPLETO", "ok"),
-    "Ajustado": ("AJUSTADO", "amb"),
-    "Incompleto": ("INCOMPLETO", "err"),
-    "Aberto": ("EM ANDAMENTO", "amb"),
-}
 TIPOS_AUSENCIA = {"Atestado": "Atestado", "Falta": "Falta", "Afastamento": "Afastamento", "Licenca": "Licença", "Outro": "Outro"}
 MOTIVOS_AUSENCIA = {
     "consulta": "Consulta",
     "doenca": "Doença",
     "acompanhamento_familiar": "Acompanhamento familiar",
     "outro": "Outro",
-}
-_AUSENCIA_STATUS = {
-    "Pendente": ("EM ANÁLISE", "amb"),
-    "Aprovada": ("JUSTIFICADO", "azul"),
-    "Registrado": ("JUSTIFICADO", "azul"),
-    "Rejeitada": ("RECUSADA", "err"),
 }
 
 
@@ -84,9 +70,6 @@ def saldo(horas) -> tuple[str, str]:
     return f"{sinal}{minutos // 60}h{minutos % 60:02d}", tom
 
 
-def hoje_do_backend(agora: datetime | None = None) -> date:
-    """A data que o `ponto/marcar` usa para o registro do dia (UTC)."""
-    return (agora or datetime.now(timezone.utc)).astimezone(timezone.utc).date()
 
 
 def _data(valor) -> date | None:
@@ -96,9 +79,6 @@ def _data(valor) -> date | None:
         return None
 
 
-def registro_de_hoje(registros: list[dict], agora: datetime | None = None) -> dict | None:
-    alvo = hoje_do_backend(agora)
-    return next((r for r in registros if _data(r.get("data")) == alvo), None)
 
 
 def titulo_hoje(agora: datetime | None = None) -> str:
@@ -107,68 +87,92 @@ def titulo_hoje(agora: datetime | None = None) -> str:
     return f"Hoje — {_DIAS_LONGOS[local.weekday()]}, {local.strftime('%d/%m/%Y')}"
 
 
-def cartoes_hoje(registro: dict | None) -> list[dict]:
-    """As quatro caixas do topo: {'campo', 'rotulo', 'hora', 'estado'} com estado 'feito', 'proximo' ou 'futuro'.
-    Só uma caixa é 'proximo' (a do botão "Marcar agora"); com as quatro feitas, nenhuma."""
-    registro = registro or {}
-    cartoes, achou_proximo = [], False
-    for campo, rotulo in MARCACOES:
-        valor = hora(registro.get(campo))
-        if valor:
-            estado = "feito"
-        elif not achou_proximo:
-            estado, achou_proximo = "proximo", True
-        else:
-            estado = "futuro"
-        cartoes.append({"campo": campo, "rotulo": rotulo, "hora": valor, "estado": estado})
-    return cartoes
 
 
-def proxima_marcacao(registro: dict | None) -> str | None:
-    return next((c["rotulo"] for c in cartoes_hoje(registro) if c["estado"] == "proximo"), None)
 
 
-def inicio_da_semana(dia: date) -> date:
-    return dia - timedelta(days=dia.weekday())
 
 
-def espelho_da_semana(registros: list[dict], ausencias: list[dict], correcoes: list[dict], hoje: date) -> list[dict]:
-    """Linhas do espelho (Figma 39:18 e 233:1500), de segunda até hoje: um registro de ponto por dia ou,
-    quando houver, a ausência que cobre o dia. Cada linha: {'dia', 'data', 'marcas', 'trabalhado',
-    'status', 'tom', 'registro_id', 'acao', 'ausencia'}; `acao` é 'corrigir', 'em_analise' ou None."""
-    inicio = inicio_da_semana(hoje)
-    por_dia = {_data(r.get("data")): r for r in registros if _data(r.get("data"))}
-    pendentes = {c.get("registro_ponto_id") for c in correcoes if c.get("status") == "pendente"}
-    linhas = []
-    for n in range((hoje - inicio).days + 1):
-        dia = inicio + timedelta(days=n)
-        ausencia = next(
-            (a for a in ausencias
-             if a.get("status") != "Rejeitada" and _data(a.get("data_inicio")) and _data(a.get("data_fim"))
-             and _data(a["data_inicio"]) <= dia <= _data(a["data_fim"])),
-            None,
-        )
-        registro = por_dia.get(dia)
-        if not registro and not ausencia:
-            continue
-        rotulo_dia = f"{_DIAS[dia.weekday()]}, {dia.strftime('%d/%m')}"
-        if ausencia and not registro:
-            status, tom = _AUSENCIA_STATUS.get(ausencia.get("status"), ("EM ANÁLISE", "amb"))
-            linhas.append({
-                "dia": rotulo_dia, "data": dia, "marcas": ["—"] * 4,
-                "trabalhado": TIPOS_AUSENCIA.get(ausencia.get("tipo"), "Ausência"),
-                "status": status, "tom": tom, "registro_id": None, "acao": None, "ausencia": True,
-            })
-            continue
-        status, tom = _STATUS.get(registro.get("status"), (str(registro.get("status") or "—").upper(), "neu"))
-        linhas.append({
-            "dia": rotulo_dia, "data": dia,
-            "marcas": [hora(registro.get(c)) or "—" for c, _ in MARCACOES],
-            "trabalhado": horas_trabalhadas(registro.get("horas_trabalhadas")),
-            "status": status, "tom": tom, "registro_id": registro.get("id"),
-            "acao": "em_analise" if registro.get("id") in pendentes else "corrigir", "ausencia": False,
-        })
-    return linhas
+
+
+def hoje_brasilia(agora: datetime | None = None) -> date:
+    """A data de hoje em Brasília, a mesma que o `ponto/marcar` usa para o dia da marcação."""
+    return (agora or datetime.now(timezone.utc)).astimezone(BRASILIA).date()
+
+
+def rotulo_ordem(indice: int) -> str:
+    """Posição da marcação no dia (a partir de 0) -> "1ª entrada", "1ª saída", "2ª entrada"..."""
+    return f"{indice // 2 + 1}ª {'entrada' if indice % 2 == 0 else 'saída'}"
+
+
+def marcacoes_do_dia(marcacoes: list[dict], dia: date) -> list[dict]:
+    """As marcações da ARP de um dia, em ordem de NSR (a ordem em que foram feitas)."""
+    return sorted((m for m in marcacoes if _data(m.get("data")) == dia), key=lambda m: m.get("nsr") or 0)
+
+
+def hora_gravada(marcacao: dict) -> str:
+    """Hora como foi gravada ("2026-10-14T13:01:00-0300" -> "13:01"); sem o texto, pelos milissegundos."""
+    texto = str(marcacao.get("data_hora_marcacao_txt") or "")
+    return texto[11:16] if len(texto) >= 16 else (hora(marcacao.get("data_hora_marcacao")) or "")
+
+
+def linhas_hoje(marcacoes: list[dict], hoje: date) -> list[dict]:
+    """Tabela do "Hoje" (Figma 463:825): {'rotulo', 'hora', 'nsr', 'marcacao'} em ordem."""
+    return [{"rotulo": rotulo_ordem(i), "hora": hora_gravada(m), "nsr": str(m.get("nsr") or "").rjust(9, "0"), "marcacao": m}
+            for i, m in enumerate(marcacoes_do_dia(marcacoes, hoje))]
+
+
+def texto_proxima(quantidade: int) -> str:
+    return f"A próxima marcação será a {rotulo_ordem(quantidade)}. Você pode marcar quantas vezes precisar."
+
+
+def situacao_hoje(quantidade: int) -> tuple[str, str] | None:
+    """Selo abaixo do botão: ("Em jornada · 3 marcações hoje", "amb"); sem marcação, None."""
+    if not quantidade:
+        return None
+    plural = "marcação" if quantidade == 1 else "marcações"
+    if quantidade % 2:
+        return f"Em jornada · {quantidade} {plural} hoje", "amb"
+    return f"Fora de jornada · {quantidade} {plural} hoje", "ok"
+
+
+def comprovantes_recentes(marcacoes: list[dict], agora: datetime | None = None, horas: int = 48) -> list[dict]:
+    """Comprovantes das últimas `horas` horas, do mais recente para o mais antigo (art. 80: pelo menos 48 horas).
+    Cada um: {'quando', 'rotulo', 'nsr', 'marcacao'}; o rótulo é a posição da marcação no dia dela."""
+    agora = agora or datetime.now(timezone.utc)
+    desde = (agora - timedelta(hours=horas)).timestamp() * 1000
+    ordem = {}
+    for dia in {_data(m.get("data")) for m in marcacoes}:
+        for i, m in enumerate(marcacoes_do_dia(marcacoes, dia)):
+            ordem[m.get("id")] = i
+    recentes = [m for m in marcacoes if (m.get("data_hora_marcacao") or 0) >= desde]
+    recentes.sort(key=lambda m: m.get("nsr") or 0, reverse=True)
+    saida = []
+    for m in recentes:
+        texto = str(m.get("data_hora_marcacao_txt") or "")
+        quando = f"{texto[8:10]}/{texto[5:7]}/{texto[:4]} {texto[11:16]}" if len(texto) >= 16 else ""
+        saida.append({"quando": quando, "rotulo": rotulo_ordem(ordem.get(m.get("id"), 0)), "nsr": str(m.get("nsr") or "").rjust(9, "0"), "marcacao": m})
+    return saida
+
+
+TIPOS_PEDIDO = {"inclusao": "Incluir uma marcação que faltou", "desconsideracao": "Desconsiderar uma marcação feita por engano"}
+
+
+def validar_pedido(tipo: str | None, horario: time | None, marcacao_id: int | None, motivo: str) -> str | None:
+    """Pedido de correção (ou ajuste direto) no REP-P: inclusão com horário, desconsideração com a marcação, e o motivo
+    de 5 a 150 caracteres (art. 82: todo tratamento tem motivo)."""
+    if tipo not in TIPOS_PEDIDO:
+        return "Escolha o que precisa ser corrigido."
+    if tipo == "inclusao" and horario is None:
+        return "Informe o horário da marcação que faltou."
+    if tipo == "desconsideracao" and not marcacao_id:
+        return "Escolha a marcação a desconsiderar."
+    texto = (motivo or "").strip()
+    if len(texto) < 5:
+        return "Explique o motivo em pelo menos 5 caracteres."
+    if len(texto) > 150:
+        return "O motivo pode ter no máximo 150 caracteres."
+    return None
 
 
 def valor_solicitado_ms(dia: date, horario: time) -> int:
@@ -176,17 +180,6 @@ def valor_solicitado_ms(dia: date, horario: time) -> int:
     return int(datetime.combine(dia, horario, tzinfo=BRASILIA).timestamp() * 1000)
 
 
-def validar_correcao(campo: str | None, horario: time | None, justificativa: str) -> str | None:
-    if campo not in ROTULO_CAMPO:
-        return "Escolha a marcação."
-    if horario is None:
-        return "Informe o horário correto."
-    texto = (justificativa or "").strip()
-    if len(texto) < 5:
-        return "Explique o motivo em pelo menos 5 caracteres."
-    if len(texto) > 1000:
-        return "O motivo pode ter no máximo 1000 caracteres."
-    return None
 
 
 def validar_ausencia(tipo: str | None, inicio: date | None, fim: date | None, motivo: str | None, observacao: str) -> str | None:

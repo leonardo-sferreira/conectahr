@@ -207,6 +207,24 @@ query "folha_ponto/tratar" verb=POST {
       }
     } as $tratamento_criado
 
+    // Desconsideracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
+    var $momento_original {
+      value = null
+    }
+
+    conditional {
+      if ($input.tipo == "desconsideracao") {
+        db.get marcacao_ponto {
+          field_name = "id"
+          field_value = $input.marcacao_id
+        } as $marcacao_alvo
+
+        var.update $momento_original {
+          value = $marcacao_alvo.data_hora_marcacao
+        }
+      }
+    }
+
     // Historico: o ajuste fica como correcao ja aprovada, com quem fez e o motivo.
     db.add correcao_ponto {
       data = {
@@ -215,6 +233,7 @@ query "folha_ponto/tratar" verb=POST {
         tipo                : $input.tipo
         marcacao_id         : $input.marcacao_id
         valor_solicitado    : ($input.tipo == "inclusao" ? $input.data_hora : null)
+        valor_original      : $momento_original
         justificativa       : $input.motivo
         status              : "aprovada"
         decidido_por_user_id: $usuario_autenticado.id

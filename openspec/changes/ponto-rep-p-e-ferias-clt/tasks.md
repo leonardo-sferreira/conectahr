@@ -29,12 +29,18 @@
 
 ## 4. Tela de ponto
 
-- [ ] 4.1 Adicionar `fpdf2` ao `requirements.txt` e criar `frontend/comprovante_ponto.py`, que monta o PDF do comprovante com os campos do art. 79. Verificar: teste confere que o texto do PDF tem título, NSR, CNPJ, local, nome, CPF, data e hora, INPI e hash.
-- [ ] 4.2 Refazer `pagina_ponto.py` com "Hoje" (relógio, marcar, marcações do dia com NSR e comprovante, comprovantes das últimas 48 horas) e "Mês" em `st.dataframe` (colunas de marcações, "(I)" e "(D)", horas, situação, legenda, correção pela seleção da linha), sem a visão semanal. Verificar: `tools/testar_ponto.py` e `tools/testar_ponto_mensal.py` atualizados e passando, e prints lado a lado com o Figma da seção 21.
-- [ ] 4.3 Mudar `primeiro_dia()` para a admissão e deixar em branco os dias anteriores a ela e os futuros, em `ponto_mensal_modelo.py` e `folha_modelo.py`. Verificar: teste com admissão em 15/10 mostra os dias 1 a 14 sem situação e nenhuma falta antes do dia 15.
-- [ ] 4.4 Pôr o cabeçalho do art. 84 no espelho do mês (empregador, trabalhador com admissão e cargo, emissão, período, horário contratual) e no CSV. Verificar: teste confere os campos no cabeçalho e no CSV.
-- [ ] 4.5 Atualizar a folha da equipe (`pagina_folha_ponto.py`) para mostrar marcações e tratamentos na mesma planilha e o ajuste como inclusão ou desconsideração. Verificar: `tools/testar_folha_ponto.py` passando e prints com o Figma.
-- [ ] 4.6 Registrar as evidências em `docs/evidencias/frontend-ponto-rep-p.md` (prints, estados, testes). Verificar: o documento lista os nós do Figma e os testes executados com os números.
+- [x] 4.1 Adicionar `fpdf2` ao `requirements.txt` e criar `frontend/comprovante_ponto.py`, que monta o PDF do comprovante com os campos do art. 79. Verificar: teste confere que o texto do PDF tem título, NSR, CNPJ, local, nome, CPF, data e hora, INPI e hash.
+  - **Feito (12/10/2026):** `fpdf2==2.8.9` em `frontend/requirements.txt`; `frontend/comprovante_ponto.py` (Figma 465:830); `python tools/testar_comprovante.py`: 18/18.
+- [x] 4.2 Refazer `pagina_ponto.py` com "Hoje" (relógio, marcar, marcações do dia com NSR e comprovante, comprovantes das últimas 48 horas) e "Mês" em `st.dataframe` (colunas de marcações, "(I)" e "(D)", horas, situação, legenda, correção pela seleção da linha), sem a visão semanal. Verificar: `tools/testar_ponto.py` e `tools/testar_ponto_mensal.py` atualizados e passando, e prints lado a lado com o Figma da seção 21.
+  - **Feito (12/10/2026):** `pagina_ponto.py` refeita com Hoje e Mês e a planilha comum em `planilha_ponto.py` (cores em `theme.py`). `ponto/comprovantes` passou a devolver admissão, cargo e jornada, e `ponto/correcao` e `folha_ponto/tratar` guardam o horário da marcação desconsiderada em `valor_original` (publicados). `tools/testar_ponto.py`: 33/33; `tools/testar_ponto_mensal.py`: 56/56. Prints em `docs/evidencias/frontend-ponto-rep-p/`. Os endpoints antigos (`solicitar_correcao`, `solicitar_correcao_dia`, `folha_ponto/ajustar`) ficam ativos até o deploy deste frontend.
+- [x] 4.3 Mudar `primeiro_dia()` para a admissão e deixar em branco os dias anteriores a ela e os futuros, em `ponto_mensal_modelo.py` e `folha_modelo.py`. Verificar: teste com admissão em 15/10 mostra os dias 1 a 14 sem situação e nenhuma falta antes do dia 15.
+  - **Feito (12/10/2026):** `primeiro_dia()` usa a admissão (sem ela, o primeiro registro); a planilha tem todos os dias do mês, com os anteriores à admissão e os futuros em branco. Teste da admissão em 15/10 em `tools/testar_ponto_mensal.py` e na folha em `tools/testar_folha_ponto.py`.
+- [x] 4.4 Pôr o cabeçalho do art. 84 no espelho do mês (empregador, trabalhador com admissão e cargo, emissão, período, horário contratual) e no CSV. Verificar: teste confere os campos no cabeçalho e no CSV.
+  - **Feito (12/10/2026):** `cabecalho_espelho()` e `csv_do_mes()` em `ponto_mensal_modelo.py`. O horário contratual é a jornada da regra do contrato (horas por dia e por semana, intervalo), porque o cadastro não guarda os horários de entrada e saída.
+- [x] 4.5 Atualizar a folha da equipe (`pagina_folha_ponto.py`) para mostrar marcações e tratamentos na mesma planilha e o ajuste como inclusão ou desconsideração. Verificar: `tools/testar_folha_ponto.py` passando e prints com o Figma.
+  - **Feito (12/10/2026):** a folha usa a mesma planilha, com o ajuste do dia selecionado por `folha_ponto/tratar`; a Central mostra "Incluir marcação" e "Desconsiderar marcação". `tools/testar_folha_ponto.py`: 40/40; `tools/testar_decisoes.py`: 62/62.
+- [x] 4.6 Registrar as evidências em `docs/evidencias/frontend-ponto-rep-p.md` (prints, estados, testes). Verificar: o documento lista os nós do Figma e os testes executados com os números.
+  - **Feito (12/10/2026):** `docs/evidencias/frontend-ponto-rep-p.md`, com 9 prints (claro e escuro), e `docs/fluxos/ponto-mensal.md` reescrito para o REP-P.
 
 ## 5. AFD e AEJ
 

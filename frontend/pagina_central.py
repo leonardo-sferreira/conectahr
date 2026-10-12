@@ -201,7 +201,7 @@ def _modal_rejeitar_ausencia(linha: dict) -> None:
 
 @st.dialog("Rejeitar correção de ponto", width="small", on_dismiss=_fechar)
 def _modal_rejeitar_correcao(linha: dict) -> None:
-    _campos([("Pessoa", linha["pessoa"]), ("Campo", f"{linha['campo']} · pedido {linha['horario']}"), ("Dia", linha["dia"])])
+    _campos([("Pessoa", linha["pessoa"]), ("Pedido", f"{linha['campo']} · {linha['horario']}"), ("Dia", linha["dia"])])
     motivo = st.text_area("Motivo (obrigatório, 5 caracteres ou mais)", max_chars=1000, key="central_cor_motivo", height=90)
     st.html('<div class="crh-incluso"><p class="n" style="margin:0">O colaborador recebe o motivo por notificação. O registro do dia continua como estava.</p></div>')
     slot = st.empty()

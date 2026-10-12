@@ -1,6 +1,7 @@
 // Comprovantes de registro de ponto do proprio colaborador (Portaria MTP 671/2021, arts. 79 e
 // 80; change ponto-rep-p-e-ferias-clt): as marcacoes dos ultimos 7 dias com os dados que o
-// comprovante em PDF precisa. So do proprio usuario: nao recebe id de ninguem.
+// comprovante em PDF precisa, mais admissao, cargo e jornada para o cabecalho do espelho
+// (art. 84). So do proprio usuario: nao recebe id de ninguem.
 query "ponto/comprovantes" verb=GET {
   api_group = "ConectaRH - Ponto"
   auth = "user"
@@ -85,12 +86,24 @@ query "ponto/comprovantes" verb=GET {
     function.run "ConectaHR/somente_digitos" {
       input = {texto: $colaborador_autenticado.cpf}
     } as $cpf
+
+    // Cabecalho do espelho (art. 84): cargo e jornada da regra do contrato.
+    db.get cargo {
+      field_name = "id"
+      field_value = $colaborador_autenticado.cargo_id
+    } as $cargo
+
+    db.query regra_contrato {
+      where = $db.regra_contrato.tipo_contrato == $colaborador_autenticado.tipo_contrato && $db.regra_contrato.ativo == true
+      return = {type: "single"}
+    } as $regra
   }
 
   response = {
     marcacoes: $marcacoes
     empregador: ($empregador != null ? {razao_social: $empregador.razao_social, tipo_identificador: $empregador.tipo_identificador, identificador: $empregador.identificador, cno_caepf: $empregador.cno_caepf, local_prestacao: $empregador.local_prestacao, inpi_registro: $empregador.inpi_registro} : null)
-    trabalhador: {nome: $colaborador_autenticado.nome, cpf: $cpf}
+    trabalhador: {nome: $colaborador_autenticado.nome, cpf: $cpf, data_admissao: $colaborador_autenticado.data_admissao, cargo: ($cargo != null ? $cargo.nome : null)}
+    jornada: ($regra != null ? {horas_diarias: $regra.horas_diarias, horas_semanais: $regra.horas_semanais, intervalo_minutos: $regra.intervalo_minutos} : null)
   }
 
   guid = "conectahr-ponto-comprovantes-get-0001"

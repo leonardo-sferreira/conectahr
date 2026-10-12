@@ -380,14 +380,21 @@ def solicitar_alteracao_cadastral(token: str, descricao: str) -> dict:
 # Ponto e ausências (tarefas 19 a 21). Nada aqui recebe id de colaborador: o backend usa o token.
 # ---------------------------------------------------------------------------
 def meu_ponto(token: str) -> dict:
-    """GET meu_ponto -> {quantidade, registros} do próprio colaborador, do mais recente para o mais antigo."""
+    """GET meu_ponto -> {registros, marcacoes, tratamentos} do próprio colaborador: o resumo de cada dia, as marcações
+    da ARP (com NSR) e os tratamentos."""
     return _get("meu_ponto", token, GRUPO_PONTO)
 
 
 def marcar_ponto(token: str) -> dict:
-    """POST ponto/marcar: registra o próximo marcador do dia, na ordem entrada -> início do intervalo ->
-    fim do intervalo -> saída. O backend decide qual é o próximo e recusa fora de ordem."""
+    """POST ponto/marcar: grava a marcação na ARP do REP-P, sem ordem nem limite (art. 74). Responde `marcacao` (NSR,
+    data e hora, hash) e `comprovante` (empregador e trabalhador) para o PDF do comprovante."""
     return _post("ponto/marcar", {}, token, GRUPO_PONTO)
+
+
+def comprovantes_ponto(token: str) -> dict:
+    """GET ponto/comprovantes -> {marcacoes, empregador, trabalhador, jornada}: as marcações dos últimos 7 dias do
+    próprio colaborador com os dados do comprovante (arts. 79 e 80) e do cabeçalho do espelho (art. 84)."""
+    return _get("ponto/comprovantes", token, GRUPO_PONTO)
 
 
 def minhas_correcoes_ponto(token: str) -> dict:
@@ -395,15 +402,16 @@ def minhas_correcoes_ponto(token: str) -> dict:
     return _get("minhas_correcoes_ponto", token, GRUPO_PONTO)
 
 
-def solicitar_correcao_ponto(token: str, registro_id: int, campo: str, valor_solicitado_ms: int, justificativa: str) -> dict:
-    """POST ponto/{id}/solicitar_correcao. `campo`: hora_entrada, inicio_intervalo, fim_intervalo ou hora_saida;
-    `valor_solicitado_ms`: o horário correto em milissegundos desde 1970 (UTC). Quem decide é o gestor ou o RH."""
-    return _post(
-        f"ponto/{int(registro_id)}/solicitar_correcao",
-        {"campo": campo, "valor_solicitado": int(valor_solicitado_ms), "justificativa": justificativa},
-        token,
-        GRUPO_PONTO,
-    )
+def pedir_correcao_ponto(token: str, data: str, tipo: str, justificativa: str, marcacao_id: int | None = None,
+                         data_hora_ms: int | None = None) -> dict:
+    """POST ponto/correcao: pede a inclusão (`data_hora_ms`) ou a desconsideração (`marcacao_id`) de uma marcação de um
+    dia passado. A marcação original nunca muda; aprovado, o pedido vira um tratamento. Quem decide é a hierarquia."""
+    corpo = {"data": data, "tipo": tipo, "justificativa": justificativa}
+    if marcacao_id:
+        corpo["marcacao_id"] = int(marcacao_id)
+    if data_hora_ms is not None:
+        corpo["data_hora"] = int(data_hora_ms)
+    return _post("ponto/correcao", corpo, token, GRUPO_PONTO)
 
 
 def minhas_ausencias(token: str) -> dict:
@@ -588,15 +596,6 @@ def calendario(token: str) -> dict:
     return _get("calendario", token, GRUPO_COLABORADORES)
 
 
-def solicitar_correcao_dia(token: str, data: str, campo: str, valor_solicitado_ms: int, justificativa: str) -> dict:
-    """POST ponto/solicitar_correcao_dia: pede a correção de um dia passado sem nenhuma marcação. O backend cria o
-    registro do dia (Incompleto) e o pedido; responde `registro_id` para os outros campos do mesmo dia."""
-    return _post(
-        "ponto/solicitar_correcao_dia",
-        {"data": data, "campo": campo, "valor_solicitado": int(valor_solicitado_ms), "justificativa": justificativa},
-        token,
-        GRUPO_PONTO,
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -609,19 +608,22 @@ def folha_pessoas(token: str) -> dict:
 
 
 def folha_mes(token: str, ano: int, mes: int, colaborador_id: int | None = None) -> dict:
-    """GET folha_ponto/mes -> {registros, ausencias, ferias, correcoes} do mês (correções só com colaborador_id)."""
+    """GET folha_ponto/mes -> {registros, marcacoes, tratamentos, ausencias, ferias, correcoes} do mês (correções só
+    com colaborador_id). As marcações vêm sem CPF nem hash."""
     caminho = f"folha_ponto/mes?ano={int(ano)}&mes={int(mes)}" + (f"&colaborador_id={int(colaborador_id)}" if colaborador_id else "")
     return _get(caminho, token, GRUPO_PONTO)
 
 
-def ajustar_ponto(token: str, colaborador_id: int, data: str, campo: str, valor_solicitado_ms: int, motivo: str) -> dict:
-    """POST folha_ponto/ajustar: ajuste direto, auditado, no ponto de outra pessoa (nunca no próprio)."""
-    return _post(
-        "folha_ponto/ajustar",
-        {"colaborador_id": int(colaborador_id), "data": data, "campo": campo, "valor_solicitado": int(valor_solicitado_ms), "motivo": motivo},
-        token,
-        GRUPO_PONTO,
-    )
+def tratar_ponto(token: str, colaborador_id: int, data: str, tipo: str, motivo: str, marcacao_id: int | None = None,
+                 data_hora_ms: int | None = None) -> dict:
+    """POST folha_ponto/tratar: ajuste direto, auditado, no ponto de outra pessoa (nunca no próprio): inclui
+    (`data_hora_ms`) ou desconsidera (`marcacao_id`) uma marcação, com motivo. Vale na hora, como tratamento."""
+    corpo = {"colaborador_id": int(colaborador_id), "data": data, "tipo": tipo, "motivo": motivo}
+    if marcacao_id:
+        corpo["marcacao_id"] = int(marcacao_id)
+    if data_hora_ms is not None:
+        corpo["data_hora"] = int(data_hora_ms)
+    return _post("folha_ponto/tratar", corpo, token, GRUPO_PONTO)
 
 
 def definir_superior(token: str, colaborador_id: int, superior_colaborador_id: int | None) -> dict:

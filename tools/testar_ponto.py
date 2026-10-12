@@ -1,13 +1,15 @@
-"""Testes da tela "Ponto" (tarefas 19 a 21 da change concluir-frontend-streamlit), sem navegador e sem rede.
+"""Testes da tela "Ponto" → "Hoje" no REP-P (change ponto-rep-p-e-ferias-clt, tarefa 4.2; Figma 463:825 e 465:932),
+sem navegador e sem rede.
 
 Roda o app com o AppTest do Streamlit e uma API simulada (dados fictícios). Confere:
 
-  Horários ........... milissegundos UTC do backend aparecem no horário de Brasília
-  Ordem (21) ......... a tela mostra uma única próxima marcação, na ordem entrada -> saída almoço ->
-                       volta almoço -> saída; a recusa do backend (fora de ordem, dia completo) aparece
-  Correção ........... modal com validação; envia campo, horário em ms UTC e motivo; "em análise"
-  Ausência ........... modal com validação; envia tipo, datas, motivo e observação; dia justificado
-  Estados ............ vazio, sem colaborador, erro e sucesso
+  Regras ............. horários de Brasília, ordem "1ª entrada, 1ª saída...", selo do dia, comprovantes de 48 horas,
+                       validação do pedido de correção (inclusão, desconsideração, motivo de 5 a 150)
+  Hoje ............... relógio, "Marcar ponto" sem limite, marcações do dia com NSR e comprovante em PDF
+  Estados ............ vazio, sucesso (com o comprovante), erro (antes da admissão), bloqueado (sem empregador),
+                       permissão negada (comprovantes), sem colaborador e saldo indisponível
+  Ausência ........... modal com validação; envia tipo, datas, motivo e observação
+  Sem visão semanal .. só "Hoje" e "Mês"
 
 Uso (na raiz do repositório):
     python tools/testar_ponto.py
@@ -30,33 +32,31 @@ sys.path.insert(0, str(RAIZ / "frontend"))
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 import api_client  # noqa: E402
+import ponto_modelo as m  # noqa: E402
 from api_client import ApiError  # noqa: E402
 
 APP = RAIZ / "frontend" / "app.py"
 BR = timezone(timedelta(hours=-3))
-HOJE = datetime.now(timezone.utc).date()  # a data que o backend usa para o registro do dia
-SEGUNDA = HOJE - timedelta(days=HOJE.weekday())
+HOJE = datetime.now(BR).date()  # o backend usa a data de Brasília para o dia da marcação
+ONTEM = HOJE - timedelta(days=1)
+EMPREGADOR = {"razao_social": "ConectaRH Tecnologia Ltda (ficticio)", "tipo_identificador": "cnpj", "identificador": "12345678000190",
+              "cno_caepf": "", "local_prestacao": "Av. Paulista, 1000 - Sao Paulo/SP", "inpi_registro": "BR512026000000"}
+TRABALHADOR = {"nome": "Leonardo dos Santos", "cpf": "12345678909", "data_admissao": "2026-01-05", "cargo": "Analista de RH"}
 chamadas: list[tuple] = []
 estado: dict = {}
 
 
-def ms(dia: date, h: int, m: int) -> int:
-    return int(datetime(dia.year, dia.month, dia.day, h, m, tzinfo=BR).timestamp() * 1000)
+def ms(dia: date, h: int, mi: int, s: int = 0) -> int:
+    return int(datetime(dia.year, dia.month, dia.day, h, mi, s, tzinfo=BR).timestamp() * 1000)
 
 
-def registros_padrao(marcas_hoje: int = 2) -> list[dict]:
-    regs = []
-    if HOJE != SEGUNDA:
-        regs.append({"id": 501, "data": SEGUNDA.isoformat(), "hora_entrada": ms(SEGUNDA, 8, 1), "inicio_intervalo": ms(SEGUNDA, 12, 0),
-                     "fim_intervalo": ms(SEGUNDA, 13, 2), "hora_saida": ms(SEGUNDA, 17, 31), "horas_trabalhadas": 8.5, "status": "Completo"})
-    hoje = {"id": 599, "data": HOJE.isoformat(), "status": "Aberto"}
-    for campo, (h, m) in list(zip(("hora_entrada", "inicio_intervalo", "fim_intervalo", "hora_saida"), ((8, 2), (12, 5), (13, 1), (17, 30))))[:marcas_hoje]:
-        hoje[campo] = ms(HOJE, h, m)
-    regs.append(hoje)
-    # registro de outra semana: não entra no espelho
-    antigo = SEGUNDA - timedelta(days=7)
-    regs.append({"id": 400, "data": antigo.isoformat(), "hora_entrada": ms(antigo, 8, 0), "status": "Completo", "horas_trabalhadas": 8})
-    return regs
+def marcacao(mid: int, nsr: int, dia: date, h: int, mi: int) -> dict:
+    return {"id": mid, "nsr": nsr, "data": dia.isoformat(), "data_hora_marcacao": ms(dia, h, mi),
+            "data_hora_marcacao_txt": f"{dia.isoformat()}T{h:02d}:{mi:02d}:00-0300", "hash": f"{nsr:064x}"}
+
+
+def marcacoes_padrao() -> list[dict]:
+    return [marcacao(10, 1276, ONTEM, 13, 0), marcacao(11, 1279, ONTEM, 17, 48), marcacao(20, 1284, HOJE, 0, 2), marcacao(21, 1285, HOJE, 0, 5)]
 
 
 def _falha_ou(chave, resposta):
@@ -69,28 +69,27 @@ def _falha_ou(chave, resposta):
 def _marcar(token):
     chamadas.append(("marcar",))
     _falha_ou("marcar", None)
-    hoje = next(r for r in estado["registros"] if r["data"] == HOJE.isoformat())
-    for campo in ("hora_entrada", "inicio_intervalo", "fim_intervalo", "hora_saida"):
-        if not hoje.get(campo):
-            hoje[campo] = ms(HOJE, 13, 1)
-            return {"sucesso": True, "registro": hoje}
-    raise ApiError("Todos os marcadores de ponto de hoje ja foram registrados.", 400)
+    nsr = max([mc["nsr"] for mc in estado["marcacoes"]] or [0]) + 1
+    nova = marcacao(100 + nsr, nsr, HOJE, 0, 9)
+    nova["data_hora_marcacao"] += 22_000  # 00:09:22
+    estado["marcacoes"].append(nova)
+    return {"sucesso": True, "marcacao": nova, "comprovante": {"empregador": EMPREGADOR, "trabalhador": TRABALHADOR}}
 
 
 def _instalar():
     api_client.auth_me = lambda token: {"autenticado": True}
     api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}  # menu Equipe (tarefa 83)
-    api_client.prazo_correcao = lambda token: {"prazo_dias": None}  # prazo de correção (tarefa 79)
+    api_client.prazo_correcao = lambda token: {"prazo_dias": None}
     api_client.central_de_tarefas = lambda token: {}
     api_client.aniversariantes = lambda token: {"aniversariantes": []}
     api_client.meus_comunicados = lambda token: {"comunicados": []}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
-    api_client.meu_ponto = lambda token: chamadas.append(("meu_ponto",)) or _falha_ou("ponto", {"registros": estado["registros"]})
+    api_client.meu_ponto = lambda token: chamadas.append(("meu_ponto",)) or _falha_ou("ponto", {"registros": [], "marcacoes": estado["marcacoes"], "tratamentos": []})
+    api_client.comprovantes_ponto = lambda token: _falha_ou("comprovantes", {"marcacoes": estado["marcacoes"], "empregador": EMPREGADOR, "trabalhador": TRABALHADOR})
     api_client.meu_banco_horas = lambda token: _falha_ou("banco", {"saldo_horas": 3.3333})
-    api_client.minhas_correcoes_ponto = lambda token: {"correcoes": estado["correcoes"]}
-    api_client.minhas_ausencias = lambda token: {"ausencias": estado["ausencias"]}
+    api_client.minhas_correcoes_ponto = lambda token: {"correcoes": []}
+    api_client.minhas_ausencias = lambda token: {"ausencias": []}
     api_client.marcar_ponto = _marcar
-    api_client.solicitar_correcao_ponto = lambda token, rid, campo, valor, just: chamadas.append(("correcao", rid, campo, valor, just)) or _falha_ou("correcao", {"sucesso": True})
     api_client.registrar_ausencia = lambda token, tipo, i, f, motivo, obs: chamadas.append(("ausencia", tipo, i, f, motivo, obs)) or _falha_ou("ausencia", {"sucesso": True})
 
 
@@ -118,108 +117,95 @@ def texto(at: AppTest) -> str:
     return html_lib.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", bruto)))
 
 
-def chaves(at: AppTest) -> set:
-    return {b.key for b in at.button}
-
-
-def abrir(at: AppTest, url_path: str) -> AppTest:
-    at._page_hash = next(h for h, info in at._registered_pages.items() if info.get("url_pathname") == url_path)
-    return at.run()
+def downloads(at: AppTest) -> dict:
+    return {b.key: b for b in at.get("download_button")}
 
 
 def app(**extra) -> AppTest:
     chamadas.clear()
     estado.clear()
-    estado.update(registros=registros_padrao(), correcoes=[], ausencias=[])
+    estado.update(marcacoes=marcacoes_padrao())
     estado.update(extra)
     at = AppTest.from_file(str(APP), default_timeout=30)
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 1, "nome": "Leonardo dos Santos", "email": "leonardo@empresa.com", "perfil": "COLABORADOR", "colaborador_id": 9}
     at.session_state["sessao_validada"] = True
-    return abrir(at.run(), "ponto")
+    at = at.run()
+    at._page_hash = next(h for h, info in at._registered_pages.items() if info.get("url_pathname") == "ponto")
+    return at.run()
 
 
 # ---------------------------------------------------------------------------
 caso("Regras de apresentação (ponto_modelo.py)")
-import ponto_modelo as m  # noqa: E402
-
 conferir(m.hora(ms(date(2026, 9, 2), 8, 2)) == "08:02" and m.hora("2026-09-02T11:02:00Z") == "08:02", "UTC do backend vira horário de Brasília")
-conferir((m.horas_trabalhadas(8.5), m.horas_trabalhadas(9.0667), m.horas_trabalhadas(None)) == ("8h30", "9h04", "—"), "horas trabalhadas por extenso")
+conferir((m.horas_trabalhadas(8.5), m.horas_trabalhadas(9.0667), m.horas_trabalhadas(None)) == ("8h30", "9h04", "—"), "horas por extenso")
 conferir(m.saldo(3.3333) == ("+3h20", "positivo") and m.saldo(-1.5) == ("-1h30", "negativo") and m.saldo(0)[0] == "0h00", "saldo com sinal e cor")
-estados = lambda reg: [c["estado"] for c in m.cartoes_hoje(reg)]
-conferir(estados(None) == ["proximo", "futuro", "futuro", "futuro"], "sem registro hoje: a próxima é a entrada")
-conferir(estados({"hora_entrada": 1, "inicio_intervalo": 2}) == ["feito", "feito", "proximo", "futuro"], "duas marcações: a próxima é a volta do almoço")
-conferir(estados({c: 1 for c, _ in m.MARCACOES}) == ["feito"] * 4 and m.proxima_marcacao({c: 1 for c, _ in m.MARCACOES}) is None, "dia completo: nenhuma marcação a fazer")
-noite = datetime(2026, 10, 10, 22, 30, tzinfo=BR)  # 01:30 do dia 11 em UTC
-conferir(m.hoje_do_backend(noite) == date(2026, 10, 11) and m.titulo_hoje(noite) == "Hoje — sábado, 10/10/2026", "depois das 21h o backend já usa o dia seguinte (UTC); o título segue Brasília")
-conferir(m.valor_solicitado_ms(date(2026, 8, 29), time(17, 30)) == int(datetime(2026, 8, 29, 20, 30, tzinfo=timezone.utc).timestamp() * 1000), "horário correto 17:30 vira 20:30 UTC em ms")
-linhas = m.espelho_da_semana(registros_padrao(), [{"tipo": "Atestado", "data_inicio": HOJE.isoformat(), "data_fim": HOJE.isoformat(), "status": "Rejeitada"}], [{"registro_ponto_id": 599, "status": "pendente"}], HOJE)
-conferir(all(l["data"] >= SEGUNDA for l in linhas) and len(linhas) == (1 if HOJE == SEGUNDA else 2), "espelho só da semana atual")
-conferir(linhas[-1]["acao"] == "em_analise" and linhas[-1]["status"] == "EM ANDAMENTO", "correção pendente: 'em análise' no lugar do botão")
-dia_aus = SEGUNDA + timedelta(days=1) if HOJE != SEGUNDA else HOJE
-regs = [r for r in registros_padrao() if r["data"] != dia_aus.isoformat()]
-lin_aus = [l for l in m.espelho_da_semana(regs, [{"tipo": "Atestado", "data_inicio": dia_aus.isoformat(), "data_fim": dia_aus.isoformat(), "status": "Aprovada"}], [], HOJE) if l["ausencia"]]
-conferir(len(lin_aus) == 1 and lin_aus[0]["status"] == "JUSTIFICADO" and lin_aus[0]["trabalhado"] == "Atestado", "ausência aprovada: dia justificado no espelho")
-conferir(m.validar_correcao(None, time(8), "motivo") and m.validar_correcao("hora_saida", None, "motivo") and m.validar_correcao("hora_saida", time(8), "abc") and m.validar_correcao("hora_saida", time(17, 30), "Esqueci de marcar") is None, "correção: marcação, horário e motivo de 5+ caracteres")
-conferir(m.validar_ausencia("Atestado", date(2026, 9, 2), date(2026, 9, 1), "consulta", "") and m.validar_ausencia("Atestado", date(2026, 9, 1), date(2026, 9, 1), None, "") and m.validar_ausencia("Atestado", date(2026, 9, 1), date(2026, 9, 1), "consulta", "") is None, "ausência: datas em ordem e motivo da lista")
+noite = datetime(2026, 10, 10, 22, 30, tzinfo=BR)
+conferir(m.hoje_brasilia(noite) == date(2026, 10, 10) and m.titulo_hoje(noite) == "Hoje — sábado, 10/10/2026", "depois das 21h ainda é o mesmo dia (Brasília)")
+conferir([m.rotulo_ordem(i) for i in range(5)] == ["1ª entrada", "1ª saída", "2ª entrada", "2ª saída", "3ª entrada"], "ordem das marcações, sem limite")
+dia = date(2026, 10, 14)
+fora_de_ordem = [marcacao(3, 1286, dia, 13, 1), marcacao(1, 1284, dia, 8, 2), marcacao(2, 1285, dia, 12, 5), marcacao(9, 1280, dia - timedelta(days=1), 17, 0)]
+hoje_l = m.linhas_hoje(fora_de_ordem, dia)
+conferir([(l["rotulo"], l["hora"], l["nsr"]) for l in hoje_l] == [("1ª entrada", "08:02", "000001284"), ("1ª saída", "12:05", "000001285"), ("2ª entrada", "13:01", "000001286")],
+         "Hoje: só as do dia, em ordem de NSR, com hora e NSR de 9 dígitos")
+conferir(m.texto_proxima(3) == "A próxima marcação será a 2ª saída. Você pode marcar quantas vezes precisar.", "texto da próxima marcação")
+conferir(m.situacao_hoje(3) == ("Em jornada · 3 marcações hoje", "amb") and m.situacao_hoje(4)[0].startswith("Fora de jornada") and m.situacao_hoje(0) is None, "selo do dia")
+agora = datetime(2026, 10, 14, 13, 5, tzinfo=BR)
+recentes = m.comprovantes_recentes(fora_de_ordem + [marcacao(7, 1200, dia - timedelta(days=3), 8, 0)], agora)
+conferir([c["nsr"] for c in recentes] == ["000001286", "000001285", "000001284", "000001280"] and recentes[0]["quando"] == "14/10/2026 13:01"
+         and recentes[0]["rotulo"] == "2ª entrada", "comprovantes: últimas 48 horas, do mais recente, com a posição no dia")
+conferir(m.validar_pedido(None, None, None, "motivo") == "Escolha o que precisa ser corrigido." and m.validar_pedido("inclusao", None, None, "motivo")
+         and m.validar_pedido("desconsideracao", None, None, "motivo") and m.validar_pedido("inclusao", time(13), None, "abc")
+         and m.validar_pedido("inclusao", time(13), None, "x" * 151) and m.validar_pedido("inclusao", time(13), None, "Esqueci de marcar") is None
+         and m.validar_pedido("desconsideracao", None, 7, "Marquei duas vezes") is None, "pedido: tipo, horário ou marcação, e motivo de 5 a 150")
+conferir(m.valor_solicitado_ms(date(2026, 8, 29), time(17, 30)) == int(datetime(2026, 8, 29, 20, 30, tzinfo=timezone.utc).timestamp() * 1000), "17:30 de Brasília vira 20:30 UTC em ms")
+conferir(m.validar_ausencia("Atestado", date(2026, 9, 2), date(2026, 9, 1), "consulta", "") and m.validar_ausencia("Atestado", date(2026, 9, 1), date(2026, 9, 1), "consulta", "") is None,
+         "ausência: datas em ordem e motivo da lista")
 
-# ---------------------------------------------------------------------------
-caso("Tela 'Ponto' (Figma 39:18)")
+caso("Tela 'Hoje' (Figma 463:825)")
 at = app()
 t = texto(at)
-conferir("Hoje —" in t and "Entrada 08:02" in t and "Saída almoço 12:05" in t, "caixas do dia com as marcações feitas")
-conferir("Saldo do banco de horas +3h20" in t, "saldo do banco de horas")
-conferir("Controle interno experimental" in t and "Portaria nº 671/2021" in t, "aviso de controle interno experimental")
-# Na segunda-feira (UTC) a semana só tem o dia de hoje, ainda aberto: não há dia completo para mostrar.
-dia_completo = ("8h30" in t and "COMPLETO" in t) if HOJE != SEGUNDA else f"{HOJE:%d/%m}" in t
-conferir("Espelho de ponto" in t and at.button_group(key="pt_visao").value == "Semana" and dia_completo, "espelho da semana")
-conferir([k for k in chaves(at) if k == "pt_marcar"] == ["pt_marcar"] and {"pt_editar_hora_entrada", "pt_editar_inicio_intervalo"} <= chaves(at), "um só 'Marcar agora'; 'Editar' nas marcações feitas")
-conferir(not any(c[0] in ("marcar", "correcao", "ausencia") for c in chamadas), "abrir a tela não marca nem envia nada")
+conferir(not at.exception, "a tela abre sem erro")
+conferir(m.titulo_hoje() in t and "Horário de Brasília (UTC-03:00), pelo servidor" in t and re.search(r"\b\d{2}:\d{2}:\d{2}\b", t), "título, relógio com segundos e a nota do servidor")
+conferir("1ª entrada" in t and "00:02" in t and "000001284" in t and "1ª saída" in t and "000001285" in t, "marcações de hoje com hora e NSR")
+conferir("A próxima marcação será a 2ª entrada" in t and "Fora de jornada · 2 marcações hoje" in t, "próxima marcação e selo")
+d = downloads(at)
+conferir("pt_cp_hoje_20" in d and "pt_cp_hoje_21" in d, "comprovante em PDF de cada marcação de hoje")
+conferir("Comprovantes das últimas 48 horas" in t and "pt_cp_10" in d and "pt_cp_11" in d and "NSR 000001279" in t, "comprovantes das últimas 48 horas, com os de ontem")
+conferir("Saldo do banco de horas" in t and "+3h20" in t and "pt_btn_ausencia" in {b.key for b in at.button}, "saldo e ausência")
+conferir("não vale como REP-P para a fiscalização" in t, "aviso de que ainda não vale como REP-P para a fiscalização")
+conferir(at.button_group(key="pt_visao").options == ["Hoje", "Mês"] and "Semana" not in t, "só Hoje e Mês, sem visão semanal")
 
-caso("Marcar o ponto (ordem estrita, tarefa 21)")
+caso("Marcar o ponto (sem ordem nem limite, art. 74)")
+for _ in range(3):
+    at.button(key="pt_marcar").click()
+    at = at.run()
+t = texto(at)
+conferir(chamadas.count(("marcar",)) == 3 and "5ª" not in t and "3ª saída" in t, "três marcações seguidas, todas gravadas (5 no dia)")
+conferir("Ponto marcado às 00:09:22 (UTC-03:00). NSR 000001288." in t and "pt_baixar_ultimo" in downloads(at), "sucesso com hora, segundos, NSR e o comprovante na hora")
+conferir("Em jornada · 5 marcações hoje" in t, "o selo acompanha a quantidade")
+
+caso("Estados (Figma 465:932)")
+at = app(marcacoes=[])
+t = texto(at)
+conferir("Você ainda não marcou o ponto hoje." in t and "Nenhuma marcação nas últimas 48 horas." in t, "vazio: sem marcação hoje")
+at = app(erro_marcar=ApiError("Sua admissao e em 05/10/2026. O ponto pode ser marcado a partir dessa data.", 403))
 at.button(key="pt_marcar").click()
 at = at.run()
-conferir(("marcar",) in chamadas and "Volta almoço 13:01" in texto(at), "'Marcar agora' registra a volta do almoço (a próxima da ordem)")
-at = app(registros=registros_padrao(marcas_hoje=4))
-conferir("pt_marcar" not in chaves(at), "dia completo: não há 'Marcar agora'")
-at = app(erro_marcar=ApiError("O intervalo minimo da matriz ainda nao foi cumprido e nao ha override aprovado para este colaborador.", 400))
+t = texto(at)
+conferir("Sua admissao e em 05/10/2026" in t and "Nada foi gravado." in t, "erro antes da admissão: a mensagem e 'Nada foi gravado.'")
+at = app(erro_marcar=ApiError("O ponto ainda nao esta liberado: o RH precisa cadastrar os dados do empregador em Ponto eletronico (REP-P).", 403))
 at.button(key="pt_marcar").click()
 at = at.run()
-conferir("intervalo minimo" in texto(at) and not at.exception, "recusa do backend (intervalo mínimo) aparece como alerta")
-at = app(registros=[r for r in registros_padrao() if r["data"] != HOJE.isoformat()])
-conferir("pt_marcar" in chaves(at) and "Entrada —" in texto(at), "sem registro hoje: a entrada é a próxima")
-
-caso("Solicitar correção (Figma 221:196)")
-at = app()
-alvo = 501 if HOJE != SEGUNDA else 599
-at.button(key=f"pt_corrigir_{alvo}").click()
-at = at.run()
-at.button(key="pt_corr_enviar").click()
-at = at.run()
-conferir("Escolha a marcação." in texto(at) and not any(c[0] == "correcao" for c in chamadas), "sem marcação, não envia")
-at.selectbox(key="pt_corr_campo").set_value("hora_saida")
-at.time_input(key="pt_corr_hora").set_value(time(17, 30))
-at.text_area(key="pt_corr_motivo").set_value("Esqueci de marcar a saída.")
-at.button(key="pt_corr_enviar").click()
-at = at.run()
-dia_alvo = SEGUNDA if HOJE != SEGUNDA else HOJE
-enviado = next((c for c in chamadas if c[0] == "correcao"), None)
-conferir(enviado is not None and enviado[1:3] == (alvo, "hora_saida") and enviado[3] == ms(dia_alvo, 17, 30) and enviado[4] == "Esqueci de marcar a saída.", "envia registro, campo, horário em ms UTC e motivo")
-conferir("modal_ponto" not in at.session_state, "o modal fecha")
-at = app()
-at.button(key="pt_editar_hora_entrada").click()
-at = at.run()
-conferir(at.selectbox(key="pt_corr_campo").value == "hora_entrada", "'Editar' abre a correção já com a marcação escolhida")
-at = app(erro_correcao=ApiError("Ja existe uma solicitacao de correcao pendente para este campo.", 400))
-at.button(key="pt_editar_hora_entrada").click()
-at = at.run()
-at.time_input(key="pt_corr_hora").set_value(time(8, 0))
-at.text_area(key="pt_corr_motivo").set_value("Marquei atrasado.")
-at.button(key="pt_corr_enviar").click()
-at = at.run()
-conferir("Ja existe uma solicitacao" in texto(at) and "modal_ponto" in at.session_state, "recusa do backend no modal, que continua aberto")
-at = app(correcoes=[{"registro_ponto_id": alvo, "status": "pendente"}])
-conferir(f"pt_corrigir_{alvo}" not in chaves(at) and "Correção em análise" in texto(at), "com pedido pendente: 'Correção em análise'")
+conferir('O ponto ainda não está liberado: o RH precisa cadastrar os dados do empregador em "Ponto eletrônico (REP-P)".' in texto(at), "bloqueado: empregador não cadastrado")
+at = app(erro_comprovantes=ApiError("Acesso negado.", 403))
+conferir("Você não tem permissão para ver este comprovante. Cada pessoa vê só os próprios." in texto(at), "permissão negada nos comprovantes")
+at = app(erro_ponto=ApiError("Nao existe um colaborador vinculado a conta autenticada.", 404))
+conferir("Sem cadastro de colaborador" in texto(at), "sem colaborador vinculado")
+at = app(erro_ponto=ApiError("Erro inesperado.", 500))
+conferir("Erro inesperado." in texto(at), "erro ao carregar")
+at = app(erro_banco=ApiError("Erro inesperado.", 500))
+conferir("Não foi possível carregar o saldo agora." in texto(at) and "1ª entrada" in texto(at), "sem o saldo, o resto da tela segue")
 
 caso("Registrar ausência (Figma 221:285)")
 at = app()
@@ -227,31 +213,12 @@ at.button(key="pt_btn_ausencia").click()
 at = at.run()
 at.button(key="pt_aus_enviar").click()
 at = at.run()
-conferir("Escolha o motivo." in texto(at) and not any(c[0] == "ausencia" for c in chamadas), "sem motivo, não envia")
+conferir("Escolha o motivo." in texto(at) and not any(c[0] == "ausencia" for c in chamadas), "sem motivo: não envia")
 at.selectbox(key="pt_aus_motivo").set_value("consulta")
-at.text_area(key="pt_aus_obs").set_value("Consulta de rotina.")
+at.text_area(key="pt_aus_obs").set_value("Consulta marcada")
 at.button(key="pt_aus_enviar").click()
 at = at.run()
-aus = next((c for c in chamadas if c[0] == "ausencia"), None)
-conferir(aus is not None and aus[1] == "Atestado" and aus[2] == aus[3] == date.today().isoformat() and aus[4] == "consulta" and aus[5] == "Consulta de rotina.", "envia tipo, datas, motivo e observação")
-at = app(erro_ausencia=ApiError("Nao informe diagnostico nem codigo CID na observacao. O diagnostico fica somente no atestado.", 400))
-at.button(key="pt_btn_ausencia").click()
-at = at.run()
-at.selectbox(key="pt_aus_motivo").set_value("doenca")
-at.text_area(key="pt_aus_obs").set_value("CID J11")
-at.button(key="pt_aus_enviar").click()
-at = at.run()
-conferir("Nao informe diagnostico" in texto(at), "recusa do backend (CID na observação) aparece no modal")
-
-caso("Estados: sem colaborador, erro e saldo indisponível")
-at = app(erro_ponto=ApiError("Nao existe um colaborador vinculado a conta autenticada.", 404))
-conferir("não marca ponto" in texto(at) and not at.exception, "conta sem colaborador: mensagem")
-at = app(erro_ponto=ApiError("Erro inesperado. Tente novamente.", 500))
-conferir("Erro inesperado" in texto(at) and not at.exception, "erro ao carregar vira alerta")
-at = app(erro_banco=ApiError("Erro", 500))
-conferir("Não foi possível carregar o saldo agora." in texto(at) and "Espelho de ponto" in texto(at), "sem o saldo, o resto da tela continua")
-at = app(registros=[])
-conferir("Nenhuma marcação nesta semana." in texto(at) and "pt_marcar" in chaves(at), "vazio: semana sem marcações")
+conferir(("ausencia", "Atestado", date.today().isoformat(), date.today().isoformat(), "consulta", "Consulta marcada") in chamadas, "envia tipo, datas, motivo e observação")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

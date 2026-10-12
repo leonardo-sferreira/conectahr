@@ -110,9 +110,22 @@ def linhas_ferias(fila: list[dict], mapa: dict, meu_colaborador_id, departamento
     return linhas
 
 
+_TIPO_CORRECAO = {"inclusao": "Incluir marcação", "desconsideracao": "Desconsiderar marcação"}
+
+
+def _momento_correcao(c: dict):
+    """O horário do pedido: o incluído (`valor_solicitado`) ou o da marcação a desconsiderar (`valor_original`)."""
+    return c.get("valor_original") if c.get("tipo") == "desconsideracao" else c.get("valor_solicitado")
+
+
+def _rotulo_correcao(c: dict) -> str:
+    return _TIPO_CORRECAO.get(c.get("tipo")) or ROTULO_CAMPO.get(c.get("campo"), c.get("campo") or "—")
+
+
 def linhas_correcoes(correcoes: list[dict], mapa: dict, meu_colaborador_id, departamento_id=None) -> list[dict]:
     """Aba Correções de ponto (436:1308): {'id', 'pessoa', 'detalhe', 'campo', 'dia', 'justificativa',
-    'horario', 'proprio'}. O dia e o horário pedidos vêm de `valor_solicitado` (Brasília)."""
+    'horario', 'proprio'}. No REP-P, `campo` é "Incluir marcação" ou "Desconsiderar marcação"; o dia e o horário vêm
+    do horário incluído ou do da marcação a desconsiderar (Brasília)."""
     linhas = []
     for c in correcoes:
         if c.get("status") not in (None, "pendente"):
@@ -120,16 +133,16 @@ def linhas_correcoes(correcoes: list[dict], mapa: dict, meu_colaborador_id, depa
         p = _pessoa(mapa, c.get("colaborador_id"))
         if not _no_filtro(p, departamento_id):
             continue
-        momento = para_brasilia(c.get("valor_solicitado"))
+        momento = para_brasilia(_momento_correcao(c))
         linhas.append({
             "id": c.get("id"),
             "pessoa": p["nome"],
             "detalhe": p["detalhe"],
-            "campo": ROTULO_CAMPO.get(c.get("campo"), c.get("campo") or "—"),
+            "campo": _rotulo_correcao(c),
             "dia": momento.strftime("%d/%m/%Y") if momento else "—",
             "justificativa": (c.get("justificativa") or "").strip() or "—",
-            "horario": hora(c.get("valor_solicitado")) or "—",
-            "original": hora(c.get("valor_original")),
+            "horario": hora(_momento_correcao(c)) or "—",
+            "original": hora(c.get("valor_original")) if c.get("tipo") != "desconsideracao" else None,
             "proprio": meu_colaborador_id is not None and c.get("colaborador_id") == meu_colaborador_id,
         })
     return linhas
@@ -249,10 +262,11 @@ def minhas_pendencias(central: dict, solicitacoes: list[dict], ferias: list[dict
         status = c.get("status") or "pendente"
         if status not in _CORRECAO or (status != "pendente" and not _decidida_ha_pouco(c.get("data_decisao"), hoje)):
             continue
-        momento = para_brasilia(c.get("valor_solicitado"))
+        momento = para_brasilia(_momento_correcao(c))
         titulo = f"Correção de ponto — {_DIAS_LONGOS[momento.weekday()]}, {momento.strftime('%d/%m')}" if momento else "Correção de ponto"
-        rotulo, pedido = ROTULO_CAMPO.get(c.get("campo"), "Marcação"), hora(c.get("valor_solicitado"))
-        itens.append(_item(titulo, f"{rotulo} para {pedido}" if pedido else rotulo, _CORRECAO[status]))
+        rotulo, pedido = _rotulo_correcao(c), hora(_momento_correcao(c))
+        ligacao = {"inclusao": "às", "desconsideracao": "das"}.get(c.get("tipo"), "para")
+        itens.append(_item(titulo, f"{rotulo} {ligacao} {pedido}" if pedido else rotulo, _CORRECAO[status]))
     secoes.append({"titulo": "Ponto", "itens": itens})
 
     return [s for s in secoes if s["itens"]]

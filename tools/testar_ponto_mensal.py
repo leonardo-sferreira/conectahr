@@ -1,14 +1,18 @@
-"""Testes do espelho de ponto mensal (tarefa 78 da change concluir-frontend-streamlit), sem navegador e sem rede.
+"""Testes do espelho de ponto mensal no REP-P (change ponto-rep-p-e-ferias-clt, tarefas 4.2 a 4.4; Figma 464:826,
+465:856 e 465:894), sem navegador e sem rede.
 
-Cobre, caso a caso, o fluxo de `docs/fluxos/ponto-mensal.md`: cada dia do mês recebe uma situação (registro,
-hoje, férias, ausência, feriado, folga, sem registro), com a ação certa; correção de dia com registro e de dia
-sem nenhuma marcação; marcações em análise fora do pedido; recusa mostrada com o motivo; CSV do mês.
+Cobre, caso a caso, o fluxo de `docs/fluxos/ponto-mensal.md`: os pares de marcações da ARP com a incluída "(I)" e a
+desconsiderada "(D)"; a situação de cada dia (marcação, hoje, férias, ausência, feriado e ponto facultativo, folga,
+sem registro); os dias antes da admissão e os futuros em branco; o cabeçalho do art. 84 e o CSV; o pedido de correção
+pela seleção da linha da planilha (inclusão e desconsideração); o prazo do RH (tarefa 79).
 
 Uso (na raiz do repositório):
     python tools/testar_ponto_mensal.py
 """
 
+import csv
 import html as html_lib
+import io
 import logging
 import re
 import sys
@@ -52,62 +56,132 @@ def ms(d: date, h: int, mi: int = 0) -> int:
     return int(datetime.combine(d, time(h, mi), tzinfo=BR).timestamp() * 1000)
 
 
-def registro(rid: int, d: date, status: str = "Completo", completo: bool = True) -> dict:
-    r = {"id": rid, "data": d.isoformat(), "status": status, "hora_entrada": ms(d, 8), "inicio_intervalo": ms(d, 12), "horas_trabalhadas": 8.5 if completo else None}
-    if completo:
-        r.update(fim_intervalo=ms(d, 13), hora_saida=ms(d, 17, 30))
-    return r
+_nsr = [1000]
+
+
+def mc(mid: int, d: date, h: int, mi: int = 0) -> dict:
+    _nsr[0] += 1
+    return {"id": mid, "nsr": _nsr[0], "data": d.isoformat(), "data_hora_marcacao": ms(d, h, mi), "data_hora_marcacao_txt": f"{d.isoformat()}T{h:02d}:{mi:02d}:00-0300"}
+
+
+def jornada(base_id: int, d: date, horarios=((8, 0), (12, 0), (13, 0), (17, 30))) -> list[dict]:
+    return [mc(base_id + i, d, h, mi) for i, (h, mi) in enumerate(horarios)]
+
+
+def reg(rid: int, d: date, status: str = "Completo", horas: float = 8.5) -> dict:
+    return {"id": rid, "data": d.isoformat(), "status": status, "horas_trabalhadas": horas}
 
 
 # ---------------------------------------------------------------------------
+caso("Marcações e tratamentos de um dia")
+D = date(2026, 10, 7)
+marcs = [mc(1, D, 8, 1), mc(2, D, 8, 3), mc(3, D, 12, 2), mc(4, D, 13, 0), mc(5, D, 17, 30)]
+trats = [{"id": 1, "data": D.isoformat(), "tipo": "desconsideracao", "marcacao_id": 1, "motivo": "Marquei duas vezes"},
+         {"id": 2, "data": D.isoformat(), "tipo": "inclusao", "data_hora": ms(D, 18, 5), "motivo": "Saída esquecida"},
+         {"id": 3, "data": D.isoformat(), "tipo": "inclusao", "data_hora": ms(D, 19, 0), "motivo": "Errado"},
+         {"id": 4, "data": D.isoformat(), "tipo": "inclusao", "anula_tratamento_id": 3, "data_hora": ms(D, 19, 0), "motivo": "Desfaz o 3"}]
+validas, desc = m.batidas_do_dia(marcs, trats)
+conferir([m.texto_batida(b) for b in validas] == ["08:03", "12:02", "13:00", "17:30", "18:05 (I)"], "válidas em ordem, a incluída com (I); o tratamento desfeito não vale")
+conferir([m.texto_desconsiderada(b) for b in desc] == ["08:01 (D)"], "a desconsiderada sai dos pares, com (D)")
+conferir(abs(m.horas_dos_pares(validas[:4]) - (3 + 59 / 60 + 4.5)) < 1e-9, "horas pelos pares completos")
+
 caso("Situação de cada dia (outubro de 2026, hoje = 15/10)")
 H = date(2026, 10, 15)
-regs = [registro(1, date(2026, 10, 1)), registro(2, date(2026, 10, 2), "Aberto", completo=False), registro(13, date(2026, 10, 13)), registro(14, date(2026, 10, 14), "Ajustado"),
-        registro(16, date(2026, 10, 16))]
+d = lambda n: date(2026, 10, n)  # noqa: E731
+marcacoes = jornada(10, d(1)) + jornada(20, d(2))[:3] + jornada(130, d(13)) + jornada(140, d(14)) + jornada(150, d(15))[:3]
+tratamentos = [{"id": 9, "data": d(14).isoformat(), "tipo": "inclusao", "data_hora": ms(d(14), 18, 5), "motivo": "Ficou até mais tarde"}]
+regs = [reg(1, d(1)), reg(2, d(2), "Incompleto", 4), reg(13, d(13)), reg(14, d(14), "Ajustado", 9.08), reg(15, d(15), "Aberto", 4)]
 aus = [{"tipo": "Atestado", "data_inicio": "2026-10-06", "data_fim": "2026-10-06", "status": "Aprovada"},
        {"tipo": "Falta", "data_inicio": "2026-10-07", "data_fim": "2026-10-07", "status": "Pendente"},
        {"tipo": "Falta", "data_inicio": "2026-10-05", "data_fim": "2026-10-05", "status": "Rejeitada"}]
-cor = [{"registro_ponto_id": 13, "campo": "hora_saida", "status": "pendente"},
-       {"registro_ponto_id": 14, "campo": "hora_entrada", "status": "rejeitada", "motivo_decisao": "Não confere com a portaria.", "data_decisao": "2026-10-14T12:00:00Z"}]
+cor = [{"id": 70, "registro_ponto_id": 13, "tipo": "desconsideracao", "marcacao_id": 132, "status": "pendente"},
+       {"id": 71, "registro_ponto_id": 14, "tipo": "inclusao", "valor_solicitado": ms(d(14), 7, 50), "status": "rejeitada",
+        "motivo_decisao": "Não confere com a portaria.", "data_decisao": "2026-10-14T12:00:00Z"}]
 fer = [{"data_inicio": "2026-10-08", "data_fim": "2026-10-09", "status": "Aprovada"}, {"data_inicio": "2026-10-10", "data_fim": "2026-10-10", "status": "Pendente"}]
-feri = [{"data": "2026-10-12", "nome": "Nossa Senhora Aparecida", "abrangencia": "nacional"}, {"data": "2026-10-05", "nome": "Feriado municipal", "abrangencia": "municipal"}]
-linhas = m.espelho_do_mes(regs, aus, cor, fer, feri, 2026, 10, H, "2026-10-01")
+feri = [{"data": "2026-10-12", "nome": "Nossa Senhora Aparecida", "abrangencia": "nacional", "tipo": "feriado"},
+        {"data": "2026-10-28", "nome": "Dia do Servidor Público", "abrangencia": "nacional", "tipo": "ponto_facultativo"}]
+linhas = m.espelho_do_mes(regs, aus, cor, fer, feri, 2026, 10, H, "2026-10-01", marcacoes=marcacoes, tratamentos=tratamentos)
 por = {l["data"].day: l for l in linhas}
-conferir(min(por) == 1 and max(por) == 15 and 16 not in por, "do primeiro ponto até hoje; futuro fora")
-conferir(por[1]["status"] == "COMPLETO" and por[1]["marcas"] == ["08:00", "12:00", "13:00", "17:30"] and por[1]["acao"] == "corrigir", "registro completo: marcações e 'corrigir'")
-conferir(por[2]["status"] == "INCOMPLETO" and por[2]["tom"] == "err", "registro aberto em dia passado vira incompleto")
-conferir(por[3]["status"] == "FOLGA" and por[3]["acao"] == "corrigir_dia", "sábado sem registro: folga, com correção do dia")
-conferir(por[5]["status"] == "FALTA INJUSTIFICADA" and por[5]["acao"] == "corrigir_dia" and "recusada pelo RH" in por[5]["nota"], "ausência recusada: falta injustificada, com correção (feriado municipal não justifica)")
-so_sem = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 10, H, "2026-10-01")}
-conferir(so_sem[5]["status"] == "SEM REGISTRO" and "Registre a ausência" in so_sem[5]["nota"], "dia útil sem nada no mês corrente: sem registro")
-fechado = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 9, H, "2026-09-01")}
-conferir(fechado[1]["status"] == "FALTA INJUSTIFICADA" and fechado[1]["acao"] == "corrigir_dia" and fechado[5]["status"] == "FOLGA", "mês encerrado: dia útil sem nada vira falta injustificada; fim de semana segue folga")
-conferir(por[6]["status"] == "ATESTADO" and por[6]["acao"] is None and por[6]["trabalhado"] == "Atestado", "atestado aprovado: aparece como atestado, sem correção")
-conferir(m.espelho_do_mes([], [{"tipo": "Falta", "data_inicio": "2026-10-05", "data_fim": "2026-10-05", "status": "Registrado"}], [], [], [], 2026, 10, H, "2026-10-01")[4]["status"] == "FALTA JUSTIFICADA", "falta aprovada e registrada: falta justificada")
-conferir(por[7]["status"] == "AUSÊNCIA EM ANÁLISE" and por[7]["acao"] is None, "ausência pendente: em análise, sem correção")
-conferir(por[8]["status"] == "FÉRIAS" and por[9]["status"] == "FÉRIAS" and por[10]["status"] == "FOLGA", "férias aprovadas; férias pendentes não contam")
-conferir(por[12]["status"] == "FERIADO" and "Nossa Senhora Aparecida" in por[12]["nota"] and por[12]["acao"] == "corrigir_dia", "feriado nacional, com correção para quem trabalhou")
-conferir(por[13]["nota"] == "Em análise: Saída" and por[13]["acao"] == "corrigir" and m.campos_livres(por[13]) == ["hora_entrada", "inicio_intervalo", "fim_intervalo"], "correção pendente: avisa e tira o campo do pedido")
-conferir("Correção recusada (Entrada): Não confere com a portaria." == por[14]["nota"] and por[14]["status"] == "AJUSTADO", "correção recusada: mostra o motivo")
-conferir(por[15]["status"] == "SEM MARCAÇÃO HOJE" and por[15]["acao"] is None, "hoje sem registro: usa 'Marcar agora'")
-todas_pendentes = [{"registro_ponto_id": 1, "campo": c, "status": "pendente"} for c in m.CAMPOS]
-conferir(m.espelho_do_mes(regs, [], todas_pendentes, [], [], 2026, 10, H)[0]["acao"] is None, "as quatro marcações em análise: sem botão")
-conferir(len(m.espelho_do_mes([], [], [], [], [], 2026, 10, H, "2026-10-10")) == 6, "dias antes da admissão não aparecem")
+conferir(len(linhas) == 31 and all(por[n]["em_branco"] and por[n]["situacao"] == "" for n in range(16, 32)), "todos os dias do mês; os futuros em branco")
+conferir(por[1]["status"] == "COMPLETO" and [b["hora"] for b in por[1]["batidas"]] == ["08:00", "12:00", "13:00", "17:30"] and por[1]["trabalhado"] == "8h30"
+         and por[1]["acao"] == "corrigir", "dia completo: os pares, as horas e a correção")
+conferir(por[2]["situacao"] == "INCOMPLETO · corrigir" and m.situacao_curta(por[2]) == "Incompleto (falta a saída)", "dia passado incompleto, com 'corrigir' e 'falta a saída'")
+conferir(por[3]["situacao"] == "Folga" and por[3]["acao"] == "corrigir", "sábado sem marcação: folga, com correção")
+conferir(por[5]["status"] == "FALTA INJUSTIFICADA" and "recusada pelo RH" in por[5]["nota"], "ausência recusada: falta injustificada")
+conferir(por[6]["situacao"] == "Atestado" and por[6]["acao"] is None, "atestado aprovado: sem correção")
+conferir(por[7]["situacao"] == "Ausência em análise" and por[7]["acao"] is None, "ausência pendente: em análise, sem correção")
+conferir(por[8]["situacao"] == "Férias" and por[9]["situacao"] == "Férias" and por[10]["situacao"] == "Folga", "férias aprovadas; as pendentes não contam")
+conferir(por[12]["situacao"] == "Feriado — Nossa Senhora Aparecida" and por[12]["acao"] == "corrigir", "feriado com o nome, com correção para quem trabalhou")
+conferir(por[13]["nota"] == "Em análise: desconsiderar 13:00" and [b["hora"] for b in m.desconsideraveis(por[13])] == ["08:00", "12:00", "17:30"],
+         "pedido em análise: aviso, e a marcação sai da desconsideração")
+conferir(por[14]["situacao"] == "AJUSTADO" and por[14]["batidas"][-1]["incluida"] and "Correção recusada (inclusão de 07:50): Não confere com a portaria." == por[14]["nota"],
+         "dia ajustado com a incluída; o motivo da recusa aparece")
+conferir(por[15]["situacao"] == "HOJE · em jornada" and por[15]["acao"] is None, "hoje em jornada, sem correção")
+so_feri = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], feri, 2026, 10, date(2026, 10, 31), "2026-10-01", marcacoes=[])}
+conferir(so_feri[28]["situacao"] == "Ponto facultativo — Dia do Servidor Público" and so_feri[28]["status"] != "SEM REGISTRO", "ponto facultativo pelo tipo, sem falta")
+so_sem = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 10, H, "2026-10-01", marcacoes=[])}
+conferir(so_sem[15]["situacao"] == "HOJE · sem marcação" and so_sem[5]["situacao"] == "Sem registro", "hoje sem marcação; dia útil sem nada no mês corrente: sem registro")
+fechado = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 9, H, "2026-09-01", marcacoes=[])}
+conferir(fechado[1]["situacao"] == "Falta injustificada" and fechado[5]["situacao"] == "Folga", "mês encerrado: dia útil sem nada vira falta injustificada")
+
+caso("Início na admissão (tarefa 4.3)")
+adm = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 10, date(2026, 10, 20), "2026-10-15", marcacoes=[])}
+conferir(all(adm[n]["em_branco"] and adm[n]["situacao"] == "" and adm[n]["acao"] is None for n in range(1, 15)), "admissão em 15/10: dias 1 a 14 em branco, sem situação")
+conferir(adm[15]["situacao"] == "Sem registro" and m.resumo_do_mes(list(adm.values()))["faltas_injustificadas"] == 0, "a partir do dia 15 conta; nenhuma falta antes")
+conferir(m.primeiro_dia("2026-09-01", [{"data": "2025-12-03"}]) == date(2026, 9, 1), "o início é a admissão, mesmo com registro anterior")
+conferir(m.primeiro_dia(None, [{"data": "2025-12-03"}]) == date(2025, 12, 3), "sem admissão no cadastro, o primeiro registro")
+conferir(m.meses_disponiveis("2026-08-20", [], H) == [(2026, 10), (2026, 9), (2026, 8)] and len(m.meses_disponiveis("2020-01-01", [], H)) == 82, "meses da admissão até hoje, sem limite")
+
+caso("Resumo, planilha e legenda")
 r = m.resumo_do_mes(linhas)
-conferir(r == {"horas": "25h30", "dias_trabalhados": 4, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1}, "resumo do mês")
-conferir(m.meses_disponiveis("2026-08-20", [], H) == [(2026, 10), (2026, 9), (2026, 8)] and m.meses_disponiveis(None, [], H) == [(2026, 10)], "meses da admissão até hoje")
-conferir(len(m.meses_disponiveis("2020-01-01", [], H)) == 82, "sem limite: de janeiro de 2020 a outubro de 2026")
-conferir(m.meses_disponiveis("2026-09-01", [{"data": "2025-12-03"}], H)[-1] == (2025, 12), "começa no primeiro ponto registrado, mesmo antes da admissão")
-conferir(m.anos_disponiveis(m.meses_disponiveis(None, [{"data": "2025-11-03"}], H)) == [2026, 2025] and m.meses_do_ano(m.meses_disponiveis(None, [{"data": "2025-11-03"}], H), 2025) == [12, 11], "anos e meses de cada ano")
-conferir(m.rotulo_mes(2026, 10) == "Outubro/2026", "rótulo do mês")
-c = m.csv_do_mes(linhas)
-conferir(c.startswith("﻿".encode()) and "Dia;Data;Entrada;Saída almoço;Volta almoço;Saída;Trabalhado;Situação;Observação" in c.decode("utf-8-sig") and "Qui;01/10/2026;08:00" in c.decode("utf-8-sig"), "CSV com BOM, ';' e o dia")
+conferir(r == {"horas": "34h05", "dias_trabalhados": 5, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1}, f"resumo do mês ({r})")
+conferir(m.colunas_planilha(2) == ["Data", "Dia", "Ent. 1", "Saí. 1", "Ent. 2", "Saí. 2", "Desconsideradas", "Horas", "Situação"], "colunas da planilha")
+conferir(m.pares_do_mes(linhas) == 3 and m.linhas_planilha(linhas)[13][:9] == ["14", "qua", "08:00", "12:00", "13:00", "17:30", "18:05 (I)", "", ""], "quinta marcação abre o 3º par")
+dia7 = m.espelho_do_mes([reg(7, D, "Ajustado", 9.5)], [], [], [], [], 2026, 10, H, "2026-10-01", marcacoes=marcs, tratamentos=trats[:2])[6]
+conferir(m.linhas_planilha([dia7])[0][-3:] == ["08:01 (D)", "9h30", "AJUSTADO"] and m.marcacoes_texto(dia7) == "08:01 (D) · 08:03 · 12:02 · 13:00 · 17:30 · 18:05 (I)",
+         "desconsiderada na coluna própria; texto do dia com (I) e (D)")
+conferir(m.legenda("2026-10-05").endswith("antes da admissão (05/10/2026) ou dias que ainda não chegaram"), "legenda com a admissão")
+conferir(m.descricao_dia(por[2]) == "sexta-feira, 02/10 — Incompleto (falta a saída)", "descrição do dia selecionado")
+conferir(m.linha_selecionada(linhas, [1])["data"] == d(2) and m.linha_selecionada(linhas, [20]) is None and m.linha_selecionada(linhas, []) is None,
+         "seleção da planilha: linha em branco não conta")
+
+caso("Cabeçalho do art. 84 e CSV (tarefa 4.4)")
+REP = {"empregador": {"razao_social": "ConectaRH Tecnologia Ltda (ficticio)", "tipo_identificador": "cnpj", "identificador": "12345678000190",
+                      "local_prestacao": "Av. Paulista, 1000 - Sao Paulo/SP", "cno_caepf": ""},
+       "trabalhador": {"nome": "Leonardo dos Santos", "cpf": "12345678909", "data_admissao": "2026-10-05", "cargo": "Analista de RH"},
+       "jornada": {"horas_diarias": 8, "horas_semanais": 44, "intervalo_minutos": 60}}
+cab = m.cabecalho_espelho(REP, 2026, 10, datetime(2026, 10, 14, 13, 5))
+campos = dict(cab["campos"])
+conferir(cab["emissao"] == "Emitido em 14/10/2026 13:05 · Período 01/10/2026 a 31/10/2026", "emissão e período")
+conferir(campos["Empregador"].startswith("ConectaRH") and campos["CNPJ"] == "12.345.678/0001-90" and campos["Local"].startswith("Av. Paulista"), "empregador, CNPJ e local")
+conferir(campos["Trabalhador"] == "Leonardo dos Santos" and campos["CPF"] == "123.456.789-09" and campos["Admissão"] == "05/10/2026" and campos["Cargo"] == "Analista de RH",
+         "trabalhador com CPF, admissão e cargo")
+conferir(campos["Horário contratual"] == "8h00 por dia · 44h00 por semana · intervalo de 1h00" and m.horario_contratual(None) == "Não informado", "horário contratual pela jornada")
+conteudo = m.csv_do_mes(linhas, cab)
+texto_csv = conteudo.decode("utf-8-sig")
+tabela = list(csv.reader(io.StringIO(texto_csv), delimiter=";"))
+conferir(conteudo.startswith("﻿".encode()) and tabela[0] == ["Espelho de ponto eletrônico"] and tabela[1][0].startswith("Emitido em"), "CSV com BOM, título e emissão")
+conferir(["CNPJ", "12.345.678/0001-90"] in tabela and ["CPF", "123.456.789-09"] in tabela and ["Admissão", "05/10/2026"] in tabela and ["Cargo", "Analista de RH"] in tabela
+         and ["Horário contratual", "8h00 por dia · 44h00 por semana · intervalo de 1h00"] in tabela, "CSV com os campos do cabeçalho")
+cab_tab = next(i for i, l in enumerate(tabela) if l and l[0] == "Data")
+conferir(tabela[cab_tab][-3:] == ["Situação", "Observação", "NSR"] and tabela[cab_tab + 1][0] == "01/10/2026"
+         and tabela[cab_tab + 1][-1].split() == [str(b["nsr"]).rjust(9, "0") for b in por[1]["batidas"]],
+         "CSV com a planilha, a observação e o NSR de cada marcação")
+conferir(tabela[cab_tab + 14][6] == "18:05 (I)" and tabela[-1][0].startswith("(I) incluída"), "CSV com (I) e a legenda")
+
+caso("Prazo para pedir correção (tarefa 79)")
+conferir(m.limite_prazo(H, None) is None and m.limite_prazo(H, 5) == date(2026, 10, 10) and m.texto_prazo(1) == "1 dia", "limite e texto do prazo")
+com_prazo = {l["data"].day: l for l in m.espelho_do_mes(regs, aus, cor, fer, feri, 2026, 10, H, "2026-10-01", prazo_dias=3, marcacoes=marcacoes, tratamentos=tratamentos)}
+conferir(com_prazo[1]["acao"] is None and m.NOTA_PRAZO in com_prazo[1]["nota"] and com_prazo[2]["situacao"] == "INCOMPLETO", "fora do prazo: sem correção, com o aviso")
+conferir(com_prazo[12]["acao"] == "corrigir" and com_prazo[14]["acao"] == "corrigir" and com_prazo[13]["nota"].startswith("Em análise"), "dentro do prazo: com correção; pedidos em análise visíveis")
+conferir(m.aviso_prazo(list(com_prazo.values()), H, 3).startswith("Dias antes de 12/10/2026") and m.aviso_prazo(list(com_prazo.values()), H, None) == "", "aviso acima da planilha")
 
 # ---------------------------------------------------------------------------
-HOJE = datetime.now(timezone.utc).date()
+HOJE = datetime.now(BR).date()
 ANT = HOJE.replace(day=1) - timedelta(days=1)  # último dia do mês anterior
-dias_uteis = [d for d in (ANT.replace(day=n) for n in range(1, ANT.day + 1)) if d.weekday() < 5]
+dias_uteis = [x for x in (ANT.replace(day=n) for n in range(1, ANT.day + 1)) if x.weekday() < 5]
 D_REG, D_SEM = dias_uteis[0], dias_uteis[1]
+IDX_REG, IDX_SEM = D_REG.day - 1, D_SEM.day - 1
 chamadas: list[tuple] = []
 estado: dict = {}
 
@@ -119,27 +193,41 @@ def _falha_ou(chave, resposta):
     return resposta
 
 
+MARC_REG = jornada(500, D_REG)
 api_client.auth_me = lambda token: {"autenticado": True}
-api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}  # menu Equipe (tarefa 83)
-api_client.prazo_correcao = lambda token: _falha_ou("prazo", {"prazo_dias": estado.get("prazo")})  # prazo de correção (tarefa 79)
+api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}
+api_client.prazo_correcao = lambda token: _falha_ou("prazo", {"prazo_dias": estado.get("prazo")})
 api_client.central_de_tarefas = lambda token: {}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
 api_client.meus_comunicados = lambda token: {"comunicados": []}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
-api_client.meu_ponto = lambda token: {"registros": [registro(50, D_REG)]}
+api_client.meu_ponto = lambda token: {"registros": [reg(50, D_REG)], "marcacoes": MARC_REG, "tratamentos": []}
+api_client.comprovantes_ponto = lambda token: {"marcacoes": [], **REP}
 api_client.meu_banco_horas = lambda token: {"saldo_horas": 1}
-api_client.minhas_correcoes_ponto = lambda token: {"correcoes": [{"registro_ponto_id": 50, "campo": "hora_saida", "status": "pendente"}]}
+api_client.minhas_correcoes_ponto = lambda token: {"correcoes": [{"id": 80, "registro_ponto_id": 50, "tipo": "desconsideracao", "marcacao_id": 503, "status": "pendente"}]}
 api_client.minhas_ausencias = lambda token: {"ausencias": []}
 api_client.minhas_ferias = lambda token: {"ferias": []}
 api_client.calendario = lambda token: _falha_ou("calendario", {"feriados": []})
 api_client.meu_perfil_colaborador = lambda token: {"colaborador": {"data_admissao": (ANT.replace(day=1) - timedelta(days=40)).isoformat()}}
-api_client.solicitar_correcao_dia = lambda token, d, c, v, j: chamadas.append(("dia", d, c, v, j)) or _falha_ou("dia", {"sucesso": True, "registro_id": 99})
-api_client.solicitar_correcao_ponto = lambda token, rid, c, v, j: chamadas.append(("registro", rid, c, v, j)) or _falha_ou("registro", {"sucesso": True})
+api_client.pedir_correcao_ponto = lambda token, data, tipo, just, marcacao_id=None, data_hora_ms=None: (
+    chamadas.append(("pedido", data, tipo, just, marcacao_id, data_hora_ms)) or _falha_ou("pedido", {"sucesso": True}))
 
 
 def texto(at: AppTest) -> str:
     bruto = " ".join(str(e.value) for e in at.get("html"))
     return html_lib.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", bruto)))
+
+
+def selecionar(at: AppTest, indice: int) -> AppTest:
+    at.session_state["pt_planilha"] = {"selection": {"rows": [indice], "columns": [], "cells": []}}
+    return at.run()
+
+
+def pedir(at: AppTest, indice: int) -> AppTest:
+    """Clica em "Pedir correção do dia" com a linha selecionada (o AppTest não guarda a seleção entre as rodadas)."""
+    at.session_state["pt_planilha"] = {"selection": {"rows": [indice], "columns": [], "cells": []}}
+    at.button(key="pt_pedir_dia").click()
+    return at.run()
 
 
 def app(**extra) -> AppTest:
@@ -155,76 +243,60 @@ def app(**extra) -> AppTest:
     at = at.run()
     at.button_group(key="pt_visao").set_value("Mês")
     at = at.run()
-    at.selectbox(key="pt_ano").set_value(ANT.year)
-    at = at.run()
-    at.selectbox(key="pt_mes").set_value(ANT.month)
+    at.selectbox(key="pt_mes_ano").set_value((ANT.year, ANT.month))
     return at.run()
 
 
-caso("Tela: espelho do mês anterior")
+caso("Tela: mês anterior (Figma 464:826)")
 at = app()
 t = texto(at)
-conferir("Horas trabalhadas no mês" in t and "8h30" in t and "FALTA INJUSTIFICADA" in t and "Em análise: Saída" in t and "Faltas injustificadas" in t, "resumo, horas, falta injustificada no mês encerrado e correção em análise")
-conferir(any(b.key == "pt_baixar_mes" for b in at.get("download_button")), "botão de baixar o espelho do mês")
-chaves = {b.key for b in at.button}
-conferir(f"pt_corrigir_dia_{D_SEM.isoformat()}" in chaves and "pt_corrigir_50" in chaves, "correção no dia sem registro e no dia com registro")
+conferir(not at.exception, "a tela abre sem erro")
+conferir("Espelho de ponto eletrônico" in t and "12.345.678/0001-90" in t and "123.456.789-09" in t and "Analista de RH" in t and "8h00 por dia" in t, "cabeçalho do art. 84")
+conferir("Horas no mês" in t and "Atestados" in t and "Correções em análise: 1" in t, "resumo do mês e correções em análise")
+df = at.dataframe[0].value
+conferir(len(df) == ANT.day and list(df.columns)[:4] == ["Data", "Dia", "Ent. 1", "Saí. 1"] and df.iloc[IDX_REG]["Ent. 1"] == "08:00"
+         and df.iloc[IDX_SEM]["Situação"] == "Falta injustificada", "planilha com todos os dias, os pares e a falta em mês encerrado")
+conferir(any(b.key == "pt_baixar_mes" for b in at.get("download_button")) and "Selecione uma linha da planilha" in t, "baixar CSV e a orientação da seleção")
 
-caso("Tela: corrigir um dia sem nenhuma marcação")
-at.button(key=f"pt_corrigir_dia_{D_SEM.isoformat()}").click()
+caso("Tela: pedir a inclusão num dia sem marcação (Figma 465:856)")
+at = selecionar(at, IDX_SEM)
+conferir("Dia selecionado:" in texto(at) and "Falta injustificada" in texto(at), "barra do dia selecionado")
+at = pedir(at, IDX_SEM)
+conferir([o for o in at.radio(key="pt_ped_tipo").options] == ["Incluir uma marcação que faltou"], "sem marcação no dia: só a inclusão")
+at.button(key="pt_ped_enviar").click()
 at = at.run()
-conferir("Neste dia não há nenhuma marcação" in texto(at), "o modal explica que o dia não tem registro")
-at.selectbox(key="pt_corr_campo").set_value("hora_entrada")
-at.time_input(key="pt_corr_hora").set_value(time(8, 5))
-at.text_area(key="pt_corr_motivo").set_value("Esqueci de marcar a entrada.")
-at.button(key="pt_corr_enviar").click()
+conferir("Informe o horário da marcação que faltou." in texto(at) and not chamadas, "sem horário: não envia")
+at.time_input(key="pt_ped_hora").set_value(time(8, 5))
+at.text_area(key="pt_ped_motivo").set_value("Esqueci de marcar a entrada.")
+at.button(key="pt_ped_enviar").click()
 at = at.run()
-conferir(("dia", D_SEM.isoformat(), "hora_entrada", ms(D_SEM, 8, 5), "Esqueci de marcar a entrada.") in chamadas, "pede pelo endpoint do dia, com a data e o horário de Brasília")
-conferir("modal_ponto" not in at.session_state, "o modal fecha")
-at = app(erro_dia=ApiError("So e possivel pedir correcao de um dia que ja passou. Hoje, use Marcar agora.", 400))
-at.button(key=f"pt_corrigir_dia_{D_SEM.isoformat()}").click()
-at = at.run()
-at.selectbox(key="pt_corr_campo").set_value("hora_saida")
-at.time_input(key="pt_corr_hora").set_value(time(17, 0))
-at.text_area(key="pt_corr_motivo").set_value("Saí às 17h.")
-at.button(key="pt_corr_enviar").click()
-at = at.run()
-conferir("dia que ja passou" in texto(at) and "modal_ponto" in at.session_state, "recusa do backend no modal, que continua aberto")
+conferir(("pedido", D_SEM.isoformat(), "inclusao", "Esqueci de marcar a entrada.", None, ms(D_SEM, 8, 5)) in chamadas and "modal_ponto" not in at.session_state,
+         "envia a data, a inclusão e o horário de Brasília; o modal fecha")
 
-caso("Tela: corrigir um dia com registro")
-at = app()
-at.button(key="pt_corrigir_50").click()
+caso("Tela: pedir a desconsideração (Figma 465:894)")
+at = pedir(selecionar(app(), IDX_REG), IDX_REG)
+at.radio(key="pt_ped_tipo").set_value("desconsideracao")
 at = at.run()
-conferir("hora_saida" not in at.selectbox(key="pt_corr_campo").options and "Saída" not in at.selectbox(key="pt_corr_campo").options, "a marcação em análise não pode ser pedida de novo")
-at.selectbox(key="pt_corr_campo").set_value("hora_entrada")
-at.time_input(key="pt_corr_hora").set_value(time(7, 55))
-at.text_area(key="pt_corr_motivo").set_value("Cheguei mais cedo.")
-at.button(key="pt_corr_enviar").click()
+opcoes = at.selectbox(key="pt_ped_marcacao").options
+conferir(len(opcoes) == 3 and not any("17:30" in o for o in opcoes), "a marcação já em análise não pode ser pedida de novo")
+at.selectbox(key="pt_ped_marcacao").set_value(500)
+at.text_area(key="pt_ped_motivo").set_value("Marquei duas vezes.")
+at.button(key="pt_ped_enviar").click()
 at = at.run()
-conferir(("registro", 50, "hora_entrada", ms(D_REG, 7, 55), "Cheguei mais cedo.") in chamadas, "pede pelo endpoint do registro")
+conferir(("pedido", D_REG.isoformat(), "desconsideracao", "Marquei duas vezes.", 500, None) in chamadas, "envia a marcação a desconsiderar")
+at = pedir(selecionar(app(erro_pedido=ApiError("O prazo para pedir correcao deste dia acabou.", 400)), IDX_SEM), IDX_SEM)
+at.time_input(key="pt_ped_hora").set_value(time(17, 0))
+at.text_area(key="pt_ped_motivo").set_value("Saí às 17h.")
+at.button(key="pt_ped_enviar").click()
+at = at.run()
+conferir("prazo para pedir correcao" in texto(at) and "modal_ponto" in at.session_state, "recusa do backend no modal, que continua aberto")
 
-caso("Menu: Vagas internas")
-at = app()
-conferir("nav_Vagas internas" in {b.key for b in at.button}, "a opção Vagas internas aparece no menu (sem destino por enquanto)")
-
-caso("Prazo para pedir correção (tarefa 79)")
-conferir(m.limite_prazo(H, None) is None and m.limite_prazo(H, 0) is None and m.limite_prazo(H, 5) == date(2026, 10, 10), "limite: hoje menos o prazo; vazio é sem limite")
-conferir(m.texto_prazo(None) == "Sem limite" and m.texto_prazo(1) == "1 dia" and m.texto_prazo(30) == "30 dias", "texto do prazo")
-com_prazo = {l["data"].day: l for l in m.espelho_do_mes(regs, aus, cor, fer, feri, 2026, 10, H, "2026-10-01", prazo_dias=3)}
-conferir(com_prazo[1]["acao"] is None and m.NOTA_PRAZO in com_prazo[1]["nota"] and com_prazo[5]["acao"] is None, "fora do prazo: sem botão de correção, com o aviso")
-conferir(m.aviso_prazo(list(com_prazo.values()), H, 3).startswith("Dias antes de 12/10/2026") and m.aviso_prazo(list(com_prazo.values()), H, None) == "", "aviso acima do espelho só quando há dia fora do prazo")
-conferir(com_prazo[12]["acao"] == "corrigir_dia" and com_prazo[13]["acao"] == "corrigir" and com_prazo[14]["acao"] == "corrigir", "dentro do prazo (a partir de hoje − 3): continua com correção")
-conferir(com_prazo[13]["nota"] == "Em análise: Saída" and com_prazo[7]["status"] == "AUSÊNCIA EM ANÁLISE", "pedidos em análise continuam visíveis")
-at = app(prazo=1)
+caso("Tela: prazo e falhas parciais")
+at = selecionar(app(prazo=1), IDX_SEM)
 t = texto(at)
-chaves = {b.key for b in at.button}
-conferir(f"pt_corrigir_dia_{D_SEM.isoformat()}" not in chaves and "pt_corrigir_50" not in chaves and "passaram do prazo de 1 dia" in t and "Fora do prazo" in t, "tela: mês anterior fora do prazo, sem botões e com o aviso")
-conferir("Prazo para pedir correção: 1 dia" in t, "tela: mostra o prazo do RH")
-at = app(erro_prazo=ApiError("Erro inesperado.", 500))
-conferir(f"pt_corrigir_dia_{D_SEM.isoformat()}" in {b.key for b in at.button} and not at.exception, "sem conseguir ler o prazo, a tela segue (o backend confere)")
-
-caso("Tela: falhas parciais")
+conferir("pt_pedir_dia" not in {b.key for b in at.button} and "passaram do prazo de 1 dia" in t and "Prazo para pedir correção: 1 dia" in t, "fora do prazo: sem botão, com o aviso")
 at = app(erro_calendario=ApiError("Erro inesperado.", 500))
-conferir("FALTA INJUSTIFICADA" in texto(at) and not at.exception, "sem o calendário, o mês aparece do mesmo jeito")
+conferir(not at.exception and at.dataframe[0].value.iloc[IDX_SEM]["Situação"] == "Falta injustificada", "sem o calendário, o mês aparece do mesmo jeito")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

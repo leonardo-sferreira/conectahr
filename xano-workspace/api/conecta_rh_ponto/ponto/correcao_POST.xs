@@ -123,6 +123,24 @@ query "ponto/correcao" verb=POST {
       }
     }
 
+    // Desconsideracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
+    var $momento_original {
+      value = null
+    }
+
+    conditional {
+      if ($input.tipo == "desconsideracao") {
+        db.get marcacao_ponto {
+          field_name = "id"
+          field_value = $input.marcacao_id
+        } as $marcacao_alvo
+
+        var.update $momento_original {
+          value = $marcacao_alvo.data_hora_marcacao
+        }
+      }
+    }
+
     db.add correcao_ponto {
       data = {
         registro_ponto_id: $dia_atual.registro.id
@@ -130,6 +148,7 @@ query "ponto/correcao" verb=POST {
         tipo             : $input.tipo
         marcacao_id      : $input.marcacao_id
         valor_solicitado : ($input.tipo == "inclusao" ? $input.data_hora : null)
+        valor_original   : $momento_original
         justificativa    : $input.justificativa
         status           : "pendente"
         updated_at       : "now"
