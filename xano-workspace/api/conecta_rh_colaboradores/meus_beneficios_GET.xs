@@ -81,8 +81,14 @@ query meus_beneficios verb=GET {
           field_value = $v.beneficio_id
         } as $b
 
+        db.query beneficio_faq {
+          where = $db.beneficio_faq.beneficio_id == $v.beneficio_id && $db.beneficio_faq.ativo == true
+          sort = {beneficio_faq.ordem: "asc"}
+          return = {type: "list"}
+        } as $faq_do_beneficio
+
         var.update $itens {
-          value = $itens|push:{id: $v.id, beneficio_id: $v.beneficio_id, nome: ($b != null ? $b.nome : "Beneficio"), tipo: ($b != null ? $b.tipo : "outro"), operadora: ($b != null ? $b.operadora : null), valor_empresa: $v.valor_empresa, desconto_colaborador: $v.desconto_colaborador, data_inicio: $v.data_inicio, data_fim: $v.data_fim, observacao: $v.observacao, ativo: $v.ativo}
+          value = $itens|push:{id: $v.id, beneficio_id: $v.beneficio_id, nome: ($b != null ? $b.nome : "Beneficio"), tipo: ($b != null ? $b.tipo : "outro"), operadora: ($b != null ? $b.operadora : null), descricao: ($b != null ? $b.descricao : null), faq: $faq_do_beneficio, valor_empresa: $v.valor_empresa, desconto_colaborador: $v.desconto_colaborador, data_inicio: $v.data_inicio, data_fim: $v.data_fim, observacao: $v.observacao, ativo: $v.ativo}
         }
       }
     }
