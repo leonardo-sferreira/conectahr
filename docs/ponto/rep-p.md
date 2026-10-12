@@ -30,9 +30,9 @@ que o ponto é "certificado", "homologado" ou "em conformidade".
 | Hash SHA-256 dos campos 1 a 7 do registro 7 mais o hash do registro 7 anterior (leiaute do AFD) | `ConectaHR/hash_registro_rep`; conferido em Python por `frontend/rep_modelo.py` |
 | Empregador (tipo 2), empregado (tipo 5) e disponibilidade do serviço (tipo 6, códigos 07 e 08) na ARP | `empregador` PUT, `colaboradores` POST e PATCH, conclusão do desligamento, `rep/eventos` POST |
 | Sem restrição de horário nem de quantidade de marcações, sem marcação automática, sem autorização prévia para hora extra e sem o trabalhador alterar o que foi registrado (art. 74) | `ponto/marcar` só recusa: sem ficha, desligado, antes da admissão e empregador não cadastrado |
-| Tratamento que só acrescenta informação: inclusão ou desconsideração, com motivo (art. 82) | Tabela `tratamento_ponto` (a fazer nas tarefas 3.x) |
-| Comprovante de registro de ponto em PDF, por 48 horas, sem pedido (arts. 79 e 80) | A fazer (tarefas 3.3 e 4.1) |
-| Espelho de ponto com o conteúdo do art. 84 | A fazer (tarefa 4.4) |
+| Tratamento que só acrescenta informação: inclusão ou desconsideração, com motivo (art. 82) | Tabela `tratamento_ponto`. Pedido do colaborador em `ponto/correcao` e decisão em `correcoes_ponto/{id}/aprovar`; ajuste direto do responsável em `folha_ponto/tratar`. Os endpoints antigos, que sobrescreviam o horário, foram desativados |
+| Comprovante de registro de ponto em PDF, por 48 horas, sem pedido (arts. 79 e 80) | `ponto/marcar` devolve os dados e a tela oferece o PDF na hora; `ponto/comprovantes` lista os dos últimos 7 dias; PDF em `frontend/comprovante_ponto.py` (`fpdf2`), sem assinatura |
+| Espelho de ponto com o conteúdo do art. 84 | Ponto → Mês (`frontend/pagina_ponto.py`): cabeçalho, planilha e CSV. O horário contratual é a jornada da regra do contrato, porque o cadastro não guarda os horários de entrada e saída |
 | AFD e AEJ nos leiautes de 31/07/2026 (arts. 81 e 83) | A fazer (grupo 5) |
 
 ## O que fica fora
@@ -47,6 +47,22 @@ que o ponto é "certificado", "homologado" ou "em conformidade".
 - **Marcação off-line e outros coletores** (aplicativo mobile ou desktop).
 - **Ajuste de relógio** (registro 4) e **retorno de energia** (registro 6, código 02): não existem num
   servidor em nuvem.
+
+## Testes por HTTP (12/10/2026)
+
+Com uma conta de colaborador de teste e uma de RH, contra o backend publicado (`tools/testar_rep_p_http.py` e a
+conferência complementar com o RH):
+
+- colaborador: 403 em `empregador` e `rep/eventos`; marcações gravadas com NSR crescente, hash e dados do comprovante;
+  comprovantes com as marcações recentes; pedido com horário no futuro recusado e pedido de inclusão pendente; 12/12.
+- RH: empregador visto e salvo sem gravar registro 2; aprovação virou tratamento, com a marcação original na ARP e o
+  dia AJUSTADO; ajuste direto como 2º tratamento; motivo curto recusado; folha sem CPF nem hash; 9/9 (mais 2 do
+  empregador na rodada anterior).
+- A cadeia de hashes da ARP confere, com NSR de 1 a 15 sem lacuna.
+
+Os testes acharam e corrigiram dois erros: `ponto/comprovantes` respondia 500 e `folha_ponto/mes` voltava vazia
+(ver as armadilhas em `xano-workspace/AGENTS.md`). As marcações e os tratamentos de teste ficam na ARP da conta de
+teste, porque nada é apagado.
 
 ## Como conferir a cadeia de hashes
 

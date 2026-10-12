@@ -59,6 +59,13 @@ Para copiar o padrão, use um endpoint recente como modelo, por exemplo
 - Um `||` entre parênteses dentro de `where` de `db.query` não filtrou direito: filtre no laço.
 - `db.get` com `output` restrito não traz os outros campos: inclua o que o endpoint usa.
 - `db.get` com `field_value` nulo falha: confira antes.
+- `now - <milissegundos>` falha com "Not numeric." (HTTP 500). Para somar ou subtrair tempo, use
+  `now|add_secs_to_timestamp:-604800` (segundos, aceita negativo).
+- `contains` numa lista de ids montada com `push` (ou vinda de `json`) não reconhece o id. Monte um texto com
+  vírgulas nas pontas e compare em texto: `("," ~ ($ids|join:",") ~ ",")|contains:("," ~ ($id|to_text) ~ ",")`.
+- Numa lista literal (`[{v: $x.campo}]`) as variáveis não são avaliadas: monte com `[]|push:{...}`.
+- O teste estático (`tools/checar_endpoints.py`) não pega erro de execução: endpoint novo ou alterado precisa de
+  uma chamada por HTTP com login (ex.: `tools/testar_rep_p_http.py`).
 - Variável de ambiente não definida vale `null`: trate o padrão (`$env.X != null ? ... : padrão`).
 - Upload de arquivo privado (`image`, `attachment`, `file`) não é suportado no plano atual.
 - Cada `swagger = {active: false}` dos 10 grupos é obrigatório (o checker reprova o contrário).

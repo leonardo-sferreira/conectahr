@@ -52,6 +52,7 @@ O hash do registro 7 é o SHA-256 (hex minúsculo, 64 caracteres) da concatenaç
 - `correcao_ponto` passa a guardar `tipo` (`inclusao` ou `desconsideracao`), `marcacao_id` e `data_hora` pedida, no lugar de `campo` e `valor_solicitado`. Os pedidos antigos continuam legíveis.
 - O cálculo puro fica em `ConectaHR/calcular_dia_ponto` (testável por `xano function run`, sem banco) e `ConectaHR/atualizar_dia_ponto` lê a ARP e os tratamentos e grava o cache. A ARP tem um campo `data` (dia local da marcação), fora do AFD, só para a consulta do dia.
 - *Alternativa:* calcular o dia só no frontend. Rejeitada: o backend é dono das regras (AGENTS.md, seção 3), e o cálculo das horas precisa ser o mesmo para a pessoa, o gestor e o AEJ.
+- **Pedido e ajuste (12/10/2026):** o colaborador pede por `ponto/correcao` (data, tipo, `marcacao_id` ou `data_hora`, motivo de 5 a 150) e o responsável ajusta direto por `folha_ponto/tratar`. Na desconsideração, `correcao_ponto.valor_original` guarda o horário da marcação, para a Central mostrar o dia e a hora do pedido. Os endpoints de antes (`ponto/{id}/solicitar_correcao`, `ponto/solicitar_correcao_dia` e `folha_ponto/ajustar`) gravavam o horário direto em `registro_ponto`, fora da ARP; foram desativados em 12/10/2026: exigem a sessão e só recusam, indicando o caminho novo.
 
 ### D5. Comprovante e arquivos gerados em Python, a partir de dados do backend
 
@@ -70,6 +71,7 @@ Campos do registro 2 do AFD e do cabeçalho do AEJ, mais `inpi_registro`, `desen
 - Backend: `ponto/marcar` recusa quando a data local de hoje for anterior a `colaborador.data_admissao`; os pedidos de correção já recusam dia anterior à admissão.
 - Frontend: `primeiro_dia()` passa a ser **só** a admissão (sem o mínimo com o primeiro registro). Sem admissão no cadastro, cai no primeiro registro, como hoje. Dias antes dela e dias futuros saem como linha em branco na planilha.
 - A data de admissão errada no cadastro continua gerando falta; a correção é acertar o cadastro (informado ao usuário em 12/10/2026).
+- **Cabeçalho do art. 84 (12/10/2026):** `ponto/comprovantes` devolve também a admissão, o cargo e a jornada da regra do contrato (`horas_diarias`, `horas_semanais`, `intervalo_minutos`). O cadastro não guarda os horários de entrada e saída, então o "horário contratual" do espelho é a jornada ("8h48 por dia · 44h00 por semana · intervalo de 1h00"), e não "08:00–12:00 e 13:00–17:48" como no Figma; sem regra, "Não informado". O AEJ (registro 04, grupo 5) vai precisar dos horários: decidir lá se o cadastro ganha esses campos.
 
 ### D7b. A marcação nunca é recusada por horário
 
@@ -80,6 +82,8 @@ O `ponto/marcar` antigo recusava a volta do intervalo antes do mínimo e a saíd
 Uma linha por dia: Data, Dia, os pares "Ent. 1", "Saí. 1", "Ent. 2"… (até o maior número de pares do mês, com as marcações originais e as incluídas), "Desconsideradas", Horas e Situação. As desconsideradas ficam numa coluna própria para não deslocar os pares. O `dataframe` não risca texto, então a incluída sai como "18:05 (I)" e a desconsiderada como "08:01 (D)", com a legenda abaixo. A correção do dia é pedida pela seleção da linha (`on_select`), não por botões em cada linha (Figma 464:826).
 
 - *Alternativa:* tabela em HTML. Rejeitada: o pedido é "formato de planilha", e o `dataframe` dá rolagem, ordenação e cópia como numa planilha.
+- **Modo claro (12/10/2026):** o `dataframe` desenha num canvas com as cores do tema base do Streamlit, que é escuro (`.streamlit/config.toml`), e nem o CSS nem o Styler alcançam o cabeçalho e a coluna de seleção. No modo claro a planilha recebe `filter: invert(1) hue-rotate(180deg)`, e as cores das células vão já "invertidas" (`estilo_planilha_ponto` em `theme.py`). Trocar o tema base para claro mexeria em todas as telas; fica para outra change.
+- A tela usa a mesma planilha na folha da equipe (`frontend/planilha_ponto.py`), com "Ajustar o dia" no lugar de "Pedir correção do dia".
 
 ### D9. Saldo de férias calculado no backend, sem tabela nova
 
@@ -110,17 +114,20 @@ Antes de cada tela: seção 21 "Ponto REP-P" (Hoje, Mês em planilha, comprovant
 1. Publicar as tabelas novas e os campos novos (sem remover nada).
 2. Cadastrar o empregador e o REP-P (tela do RH ou carga).
 3. Rodar a migração (endpoint de uso único, só Admin, auditado): registros 5 para os colaboradores ativos, e as marcações de `registro_ponto` para a ARP na ordem de `data` e horário, com NSR e hash; correções aprovadas viram tratamentos.
-4. Publicar os endpoints novos e os alterados; publicar o frontend.
+4. Publicar os endpoints novos e os alterados; publicar o frontend. Os endpoints de correção anteriores ao REP-P foram desativados em 12/10/2026 (D4); até o frontend novo ir ao ar, a tela antiga mostra a mensagem de recusa ao pedir correção.
 5. **Volta atrás:** os endpoints antigos continuam no Git; a ARP e os tratamentos são só acréscimo, e `registro_ponto` continua preenchido, então voltar o frontend e os endpoints restaura o comportamento anterior sem perda.
 
 ### Migração executada (12/10/2026)
 
 `ConectaHR/migrar_ponto_rep` (pela CLI, uma vez; recusa a segunda execução): 4 registros de empregado (tipo 5), 3 marcações (tipo 7) de 2 dias, nenhuma correção aprovada para converter em tratamento. A ARP ficou com NSR 1 (evento 07), 2 (empregador de exemplo), 3 a 6 (empregados) e 7 a 9 (marcações); a cadeia de hashes confere (`tools/testar_rep_p.py --xano`). A data e hora de gravação das marcações migradas é a da migração.
 
+Mais duas armadilhas, achadas nos testes por HTTP de 12/10/2026: `now - <milissegundos>` falha com "Not numeric." (usar `now|add_secs_to_timestamp:-<segundos>`), o que derrubava `ponto/comprovantes` com 500; e `contains` numa lista de ids montada com `push` não reconheceu o id, o que deixava `folha_ponto/mes` vazia e faria `folha_ponto/tratar` recusar sempre (comparar em texto: `",9,12,"|contains:",12,"`).
+
 Duas armadilhas do XanoScript achadas aqui: numa lista literal (`[{v: $x.campo}]`) as variáveis não são avaliadas (usar `|push:`); e a variável do laço chegou nula dentro de um `else` com laço aninhado (copiar para uma variável de fora antes do condicional).
 
 ## Open Questions
 
+- `central_de_tarefas` filtra a equipe do gestor com o mesmo `contains` numa lista montada com `push` que falhou na folha (12/10/2026). Fora desta change; conferir por HTTP com uma conta de Gestor.
 - O número de registro no INPI e o CNPJ do desenvolvedor: o grupo informa os valores (ou usa os de exemplo marcados como fictícios) na tela do RH.
 
 ## Figma
