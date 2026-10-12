@@ -665,3 +665,16 @@ def vincular_beneficio(token: str, colaborador_id: int, dados: dict) -> dict:
 def encerrar_beneficio(token: str, vinculo_id: int, data_fim: str, observacao: str | None = None) -> dict:
     """POST colaborador_beneficios/{id}/encerrar: preenche a data de fim e desativa, sem apagar."""
     return _post(f"colaborador_beneficios/{int(vinculo_id)}/encerrar", {"data_fim": data_fim, "observacao": observacao}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Prazo para pedir correção de ponto (tarefa 83), definido pelo RH. None = sem limite.
+# ---------------------------------------------------------------------------
+def prazo_correcao(token: str) -> dict:
+    """GET ponto/prazo_correcao -> {prazo_dias} (qualquer perfil)."""
+    return _get("ponto/prazo_correcao", token, GRUPO_PONTO)
+
+
+def definir_prazo_correcao(token: str, prazo_dias: int | None) -> dict:
+    """PATCH ponto/prazo_correcao (RH e Admin). None tira o limite. O ajuste do gestor e do RH não tem prazo."""
+    return _request("PATCH", "ponto/prazo_correcao", token, GRUPO_PONTO, {"prazo_dias": prazo_dias})

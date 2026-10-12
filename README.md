@@ -167,11 +167,11 @@ em [`docs/demonstracao.md`](docs/demonstracao.md).
   `python tools/testar_ponto.py` roda 36 verificações do Ponto (marcação na ordem, correção e ausência), e
   `python tools/testar_ferias.py` roda 31 verificações de Férias (pedido, cancelamento e bloqueios), e
   `python tools/testar_pagamento.py` roda 40 verificações de Pagamento (só o dono vê, só RH lança), e
-  `python tools/testar_decisoes.py` roda 50 verificações da Central de Pendências e de Ausências (escopo por perfil e decisões), e
+  `python tools/testar_decisoes.py` roda 60 verificações da Central de Pendências e de Ausências (escopo por perfil, hierarquia e decisões), e
   `python tools/testar_cadastro.py` roda 52 verificações de Colaboradores e de Usuários e perfis (admitir, criar acesso e vincular ficha), e
   `python tools/testar_solicitacoes.py` roda 34 verificações de Solicitações ao RH, e
-  `python tools/testar_ponto_mensal.py` roda 35 verificações do espelho de ponto mensal, e
-  `python tools/testar_folha_ponto.py` roda 28 verificações da folha de ponto do gestor e do RH e da hierarquia, e
+  `python tools/testar_ponto_mensal.py` roda 44 verificações do espelho de ponto mensal (com o prazo de correção), e
+  `python tools/testar_folha_ponto.py` roda 36 verificações da folha de ponto do gestor e do RH, da hierarquia e do prazo de correção, e
   `python tools/testar_beneficios.py` roda 21 verificações de Benefícios.
 - O pipeline **Validar** roda a cada Pull Request: sintaxe do Python, guarda dos endpoints, teste de
   fumaça do frontend, testes do fluxo de entrada, do Onboarding, de Privacidade e Documentos e busca de segredos

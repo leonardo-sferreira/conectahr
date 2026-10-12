@@ -16,11 +16,22 @@ from datetime import date, datetime, timezone
 
 import streamlit as st
 
-from api_client import ApiError, ajustar_ponto, aprovar_correcao_ponto, calendario, folha_mes, folha_pessoas, organograma, rejeitar_correcao_ponto
+from api_client import (
+    ApiError,
+    ajustar_ponto,
+    aprovar_correcao_ponto,
+    calendario,
+    definir_prazo_correcao,
+    folha_mes,
+    folha_pessoas,
+    organograma,
+    prazo_correcao,
+    rejeitar_correcao_ponto,
+)
 from decisoes_modelo import validar_motivo
 from folha_modelo import csv_resumo, espelho_da_pessoa, linhas_resumo, meses_da_equipe, meses_da_pessoa, pendentes_da_pessoa
 from pagamento_modelo import MESES
-from ponto_mensal_modelo import anos_disponiveis, campos_livres, csv_do_mes, meses_do_ano, resumo_do_mes
+from ponto_mensal_modelo import anos_disponiveis, campos_livres, csv_do_mes, meses_do_ano, resumo_do_mes, texto_prazo
 from ponto_modelo import MARCACOES, ROTULO_CAMPO, hora, validar_correcao, valor_solicitado_ms
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
@@ -144,6 +155,47 @@ def _modal_recusar(pessoa: dict, correcao: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+@st.dialog("Prazo para pedir correção de ponto", width="small", on_dismiss=_fechar)
+def _modal_prazo(atual: int | None) -> None:
+    st.html('<p class="crh-meta">Até quantos dias depois o colaborador pode pedir a correção de um dia. Depois disso, só o gestor ou o RH '
+            'ajustam (ajuste direto, auditado). Sem limite: qualquer dia desde o primeiro ponto.</p>')
+    sem_limite = st.toggle("Sem limite", value=not atual, key="fp_prazo_sem")
+    dias = st.number_input("Dias", min_value=1, max_value=3650, value=int(atual or 30), step=1, key="fp_prazo_dias", disabled=sem_limite)
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="fp_prazo_cancelar"):
+            _fechar()
+            st.rerun()
+        if st.button("Salvar prazo", type="primary", key="fp_prazo_salvar"):
+            novo = None if sem_limite else int(dias)
+            try:
+                definir_prazo_correcao(st.session_state.token, novo)
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            _fechar()
+            _invalidar()
+            st.session_state.aviso_toast = f"Prazo para pedir correção: {texto_prazo(novo)}."
+            st.rerun()
+
+
+def _cartao_prazo(token: str) -> None:
+    """RH e Admin (tarefa 79): o prazo que o colaborador tem para pedir correção. Gestor e RH ajustam sem prazo."""
+    try:
+        atual = _cache("prazo", lambda: prazo_correcao(token)).get("prazo_dias")
+    except ApiError:
+        atual = None
+    with st.container(horizontal=True, vertical_alignment="center", key="fp_prazo"):
+        st.html(f'<p class="crh-meta" style="margin:0">Prazo para o colaborador pedir correção: <b>{html.escape(texto_prazo(atual))}</b>. '
+                'Depois dele, só o gestor ou o RH ajustam.</p>', width="stretch")
+        if st.button("Alterar prazo", type="tertiary", key="fp_prazo_alterar"):
+            st.session_state.modal_folha = ("prazo", atual)
+            st.rerun()
+    modal = st.session_state.get("modal_folha")
+    if modal and modal[0] == "prazo":
+        _modal_prazo(modal[1])
+
+
 def _ir_para_pessoa(pid: int) -> None:
     st.session_state.fp_aba = "Por pessoa"
     st.session_state.fp_pessoa = pid
@@ -317,6 +369,8 @@ def pagina_folha_ponto() -> None:
             st.session_state.fp_aba = _ABAS[0]
         aba = st.segmented_control("Aba", _ABAS, required=True, key="fp_aba", label_visibility="collapsed")
     if aba == "Resumo do mês":
+        if str(st.session_state.usuario.get("perfil", "")).upper() in ("RH", "ADMIN"):
+            _cartao_prazo(token)
         _resumo(token, pessoas, deps, cargos, feriados, ve_todos, hoje)
     else:
         _por_pessoa(token, pessoas, deps, feriados, hoje)

@@ -120,6 +120,8 @@ def _falha_ou(chave, resposta):
 
 
 api_client.auth_me = lambda token: {"autenticado": True}
+api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}  # menu Equipe (tarefa 83)
+api_client.prazo_correcao = lambda token: _falha_ou("prazo", {"prazo_dias": estado.get("prazo")})  # prazo de correção (tarefa 79)
 api_client.central_de_tarefas = lambda token: {}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
 api_client.meus_comunicados = lambda token: {"comunicados": []}
@@ -203,6 +205,22 @@ conferir(("registro", 50, "hora_entrada", ms(D_REG, 7, 55), "Cheguei mais cedo."
 caso("Menu: Vagas internas")
 at = app()
 conferir("nav_Vagas internas" in {b.key for b in at.button}, "a opção Vagas internas aparece no menu (sem destino por enquanto)")
+
+caso("Prazo para pedir correção (tarefa 79)")
+conferir(m.limite_prazo(H, None) is None and m.limite_prazo(H, 0) is None and m.limite_prazo(H, 5) == date(2026, 10, 10), "limite: hoje menos o prazo; vazio é sem limite")
+conferir(m.texto_prazo(None) == "Sem limite" and m.texto_prazo(1) == "1 dia" and m.texto_prazo(30) == "30 dias", "texto do prazo")
+com_prazo = {l["data"].day: l for l in m.espelho_do_mes(regs, aus, cor, fer, feri, 2026, 10, H, "2026-10-01", prazo_dias=3)}
+conferir(com_prazo[1]["acao"] is None and m.NOTA_PRAZO in com_prazo[1]["nota"] and com_prazo[5]["acao"] is None, "fora do prazo: sem botão de correção, com o aviso")
+conferir(m.aviso_prazo(list(com_prazo.values()), H, 3).startswith("Dias antes de 12/10/2026") and m.aviso_prazo(list(com_prazo.values()), H, None) == "", "aviso acima do espelho só quando há dia fora do prazo")
+conferir(com_prazo[12]["acao"] == "corrigir_dia" and com_prazo[13]["acao"] == "corrigir" and com_prazo[14]["acao"] == "corrigir", "dentro do prazo (a partir de hoje − 3): continua com correção")
+conferir(com_prazo[13]["nota"] == "Em análise: Saída" and com_prazo[7]["status"] == "AUSÊNCIA EM ANÁLISE", "pedidos em análise continuam visíveis")
+at = app(prazo=1)
+t = texto(at)
+chaves = {b.key for b in at.button}
+conferir(f"pt_corrigir_dia_{D_SEM.isoformat()}" not in chaves and "pt_corrigir_50" not in chaves and "passaram do prazo de 1 dia" in t and "Fora do prazo" in t, "tela: mês anterior fora do prazo, sem botões e com o aviso")
+conferir("Prazo para pedir correção: 1 dia" in t, "tela: mostra o prazo do RH")
+at = app(erro_prazo=ApiError("Erro inesperado.", 500))
+conferir(f"pt_corrigir_dia_{D_SEM.isoformat()}" in {b.key for b in at.button} and not at.exception, "sem conseguir ler o prazo, a tela segue (o backend confere)")
 
 caso("Tela: falhas parciais")
 at = app(erro_calendario=ApiError("Erro inesperado.", 500))

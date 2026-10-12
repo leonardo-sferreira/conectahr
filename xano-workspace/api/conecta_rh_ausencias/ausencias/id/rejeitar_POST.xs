@@ -1,5 +1,5 @@
 // Rejeita uma solicitacao de ausencia.
-// Operacao permitida somente para RH ou ADMIN.
+// RH, Admin, o superior direto da pessoa ou, sem superior, o gestor do departamento (tarefa 83).
 // A justificativa da rejeicao e obrigatoria.
 query "ausencias/{id}/rejeitar" verb=POST {
   api_group = "ConectaRH - Ausencias"
@@ -65,10 +65,7 @@ query "ausencias/{id}/rejeitar" verb=POST {
     }
   
     // Somente RH ou ADMIN podem rejeitar.
-    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
-      error_type = "accessdenied"
-      error = "Somente RH ou ADMIN podem rejeitar ausencias."
-    }
+    // Quem decide e conferido mais abaixo, pela hierarquia (tarefa 83).
   
     // Localiza a ausencia.
     db.get ausencia {
@@ -126,6 +123,38 @@ query "ausencias/{id}/rejeitar" verb=POST {
     precondition ($colaborador != null) {
       error_type = "notfound"
       error = "Colaborador vinculado a ausencia nao encontrado."
+    }
+
+    // Hierarquia (tarefas 81 e 83): RH e Admin; o superior direto da pessoa; ou, se ela nao tem
+    // superior, o gestor do departamento dela. Vale para qualquer perfil.
+    var $pode_decidir_ausencia {
+      value = ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN")
+    }
+
+    conditional {
+      if ($pode_decidir_ausencia == false && $colaborador_do_decisor != null && $colaborador.superior_colaborador_id != null) {
+        var.update $pode_decidir_ausencia {
+          value = ($colaborador.superior_colaborador_id == $colaborador_do_decisor.id)
+        }
+      }
+    }
+
+    conditional {
+      if ($pode_decidir_ausencia == false && $colaborador_do_decisor != null && $colaborador.superior_colaborador_id == null) {
+        db.query departamento {
+          where = $db.departamento.gestor_colaborador_id == $colaborador_do_decisor.id && $db.departamento.id == $colaborador.departamento_id
+          return = {type: "single"}
+        } as $departamento_do_decisor_pode_decidir_ausencia
+
+        var.update $pode_decidir_ausencia {
+          value = ($departamento_do_decisor_pode_decidir_ausencia != null)
+        }
+      }
+    }
+
+    precondition ($pode_decidir_ausencia) {
+      error_type = "accessdenied"
+      error = "Voce nao tem permissao para decidir esta ausencia."
     }
   
     // Rejeita a ausencia e registra a justificativa.

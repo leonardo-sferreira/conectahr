@@ -94,6 +94,8 @@ def _falha_ou(chave, resposta):
 
 def _instalar():
     api_client.auth_me = lambda token: {"autenticado": True}
+    api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}  # menu Equipe (tarefa 83)
+    api_client.prazo_correcao = lambda token: {"prazo_dias": None}  # prazo de correção (tarefa 79)
     api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
     api_client.aniversariantes = lambda token: {"aniversariantes": []}
     api_client.meus_comunicados = lambda token: {"comunicados": []}
@@ -102,6 +104,7 @@ def _instalar():
     api_client.central_de_tarefas = lambda token: chamadas.append(("central",)) or _falha_ou("central", {
         "meu_ponto_status_hoje": estado.get("ponto_hoje"),
         "fila_ferias_pendentes": estado["fila"], "fila_documentos_pendentes": [{"id": 1}, {"id": 2}], "fila_desligamentos_pendentes": [],
+        "fila_ausencias_pendentes": estado.get("fila_aus", []), "e_superior": estado.get("e_superior", False),
     })
     api_client.solicitacoes_rh = lambda token: _falha_ou("solicitacoes", {"solicitacoes": estado.get("solicitacoes", [])})
     api_client.correcoes_ponto = lambda token: chamadas.append(("correcoes",)) or _falha_ou("correcoes", {"correcoes": estado["correcoes"]})
@@ -347,6 +350,50 @@ at = app("RH", "ausencias")
 at.button_group(key="aus_aba").set_value("Rejeitadas")
 at = at.run()
 conferir("Nenhuma ausência nesta aba." in texto(at), "vazio: aba sem ausências")
+
+# ---------------------------------------------------------------------------
+caso("Hierarquia em férias e ausências; superior sem o perfil Gestor (tarefa 83)")
+FILA_AUS = [
+    {"id": 61, "colaborador_id": 11, "tipo": "Atestado", "data_inicio": "2026-09-01", "data_fim": "2026-09-02", "status": "Pendente"},
+    {"id": 62, "colaborador_id": 9, "tipo": "Falta", "data_inicio": "2026-09-05", "data_fim": "2026-09-05", "status": "Pendente"},
+    {"id": 63, "colaborador_id": 11, "tipo": "Falta", "data_inicio": "2026-08-01", "data_fim": "2026-08-01", "status": "Aprovada"},
+]
+la = m.linhas_ausencias_fila(FILA_AUS, mapa, 9)
+conferir([l["id"] for l in la] == [61, 62] and la[0]["tipo"] == "Atestado" and la[1]["proprio"] and "motivo" not in la[0] and "comprovante" not in la[0],
+         "fila de ausências: só pendentes, sem motivo nem comprovante; a própria marcada")
+at = app("COLABORADOR", e_superior=True, fila_aus=FILA_AUS)
+t = texto(at)
+conferir("Ausências para decidir" in t and ("correcoes",) in chamadas, "colaborador que é superior direto vê as filas de decisão")
+at.button_group(key="central_aba").set_value("ausencias")
+at = at.run()
+t = texto(at)
+conferir("central_aus_aprovar_61" in chaves(at) and "central_aus_aprovar_62" not in chaves(at) and "Sua ausência: outra pessoa decide" in t, "aba Ausências: decide a da equipe, não a própria")
+conferir("comprovante (atestado) é visto só pelo RH" in t, "aba Ausências avisa que o comprovante é só do RH")
+at.button(key="central_aus_aprovar_61").click()
+at = at.run()
+conferir(("aprovar_aus", 61) in chamadas, "Aprovar ausência chama o backend")
+at = app("GESTOR", fila_aus=FILA_AUS)
+at.button_group(key="central_aba").set_value("ausencias")
+at = at.run()
+at.button(key="rh_recusar_aus_c_61").click()
+at = at.run()
+at.button(key="aus_rej_ok").click()
+at = at.run()
+conferir(not any(c[0] == "rejeitar_aus" for c in chamadas) and "modal_central" in at.session_state, "rejeitar sem justificativa: mensagem, sem chamar a API")
+at.text_area(key="central_aus_motivo").set_value("Período coincide com a entrega do projeto.")
+at.button(key="aus_rej_ok").click()
+at = at.run()
+conferir(("rejeitar_aus", 61, "Período coincide com a entrega do projeto.") in chamadas and "modal_central" not in at.session_state, "rejeitar com justificativa chama o backend e fecha")
+at = app("GESTOR", fila_aus=FILA_AUS, erro_decidir=ApiError("Voce nao tem permissao para decidir esta ausencia.", 403))
+at.button_group(key="central_aba").set_value("ausencias")
+at = at.run()
+at.button(key="central_aus_aprovar_61").click()
+at = at.run()
+conferir("permissão" in texto(at) or "permissao" in texto(at), "recusa do backend (fora da hierarquia) vira alerta")
+at = app("COLABORADOR", e_superior=False, fila_aus=FILA_AUS)
+conferir("Ausências para decidir" not in texto(at), "colaborador que não é superior: só Minhas pendências")
+at = app("COLABORADOR", erro_central=ApiError("Erro inesperado. Tente novamente.", 500))
+conferir(not at.exception and "Ausências para decidir" not in texto(at), "erro na central: o colaborador continua vendo as próprias pendências")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

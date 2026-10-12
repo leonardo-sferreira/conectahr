@@ -344,3 +344,13 @@ Evidência em `docs/evidencias/frontend-beneficios.md`.
 - **Catálogo + vínculo por pessoa** (decidido em 11/10/2026): o RH cadastra cada benefício uma vez e vincula à pessoa com valor da empresa, desconto e vigência. Encerrar não apaga, para guardar o histórico.
 - **Um vínculo vigente por benefício e pessoa**; benefício desativado não aceita novos vínculos.
 - **Figma.** Feito com o Figma fora do ar; precisa ser desenhado.
+
+## Hierarquia em férias e ausências e prazo de correção (tarefas 83 e 79, 11/10/2026)
+
+Evidência em `docs/evidencias/frontend-hierarquia-prazo.md`.
+
+- **Uma regra só para decidir** (pedido de 11/10/2026): férias, ausências e correções de ponto seguem a hierarquia da tarefa 81. Antes, férias e ausências seguiam o departamento, e ausência só o RH decidia.
+- **O perfil não define quem decide; a ficha define.** Quem é superior direto de alguém vê as filas da Central e a folha da equipe, mesmo com o perfil Colaborador. O backend devolve `e_superior` na `central_de_tarefas`, e o menu confere uma vez por sessão se a pessoa tem equipe (`folha_ponto/pessoas`).
+- **Ausência para quem decide, sem dado de saúde.** A fila de ausências da Central traz só tipo, período e situação. O comprovante continua só com o RH, e registrar a ausência aprovada também.
+- **Prazo configurável, começando sem limite** (a decisão do número fica com o RH, tarefa 79): guardado na tabela `configuracao`, conferido no backend nos dois pedidos de correção. O gestor e o RH ajustam sem prazo, para não deixar dia sem saída.
+- **Figma.** Feito com o Figma fora do ar; precisa ser desenhado.

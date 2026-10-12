@@ -133,6 +133,25 @@ query "ponto/solicitar_correcao_dia" verb=POST {
       error = "O horario pedido nao pode ser no futuro."
     }
 
+    // Prazo para pedir correcao (tarefa 83), definido pelo RH em ponto/prazo_correcao.
+    db.query configuracao {
+      where = $db.configuracao.chave == "prazo_correcao_ponto_dias"
+      return = {type: "single"}
+    } as $config_prazo
+
+    conditional {
+      if ($config_prazo != null && $config_prazo.valor_inteiro != null) {
+        var $primeiro_dia_no_prazo {
+          value = (now - ($config_prazo.valor_inteiro * 86400000))|format_timestamp:"Y-m-d":"America/Sao_Paulo"
+        }
+
+        precondition ($input.data >= $primeiro_dia_no_prazo) {
+          error_type = "inputerror"
+          error = "O prazo para pedir correcao deste dia acabou. Fale com o seu gestor ou com o RH, que podem ajustar."
+        }
+      }
+    }
+
     db.add registro_ponto {
       data = {
         colaborador_id: $colaborador_autenticado.id

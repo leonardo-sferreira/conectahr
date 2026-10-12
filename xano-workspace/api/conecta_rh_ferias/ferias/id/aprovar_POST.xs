@@ -1,5 +1,5 @@
 // Aprova uma solicitacao de ferias.
-// Operacao permitida somente para RH ou ADMIN.
+// RH, Admin, o superior direto da pessoa ou, sem superior, o gestor do departamento (tarefa 83).
 // Nao altera o periodo solicitado.
 query "ferias/{id}/aprovar" verb=POST {
   api_group = "ConectaRH — Férias"
@@ -110,26 +110,27 @@ query "ferias/{id}/aprovar" verb=POST {
       value = false
     }
 
+    // Hierarquia (tarefa 83): com superior direto, ele decide (alem de RH e Admin); sem
+    // superior, o gestor do departamento. Vale para qualquer perfil.
     conditional {
-      if ($colaborador_escopo != null && $perfil_decisor == "GESTOR") {
-        db.get colaborador {
-          field_name = "user_id"
-          field_value = $usuario_decisor.id
-        } as $colaborador_do_gestor
+      if ($colaborador_escopo != null && $colaborador_do_decisor != null && $colaborador_escopo.superior_colaborador_id != null) {
+        var.update $e_gestor_da_equipe {
+          value = ($colaborador_escopo.superior_colaborador_id == $colaborador_do_decisor.id)
+        }
+      }
+    }
+
+    conditional {
+      if ($colaborador_escopo != null && $colaborador_do_decisor != null && $colaborador_escopo.superior_colaborador_id == null) {
+        db.query departamento {
+          where = $db.departamento.gestor_colaborador_id == $colaborador_do_decisor.id && $db.departamento.id == $colaborador_escopo.departamento_id
+          return = {type: "single"}
+        } as $departamento_do_gestor
 
         conditional {
-          if ($colaborador_do_gestor != null) {
-            db.query departamento {
-              where = $db.departamento.gestor_colaborador_id == $colaborador_do_gestor.id && $db.departamento.id == $colaborador_escopo.departamento_id
-              return = {type: "single"}
-            } as $departamento_do_gestor
-
-            conditional {
-              if ($departamento_do_gestor != null) {
-                var.update $e_gestor_da_equipe {
-                  value = true
-                }
-              }
+          if ($departamento_do_gestor != null) {
+            var.update $e_gestor_da_equipe {
+              value = true
             }
           }
         }

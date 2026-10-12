@@ -117,10 +117,12 @@ query "central_de_tarefas" verb=GET {
       }
     }
 
-    // ---- Escopo de aprovacao: RH/ADMIN veem tudo, GESTOR so a equipe ----
+    // ---- Escopo de aprovacao (tarefa 83): RH e Admin veem tudo; os demais, pela hierarquia:
+    // quem os tem como superior direto e, de quem nao tem superior, o departamento que
+    // gerenciam. Vale para qualquer perfil (o superior nao precisa ter o perfil Gestor).
 
-    var $e_aprovador {
-      value = ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || $perfil_autenticado == "GESTOR")
+    var $ve_tudo {
+      value = ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN")
     }
 
     var $departamento_escopo_id {
@@ -128,7 +130,7 @@ query "central_de_tarefas" verb=GET {
     }
 
     conditional {
-      if ($perfil_autenticado == "GESTOR" && $colaborador_autenticado != null) {
+      if ($colaborador_autenticado != null) {
         db.query departamento {
           where = $db.departamento.gestor_colaborador_id == $colaborador_autenticado.id
           return = {type: "single"}
@@ -144,9 +146,47 @@ query "central_de_tarefas" verb=GET {
       }
     }
 
-    // ---- Fila de aprovacao (ferias, documentos, desligamentos) ----
+    var $ids_equipe {
+      value = []
+    }
+
+    conditional {
+      if ($ve_tudo == false && $colaborador_autenticado != null) {
+        db.query colaborador {
+          where = $db.colaborador.anonimizado_em == null
+          return = {type: "list"}
+          output = ["id", "superior_colaborador_id", "departamento_id"]
+        } as $todos_para_equipe
+
+        foreach ($todos_para_equipe) {
+          each as $pessoa_equipe {
+            conditional {
+              if ($pessoa_equipe.id != $colaborador_autenticado.id && ($pessoa_equipe.superior_colaborador_id == $colaborador_autenticado.id || ($pessoa_equipe.superior_colaborador_id == null && $departamento_escopo_id != null && $pessoa_equipe.departamento_id == $departamento_escopo_id))) {
+                var.update $ids_equipe {
+                  value = $ids_equipe|push:$pessoa_equipe.id
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    var $e_superior {
+      value = (($ids_equipe|count) > 0)
+    }
+
+    var $e_aprovador {
+      value = ($ve_tudo || $e_superior)
+    }
+
+    // ---- Fila de aprovacao (ferias, ausencias, documentos, desligamentos) ----
 
     var $ferias_pendentes_fila {
+      value = []
+    }
+
+    var $ausencias_pendentes_fila {
       value = []
     }
 
@@ -165,10 +205,12 @@ query "central_de_tarefas" verb=GET {
           return = {type: "list"}
         } as $ferias_pendentes_todas
 
-        db.query documento {
-          where = $db.documento.status == "pendente_analise"
+        // Ausencia: so tipo, periodo e situacao (nunca o comprovante nem o motivo).
+        db.query ausencia {
+          where = $db.ausencia.status == "Pendente"
           return = {type: "list"}
-        } as $documentos_pendentes_todos
+          output = ["id", "colaborador_id", "tipo", "data_inicio", "data_fim", "status"]
+        } as $ausencias_pendentes_todas
 
         db.query solicitacao_desligamento {
           where = $db.solicitacao_desligamento.status == "pendente" || $db.solicitacao_desligamento.status == "em_analise"
@@ -176,10 +218,18 @@ query "central_de_tarefas" verb=GET {
         } as $desligamentos_pendentes_todos
 
         conditional {
-          // Sem departamento gerenciado, o Gestor nao ve fila nenhuma (antes caia em "ve tudo").
-          if ($departamento_escopo_id == null && $perfil_autenticado != "GESTOR") {
+          if ($ve_tudo) {
+            db.query documento {
+              where = $db.documento.status == "pendente_analise"
+              return = {type: "list"}
+            } as $documentos_pendentes_todos
+
             var.update $ferias_pendentes_fila {
               value = $ferias_pendentes_todas
+            }
+
+            var.update $ausencias_pendentes_fila {
+              value = $ausencias_pendentes_todas
             }
 
             var.update $documentos_pendentes_fila {
@@ -192,17 +242,14 @@ query "central_de_tarefas" verb=GET {
           }
         }
 
+        // Documentos nao entram na fila de quem nao e RH ou Admin: o superior nunca recebe
+        // documentos pessoais da equipe (LGPD; Figma 241:560).
         conditional {
-          if ($departamento_escopo_id != null) {
+          if ($ve_tudo == false) {
             foreach ($ferias_pendentes_todas) {
               each as $ferias_item {
-                db.get colaborador {
-                  field_name = "id"
-                  field_value = $ferias_item.colaborador_id
-                } as $colaborador_da_ferias
-
                 conditional {
-                  if ($colaborador_da_ferias != null && $colaborador_da_ferias.departamento_id == $departamento_escopo_id) {
+                  if ($ids_equipe|contains:$ferias_item.colaborador_id) {
                     var.update $ferias_pendentes_fila {
                       value = $ferias_pendentes_fila|push:$ferias_item
                     }
@@ -211,18 +258,22 @@ query "central_de_tarefas" verb=GET {
               }
             }
 
-            // Documentos nao entram na fila do Gestor: so RH e Admin decidem documentos, e o
-            // Gestor nunca recebe documentos pessoais da equipe (LGPD; Figma 241:560).
+            foreach ($ausencias_pendentes_todas) {
+              each as $ausencia_item {
+                conditional {
+                  if ($ids_equipe|contains:$ausencia_item.colaborador_id) {
+                    var.update $ausencias_pendentes_fila {
+                      value = $ausencias_pendentes_fila|push:$ausencia_item
+                    }
+                  }
+                }
+              }
+            }
 
             foreach ($desligamentos_pendentes_todos) {
               each as $desligamento_item {
-                db.get colaborador {
-                  field_name = "id"
-                  field_value = $desligamento_item.colaborador_id
-                } as $colaborador_do_desligamento
-
                 conditional {
-                  if ($colaborador_do_desligamento != null && $colaborador_do_desligamento.departamento_id == $departamento_escopo_id) {
+                  if ($ids_equipe|contains:$desligamento_item.colaborador_id) {
                     var.update $desligamentos_pendentes_fila {
                       value = $desligamentos_pendentes_fila|push:$desligamento_item
                     }
@@ -414,6 +465,8 @@ query "central_de_tarefas" verb=GET {
     meu_ponto_status_hoje          : $meu_ponto_status_hoje
     minhas_ferias_pendentes        : $minhas_ferias_pendentes
     fila_ferias_pendentes          : $ferias_pendentes_fila
+    fila_ausencias_pendentes       : $ausencias_pendentes_fila
+    e_superior                     : $e_superior
     fila_documentos_pendentes      : $documentos_pendentes_fila
     fila_desligamentos_pendentes   : $desligamentos_pendentes_fila
     equipe_tamanho                 : $tamanho_equipe
