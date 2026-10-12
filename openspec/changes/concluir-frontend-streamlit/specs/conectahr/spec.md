@@ -195,3 +195,18 @@ O sistema SHALL permitir ligar uma conta de acesso que não tem ficha de colabor
 #### Scenario: Vínculo recusado
 - **WHEN** alguém tenta vincular a própria conta, uma conta que já tem ficha ou uma ficha que já tem conta
 - **THEN** o sistema recusa o vínculo com mensagem clara
+
+### Requirement: Autoedição de contato e endereço
+O colaborador SHALL poder alterar o próprio telefone, e-mail pessoal e endereço (CEP, logradouro, número, complemento, bairro, cidade e UF) sem pedido ao RH. A alteração SHALL valer na hora, valer só para o próprio cadastro (sem receber id) e ser registrada na auditoria com telefone, e-mail e endereço mascarados. O backend SHALL recusar telefone sem DDD (10 ou 11 dígitos), CEP sem 8 dígitos, UF inexistente, e-mail inválido ou de outro colaborador e endereço sem logradouro, número, bairro ou cidade. Colaborador desligado não SHALL alterar. Nome, CPF e data de nascimento SHALL continuar mudando por solicitação de alteração cadastral ao RH.
+
+#### Scenario: Colaborador muda o telefone
+- **WHEN** o colaborador salva um telefone com DDD e o restante do contato válido
+- **THEN** o sistema grava o dado no próprio cadastro, sem pedido ao RH, e registra na auditoria só os 4 últimos dígitos
+
+#### Scenario: Dado inválido
+- **WHEN** o colaborador envia um CEP com menos de 8 dígitos ou um e-mail que já é de outro colaborador
+- **THEN** o sistema recusa com mensagem clara e não altera nada
+
+#### Scenario: Nome continua pelo RH
+- **WHEN** o colaborador quer mudar nome, CPF ou data de nascimento
+- **THEN** o sistema oferece só a solicitação de alteração cadastral, que o RH confere e aplica

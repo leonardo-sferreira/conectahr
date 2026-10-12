@@ -354,3 +354,12 @@ Evidência em `docs/evidencias/frontend-hierarquia-prazo.md`.
 - **Ausência para quem decide, sem dado de saúde.** A fila de ausências da Central traz só tipo, período e situação. O comprovante continua só com o RH, e registrar a ausência aprovada também.
 - **Prazo configurável, começando sem limite** (a decisão do número fica com o RH, tarefa 79): guardado na tabela `configuracao`, conferido no backend nos dois pedidos de correção. O gestor e o RH ajustam sem prazo, para não deixar dia sem saída.
 - **Figma.** Feito com o Figma fora do ar; precisa ser desenhado.
+
+## Contato e endereço no Perfil (tarefa 72, 12/10/2026)
+
+Evidência em `docs/evidencias/frontend-perfil.md`.
+
+- **Decisão** (pedido de 12/10/2026): telefone, e-mail pessoal e endereço a pessoa muda direto, sem pedido ao RH. Nome, CPF e data de nascimento continuam por solicitação de alteração cadastral, porque o RH confere documento.
+- **Backend.** `meu_perfil_colaborador` PATCH, que já existia, passou a validar telefone (10 ou 11 dígitos, guardado só com os números), CEP (8 dígitos, guardado como 00000-000), UF, e-mail e os campos obrigatórios do endereço, e a gravar na auditoria (`atualizar_contato_endereco`) os valores mascarados: telefone com os 4 últimos dígitos, e-mail com a primeira letra e o domínio, endereço só com cidade e UF. A resposta devolve só os campos de contato, não o cadastro inteiro.
+- **Pedidos antigos.** O RH ainda consegue aplicar pedidos de telefone, e-mail ou endereço que já estavam abertos (`solicitacoes_modelo.CAMPO_PARA_CADASTRO` não mudou).
+- **Figma.** Seção 6: cartão "Contato e endereço" (459:822) na tela Perfil (202:175), tela nova "Perfil — Editar contato e endereço" (459:1152, modal 459:1331) e o modal do pedido ao RH (202:509) só com nome, CPF e data de nascimento, sem o comprovante. No escuro, o cartão está no Perfil 108:1195.

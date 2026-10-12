@@ -1,5 +1,6 @@
-// Ativa ou desativa um beneficio do catalogo (tarefa 82). Somente RH ou Admin. Desativar
-// impede novos vinculos; os vinculos existentes continuam ate serem encerrados.
+// Ativa ou remove um beneficio do catalogo (tarefas 82 e 85). Somente RH ou Admin. Remover (ativo =
+// false) impede novos vinculos e encerra hoje o beneficio de todos que o tem, sem apagar o
+// historico; cada pessoa recebe o aviso no sino. Reativar nao devolve os vinculos encerrados.
 query "beneficios/{id}/status" verb=PATCH {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -81,21 +82,77 @@ query "beneficios/{id}/status" verb=PATCH {
       data = {ativo: $input.ativo, updated_at: "now"}
     } as $beneficio_atualizado
 
+    var $encerrados {
+      value = 0
+    }
+
+    conditional {
+      if ($input.ativo == false && $beneficio.ativo) {
+        db.query colaborador_beneficio {
+          where = $db.colaborador_beneficio.beneficio_id == $beneficio.id && $db.colaborador_beneficio.ativo == true
+          return = {type: "list"}
+        } as $vinculos_do_beneficio
+
+        var $hoje {
+          value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
+        }
+
+        foreach ($vinculos_do_beneficio) {
+          each as $vinculo_remover {
+            conditional {
+              if ($vinculo_remover.data_fim == null || $vinculo_remover.data_fim >= $hoje) {
+                db.edit colaborador_beneficio {
+                  field_name = "id"
+                  field_value = $vinculo_remover.id
+                  data = {data_fim: ($vinculo_remover.data_inicio > $hoje ? $vinculo_remover.data_inicio : $hoje), ativo: false, encerrado_por_user_id: $usuario_autenticado.id, updated_at: "now"}
+                } as $vinculo_encerrado
+
+                db.get colaborador {
+                  field_name = "id"
+                  field_value = $vinculo_remover.colaborador_id
+                } as $pessoa_aviso
+
+                conditional {
+                  if ($pessoa_aviso != null && $pessoa_aviso.user_id != null) {
+                    db.add notificacao_interna {
+                      data = {
+                        destinatario_user_id: $pessoa_aviso.user_id
+                        tipo                : "beneficio_atualizado"
+                        titulo              : "O beneficio " ~ $beneficio.nome ~ " foi encerrado"
+                        mensagem            : "A empresa deixou de oferecer o beneficio " ~ $beneficio.nome ~ ". Ele fica no seu historico. Duvidas: fale com o RH."
+                        recurso             : "beneficio"
+                        registro_id         : $vinculo_remover.beneficio_id
+                      }
+                    } as $aviso_beneficio
+                  }
+                }
+
+                var.update $encerrados {
+                  value = $encerrados + 1
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     db.add auditoria {
       data = {
         user_id    : $usuario_autenticado.id
         acao       : "alterar_status_beneficio"
         recurso    : "beneficio"
         registro_id: $beneficio.id
-        valor_novo : ($input.ativo|to_text)
+        valor_novo : ($input.ativo|to_text) ~ "; encerrados=" ~ ($encerrados|to_text)
         resultado  : "sucesso"
       }
     } as $evento_auditoria
   }
 
   response = {
-    sucesso  : true
-    beneficio: $beneficio_atualizado
+    sucesso   : true
+    beneficio : $beneficio_atualizado
+    encerrados: $encerrados
   }
 
   guid = "conectahr-beneficios-status-patch-0001"

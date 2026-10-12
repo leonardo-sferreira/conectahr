@@ -380,6 +380,13 @@ def salvar_dados_bancarios(token: str, banco: str, agencia: str, conta: str, dig
     )
 
 
+def salvar_contato_endereco(token: str, dados: dict) -> dict:
+    """PATCH meu_perfil_colaborador: telefone, e-mail pessoal e endereço do próprio colaborador, sem pedido ao
+    RH (tarefa 72). `dados`: email_pessoal, telefone, cep, logradouro, numero, complemento, bairro, cidade e
+    estado. A alteração vai para a auditoria mascarada."""
+    return _request("PATCH", "meu_perfil_colaborador", token, GRUPO_COLABORADORES, dados)
+
+
 def solicitar_alteracao_cadastral(token: str, descricao: str) -> dict:
     """POST solicitacoes com tipo alteracao_cadastral: o RH confere e aplica no cadastro."""
     return _post("solicitacoes", {"tipo": "alteracao_cadastral", "descricao": descricao}, token, GRUPO_COLABORADORES)

@@ -121,10 +121,31 @@ query "colaboradores/{id}/beneficios" verb=POST {
         data_fim             : $input.data_fim
         observacao           : $input.observacao
         ativo                : true
+        valor_personalizado  : $input.valor_empresa != $beneficio.valor_empresa_padrao || $input.desconto_colaborador != $beneficio.desconto_padrao
         criado_por_user_id   : $usuario_autenticado.id
         updated_at           : "now"
       }
     } as $vinculo_criado
+
+    db.get colaborador {
+      field_name = "id"
+      field_value = $vinculo_criado.colaborador_id
+    } as $pessoa_aviso
+
+    conditional {
+      if ($pessoa_aviso != null && $pessoa_aviso.user_id != null) {
+        db.add notificacao_interna {
+          data = {
+            destinatario_user_id: $pessoa_aviso.user_id
+            tipo                : "beneficio_atualizado"
+            titulo              : "Voce tem um novo beneficio: " ~ $beneficio.nome
+            mensagem            : "O RH incluiu o beneficio " ~ $beneficio.nome ~ " a partir de " ~ ($input.data_inicio|to_text) ~ ". Veja como usar em Beneficios."
+            recurso             : "beneficio"
+            registro_id         : $vinculo_criado.beneficio_id
+          }
+        } as $aviso_beneficio
+      }
+    }
 
     db.add auditoria {
       data = {

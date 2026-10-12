@@ -66,11 +66,67 @@ query beneficios verb=GET {
       sort = {beneficio.nome: "asc"}
       return = {type: "list"}
     } as $beneficios
+
+    // Para cada beneficio (tarefa 85): a FAQ e quantas pessoas o tem, para o RH saber quem sera avisado.
+    var $hoje {
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
+    }
+
+    var $itens {
+      value = []
+    }
+
+    foreach ($beneficios) {
+      each as $b {
+        db.query beneficio_faq {
+          where = $db.beneficio_faq.beneficio_id == $b.id && $db.beneficio_faq.ativo == true
+          sort = {beneficio_faq.ordem: "asc"}
+          return = {type: "list"}
+        } as $faq_do_beneficio
+
+        db.query colaborador_beneficio {
+          where = $db.colaborador_beneficio.beneficio_id == $b.id && $db.colaborador_beneficio.ativo == true
+          return = {type: "list"}
+        } as $vinculos_b
+
+        var $qtd_vigentes {
+          value = 0
+        }
+
+        var $qtd_personalizados {
+          value = 0
+        }
+
+        foreach ($vinculos_b) {
+          each as $vb {
+            conditional {
+              if ($vb.data_fim == null || $vb.data_fim >= $hoje) {
+                var.update $qtd_vigentes {
+                  value = $qtd_vigentes + 1
+                }
+
+                conditional {
+                  if ($vb.valor_personalizado) {
+                    var.update $qtd_personalizados {
+                      value = $qtd_personalizados + 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        var.update $itens {
+          value = $itens|push:{id: $b.id, nome: $b.nome, tipo: $b.tipo, operadora: $b.operadora, descricao: $b.descricao, ativo: $b.ativo, valor_empresa_padrao: $b.valor_empresa_padrao, desconto_padrao: $b.desconto_padrao, faq: $faq_do_beneficio, qtd_vigentes: $qtd_vigentes, qtd_personalizados: $qtd_personalizados}
+        }
+      }
+    }
   }
 
   response = {
     sucesso   : true
-    beneficios: $beneficios
+    beneficios: $itens
   }
 
   guid = "conectahr-beneficios-get-0001"
