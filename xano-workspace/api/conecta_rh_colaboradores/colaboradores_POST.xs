@@ -199,6 +199,11 @@ query colaboradores verb=POST {
       }
     } as $colaborador_criado
 
+    // REP-P: inclusao do empregado na ARP (AFD registro tipo 5, operacao "I").
+    function.run "ConectaHR/registrar_empregado_rep" {
+      input = {colaborador_id: $colaborador_criado.id, operacao: "I", responsavel_user_id: $usuario_rh.id}
+    } as $registro_rep_empregado
+
     // Auditoria: cadastro de colaborador (item 7.11).
     db.add auditoria {
       data = {

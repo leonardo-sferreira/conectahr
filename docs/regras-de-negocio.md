@@ -225,6 +225,16 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 
 `solicitar_correcao_ponto`, `aprovar_correcao_ponto` (com `valor_anterior`/`valor_novo`), `rejeitar_correcao_ponto` (com `justificativa`). **Não auditado:** `ponto/marcar` não grava evento em `auditoria` — não mapeado.
 
+### 4.7 REP-P (em implantação desde 12/10/2026)
+
+Change `ponto-rep-p-e-ferias-clt`; detalhes e fontes em `docs/ponto/rep-p.md`.
+
+- **ARP** (`marcacao_ponto`): só inclusão. `ConectaHR/gravar_registro_rep` grava o próximo NSR (índice único; numa colisão, a gravação falha e a marcação é tentada de novo) com a data e hora de gravação no formato DH do AFD. Tipos: 2 (empregador), 5 (empregado), 6 (evento do serviço: 07 disponível, 08 indisponível) e 7 (marcação, com CPF, data e hora, coletor "02", on-line e hash SHA-256 encadeado com o registro 7 anterior, `ConectaHR/hash_registro_rep`). `tools/checar_endpoints.py` falha se algum `.xs` editar, apagar ou truncar `marcacao_ponto` ou `tratamento_ponto` (`xano-workspace/table/marcacao_ponto.xs`, `xano-workspace/function/conectahr/gravar_registro_rep.xs`).
+- **Empregador** (`empregador`, uma linha): `empregador` GET e PUT só para RH e Admin; CNPJ com 14 dígitos ou CPF com 11; quando mudam identificador, CNO/CAEPF, razão social ou local, grava o registro tipo 2 com o CPF de quem alterou; auditado (`cadastrar_empregador`, `alterar_empregador`) (`xano-workspace/api/conecta_rh_ponto/empregador_*.xs`).
+- **Empregado**: `colaboradores` POST grava o registro 5 "I"; `colaboradores/{id}` PATCH grava "A" quando muda nome ou CPF; a conclusão do desligamento (`solicitacoes_desligamento/{id}/aprovar` e `concluir`) grava "E" (`ConectaHR/registrar_empregado_rep`).
+- **Eventos do serviço**: `rep/eventos` POST (RH e Admin, `07` ou `08`) grava o registro 6, atualiza `empregador.servico_disponivel` e audita.
+- **Dia de ponto**: `ConectaHR/calcular_dia_ponto` junta as marcações válidas (originais menos as desconsideradas, mais as incluídas por tratamento), ordena, forma pares e soma as horas; status `Ajustado` com tratamento, `Completo` com número par, `Aberto` com ímpar hoje, `Incompleto` com ímpar em dia anterior. `ConectaHR/atualizar_dia_ponto` grava o resultado em `registro_ponto`, que passa a ser um cache do dia.
+
 ---
 
 ## 5. Férias e ausências

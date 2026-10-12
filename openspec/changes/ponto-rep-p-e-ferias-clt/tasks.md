@@ -9,13 +9,16 @@
 
 ## 2. Base do REP-P no backend
 
-- [ ] 2.1 Criar as tabelas `empregador`, `marcacao_ponto` (índice único em `nsr`) e `tratamento_ponto`, e os campos novos (`correcao_ponto.tipo`, `marcacao_id`, `data_hora`; `feriado.tipo`; `ferias.dias_abono`; `regra_contrato.maximo_abono`). Verificar: `xano workspace push --dry-run` mostra só inclusões, sem remoção, e a publicação passa.
-- [ ] 2.2 Confirmar o SHA-256 no XanoScript com uma função de teste que devolve o hash de "abc". Verificar: o resultado é `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`; se não for, parar e revisar a decisão D3 com o grupo.
+- [x] 2.1 Criar as tabelas `empregador`, `marcacao_ponto` (índice único em `nsr`) e `tratamento_ponto`, e os campos novos (`correcao_ponto.tipo`, `marcacao_id`, `data_hora`; `feriado.tipo`; `ferias.dias_abono`; `regra_contrato.maximo_abono`). Verificar: `xano workspace push --dry-run` mostra só inclusões, sem remoção, e a publicação passa.
+- [x] 2.2 Confirmar o SHA-256 no XanoScript com uma função de teste que devolve o hash de "abc". Verificar: o resultado é `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`; se não for, parar e revisar a decisão D3 com o grupo.
 - [ ] 2.3 Criar a função `ConectaHR/gravar_registro_rep` (próximo NSR com até 3 tentativas, campos no formato do AFD, hash encadeado do registro 7) e a função `ConectaHR/dia_de_ponto` (pares, horas, status, atualização de `registro_ponto`). Verificar: `tools/testar_rep_p.py` recalcula em Python o hash de marcações gravadas por HTTP e confere a cadeia.
+  - **Em andamento (12/10/2026):** funções publicadas (`sha256_hex`, `data_hora_afd`, `hash_registro_rep`, `calcular_dia_ponto`, `gravar_registro_rep`, `atualizar_dia_ponto`). `tools/testar_rep_p.py --xano`: 9/9, com o hash do backend igual ao do Python. `calcular_dia_ponto` conferido em 4 casos (desconsiderada, incluída, extra, ímpar). Primeiro registro da ARP: NSR 1, evento 07. Falta conferir a cadeia de marcações gravadas, que existem a partir da 3.1 e da 3.4.
 - [ ] 2.4 Criar `empregador` GET e PUT (só RH e Admin, auditado, grava o registro 2) e `rep/eventos` POST para indisponibilidade e disponibilidade (registro 6, códigos 08 e 07). Verificar: um caso que passa e um que falha por HTTP (Gestor recebe 403) e `python tools/checar_endpoints.py` sem falhas.
+  - **Em andamento (12/10/2026):** publicados; `checar_endpoints.py` sem falhas; sem token, 401. Falta o teste com sessão (RH grava, Gestor 403), que depende do código de acesso por e-mail.
 - [ ] 2.5 Gerar o registro 5 em `colaboradores` POST, em `colaboradores/{id}` PATCH quando mudar nome ou CPF e na conclusão do desligamento ("E"). Verificar: cadastrar um colaborador de teste grava o registro 5 com CPF e nome.
-- [ ] 2.6 Fazer `tools/checar_endpoints.py` falhar se algum endpoint tiver `db.edit` ou `db.del` em `marcacao_ponto` ou `tratamento_ponto`, ou se a rotina de anonimização tocar nelas. Verificar: o script acusa um arquivo de teste com `db.del marcacao_ponto` e passa no código real.
-- [ ] 2.7 Documentar o REP-P em `docs/ponto/rep-p.md` (fontes oficiais com link e data, o que é feito, o que fica fora, como conferir a cadeia de hash) e atualizar `docs/regras-de-negocio.md`. Verificar: os links dos leiautes abrem e o documento cita os arts. 74 a 91 usados.
+  - **Em andamento (12/10/2026):** `ConectaHR/registrar_empregado_rep` e as quatro chamadas publicadas. Falta o teste com sessão (cadastrar um colaborador de teste).
+- [x] 2.6 Fazer `tools/checar_endpoints.py` falhar se algum endpoint tiver `db.edit` ou `db.del` em `marcacao_ponto` ou `tratamento_ponto`, ou se a rotina de anonimização tocar nelas. Verificar: o script acusa um arquivo de teste com `db.del marcacao_ponto` e passa no código real.
+- [x] 2.7 Documentar o REP-P em `docs/ponto/rep-p.md` (fontes oficiais com link e data, o que é feito, o que fica fora, como conferir a cadeia de hash) e atualizar `docs/regras-de-negocio.md`. Verificar: os links dos leiautes abrem e o documento cita os arts. 74 a 91 usados.
 
 ## 3. Marcação, tratamento e migração
 

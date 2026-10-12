@@ -124,10 +124,28 @@ def checar_swagger(pastas):
     return problemas
 
 
+# REP-P (Portaria MTP 671/2021, Anexo IX, item 7): a ARP e os tratamentos so recebem
+# inclusao. Nenhum endpoint, funcao ou rotina (inclusive retencao e anonimizacao) pode
+# editar, apagar ou truncar essas tabelas.
+TABELAS_SO_INCLUSAO = ("marcacao_ponto", "tratamento_ponto")
+RE_ESCRITA_PROIBIDA = re.compile(r"db\.(edit|del|patch|truncate|bulk\.update|bulk\.delete|bulk\.patch|add_or_edit)\s+(" + "|".join(TABELAS_SO_INCLUSAO) + r")\b")
+
+
+def checar_so_inclusao(pastas):
+    """Arquivos .xs que alteram ou apagam a ARP (marcacao_ponto) ou os tratamentos."""
+    problemas = []
+    for pasta in pastas:
+        for caminho in sorted(pasta.rglob("*.xs")):
+            for achado in RE_ESCRITA_PROIBIDA.finditer(caminho.read_text(encoding="utf-8")):
+                problemas.append((caminho, f"`db.{achado.group(1)} {achado.group(2)}`: a tabela so aceita inclusao (REP-P)"))
+    return problemas
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--sem-sessao", action="store_true", help="nao exige a validacao de sessao")
     parser.add_argument("--grupo", action="append", help="pasta de grupo em xano-workspace/api (repetivel)")
+    parser.add_argument("--extra", action="append", default=[], help="pasta a mais para a checagem da ARP (teste)")
     args = parser.parse_args()
 
     pastas = [PASTA_API / g for g in args.grupo] if args.grupo else [PASTA_API]
@@ -152,8 +170,14 @@ def main():
     for caminho, motivo in problemas_swagger:
         print(f"{caminho}  [grupo de API]\n    - {motivo}")
 
-    print(f"\n{autenticados} endpoints autenticados, {len(falhas)} com falha; {len(problemas_swagger)} grupo(s) com problema de swagger.")
-    return 1 if (falhas or problemas_swagger) else 0
+    pastas_arp = [RAIZ / "xano-workspace" / p for p in ("api", "function", "task")] + [Path(p) for p in args.extra]
+    problemas_arp = checar_so_inclusao([p for p in pastas_arp if p.exists()])
+    for caminho, motivo in problemas_arp:
+        print(f"{caminho}\n    - {motivo}")
+
+    print(f"\n{autenticados} endpoints autenticados, {len(falhas)} com falha; {len(problemas_swagger)} grupo(s) com problema de swagger; "
+          f"{len(problemas_arp)} escrita(s) proibida(s) na ARP.")
+    return 1 if (falhas or problemas_swagger or problemas_arp) else 0
 
 
 if __name__ == "__main__":

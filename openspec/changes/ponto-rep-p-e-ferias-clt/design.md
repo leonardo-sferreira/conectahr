@@ -34,13 +34,13 @@ Campos: `nsr` (int, índice único), `tipo_registro` (2, 5, 6 ou 7), `colaborado
 
 ### D2. NSR pelo máximo + 1, protegido pelo índice único
 
-`ponto/marcar` (e quem grava os tipos 2, 5 e 6) busca o maior NSR e grava o seguinte. Se duas gravações colidirem, o índice único recusa uma; o endpoint tenta de novo até 3 vezes antes de devolver erro. Sem lacunas, porque nada é apagado.
+`ConectaHR/gravar_registro_rep` busca o maior NSR e grava o seguinte. Se duas gravações colidirem, o índice único recusa uma e a chamada devolve erro; o frontend tenta a marcação de novo uma vez (o XanoScript do projeto não usa `try_catch`, e testá-lo deixaria funções de teste que não podem ser apagadas sem uma sincronização completa). Sem lacunas, porque nada é apagado.
 
 - *Alternativa:* contador numa tabela `configuracao`. Rejeitada: ler e incrementar não é atômico no XanoScript; o índice único é a única garantia que o Xano dá.
 
 ### D3. Hash SHA-256 no backend, conferido em Python
 
-O hash do registro 7 é o SHA-256 (hex minúsculo, 64 caracteres) da concatenação, sem separador, dos campos 1 a 7 **exatamente como saem no AFD** (NSR com 9 dígitos, "7", data e hora no formato DH com 24 caracteres, CPF com 12 dígitos, data e hora de gravação, "02", "0") seguida do hash do registro 7 anterior, quando existir. Gravar o hash já no formato do arquivo evita divergência entre o que foi calculado e o que é exportado. O filtro de SHA-256 do XanoScript é confirmado na primeira publicação. Se não existir, usamos `hmac_sha256` com chave vazia, que **não** é o mesmo algoritmo: nesse caso a decisão volta para revisão antes de seguir.
+O hash do registro 7 é o SHA-256 (hex minúsculo, 64 caracteres) da concatenação, sem separador, dos campos 1 a 7 **exatamente como saem no AFD** (NSR com 9 dígitos, "7", data e hora no formato DH com 24 caracteres, CPF com 12 dígitos, data e hora de gravação, "02", "0") seguida do hash do registro 7 anterior, quando existir. Gravar o hash já no formato do arquivo evita divergência entre o que foi calculado e o que é exportado. **Confirmado em 12/10/2026:** o filtro `sha256` do XanoScript devolve `ba7816bf…15ad` para "abc", e `ConectaHR/hash_registro_rep` dá o mesmo hash que o Python (`tools/testar_rep_p.py --xano`).
 
 - O teste (`tools/testar_rep_p.py`) recalcula a cadeia inteira em Python com `hashlib` e confere registro por registro.
 
@@ -50,6 +50,7 @@ O hash do registro 7 é o SHA-256 (hex minúsculo, 64 caracteres) da concatenaç
 
 - O dia é calculado por uma **função** do Xano (`ConectaHR/dia_de_ponto`) a partir das marcações e dos tratamentos: ordena, descarta as desconsideradas, soma as incluídas, forma os pares, calcula as horas e o status. A função alimenta `registro_ponto`, que vira um cache do dia, atualizado a cada marcação e a cada tratamento. Assim, a Central, a rotina diária e o banco de horas continuam lendo `registro_ponto` e a mudança fica contida.
 - `correcao_ponto` passa a guardar `tipo` (`inclusao` ou `desconsideracao`), `marcacao_id` e `data_hora` pedida, no lugar de `campo` e `valor_solicitado`. Os pedidos antigos continuam legíveis.
+- O cálculo puro fica em `ConectaHR/calcular_dia_ponto` (testável por `xano function run`, sem banco) e `ConectaHR/atualizar_dia_ponto` lê a ARP e os tratamentos e grava o cache. A ARP tem um campo `data` (dia local da marcação), fora do AFD, só para a consulta do dia.
 - *Alternativa:* calcular o dia só no frontend. Rejeitada: o backend é dono das regras (AGENTS.md, seção 3), e o cálculo das horas precisa ser o mesmo para a pessoa, o gestor e o AEJ.
 
 ### D5. Comprovante e arquivos gerados em Python, a partir de dados do backend
@@ -69,6 +70,10 @@ Campos do registro 2 do AFD e do cabeçalho do AEJ, mais `inpi_registro`, `desen
 - Backend: `ponto/marcar` recusa quando a data local de hoje for anterior a `colaborador.data_admissao`; os pedidos de correção já recusam dia anterior à admissão.
 - Frontend: `primeiro_dia()` passa a ser **só** a admissão (sem o mínimo com o primeiro registro). Sem admissão no cadastro, cai no primeiro registro, como hoje. Dias antes dela e dias futuros saem como linha em branco na planilha.
 - A data de admissão errada no cadastro continua gerando falta; a correção é acertar o cadastro (informado ao usuário em 12/10/2026).
+
+### D7b. A marcação nunca é recusada por horário
+
+O `ponto/marcar` antigo recusava a volta do intervalo antes do mínimo e a saída com hora extra acima do limite sem autorização. O art. 74 da Portaria proíbe restringir a marcação e exigir autorização prévia para hora extra, então essas regras passam a só calcular e sinalizar (intervalo curto e extra acima do limite aparecem no espelho e na folha); a marcação sempre é gravada. Continuam recusadas: pessoa sem ficha, desligada, antes da admissão e empregador não cadastrado.
 
 ### D8. Planilha do mês com `st.dataframe`
 

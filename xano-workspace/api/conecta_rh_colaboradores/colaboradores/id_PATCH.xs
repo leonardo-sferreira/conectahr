@@ -152,6 +152,15 @@ query "colaboradores/{id}" verb=PATCH {
       }
     } as $colaborador_atualizado
 
+    // REP-P: mudanca de nome ou CPF vai para a ARP (AFD registro tipo 5, operacao "A").
+    conditional {
+      if ($colaborador_atual.nome != $input.nome || $colaborador_atual.cpf != $resultado_cpf.cpf_normalizado) {
+        function.run "ConectaHR/registrar_empregado_rep" {
+          input = {colaborador_id: $colaborador_atual.id, operacao: "A", responsavel_user_id: $usuario_rh.id}
+        } as $registro_rep_empregado
+      }
+    }
+
     // Auditoria: alteracao cadastral pelo RH.
     db.add auditoria {
       data = {
