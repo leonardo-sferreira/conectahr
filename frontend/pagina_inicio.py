@@ -183,14 +183,9 @@ def pagina_inicio() -> None:
         """
     )
 
-    st.html(
-        """
-        <div class="crh-painel crh-faq">
-          <div>
-            <p class="crh-faq-titulo">Dúvidas sobre férias, ponto ou documentos?</p>
-            <p class="crh-meta">Consulte a base de conhecimento do RH</p>
-          </div>
-          <p class="crh-faq-link">Ver FAQ →</p>
-        </div>
-        """
-    )
+    with st.container(horizontal=True, vertical_alignment="center", key="inicio_faq"):
+        st.html('<div class="crh-faq" style="padding:0"><div><p class="crh-faq-titulo">Dúvidas sobre férias, ponto ou documentos?</p>'
+                '<p class="crh-meta">Consulte a base de conhecimento do RH</p></div></div>', width="stretch")
+        if st.button("Ver FAQ →", type="tertiary", key="inicio_ver_faq"):
+            st.session_state.ir_faq = True
+            st.rerun()

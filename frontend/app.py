@@ -35,6 +35,7 @@ from pagina_documentos import pagina_documentos
 from pagina_entrar import pagina_entrar
 from pagina_ferias import pagina_ferias
 from pagina_estrutura import pagina_estrutura
+from pagina_faq import pagina_faq
 from pagina_folha_ponto import pagina_folha_ponto
 from pagina_inicio import pagina_inicio
 from pagina_meu_onboarding import pagina_meu_onboarding
@@ -171,8 +172,9 @@ PG_FOLHA = st.Page(pagina_folha_ponto, title="Folha de ponto", url_path="folha-d
 PG_SOLICITACOES = st.Page(pagina_solicitacoes, title="Solicitações ao RH", url_path="solicitacoes-ao-rh")
 PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de documentos", url_path="conferencia-de-documentos")
 PG_ESTRUTURA = st.Page(pagina_estrutura, title="Estrutura da empresa", url_path="estrutura-da-empresa")
+PG_FAQ = st.Page(pagina_faq, title="Comunicados e FAQ", url_path="comunicados-e-faq")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -184,13 +186,14 @@ _ATALHOS = {
     "ir_aviso": PG_AVISO,
     "ir_central": PG_CENTRAL,
     "ir_solicitacoes": PG_SOLICITACOES,
+    "ir_faq": PG_FAQ,
 }
 for marca, destino in _ATALHOS.items():
     if st.session_state.pop(marca, False):
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).

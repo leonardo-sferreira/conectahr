@@ -220,6 +220,16 @@ def meus_comunicados(token: str) -> dict:
     return _get("meus_comunicados", token, GRUPO_COLABORADORES)
 
 
+def artigos_faq(token: str) -> dict:
+    """GET artigos_faq -> {artigos}: os artigos ativos da FAQ, para qualquer perfil."""
+    return _get("artigos_faq", token, GRUPO_COLABORADORES)
+
+
+def criar_artigo_faq(token: str, categoria: str, titulo: str, conteudo: str) -> dict:
+    """POST artigos_faq (RH e Admin): publica uma pergunta e a resposta na FAQ."""
+    return _post("artigos_faq", {"categoria": categoria, "titulo": titulo, "conteudo": conteudo}, token, GRUPO_COLABORADORES)
+
+
 def meu_perfil_colaborador(token: str) -> dict:
     """GET meu_perfil_colaborador -> {colaborador, cargo, departamento, ...} do próprio usuário."""
     return _get("meu_perfil_colaborador", token, GRUPO_COLABORADORES)
