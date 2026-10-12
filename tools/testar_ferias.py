@@ -236,8 +236,8 @@ conferir(("calendario",) not in chamadas, "o calendário só carrega os feriados
 at.button(key="fe_calendario").click()
 at = at.run()
 t = texto(at)
-conferir("Dom" in t and "Sáb" in t and "Suas férias" in t and "Pedido em análise" in t and "BrasilAPI" in t and ("calendario",) in chamadas,
-         "Ver calendário abre o mês com a legenda e a origem dos feriados")
+conferir("Dom" in t and "Sáb" in t and "Suas férias" in t and "Pedido em análise" in t and "dias sem expediente" in t and ("calendario",) in chamadas,
+         "Ver calendário abre o mês com a legenda e o que feriado significa")
 at.session_state["fe_cal_mes"] = (2026, 12)
 at = at.run()
 conferir("Dezembro de 2026" in texto(at) and "Natal" in texto(at) and "Facultativo" in texto(at), "navegar até dezembro mostra o Natal e o facultativo")
@@ -268,7 +268,7 @@ def estrutura(perfil: str, **extra) -> AppTest:
 
 at = estrutura("ADMIN")
 t = texto(at)
-conferir(not at.exception and "Estrutura da empresa" in t and "Revolução Constitucionalista" in t and "BrasilAPI" in t, "Admin vê a lista do ano e a nota da BrasilAPI")
+conferir(not at.exception and "Estrutura da empresa" in t and "Revolução Constitucionalista" in t and "dia sem expediente" in t, "Admin vê a lista do ano e o que feriado significa")
 at.button(key="estr_importar").click()
 at = at.run()
 conferir(("importar", HOJE.year) in chamadas and not at.exception, "importar chama o backend com o ano escolhido")

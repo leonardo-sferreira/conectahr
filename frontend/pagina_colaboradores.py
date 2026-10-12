@@ -94,8 +94,7 @@ def _modal_admitir(org: dict) -> None:
     c1, c2 = st.columns(2)
     dados["nivel"] = c1.selectbox("Nível", list(NIVEIS), format_func=NIVEIS.get, key="adm_nivel")
     dados["carga_horaria_semanal"] = c2.number_input("Carga horária semanal", min_value=1.0, max_value=60.0, value=44.0, step=1.0, key="adm_carga")
-    dados["salario"] = st.number_input("Salário (R$, só o RH vê)", min_value=0.0, value=None, step=100.0, format="%.2f", key="adm_salario")
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">Depois de admitir, crie o acesso: a pessoa recebe por e-mail uma senha temporária e começa no Onboarding. Só o RH admite.</p></div>')
+    dados["salario"] = st.number_input("Salário (R$)", min_value=0.0, value=None, step=100.0, format="%.2f", key="adm_salario")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="adm_cancelar"):
@@ -140,8 +139,6 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
     escolhido = "COLABORADOR"
     if admin:
         escolhido = st.radio("Perfil", list(PERFIS), format_func=PERFIS.get, key="acesso_perfil")
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A pessoa recebe uma senha temporária por e-mail e troca no primeiro acesso.'
-            + ("" if admin else " A conta nasce com o perfil Colaborador; outro perfil é o Admin quem define.") + '</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="acesso_cancelar"):
@@ -207,8 +204,6 @@ def _modal_superior(colab: dict, colabs: list[dict], deps: dict) -> None:
         format_func=lambda i: "Sem superior (vale o gestor do departamento)" if i is None else f"{candidatos[i].get('nome')} — {deps.get(candidatos[i].get('departamento_id')) or '—'}",
         key="col_sup_escolha",
     )
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O superior direto aprova as correções de ponto da pessoa, consulta a folha '
-            'dela e pode ajustá-la. Use o perfil Gestor para quem é superior de alguém. A mudança fica na auditoria.</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="col_sup_cancelar"):
@@ -230,7 +225,7 @@ def _ficha(colab: dict, dados: dict) -> None:
         campos = "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in ficha(colab, dados["organograma"], dados["usuarios"], dados["colaboradores"]))
         st.html(f'<div class="crh-campos crh-campos-direita">{campos}</div>')
         with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-            st.html('<p class="crh-meta">Editar cadastro, mudar cargo ou salário e a linha do tempo chegam depois (tarefa 53).</p>', width="stretch")
+            st.space("stretch")
             if st.button("Definir superior", key="col_definir_superior"):
                 st.session_state.modal_cadastro = ("superior", colab.get("id"))
                 st.rerun()
@@ -276,8 +271,6 @@ def pagina_colaboradores() -> None:
             st.rerun()
 
     _tabela(linhas_colaboradores(colabs, org, busca, dep, situacao))
-    nota = "Só o RH admite. A conta de acesso vem depois, pela ficha (\"Criar acesso\"): a pessoa recebe a senha temporária por e-mail."
-    st.html(f'<p class="crh-meta">{html.escape(nota)}</p>')
 
     selecionado = next((c for c in colabs if c.get("id") == st.session_state.get("col_ficha")), None)
     if selecionado:

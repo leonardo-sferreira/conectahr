@@ -59,7 +59,7 @@ def _abrir(documento_id: int) -> None:
 def _link_aberto() -> None:
     if link := st.session_state.get("pg_link"):
         with st.container(horizontal=True, vertical_alignment="center"):
-            st.html('<p class="crh-meta">Link do arquivo pronto (vale por 5 minutos). A abertura fica registrada na auditoria.</p>', width="content")
+            st.html('<p class="crh-meta">Link do arquivo pronto (vale por 5 minutos).</p>', width="content")
             st.link_button("Abrir arquivo", link)
     if erro := st.session_state.pop("pg_erro", None):
         alerta(st.empty(), "erro", erro)
@@ -145,8 +145,7 @@ def _modal_lancar(tipo: str, competencia, org: dict, colaborador_id) -> None:
         comp = c1.selectbox("Ano-calendário", opcoes, index=opcoes.index(competencia) if competencia in opcoes else 0, key="pg_l_comp")
     emissao = c2.date_input("Data de emissão", value=date.today(), max_value=date.today(), format="DD/MM/YYYY", key="pg_l_emissao")
     st.text_input("Nome do documento", value=nome_documento(tipo, comp), disabled=True, key=f"pg_l_nome_{comp}")
-    link = st.text_input("Link do arquivo", placeholder="https://", max_chars=2000, key="pg_l_link", help="PDF, um arquivo por colaborador. O sistema ainda não recebe arquivos: informe o link https, guardado num endereço aprovado pela empresa.")
-    st.html('<p class="crh-nota-verde">Fica disponível na hora na tela Pagamento do colaborador. Já nasce aprovado e não tem validade.</p>')
+    link = st.text_input("Link do arquivo", placeholder="https://", max_chars=2000, key="pg_l_link", help="PDF, um arquivo por colaborador. Informe o link https.")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pg_l_cancelar"):
@@ -184,7 +183,6 @@ def _modal_substituir(linha: dict) -> None:
     )
     link = st.text_input("Link do arquivo corrigido", placeholder="https://", max_chars=2000, key="pg_s_link")
     motivo = st.text_area("Motivo da correção", max_chars=1000, key="pg_s_motivo", height=80)
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O arquivo anterior fica no histórico como "substituído". O colaborador passa a ver só a versão nova.</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pg_s_cancelar"):
@@ -277,7 +275,6 @@ def _visao_rh(token: str) -> None:
                         elif st.button("Lançar →", type="tertiary", key=f"pg_lan_{l['colaborador_id']}"):
                             st.session_state.modal_pagamento = ("lancar", tipo, comp, l["colaborador_id"])
                             st.rerun()
-    st.html('<p class="crh-meta">Holerites e informes não passam por análise: nascem aprovados, não vencem e só RH ou Admin podem lançar.</p>')
 
     modal = st.session_state.get("modal_pagamento")
     if not modal:

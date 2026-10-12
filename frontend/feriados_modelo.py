@@ -9,9 +9,7 @@ feriado nacional, e Carnaval e Corpus Christi entram como ponto facultativo. Est
 from datetime import date
 
 TIPOS = {"feriado": ("Feriado", "err"), "ponto_facultativo": ("Ponto facultativo", "amb")}
-NOTA = ("Os feriados nacionais vêm da BrasilAPI (brasilapi.com.br), uma API pública: só o ano vai na consulta. Importar de "
-        "novo não duplica. Carnaval e Corpus Christi entram como ponto facultativo. Feriado e ponto facultativo contam como "
-        "dia sem expediente no ponto.")
+NOTA = "Feriado e ponto facultativo contam como dia sem expediente no ponto. Carnaval e Corpus Christi são pontos facultativos."
 
 
 def _dia(valor) -> date | None:

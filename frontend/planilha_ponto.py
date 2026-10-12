@@ -9,8 +9,25 @@ import html
 import pandas as pd
 import streamlit as st
 
-from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, tem_saldo, texto_opcao_marcacao, valores_ajuste, chave_marcacao, alvo_da_chave
-from ponto_modelo import TIPOS_PEDIDO
+from ponto_mensal_modelo import (
+    ACOES_CELULA,
+    COLUNA_AJUSTE,
+    acoes_da_celula,
+    alvo_da_chave,
+    celulas_do_dia,
+    chave_marcacao,
+    colunas_planilha,
+    dia_longo,
+    erro_posicao,
+    linha_selecionada,
+    linhas_planilha,
+    marcacoes_texto,
+    pares_do_mes,
+    situacao_curta,
+    tem_saldo,
+    valores_ajuste,
+)
+from ponto_modelo import validar_pedido
 from theme import estilo_planilha_ponto
 
 
@@ -64,26 +81,38 @@ def resumo_do_dia(linha: dict) -> None:
 
 
 def formulario_pedido(linha: dict, prefixo: str) -> tuple:
-    """Campos do pedido (ou do ajuste): (tipo, horário, alvo, motivo); `alvo` é {'marcacao_id', 'tratamento_id'} da
-    marcação escolhida, ou None. Corrigir o horário e desconsiderar oferecem todas as marcações do dia que ainda não
-    estão em análise, originais e incluídas, com o papel no dia; sem nenhuma, só a inclusão."""
-    opcoes = desconsideraveis(linha)
-    tipos = list(TIPOS_PEDIDO) if opcoes else ["inclusao"]
-    tipo = st.radio("O que precisa ser corrigido?", tipos, format_func=TIPOS_PEDIDO.get, key=f"{prefixo}_tipo")
-    horario = alvo = None
-    if tipo != "inclusao":
-        por_chave = {chave_marcacao(b): b for b in opcoes}
-        rotulo = "Marcação a corrigir" if tipo == "alteracao" else "Marcação a desconsiderar"
-        chave = st.selectbox(rotulo, list(por_chave), index=None, placeholder="Escolha a marcação", key=f"{prefixo}_marcacao",
-                             format_func=lambda c: texto_opcao_marcacao(linha, por_chave[c]))
-        alvo = alvo_da_chave(chave)
-    if tipo != "desconsideracao":
-        rotulo = "Horário certo" if tipo == "alteracao" else "Horário da marcação que faltou"
-        horario = st.time_input(rotulo, value=None, step=60, key=f"{prefixo}_hora")
+    """Campos do pedido (ou do ajuste): (tipo, horário, alvo, motivo). A pessoa escolhe a célula da planilha (pedido do
+    usuário, 12/10/2026): numa preenchida, corrigir o horário, incluir uma marcação antes dela ou desconsiderá-la; na
+    vazia, incluir. `alvo` é {'celula', 'marcacao_id', 'tratamento_id'} (ids só de quem é corrigido ou desconsiderado)."""
+    celulas = celulas_do_dia(linha)
+    por_indice = {c["indice"]: c for c in celulas}
+    indice = st.selectbox("Célula", list(por_indice), index=None, placeholder="Escolha a célula da planilha", key=f"{prefixo}_celula",
+                          format_func=lambda i: por_indice[i]["texto"])
+    tipo = horario = alvo = None
+    if indice is not None:
+        celula = por_indice[indice]
+        acoes = acoes_da_celula(celula)
+        # Na célula preenchida a pergunta aparece sempre (mesmo com uma opção só, para ficar claro o que dá para fazer).
+        tipo = st.radio("O que fazer?", acoes, format_func=ACOES_CELULA.get, key=f"{prefixo}_tipo") if celula["batida"] else acoes[0]
+        b = celula["batida"] if tipo != "inclusao" else None
+        alvo = {"celula": indice, "marcacao_id": None, "tratamento_id": None}
+        if b:
+            alvo.update(alvo_da_chave(chave_marcacao(b)))
+        if tipo != "desconsideracao":
+            rotulo = "Horário certo" if tipo == "alteracao" else "Horário da marcação"
+            horario = st.time_input(rotulo, value=None, step=60, key=f"{prefixo}_hora")
     motivo = st.text_area("Motivo", max_chars=150, key=f"{prefixo}_motivo", height=80)
     return tipo, horario, alvo, motivo
 
 
+def erro_do_formulario(linha: dict, tipo, horario, alvo, motivo: str) -> str | None:
+    """O que impede enviar: a célula, o horário e o motivo (`validar_pedido`) e se o horário cabe na célula escolhida."""
+    if alvo is None:
+        return "Escolha a célula da planilha."
+    marcacao = alvo if alvo.get("marcacao_id") or alvo.get("tratamento_id") else None
+    return validar_pedido(tipo, horario, marcacao, motivo) or erro_posicao(linha, alvo["celula"], tipo, horario)
+
+
 def limpar_formulario(prefixo: str) -> None:
-    for sufixo in ("tipo", "hora", "marcacao", "motivo"):
+    for sufixo in ("celula", "tipo", "hora", "marcacao", "motivo"):
         st.session_state.pop(f"{prefixo}_{sufixo}", None)

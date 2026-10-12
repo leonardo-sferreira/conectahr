@@ -107,8 +107,6 @@ def _modal_analisar(linha: dict, colab: dict | None) -> None:
         campo = CAMPO_PARA_CADASTRO.get((alt or {}).get("campo")) or ("endereco" if (alt or {}).get("campo") == "Endereço" else None)
         atuais = dados_atuais(colab)
         dados = _formulario_cadastro(atuais, aplicar_pedido(atuais, alt), campo)
-    elif linha["tipo_chave"] == "alteracao_cadastral":
-        st.html('<p class="crh-nota-ambar">Só o RH aplica a mudança no cadastro. Você pode indeferir o pedido.</p>')
     justificativa = st.text_area("Justificativa (o colaborador vê; obrigatória para indeferir)", max_chars=1000, key="sol_justificativa", height=70)
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
@@ -230,7 +228,6 @@ def pagina_solicitacoes() -> None:
     mapa = pessoas(org)
     itens = linhas(dados["solicitacoes"], mapa, aba, hoje, tipo, dep)
     _tabela(itens, aba, usuario.get("colaborador_id"))
-    st.html('<p class="crh-meta">Alteração cadastral: confira o valor atual e o novo e use "Aplicar e atender" — o cadastro é gravado e o pedido, atendido. Indeferir exige justificativa. Pedidos LGPD ficam em "Pedidos LGPD".</p>')
 
     modal = st.session_state.get("modal_solicitacao")
     if not modal:

@@ -79,7 +79,7 @@ def _modal_vincular(linha: dict, colabs: list[dict], deps: dict) -> None:
 @st.dialog("Desativar usuário", width="small", on_dismiss=fechar)
 def _modal_desativar(linha: dict) -> None:
     _campos([("Usuário", linha["nome"]), ("Perfil", linha["perfil_rotulo"])])
-    st.html('<p class="crh-nota-ambar">A pessoa deixa de entrar no ConectaRH. O histórico fica guardado e a conta pode ser reativada.</p>')
+    st.html('<p class="crh-nota-ambar">A pessoa deixa de entrar no ConectaRH.</p>')
     slot = st.empty()
     if _botoes("Desativar", "usr_desat_ok"):
         try:

@@ -33,9 +33,9 @@ from api_client import (
 from decisoes_modelo import validar_motivo
 from folha_modelo import csv_resumo, espelho_da_pessoa, linhas_resumo, meses_da_equipe, meses_da_pessoa, pendentes_da_pessoa
 from pagamento_modelo import MESES
-from planilha_ponto import desmarcar_planilha, formulario_pedido, limpar_formulario, render_planilha, resumo_do_dia
+from planilha_ponto import desmarcar_planilha, erro_do_formulario, formulario_pedido, limpar_formulario, render_planilha, resumo_do_dia
 from ponto_mensal_modelo import anos_disponiveis, csv_do_mes, descricao_pedido, legenda, meses_do_ano, resumo_do_mes, tem_saldo, texto_prazo
-from ponto_modelo import hoje_brasilia, validar_pedido, valor_solicitado_ms
+from ponto_modelo import hoje_brasilia, valor_solicitado_ms
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _VALIDADE_CACHE_S = 20
@@ -97,15 +97,13 @@ def _modal_ajustar(pessoa: dict, linha: dict) -> None:
     if linha["nota"] and not linha["nota"].startswith(("Esqueceu", "Mês encerrado")):
         st.html(f'<p class="crh-meta" style="margin:0">{html.escape(linha["nota"])}</p>')
     tipo, horario, alvo, motivo = formulario_pedido(linha, "fp_aj")
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O ajuste vale na hora como tratamento: a marcação original não muda, '
-            'o motivo fica no histórico do dia e a pessoa é avisada. Marcações com pedido pendente ficam fora: decida o pedido.</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="fp_aj_cancelar"):
             _fechar()
             st.rerun()
         if st.button("Ajustar", type="primary", key="fp_aj_ok"):
-            erro_campo = validar_pedido(tipo, horario, alvo, motivo)
+            erro_campo = erro_do_formulario(linha, tipo, horario, alvo, motivo)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
@@ -155,8 +153,8 @@ def _modal_recusar(pessoa: dict, correcao: dict, marcacoes: dict) -> None:
 # ---------------------------------------------------------------------------
 @st.dialog("Prazo para pedir correção de ponto", width="small", on_dismiss=_fechar)
 def _modal_prazo(atual: int | None) -> None:
-    st.html('<p class="crh-meta">Até quantos dias depois o colaborador pode pedir a correção de um dia. Depois disso, só o gestor ou o RH '
-            'ajustam (ajuste direto, auditado). Sem limite: qualquer dia desde o primeiro ponto.</p>')
+    st.html('<p class="crh-meta">Até quantos dias depois o colaborador pode pedir a correção de um dia. Sem limite: qualquer dia desde '
+            'o primeiro ponto.</p>')
     sem_limite = st.toggle("Sem limite", value=not atual, key="fp_prazo_sem")
     dias = st.number_input("Dias", min_value=1, max_value=3650, value=int(atual or 30), step=1, key="fp_prazo_dias", disabled=sem_limite)
     slot = st.empty()
@@ -184,8 +182,7 @@ def _cartao_prazo(token: str) -> None:
     except ApiError:
         atual = None
     with st.container(horizontal=True, vertical_alignment="center", key="fp_prazo"):
-        st.html(f'<p class="crh-meta" style="margin:0">Prazo para o colaborador pedir correção: <b>{html.escape(texto_prazo(atual))}</b>. '
-                'Depois dele, só o gestor ou o RH ajustam.</p>', width="stretch")
+        st.html(f'<p class="crh-meta" style="margin:0">Prazo para o colaborador pedir correção: <b>{html.escape(texto_prazo(atual))}</b>.</p>', width="stretch")
         if st.button("Alterar prazo", type="tertiary", key="fp_prazo_alterar"):
             st.session_state.modal_folha = ("prazo", atual)
             st.rerun()
@@ -265,7 +262,7 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
     ])
     proprio = bool(pessoa.get("e_voce"))
     if proprio:
-        st.html('<p class="crh-nota-ambar">Esta é a sua folha: só consulta. Para corrigir o seu ponto, peça a correção na tela Ponto; quem decide é o seu superior.</p>')
+        st.html('<p class="crh-nota-ambar">Esta é a sua folha: só consulta.</p>')
 
     pendentes = pendentes_da_pessoa(dados)
     marcacoes = {mc.get("id"): mc for mc in dados.get("marcacoes") or []}
@@ -302,9 +299,6 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
         desmarcar_planilha(chave)
         st.session_state.modal_folha = ("ajustar", escolhida["data"].isoformat())
         st.rerun()
-    if not proprio:
-        st.html('<div class="crh-incluso"><p class="n" style="margin:0">Marque "Ajuste" no fim da linha para incluir ou desconsiderar uma marcação '
-                'do dia. A marcação original nunca é alterada: o ajuste fica ao lado dela, com o motivo.</p></div>')
     st.download_button("Baixar folha do mês (CSV)", csv_do_mes(linhas), file_name=f"folha-ponto-{pessoa.get('id')}-{ano}-{mes:02d}.csv", mime="text/csv", key="fp_baixar_pessoa")
 
     modal = st.session_state.get("modal_folha")
