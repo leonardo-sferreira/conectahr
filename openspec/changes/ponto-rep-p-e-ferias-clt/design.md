@@ -83,6 +83,7 @@ Uma linha por dia: Data, Dia, os pares "Ent. 1", "Saí. 1", "Ent. 2"… (até o 
 
 - *Alternativa:* tabela em HTML. Rejeitada: o pedido é "formato de planilha", e o `dataframe` dá rolagem, ordenação e cópia como numa planilha.
 - **Modo claro (12/10/2026):** o `dataframe` desenha num canvas com as cores do tema base do Streamlit, que é escuro (`.streamlit/config.toml`), e nem o CSS nem o Styler alcançam o cabeçalho e a coluna de seleção. No modo claro a planilha recebe `filter: invert(1) hue-rotate(180deg)`, e as cores das células vão já "invertidas" (`estilo_planilha_ponto` em `theme.py`). Trocar o tema base para claro mexeria em todas as telas; fica para outra change.
+- **Nomes das colunas x nomes no dia (12/10/2026, decisão do usuário):** a planilha do mês mantém "Ent. 1", "Saí. 1", "Ent. 2"…, porque preenche pela posição e um dia de duas marcações poria a saída final na coluna do almoço. Já a tela "Hoje" e os comprovantes nomeiam cada marcação pelo papel (Entrada, Saída para o almoço, Volta do almoço, Saída; intervalos no meio), que é o que o funcionário consulta no dia.
 - A tela usa a mesma planilha na folha da equipe (`frontend/planilha_ponto.py`), com "Ajustar o dia" no lugar de "Pedir correção do dia".
 
 ### D9. Saldo de férias calculado no backend, sem tabela nova
