@@ -116,7 +116,7 @@ query "ponto/correcao" verb=POST {
 
     conditional {
       if ($config_prazo != null && $config_prazo.valor_inteiro != null) {
-        precondition ($dia >= ((now - ($config_prazo.valor_inteiro * 86400000))|format_timestamp:"Y-m-d":"America/Sao_Paulo")) {
+        precondition ($dia >= ((now|add_secs_to_timestamp:(0 - $config_prazo.valor_inteiro * 86400))|format_timestamp:"Y-m-d":"America/Sao_Paulo")) {
           error_type = "inputerror"
           error = "O prazo para pedir correcao deste dia acabou. Fale com o seu gestor ou com o RH, que podem ajustar."
         }

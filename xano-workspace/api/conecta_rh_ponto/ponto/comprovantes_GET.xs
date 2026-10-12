@@ -68,7 +68,7 @@ query "ponto/comprovantes" verb=GET {
 
     // Comprovantes dos ultimos 7 dias (a Portaria exige pelo menos 48 horas).
     var $desde {
-      value = now - 604800000
+      value = now|add_secs_to_timestamp:-604800
     }
 
     db.query marcacao_ponto {
