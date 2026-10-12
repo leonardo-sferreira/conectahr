@@ -375,6 +375,9 @@ def resumo_do_mes(linhas: list[dict]) -> dict:
         "atestados": sum(1 for l in linhas if l["status"] == "ATESTADO"),
         "em_analise": sum(len(l["pendentes"]) for l in linhas),
         "saldo": minutos_texto(sum(l["saldo"] for l in linhas if l.get("saldo") is not None), sinal=True) if tem_saldo(linhas) else None,
+        # Horas positivas e negativas separadas no resumo (decisão do usuário, 12/10/2026); sem jornada (PJ), None.
+        "positivas": minutos_texto(sum(l["saldo"] for l in linhas if (l.get("saldo") or 0) > 0), sinal=True) if tem_saldo(linhas) else None,
+        "negativas": minutos_texto(sum(l["saldo"] for l in linhas if (l.get("saldo") or 0) < 0)) if tem_saldo(linhas) else None,
     }
 
 
@@ -452,7 +455,7 @@ def linhas_planilha(linhas: list[dict], pares: int | None = None) -> list[list[s
     for l in linhas:
         marcas = [texto_batida(b) for b in l["batidas"]] + [""] * (2 * pares - len(l["batidas"]))
         saldo = [minutos_texto(l["saldo"], sinal=True) if l.get("saldo") is not None else ""] if com_saldo else []
-        saida.append([l["dia"], l["semana"], *marcas, " ".join(texto_desconsiderada(b) for b in l["desconsideradas"]),
+        saida.append([f'{l["data"]:%d/%m/%Y}', l["semana"], *marcas, " ".join(texto_desconsiderada(b) for b in l["desconsideradas"]),
                       l["trabalhado"], *saldo, l["situacao"]])
     return saida
 

@@ -142,10 +142,12 @@ conferir(m.meses_disponiveis("2026-08-20", [], H) == [(2026, 10), (2026, 9), (20
 
 caso("Resumo, planilha e legenda")
 r = m.resumo_do_mes(linhas)
-conferir(r == {"horas": "34h05", "dias_trabalhados": 5, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1, "saldo": None},
+conferir(r == {"horas": "34h05", "dias_trabalhados": 5, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1, "saldo": None,
+             "positivas": None, "negativas": None},
          f"resumo do mês, sem jornada: sem saldo ({r})")
 conferir(m.colunas_planilha(2) == ["Data", "Dia", "Ent. 1", "Saí. 1", "Ent. 2", "Saí. 2", "Desconsideradas", "Horas", "Situação"], "colunas da planilha")
-conferir(m.pares_do_mes(linhas) == 2 and m.linhas_planilha(linhas)[13][:6] == ["14", "qua", "08:00", "12:00", "13:00", "18:05 (I)"], "a incluída entra no par, em ordem")
+conferir(m.pares_do_mes(linhas) == 2 and m.linhas_planilha(linhas)[13][:6] == ["14/10/2026", "qua", "08:00", "12:00", "13:00", "18:05 (I)"],
+         "data completa (dd/mm/aaaa); a incluída entra no par, em ordem")
 conferir(m.pares_do_mes([{"batidas": [{}] * 5}]) == 3, "quinta marcação abre o 3º par")
 dia7 = m.espelho_do_mes([reg(7, D, "Ajustado", 9.5)], [], [], [], [], 2026, 10, H, "2026-10-01", marcacoes=marcs[:4], tratamentos=trats[:2])[6]
 conferir(m.linhas_planilha([dia7])[0][-3:] == ["08:01 (D)", "9h30", "AJUSTADO"] and m.marcacoes_texto(dia7) == "08:01 (D) · 08:03 · 12:02 · 13:00 · 18:05 (I)",
@@ -171,7 +173,11 @@ conferir(pc[16]["saldo"] == -30 and pc[16]["situacao"] == "COMPLETO · Descanso 
 conferir(pc[5]["saldo"] == -480 and pc[3]["saldo"] == 0 and pc[6]["saldo"] == 0 and pc[8]["saldo"] == 0 and pc[12]["saldo"] == 0 and pc[7]["saldo"] is None
          and pc[19]["saldo"] == -480, "falta = menos a jornada; folga, atestado, férias e feriado = 0; ausência em análise sem saldo; sem registro = menos a jornada")
 conferir(pc[20]["saldo"] is None and pc[21]["saldo"] is None, "hoje e os dias futuros sem saldo")
-conferir(m.resumo_do_mes(clt)["saldo"] == m.minutos_texto(sum(l["saldo"] or 0 for l in clt), True), "saldo do mês é a soma dos dias")
+rc = m.resumo_do_mes(clt)
+conferir(rc["saldo"] == m.minutos_texto(sum(l["saldo"] or 0 for l in clt), True), "saldo do mês é a soma dos dias")
+conferir(rc["positivas"] == m.minutos_texto(sum(l["saldo"] for l in clt if (l["saldo"] or 0) > 0), True) and rc["positivas"].startswith("+")
+         and rc["negativas"] == m.minutos_texto(sum(l["saldo"] for l in clt if (l["saldo"] or 0) < 0)) and rc["negativas"].startswith("-"),
+         f"horas positivas e negativas separadas ({rc['positivas']} / {rc['negativas']})")
 cols = m.colunas_planilha(2, True)
 conferir(cols[-3:] == ["Horas", "Saldo", "Situação"] and m.linhas_planilha(clt)[15][-3:] == ["8h30", "-0h30", "COMPLETO · Descanso de 9h00 (mínimo 11h)"],
          "coluna Saldo entre Horas e Situação")
@@ -289,7 +295,8 @@ at = app()
 t = texto(at)
 conferir(not at.exception, "a tela abre sem erro")
 conferir("Espelho de ponto eletrônico" in t and "12.345.678/0001-90" in t and "123.456.789-09" in t and "Analista de RH" in t and "8h00 por dia" in t, "cabeçalho do art. 84")
-conferir("Horas no mês" in t and "Atestados" in t and "Correções em análise: 1" in t, "resumo do mês e correções em análise")
+conferir("Horas no mês" in t and "Horas positivas" in t and "Horas negativas" in t and "Atestados" not in t and "Correções em análise: 1" in t,
+         "resumo com horas positivas e negativas, sem atestados")
 df = at.dataframe[0].value
 conferir(len(df) == ANT.day and list(df.columns)[:4] == ["Data", "Dia", "Ent. 1", "Saí. 1"] and df.iloc[IDX_REG]["Ent. 1"] == "08:00"
          and df.iloc[IDX_SEM]["Situação"] == "Falta injustificada", "planilha com todos os dias, os pares e a falta em mês encerrado")

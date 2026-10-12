@@ -373,14 +373,13 @@ def _mes(token: str, dados: dict, meses: list[tuple[int, int]], ano: int, mes: i
                             jornada_horas=_jornada(dados).get("horas_diarias"), descanso_minimo=_jornada(dados).get("descanso_minimo_minutos"))
     render_cabecalho(cabecalho_espelho(dados["rep"] or {}, ano, mes, datetime.now(BRASILIA)))
     numeros = resumo_do_mes(linhas)
-    saldo_mes = [("Saldo do mês", numeros["saldo"], "negativo" if numeros["saldo"].startswith("-") else "verde")] if numeros["saldo"] else []
+    horas_saldo = [("Horas positivas", numeros["positivas"], "verde"), ("Horas negativas", numeros["negativas"], "negativo")] if numeros["positivas"] else []
     render_indicadores([
         ("Horas no mês", numeros["horas"], ""),
-        *saldo_mes,
+        *horas_saldo,
         ("Dias com marcação", str(numeros["dias_trabalhados"]), ""),
         ("Sem registro", str(numeros["sem_registro"]), ""),
         ("Faltas injustificadas", str(numeros["faltas_injustificadas"]), "negativo"),
-        ("Atestados", str(numeros["atestados"]), ""),
     ])
     prazo_txt = f' · Prazo para pedir correção: {texto_prazo(extra.get("prazo_dias"))}' if extra.get("prazo_dias") else ""
     if numeros["em_analise"] or prazo_txt:

@@ -121,6 +121,11 @@ O usuário pediu bloquear a marcação dentro do descanso. O art. 74 proíbe res
 - O espelho (`ponto_mensal_modelo.py`) completa os dias sem marcação: falta injustificada = menos a jornada; folga, feriado, férias e ausência justificada = 0. Férias e ausência aprovadas em dia com marcação: a jornada esperada é zero e as horas viram saldo positivo.
 - A jornada vem de `ponto/comprovantes` (colaborador) e de `folha_ponto/pessoas` (folha da equipe, que passa a devolver `horas_diarias`). PJ sem `horas_diarias`: sem saldo.
 - Só segunda a sexta: o sábado de quem tem 44 horas semanais fica fora (decisão do usuário em 12/10/2026). O saldo não vai para o banco de horas.
+- **Resumo (decisão do usuário, 12/10/2026):** no lugar de um saldo único, "Horas positivas" (soma dos dias com saldo positivo) e "Horas negativas" (soma dos negativos), lado a lado; o cartão "Atestados" saiu, porque a planilha já mostra cada atestado. A coluna Data traz a data completa (dd/mm/aaaa).
+
+### D15. O dia de hoje não se corrige (12/10/2026)
+
+Decisão do usuário: o dia ainda em andamento não recebe pedido de correção nem ajuste direto; o ajuste do dia 12 vale a partir do dia 13. `ponto/correcao` e `folha_ponto/tratar` recusam `dia >= hoje` (data de Brasília) com "O dia de hoje ainda está em andamento. A correção pode ser pedida a partir de amanhã."; a planilha não mostra a caixa "Ajuste" no dia de hoje.
 
 ## Risks / Trade-offs
 

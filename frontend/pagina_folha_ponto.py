@@ -255,10 +255,10 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
             return
     linhas = espelho_da_pessoa(pessoa, dados, feriados, ano, mes, hoje)
     numeros = resumo_do_mes(linhas)
-    saldo_mes = [("Saldo do mês", numeros["saldo"], "negativo" if numeros["saldo"].startswith("-") else "verde")] if numeros["saldo"] else []
+    horas_saldo = [("Horas positivas", numeros["positivas"], "verde"), ("Horas negativas", numeros["negativas"], "negativo")] if numeros["positivas"] else []
     render_indicadores([
         ("Horas trabalhadas no mês", numeros["horas"], ""),
-        *saldo_mes,
+        *horas_saldo,
         ("Dias com marcação", str(numeros["dias_trabalhados"]), "verde"),
         ("Sem registro ou incompletos", str(numeros["sem_registro"]), "ambar"),
         ("Faltas injustificadas", str(numeros["faltas_injustificadas"]), "negativo"),
@@ -296,7 +296,7 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
         alerta(st.empty(), "erro", erro_acao)
 
     chave = f"fp_planilha_{pid}_{ano}_{mes}"
-    escolhida = render_planilha(linhas, chave, ajustavel=None if proprio else lambda l: l["data"] <= hoje)
+    escolhida = render_planilha(linhas, chave, ajustavel=None if proprio else lambda l: l["data"] < hoje)
     st.html(f'<p class="crh-legenda-ponto">{html.escape(legenda(pessoa.get("data_admissao"), tem_saldo(linhas)))}</p>')
     if escolhida:
         desmarcar_planilha(chave)
@@ -311,7 +311,7 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
     if not modal or proprio:
         return
     if modal[0] == "ajustar":
-        linha = next((l for l in linhas if l["data"].isoformat() == modal[1] and not l["em_branco"] and l["data"] <= hoje), None)
+        linha = next((l for l in linhas if l["data"].isoformat() == modal[1] and not l["em_branco"] and l["data"] < hoje), None)
         if linha is None:
             _fechar()
             return

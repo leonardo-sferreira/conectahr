@@ -182,9 +182,10 @@ query "folha_ponto/tratar" verb=POST {
       value = $input.data|format_timestamp:"Y-m-d":"UTC"
     }
 
-    precondition ($dia <= $hoje_brasilia) {
+    // O dia de hoje ainda esta em andamento: a correcao vale a partir do dia seguinte (decisao do usuario, 12/10/2026).
+    precondition ($dia < $hoje_brasilia) {
       error_type = "inputerror"
-      error = "Nao e possivel corrigir um dia futuro."
+      error = "O dia de hoje ainda esta em andamento. A correcao pode ser pedida a partir de amanha."
     }
 
     precondition ($colaborador_alvo.data_admissao == null || $dia >= ($colaborador_alvo.data_admissao|format_timestamp:"Y-m-d":"UTC")) {

@@ -204,7 +204,8 @@ t = texto(at)
 conferir("Pedidos de correção pendentes (1)" in t and f"{UTEIS[0]:%d/%m}: inclusão de 18:00" in t, "pedido pendente da pessoa")
 df = at.dataframe[0].value
 conferir(df.iloc[UTEIS[1].day - 1]["Ent. 1"] == "08:05 (I)" and df.iloc[UTEIS[1].day - 1]["Desconsideradas"] == "08:00 (D)", "planilha com (I) e (D)")
-conferir("Saldo" in df.columns and str(df.iloc[UTEIS[-1].day - 1]["Saldo"]) == "-8h00" and "Saldo do mês" in texto(at), "CLT: coluna Saldo (falta = -8h00) e saldo do mês")
+conferir("Saldo" in df.columns and str(df.iloc[UTEIS[-1].day - 1]["Saldo"]) == "-8h00" and "Horas positivas" in texto(at) and "Horas negativas" in texto(at),
+         "CLT: coluna Saldo (falta = -8h00) e horas positivas e negativas")
 conferir(list(df.columns)[-1] == "Ajuste" and str(df.iloc[UTEIS[1].day - 1]["Ajuste"]) == "False", "coluna Ajuste no fim de cada dia")
 at.button(key="fp_aprovar_77").click()
 at = at.run()
@@ -243,6 +244,15 @@ at.text_area(key="fp_aj_motivo").set_value("Saída confirmada.")
 at.button(key="fp_aj_ok").click()
 at = at.run()
 conferir("nao pode ajustar" in texto(at) and "modal_folha" in at.session_state, "recusa do backend no modal")
+
+caso("O dia de hoje não se ajusta (só a partir de amanhã)")
+at = app()
+at.button(key="fp_abrir_9").click()
+at = at.run()
+df_hoje = at.dataframe[0].value
+conferir(df_hoje.iloc[HOJE.day - 1]["Ajuste"] is None and df_hoje.iloc[HOJE.day - 1]["Data"] == f"{HOJE:%d/%m/%Y}", "hoje sem a caixa Ajuste; data completa")
+at = ajustar_dia(at, HOJE)
+conferir("fp_aj_ok" not in chaves(at) and "modal_folha" not in at.session_state, "nem abrindo o ajuste de hoje à força")
 
 caso("A própria folha: só consulta")
 at = app()

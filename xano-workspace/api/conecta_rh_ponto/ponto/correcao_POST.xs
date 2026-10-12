@@ -2,7 +2,7 @@
 // incluir uma marcacao que faltou ou desconsiderar uma marcacao feita por engano, com motivo.
 // A marcacao original nunca e alterada: aprovado, o pedido vira um tratamento
 // (correcoes_ponto/{id}/aprovar). Vale para dia com ou sem marcacao, do dia da admissao ate
-// hoje, dentro do prazo definido pelo RH. Substitui ponto/{id}/solicitar_correcao e
+// ontem (o dia de hoje so a partir de amanha), dentro do prazo definido pelo RH. Substitui ponto/{id}/solicitar_correcao e
 // ponto/solicitar_correcao_dia.
 query "ponto/correcao" verb=POST {
   api_group = "ConectaRH - Ponto"
@@ -89,9 +89,10 @@ query "ponto/correcao" verb=POST {
       value = $input.data|format_timestamp:"Y-m-d":"UTC"
     }
 
-    precondition ($dia <= $hoje_brasilia) {
+    // O dia de hoje ainda esta em andamento: a correcao vale a partir do dia seguinte (decisao do usuario, 12/10/2026).
+    precondition ($dia < $hoje_brasilia) {
       error_type = "inputerror"
-      error = "Nao e possivel corrigir um dia futuro."
+      error = "O dia de hoje ainda esta em andamento. A correcao pode ser pedida a partir de amanha."
     }
 
     precondition ($colaborador_autenticado.data_admissao == null || $dia >= ($colaborador_autenticado.data_admissao|format_timestamp:"Y-m-d":"UTC")) {
