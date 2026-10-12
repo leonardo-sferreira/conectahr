@@ -9,7 +9,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, tem_saldo, texto_opcao_marcacao, valores_ajuste
+from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, tem_saldo, texto_opcao_marcacao, valores_ajuste, chave_marcacao, alvo_da_chave
 from ponto_modelo import TIPOS_PEDIDO
 from theme import estilo_planilha_ponto
 
@@ -36,7 +36,8 @@ def render_planilha(linhas: list[dict], chave: str, ajustavel=None) -> dict | No
         return None
     tabela[COLUNA_AJUSTE] = valores_ajuste(linhas, ajustavel)
     editada = st.data_editor(
-        estilo_planilha_ponto(tabela, [l["tom"] for l in linhas]), hide_index=True, width="stretch", height=altura, key=chave,
+        estilo_planilha_ponto(tabela, [l["tom"] for l in linhas]), hide_index=True, width="stretch", height=altura,
+        key=f"{chave}_v{st.session_state.get(f'{chave}_versao', 0)}",
         disabled=[c for c in tabela.columns if c != COLUNA_AJUSTE], num_rows="fixed",
         column_config={COLUNA_AJUSTE: st.column_config.CheckboxColumn(COLUNA_AJUSTE, help="Marque para ajustar o dia", width="small")},
     )
@@ -44,8 +45,12 @@ def render_planilha(linhas: list[dict], chave: str, ajustavel=None) -> dict | No
 
 
 def desmarcar_planilha(chave: str) -> None:
-    """Tira a marca da caixa "Ajuste" (o estado do `st.data_editor`), para o dia não abrir de novo."""
-    st.session_state.pop(chave, None)
+    """Tira a marca da caixa "Ajuste" para o dia não abrir de novo. Apagar o estado não basta: o `st.data_editor` guarda
+    a edição no navegador e a manda de novo na rodada seguinte (Cancelar reabria o pedido). Uma versão nova na chave
+    recria a planilha sem a marca."""
+    versao = f"{chave}_versao"
+    st.session_state.pop(f"{chave}_v{st.session_state.get(versao, 0)}", None)
+    st.session_state[versao] = st.session_state.get(versao, 0) + 1
 
 
 def resumo_do_dia(linha: dict) -> None:
@@ -59,22 +64,24 @@ def resumo_do_dia(linha: dict) -> None:
 
 
 def formulario_pedido(linha: dict, prefixo: str) -> tuple:
-    """Campos do pedido (ou do ajuste): (tipo, horário, marcacao_id, motivo). Corrigir o horário e desconsiderar só
-    oferecem as marcações originais que ainda não estão em análise, com o papel no dia; sem nenhuma, só a inclusão."""
+    """Campos do pedido (ou do ajuste): (tipo, horário, alvo, motivo); `alvo` é {'marcacao_id', 'tratamento_id'} da
+    marcação escolhida, ou None. Corrigir o horário e desconsiderar oferecem todas as marcações do dia que ainda não
+    estão em análise, originais e incluídas, com o papel no dia; sem nenhuma, só a inclusão."""
     opcoes = desconsideraveis(linha)
     tipos = list(TIPOS_PEDIDO) if opcoes else ["inclusao"]
     tipo = st.radio("O que precisa ser corrigido?", tipos, format_func=TIPOS_PEDIDO.get, key=f"{prefixo}_tipo")
-    horario = marcacao_id = None
+    horario = alvo = None
     if tipo != "inclusao":
-        por_id = {b["marcacao_id"]: b for b in opcoes}
+        por_chave = {chave_marcacao(b): b for b in opcoes}
         rotulo = "Marcação a corrigir" if tipo == "alteracao" else "Marcação a desconsiderar"
-        marcacao_id = st.selectbox(rotulo, list(por_id), index=None, placeholder="Escolha a marcação", key=f"{prefixo}_marcacao",
-                                   format_func=lambda i: texto_opcao_marcacao(linha, por_id[i]))
+        chave = st.selectbox(rotulo, list(por_chave), index=None, placeholder="Escolha a marcação", key=f"{prefixo}_marcacao",
+                             format_func=lambda c: texto_opcao_marcacao(linha, por_chave[c]))
+        alvo = alvo_da_chave(chave)
     if tipo != "desconsideracao":
         rotulo = "Horário certo" if tipo == "alteracao" else "Horário da marcação que faltou"
         horario = st.time_input(rotulo, value=None, step=60, key=f"{prefixo}_hora")
     motivo = st.text_area("Motivo", max_chars=150, key=f"{prefixo}_motivo", height=80)
-    return tipo, horario, marcacao_id, motivo
+    return tipo, horario, alvo, motivo
 
 
 def limpar_formulario(prefixo: str) -> None:

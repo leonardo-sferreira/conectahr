@@ -250,7 +250,11 @@ api_client.central_de_tarefas = lambda token: {}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
 api_client.meus_comunicados = lambda token: {"comunicados": []}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
-api_client.meu_ponto = lambda token: {"registros": [reg(50, D_REG)], "marcacoes": MARC_REG, "tratamentos": []}
+# Dia só com uma marcação incluída por correção (18:00 (I)), como na tela do usuário (12/10/2026).
+D_INC = dias_uteis[2]
+IDX_INC = D_INC.day - 1
+TRAT_INC = [{"id": 77, "data": D_INC.isoformat(), "tipo": "inclusao", "data_hora": ms(D_INC, 18), "motivo": "Saída esquecida"}]
+api_client.meu_ponto = lambda token: {"registros": [reg(50, D_REG), reg(51, D_INC, "Incompleto", 0)], "marcacoes": MARC_REG, "tratamentos": TRAT_INC}
 api_client.comprovantes_ponto = lambda token: {"marcacoes": [], **REP}
 api_client.meu_banco_horas = lambda token: {"saldo_horas": 1}
 api_client.minhas_correcoes_ponto = lambda token: {"correcoes": [{"id": 80, "registro_ponto_id": 50, "tipo": "desconsideracao", "marcacao_id": 503, "status": "pendente"}]}
@@ -258,8 +262,8 @@ api_client.minhas_ausencias = lambda token: {"ausencias": []}
 api_client.minhas_ferias = lambda token: {"ferias": []}
 api_client.calendario = lambda token: _falha_ou("calendario", {"feriados": []})
 api_client.meu_perfil_colaborador = lambda token: {"colaborador": {"data_admissao": (ANT.replace(day=1) - timedelta(days=40)).isoformat()}}
-api_client.pedir_correcao_ponto = lambda token, data, tipo, just, marcacao_id=None, data_hora_ms=None: (
-    chamadas.append(("pedido", data, tipo, just, marcacao_id, data_hora_ms)) or _falha_ou("pedido", {"sucesso": True}))
+api_client.pedir_correcao_ponto = lambda token, data, tipo, just, marcacao_id=None, data_hora_ms=None, tratamento_id=None: (
+    chamadas.append(("pedido", data, tipo, just, marcacao_id, data_hora_ms) + ((tratamento_id,) if tratamento_id else ())) or _falha_ou("pedido", {"sucesso": True}))
 
 
 def texto(at: AppTest) -> str:
@@ -323,7 +327,7 @@ at.radio(key="pt_ped_tipo").set_value("desconsideracao")
 at = at.run()
 opcoes = at.selectbox(key="pt_ped_marcacao").options
 conferir(len(opcoes) == 3 and not any("17:30" in o for o in opcoes), "a marcação já em análise não pode ser pedida de novo")
-at.selectbox(key="pt_ped_marcacao").set_value(500)
+at.selectbox(key="pt_ped_marcacao").set_value("m500")
 at.text_area(key="pt_ped_motivo").set_value("Marquei duas vezes.")
 at.button(key="pt_ped_enviar").click()
 at = at.run()
@@ -340,7 +344,7 @@ conferir(opcoes[0].startswith("Entrada · 08:00 · NSR") and opcoes[1].startswit
 at.button(key="pt_ped_enviar").click()
 at = at.run()
 conferir("Escolha a marcação a corrigir." in texto(at) and not any(c[0] == "pedido" for c in chamadas), "sem a marcação: não envia")
-at.selectbox(key="pt_ped_marcacao").set_value(500)
+at.selectbox(key="pt_ped_marcacao").set_value("m500")
 at.text_area(key="pt_ped_motivo").set_value("Cheguei às 7h45, marquei atrasado.")
 at.button(key="pt_ped_enviar").click()
 at = at.run()
@@ -350,6 +354,39 @@ at.button(key="pt_ped_enviar").click()
 at = at.run()
 conferir(("pedido", D_REG.isoformat(), "alteracao", "Cheguei às 7h45, marquei atrasado.", 500, ms(D_REG, 7, 45)) in chamadas,
          "envia a marcação escolhida (a entrada, não a última) e o horário certo")
+caso("Tela: corrigir uma marcação incluída por correção (dia só com 18:00 (I))")
+at = pedir(app(), IDX_INC)
+conferir(at.radio(key="pt_ped_tipo").options == ["Incluir uma marcação que faltou", "Corrigir o horário de uma marcação", "Desconsiderar uma marcação feita por engano"],
+         "dia só com a incluída: as três opções aparecem")
+at.radio(key="pt_ped_tipo").set_value("alteracao")
+at = at.run()
+conferir(at.selectbox(key="pt_ped_marcacao").options == ["Entrada · 18:00 (I) · incluída"], "a incluída aparece na lista, marcada como incluída")
+at.selectbox(key="pt_ped_marcacao").set_value("t77")
+at.time_input(key="pt_ped_hora").set_value(time(18, 30))
+at.text_area(key="pt_ped_motivo").set_value("Saí às 18h30, não às 18h.")
+at.button(key="pt_ped_enviar").click()
+at = at.run()
+conferir(("pedido", D_INC.isoformat(), "alteracao", "Saí às 18h30, não às 18h.", None, ms(D_INC, 18, 30), 77) in chamadas,
+         "envia a inclusão a corrigir (tratamento_id), sem marcacao_id")
+conferir(m.alvo_da_chave("t77") == {"marcacao_id": None, "tratamento_id": 77} and m.alvo_da_chave("m500") == {"marcacao_id": 500, "tratamento_id": None}
+         and m.alvo_da_chave(None) is None and m.alvo_da_chave("x1") is None, "chave da lista: original (m) ou incluída (t)")
+
+caso("Cancelar fecha o pedido e não reabre")
+at = pedir(app(), IDX_SEM)
+at.button(key="pt_ped_cancelar").click()
+at = at.run()
+conferir("modal_ponto" not in at.session_state and "pt_ped_enviar" not in {b.key for b in at.button}, "Cancelar fecha o modal")
+at = at.run()
+conferir("pt_ped_enviar" not in {b.key for b in at.button}, "na rodada seguinte o modal continua fechado")
+from unittest import mock  # noqa: E402
+
+import planilha_ponto  # noqa: E402
+estado_falso = {}
+with mock.patch.object(planilha_ponto.st, "session_state", estado_falso):
+    planilha_ponto.desmarcar_planilha("pt_planilha")
+    planilha_ponto.desmarcar_planilha("pt_planilha")
+conferir(estado_falso.get("pt_planilha_versao") == 2, "cada uso da caixa troca a versão da planilha (o navegador não reenvia a marca)")
+
 mcs = {500: {"id": 500, "data_hora_marcacao": ms(D_REG, 8)}}
 conferir(m.descricao_pedido({"tipo": "alteracao", "marcacao_id": 500, "valor_solicitado": ms(D_REG, 7, 45)}, mcs) == "corrigir 08:00 para 07:45", "pedido em análise: corrigir X para Y")
 pend = dict(m.espelho_do_mes([reg(1, D_REG)], [], [], [], [], D_REG.year, D_REG.month, D_REG + timedelta(days=1), D_REG.isoformat(), marcacoes=MARC_REG)[D_REG.day - 1],

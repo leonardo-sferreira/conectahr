@@ -103,11 +103,13 @@ def batidas_do_dia(marcacoes: list[dict], tratamentos: list[dict]) -> tuple[list
     descartar = {t.get("marcacao_id") for t in validos if t.get("tipo") == "desconsideracao" and t.get("marcacao_id")}
     batidas, desconsideradas = [], []
     for mc in marcacoes:
-        item = {"hora": hora_gravada(mc), "ms": mc.get("data_hora_marcacao") or 0, "incluida": False, "marcacao_id": mc.get("id"), "nsr": mc.get("nsr")}
+        item = {"hora": hora_gravada(mc), "ms": mc.get("data_hora_marcacao") or 0, "incluida": False, "marcacao_id": mc.get("id"), "nsr": mc.get("nsr"),
+                "tratamento_id": None}
         (desconsideradas if mc.get("id") in descartar else batidas).append(item)
     for t in validos:
         if t.get("tipo") == "inclusao" and t.get("data_hora") is not None:
-            batidas.append({"hora": hora(t["data_hora"]) or "", "ms": t["data_hora"], "incluida": True, "marcacao_id": None, "nsr": None})
+            batidas.append({"hora": hora(t["data_hora"]) or "", "ms": t["data_hora"], "incluida": True, "marcacao_id": None, "nsr": None,
+                            "tratamento_id": t.get("id")})
     batidas.sort(key=lambda b: (b["ms"] or 0, b["hora"]))
     desconsideradas.sort(key=lambda b: (b["ms"] or 0, b["hora"]))
     return batidas, desconsideradas
@@ -139,7 +141,7 @@ def descricao_pedido(c: dict, marcacoes_por_id: dict) -> str:
         return f"inclusão de {hora(c.get('valor_solicitado')) or 'um horário'}"
     if c.get("tipo") == "desconsideracao":
         mc = marcacoes_por_id.get(c.get("marcacao_id"))
-        return f"desconsiderar {hora_gravada(mc)}" if mc else "desconsiderar uma marcação"
+        return f"desconsiderar {hora_gravada(mc)}" if mc else f"desconsiderar {hora(c.get('valor_original')) or 'uma marcação'}"
     if c.get("tipo") == "alteracao":
         mc = marcacoes_por_id.get(c.get("marcacao_id"))
         original = hora_gravada(mc) if mc else hora(c.get("valor_original")) or "uma marcação"
@@ -386,15 +388,38 @@ def resumo_do_mes(linhas: list[dict]) -> dict:
 
 
 def desconsideraveis(linha: dict) -> list[dict]:
-    """As marcações originais do dia que ainda podem ser desconsideradas ou corrigidas (sem pedido em análise para elas)."""
-    em_analise = {c.get("marcacao_id") for c in linha.get("pendentes", []) if c.get("tipo") in ("desconsideracao", "alteracao")}
-    return [b for b in linha["batidas"] if not b["incluida"] and b["marcacao_id"] and b["marcacao_id"] not in em_analise]
+    """As marcações do dia que ainda podem ser corrigidas ou desconsideradas, sem pedido em análise para elas: as
+    originais (`marcacao_id`) e, desde 12/10/2026, as incluídas por correção (`tratamento_id`; aprovado, a inclusão é
+    desfeita)."""
+    pedidos = [c for c in linha.get("pendentes", []) if c.get("tipo") in ("desconsideracao", "alteracao")]
+    marcacoes_em_analise = {c.get("marcacao_id") for c in pedidos if c.get("marcacao_id")}
+    inclusoes_em_analise = {c.get("tratamento_id") for c in pedidos if c.get("tratamento_id")}
+    return [b for b in linha["batidas"]
+            if (b["marcacao_id"] and not b["incluida"] and b["marcacao_id"] not in marcacoes_em_analise)
+            or (b["incluida"] and b.get("tratamento_id") and b["tratamento_id"] not in inclusoes_em_analise)]
+
+
+def chave_marcacao(batida: dict) -> str:
+    """Chave da marcação na lista do pedido: "m500" (original) ou "t9" (incluída por tratamento)."""
+    return f"t{batida['tratamento_id']}" if batida.get("incluida") else f"m{batida['marcacao_id']}"
+
+
+def alvo_da_chave(chave: str | None) -> dict | None:
+    """"m500" -> {'marcacao_id': 500, 'tratamento_id': None}; "t9" -> {'marcacao_id': None, 'tratamento_id': 9}."""
+    if not chave or chave[0] not in "mt" or not chave[1:].isdigit():
+        return None
+    numero = int(chave[1:])
+    return {"marcacao_id": numero if chave[0] == "m" else None, "tratamento_id": numero if chave[0] == "t" else None}
 
 
 def texto_opcao_marcacao(linha: dict, batida: dict) -> str:
-    """A marcação na lista do pedido, com o papel no dia: "Entrada · 08:15 · NSR 000001231"."""
+    """A marcação na lista do pedido, com o papel no dia: "Entrada · 08:15 · NSR 000001231" ou, a incluída por
+    correção, "Saída · 18:00 (I) · incluída"."""
     indice = linha["batidas"].index(batida) if batida in linha["batidas"] else 0
-    return f"{rotulo_marcacao(indice, len(linha['batidas']))} · {batida['hora']} · NSR {str(batida['nsr'] or '').rjust(9, '0')}"
+    papel = rotulo_marcacao(indice, len(linha["batidas"]))
+    if batida.get("incluida"):
+        return f"{papel} · {batida['hora']} (I) · incluída"
+    return f"{papel} · {batida['hora']} · NSR {str(batida['nsr'] or '').rjust(9, '0')}"
 
 
 def dia_longo(d: date, com_ano: bool = True) -> str:

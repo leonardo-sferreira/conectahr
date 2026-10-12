@@ -419,12 +419,14 @@ def minhas_correcoes_ponto(token: str) -> dict:
 
 
 def pedir_correcao_ponto(token: str, data: str, tipo: str, justificativa: str, marcacao_id: int | None = None,
-                         data_hora_ms: int | None = None) -> dict:
+                         data_hora_ms: int | None = None, tratamento_id: int | None = None) -> dict:
     """POST ponto/correcao: pede a inclusão (`data_hora_ms`) ou a desconsideração (`marcacao_id`) de uma marcação de um
     dia passado. A marcação original nunca muda; aprovado, o pedido vira um tratamento. Quem decide é a hierarquia."""
     corpo = {"data": data, "tipo": tipo, "justificativa": justificativa}
     if marcacao_id:
         corpo["marcacao_id"] = int(marcacao_id)
+    if tratamento_id:  # marcação incluída por correção (12/10/2026)
+        corpo["tratamento_id"] = int(tratamento_id)
     if data_hora_ms is not None:
         corpo["data_hora"] = int(data_hora_ms)
     return _post("ponto/correcao", corpo, token, GRUPO_PONTO)
@@ -637,12 +639,14 @@ def folha_mes(token: str, ano: int, mes: int, colaborador_id: int | None = None)
 
 
 def tratar_ponto(token: str, colaborador_id: int, data: str, tipo: str, motivo: str, marcacao_id: int | None = None,
-                 data_hora_ms: int | None = None) -> dict:
+                 data_hora_ms: int | None = None, tratamento_id: int | None = None) -> dict:
     """POST folha_ponto/tratar: ajuste direto, auditado, no ponto de outra pessoa (nunca no próprio): inclui
     (`data_hora_ms`) ou desconsidera (`marcacao_id`) uma marcação, com motivo. Vale na hora, como tratamento."""
     corpo = {"colaborador_id": int(colaborador_id), "data": data, "tipo": tipo, "motivo": motivo}
     if marcacao_id:
         corpo["marcacao_id"] = int(marcacao_id)
+    if tratamento_id:  # marcação incluída por correção (12/10/2026)
+        corpo["tratamento_id"] = int(tratamento_id)
     if data_hora_ms is not None:
         corpo["data_hora"] = int(data_hora_ms)
     return _post("folha_ponto/tratar", corpo, token, GRUPO_PONTO)

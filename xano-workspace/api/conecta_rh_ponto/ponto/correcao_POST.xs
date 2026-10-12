@@ -15,6 +15,7 @@ query "ponto/correcao" verb=POST {
     }
 
     int? marcacao_id?
+    int? tratamento_id?
     timestamp? data_hora?
     text justificativa filters=trim|min:5|max:150
   }
@@ -101,7 +102,7 @@ query "ponto/correcao" verb=POST {
     }
 
     function.run "ConectaHR/validar_tratamento" {
-      input = {colaborador_id: $colaborador_autenticado.id, data: $dia, tipo: $input.tipo, marcacao_id: $input.marcacao_id, data_hora: $input.data_hora}
+      input = {colaborador_id: $colaborador_autenticado.id, data: $dia, tipo: $input.tipo, marcacao_id: $input.marcacao_id, tratamento_id: $input.tratamento_id, data_hora: $input.data_hora}
     } as $validacao
 
     // Garante o registro do dia (cache), ao qual o pedido fica ligado.
@@ -130,7 +131,18 @@ query "ponto/correcao" verb=POST {
     }
 
     conditional {
-      if ($input.tipo != "inclusao") {
+      if ($input.tipo != "inclusao" && $input.tratamento_id != null) {
+        db.get tratamento_ponto {
+          field_name = "id"
+          field_value = $input.tratamento_id
+        } as $inclusao_alvo
+
+        var.update $momento_original {
+          value = $inclusao_alvo.data_hora
+        }
+      }
+
+      elseif ($input.tipo != "inclusao") {
         db.get marcacao_ponto {
           field_name = "id"
           field_value = $input.marcacao_id
@@ -147,7 +159,8 @@ query "ponto/correcao" verb=POST {
         registro_ponto_id: $dia_atual.registro.id
         colaborador_id   : $colaborador_autenticado.id
         tipo             : $input.tipo
-        marcacao_id      : $input.marcacao_id
+        marcacao_id      : ($input.tratamento_id != null ? null : $input.marcacao_id)
+        tratamento_id    : $input.tratamento_id
         valor_solicitado : ($input.tipo != "desconsideracao" ? $input.data_hora : null)
         valor_original   : $momento_original
         justificativa    : $input.justificativa

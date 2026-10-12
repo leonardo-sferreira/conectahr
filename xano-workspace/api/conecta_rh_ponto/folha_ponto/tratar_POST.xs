@@ -16,6 +16,7 @@ query "folha_ponto/tratar" verb=POST {
     }
 
     int? marcacao_id?
+    int? tratamento_id?
     timestamp? data_hora?
     text motivo filters=trim|min:5|max:150
   }
@@ -194,7 +195,7 @@ query "folha_ponto/tratar" verb=POST {
     }
 
     function.run "ConectaHR/validar_tratamento" {
-      input = {colaborador_id: $colaborador_alvo.id, data: $dia, tipo: $input.tipo, marcacao_id: $input.marcacao_id, data_hora: $input.data_hora}
+      input = {colaborador_id: $colaborador_alvo.id, data: $dia, tipo: $input.tipo, marcacao_id: $input.marcacao_id, tratamento_id: $input.tratamento_id, data_hora: $input.data_hora}
     } as $validacao
 
     // Garante o registro do dia (cache), ao qual o pedido fica ligado.
@@ -203,12 +204,47 @@ query "folha_ponto/tratar" verb=POST {
     } as $dia_atual
 
     // Alteracao (corrigir o horario): desconsidera a original e inclui o horario certo.
+    // Marcacao incluida (tratamento_id): desconsiderar e desfazer a inclusao.
     var $tratamento_id {
       value = null
     }
 
+    var $momento_incluida {
+      value = null
+    }
+
     conditional {
-      if ($input.tipo != "inclusao") {
+      if ($input.tipo != "inclusao" && $input.tratamento_id != null) {
+        db.get tratamento_ponto {
+          field_name = "id"
+          field_value = $input.tratamento_id
+        } as $inclusao_alvo
+
+        var.update $momento_incluida {
+          value = $inclusao_alvo.data_hora
+        }
+
+        db.add tratamento_ponto {
+          data = {
+            colaborador_id     : $colaborador_alvo.id
+            data               : $dia
+            tipo               : "inclusao"
+            marcacao_id        : null
+            data_hora          : $inclusao_alvo.data_hora
+            motivo             : $input.motivo
+            autor_user_id      : $usuario_autenticado.id
+            anula_tratamento_id: $input.tratamento_id
+          }
+        } as $tratamento_desfazer
+
+        var.update $tratamento_id {
+          value = $tratamento_desfazer.id
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo != "inclusao" && $input.tratamento_id == null) {
         db.add tratamento_ponto {
           data = {
             colaborador_id: $colaborador_alvo.id
@@ -253,7 +289,13 @@ query "folha_ponto/tratar" verb=POST {
     }
 
     conditional {
-      if ($input.tipo != "inclusao") {
+      if ($input.tipo != "inclusao" && $input.tratamento_id != null) {
+        var.update $momento_original {
+          value = $momento_incluida
+        }
+      }
+
+      elseif ($input.tipo != "inclusao") {
         db.get marcacao_ponto {
           field_name = "id"
           field_value = $input.marcacao_id
@@ -271,7 +313,8 @@ query "folha_ponto/tratar" verb=POST {
         registro_ponto_id   : $dia_atual.registro.id
         colaborador_id      : $colaborador_alvo.id
         tipo                : $input.tipo
-        marcacao_id         : $input.marcacao_id
+        marcacao_id         : ($input.tratamento_id != null ? null : $input.marcacao_id)
+        tratamento_id       : $input.tratamento_id
         valor_solicitado    : ($input.tipo != "desconsideracao" ? $input.data_hora : null)
         valor_original      : $momento_original
         justificativa       : $input.motivo

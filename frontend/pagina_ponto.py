@@ -141,7 +141,7 @@ def _modal_pedido(linha: dict) -> None:
     resumo_do_dia(linha)
     if linha["nota"] and not linha["nota"].startswith(("Esqueceu", "Mês encerrado")):
         st.html(f'<p class="crh-meta" style="margin:0">{html.escape(linha["nota"])}</p>')
-    tipo, horario, marcacao_id, motivo = formulario_pedido(linha, "pt_ped")
+    tipo, horario, alvo, motivo = formulario_pedido(linha, "pt_ped")
     if tipo == "inclusao":
         nota = ("A marcação original nunca é alterada. Aprovada, a correção vira um tratamento com o seu motivo e aparece na "
                 "planilha como (I). Quem decide é o seu superior ou o RH.")
@@ -157,12 +157,12 @@ def _modal_pedido(linha: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Enviar pedido", type="primary", key="pt_ped_enviar"):
-            erro_campo = validar_pedido(tipo, horario, marcacao_id, motivo)
+            erro_campo = validar_pedido(tipo, horario, alvo, motivo)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
             try:
-                pedir_correcao_ponto(st.session_state.token, linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=marcacao_id,
+                pedir_correcao_ponto(st.session_state.token, linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=(alvo or {}).get("marcacao_id"), tratamento_id=(alvo or {}).get("tratamento_id"),
                                      data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo != "desconsideracao" else None)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)

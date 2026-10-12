@@ -182,7 +182,7 @@ TIPOS_PEDIDO = {"inclusao": "Incluir uma marcação que faltou", "alteracao": "C
                 "desconsideracao": "Desconsiderar uma marcação feita por engano"}
 
 
-def validar_pedido(tipo: str | None, horario: time | None, marcacao_id: int | None, motivo: str) -> str | None:
+def validar_pedido(tipo: str | None, horario: time | None, marcacao_id, motivo: str) -> str | None:
     """Pedido de correção (ou ajuste direto) no REP-P: inclusão com horário, desconsideração com a marcação, alteração com
     as duas, e o motivo
     de 5 a 150 caracteres (art. 82: todo tratamento tem motivo)."""

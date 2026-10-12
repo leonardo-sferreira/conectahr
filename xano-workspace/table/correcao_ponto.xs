@@ -24,6 +24,12 @@ table correcao_ponto {
     int? marcacao_id {
       table = "marcacao_ponto"
     }
+
+    // Marcacao incluida por tratamento (12/10/2026): em vez de marcacao_id, o pedido de
+    // alteracao ou desconsideracao aponta a inclusao; aprovado, ela e desfeita (anula_tratamento_id).
+    int? tratamento_id {
+      table = "tratamento_ponto"
+    }
     enum? campo? {
       values = ["hora_entrada", "inicio_intervalo", "fim_intervalo", "hora_saida"]
     }

@@ -235,8 +235,27 @@ query "correcoes_ponto/{id}/aprovar" verb=POST {
         conditional {
           if ($e_tratamento) {
             // Alteracao (corrigir o horario): desconsidera a original e inclui o horario certo.
+            // Marcacao incluida (tratamento_id): desconsiderar e desfazer a inclusao.
             conditional {
-              if ($correcao_atual.tipo != "inclusao") {
+              if ($correcao_atual.tipo != "inclusao" && $correcao_atual.tratamento_id != null) {
+                db.add tratamento_ponto {
+                  data = {
+                    colaborador_id     : $correcao_atual.colaborador_id
+                    data               : $registro_alvo.data
+                    tipo               : "inclusao"
+                    marcacao_id        : null
+                    data_hora          : $correcao_atual.valor_original
+                    motivo             : $correcao_atual.justificativa|substr:0:150
+                    autor_user_id      : $usuario_autenticado.id
+                    correcao_ponto_id  : $correcao_atual.id
+                    anula_tratamento_id: $correcao_atual.tratamento_id
+                  }
+                } as $tratamento_desfazer
+              }
+            }
+
+            conditional {
+              if ($correcao_atual.tipo != "inclusao" && $correcao_atual.tratamento_id == null) {
                 db.add tratamento_ponto {
                   data = {
                     colaborador_id   : $correcao_atual.colaborador_id
