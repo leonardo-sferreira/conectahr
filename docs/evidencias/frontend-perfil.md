@@ -63,9 +63,10 @@ Prints com dados fictícios, em [`frontend-perfil/`](frontend-perfil/):
 
 ## Decisões e diferenças em relação ao Figma
 
-- **Edição direta de contato e endereço.** O backend tem `meu_perfil_colaborador` PATCH, que permite à pessoa
-  editar contato e endereço direto. O Figma diz que dados pessoais "são só consulta" e mudam por solicitação ao
-  RH, e a tela segue o Figma. A escolha entre os dois caminhos ficou como tarefa 72.
+- **Edição direta de contato e endereço (tarefa 72, 12/10/2026).** Telefone, e-mail pessoal e endereço a
+  pessoa muda direto, no cartão "Contato e endereço" (Figma 459:822 e 459:1152), pelo `meu_perfil_colaborador`
+  PATCH, que valida os dados e grava a auditoria mascarada. O pedido ao RH ficou só com nome, CPF e data de
+  nascimento.
 - **"Comprovante (opcional)" saiu do modal de alteração.** O sistema não recebe arquivo. Se o RH precisar de
   comprovante, ele pede pela tela Documentos.
 - **Banco.** É uma lista com os bancos mais comuns (código e nome) mais "Outro banco", para digitar. O backend

@@ -2,9 +2,11 @@
 
 Roda o app com o AppTest do Streamlit e uma API simulada (dados fictícios). Confere:
 
-  Tela ............... os cinco cartões do Figma 202:175, sem o salário
+  Tela ............... os seis cartões do Figma 202:175, sem o salário
+  Contato e endereço . telefone, e-mail pessoal e endereço editados direto (tarefa 72, Figma 459:1152),
+                       validação antes de enviar, erro do backend no modal
   Dados bancários .... validação por campo, envio só com o token (sem id), erro do backend no modal
-  Alteração cadastral  pedido ao RH com campo, valor atual, novo valor e motivo
+  Alteração cadastral  pedido ao RH com campo, valor atual, novo valor e motivo; só nome, CPF e nascimento
   Só dados próprios .. nenhum endpoint recebe id; no organograma só nome, cargo e departamento, mesmo
                        que a resposta traga outros campos; o mesmo vale para o perfil Gestor
   Estados ............ vazio (conta sem colaborador), erro, sucesso
@@ -91,6 +93,14 @@ def _instalar():
         return {"sucesso": True}
 
     api_client.salvar_dados_bancarios = _salvar
+
+    def _salvar_contato(token, dados):
+        chamadas.append(("contato", dict(dados)))
+        _falha_ou("contato", None)
+        estado["colaborador"].update(dados)
+        return {"sucesso": True}
+
+    api_client.salvar_contato_endereco = _salvar_contato
     api_client.solicitar_alteracao_cadastral = lambda token, descricao: chamadas.append(("alteracao", descricao)) or _falha_ou("alteracao", {"sucesso": True})
 
 
@@ -155,13 +165,20 @@ conferir(set(org["colegas"][0]) == {"nome", "detalhe", "iniciais"}, "organograma
 conferir(set(m.validar_bancarios("", "1a", "", "123", "x")) == {"banco", "agencia", "conta", "digito", "tipo"}, "dados bancários: erro em cada campo inválido")
 conferir(m.validar_bancarios("341 — Itaú Unibanco", "0001", "123456", "7", "corrente") == {} and m.validar_bancarios("Banco X", "1", "1", "X", "poupanca") == {}, "dados bancários válidos (dígito X aceito)")
 conferir(m.conta_mascarada("123456") == "****3456", "conta mascarada como na auditoria")
-conferir(m.validar_alteracao(None, "a", "b") and m.validar_alteracao("Telefone", "x", "x") and m.validar_alteracao("Telefone", "(11) 1", "x") is None, "alteração: campo, valor novo e diferente do atual")
+conferir(m.validar_alteracao(None, "a", "b") and m.validar_alteracao("Nome completo", "x", "x") and m.validar_alteracao("Nome completo", "Leo Santos", "x") is None, "alteração: campo, valor novo e diferente do atual")
+conferir(m.CAMPOS_ALTERACAO == ["Nome completo", "CPF", "Data de nascimento"], "pedido ao RH só para nome, CPF e data de nascimento")
+conferir(dict(m.contato_e_endereco(perfil)) == {"Telefone": "(11) 96666-5555", "E-mail pessoal": "leo.pessoal@exemplo.com", "Endereço": "Rua Teste, 20 — Centro, São Paulo/SP", "CEP": "—"}, "cartão de contato e endereço")
+conferir(not {"Telefone", "Endereço"} & set(dict(m.dados_pessoais(perfil, "x"))), "telefone e endereço saem de Dados pessoais")
+conferir(m.cep("01001000") == "01001-000" and m.cep(None) == "—", "CEP formatado")
+valido = {"telefone": "(11) 96666-5555", "email_pessoal": "leo@exemplo.com", "cep": "01001-000", "logradouro": "Rua A", "numero": "1", "bairro": "Centro", "cidade": "São Paulo", "estado": "sp"}
+conferir(m.validar_contato(valido) == {}, "contato válido (UF em minúscula aceita)")
+conferir(set(m.validar_contato({"telefone": "1234", "email_pessoal": "leo@", "cep": "0100", "estado": "XX"})) == {"telefone", "email_pessoal", "cep", "logradouro", "numero", "bairro", "cidade", "estado"}, "contato: erro em cada campo inválido")
 
 # ---------------------------------------------------------------------------
 caso("Tela 'Meu Perfil' (Figma 202:175)")
 at = app()
 t = texto(at)
-for trecho in ("Meu Perfil", "Pendências", "Dados pessoais", "Cargo e departamento", "Conta bancária", "Organograma"):
+for trecho in ("Meu Perfil", "Pendências", "Dados pessoais", "Contato e endereço", "Cargo e departamento", "Conta bancária", "Organograma"):
     conferir(trecho in t, f"cartão '{trecho}'")
 conferir("123.456.789-09" in t and "leonardo@empresa.com" in t and "Rua Teste, 20 — Centro" in t, "dados pessoais da própria pessoa")
 conferir("Desenvolvedor — Nível L2" in t and "Rafael Lima" in t and "9 meses" in t, "cargo, gestor e tempo de empresa")
@@ -170,7 +187,36 @@ conferir("7777" not in t and "Salário" not in t, "o salário não aparece")
 conferir("Envio de CNH" in t and "Jornada de hoje sem marcação de saída" in t and "Envio de RG" not in t, "pendências abertas da própria pessoa")
 conferir("Leonardo dos Santos (você)" in t and "Juliana Prado" in t and "Pedro Rocha" not in t, "organograma: você, gestor e colegas do mesmo departamento")
 conferir(not any(x in t for x in ("55501", "98765432100", "237 — Bradesco", "9999")), "nada além de nome, cargo e departamento dos colegas, mesmo que a resposta traga mais")
-conferir(not any(isinstance(c, tuple) and c[0] in ("bancarios", "alteracao") for c in chamadas), "abrir a tela não altera nada")
+conferir(not any(isinstance(c, tuple) and c[0] in ("bancarios", "alteracao", "contato") for c in chamadas), "abrir a tela não altera nada")
+
+caso("Editar contato e endereço (Figma 459:1152)")
+at.button(key="pf_btn_contato").click()
+at = at.run()
+conferir(at.text_input(key="pf_ct_telefone").value == "11966665555" and at.text_input(key="pf_ct_email").value == "leo.pessoal@exemplo.com" and at.selectbox(key="pf_ct_estado").value == "SP", "modal vem preenchido com os dados atuais")
+at.text_input(key="pf_ct_telefone").set_value("1234")
+at.button(key="pf_contato_salvar").click()
+at = at.run()
+conferir("Telefone com DDD" in texto(at) and "CEP com 8 números" in texto(at) and not any(c[0] == "contato" for c in chamadas), "dados inválidos: mensagem no modal, sem chamar a API")
+at.text_input(key="pf_ct_telefone").set_value("(21) 98888-7777")
+at.text_input(key="pf_ct_cep").set_value("20040-002")
+at.text_input(key="pf_ct_logradouro").set_value("Av. Rio Branco ")
+at.text_input(key="pf_ct_numero").set_value("100")
+at.text_input(key="pf_ct_cidade").set_value("Rio de Janeiro")
+at.selectbox(key="pf_ct_estado").set_value("RJ")
+at.button(key="pf_contato_salvar").click()
+at = at.run()
+enviado = next((c[1] for c in chamadas if c[0] == "contato"), {})
+conferir(enviado.get("telefone") == "(21) 98888-7777" and enviado.get("logradouro") == "Av. Rio Branco" and enviado.get("estado") == "RJ" and enviado.get("email_pessoal") == "leo.pessoal@exemplo.com", "salva telefone, e-mail e endereço, sem espaços sobrando")
+conferir(set(enviado) == {"telefone", "email_pessoal", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"}, "envia só contato e endereço (nada de nome, CPF ou id)")
+conferir("modal_perfil" not in at.session_state and "(21) 98888-7777" in texto(at) and "Av. Rio Branco, 100 — Centro, Rio de Janeiro/RJ" in texto(at), "o modal fecha e o cartão mostra o contato novo")
+conferir(not any(c[0] == "alteracao" for c in chamadas), "sem pedido ao RH")
+at = app(erro_contato=ApiError("Este e-mail pessoal já pertence a outro colaborador.", 400))
+at.button(key="pf_btn_contato").click()
+at = at.run()
+at.text_input(key="pf_ct_cep").set_value("01001-000")
+at.button(key="pf_contato_salvar").click()
+at = at.run()
+conferir("já pertence a outro colaborador" in texto(at) and "modal_perfil" in at.session_state, "recusa do backend aparece no modal, que continua aberto")
 
 caso("Editar dados bancários (Figma 202:342)")
 at.button(key="pf_btn_bancarios").click()
@@ -203,20 +249,21 @@ at = at.run()
 at.button(key="pf_alt_enviar").click()
 at = at.run()
 conferir("Escolha o campo a alterar." in texto(at) and not any(c[0] == "alteracao" for c in chamadas), "sem campo, não envia")
-at.selectbox(key="pf_alt_campo").set_value("Endereço")
+conferir(at.selectbox(key="pf_alt_campo").options == ["Nome completo", "CPF", "Data de nascimento"], "telefone, e-mail e endereço não estão mais no pedido ao RH")
+at.selectbox(key="pf_alt_campo").set_value("Nome completo")
 at = at.run()
-conferir(any(ti.value == "Rua Teste, 20 — Centro, São Paulo/SP" for ti in at.text_input), "o valor atual aparece ao escolher o campo")
-at.text_input(key="pf_alt_novo").set_value("Av. Paulista, 1000 — Bela Vista")
-at.text_area(key="pf_alt_motivo").set_value("Mudança de endereço")
+conferir(any(ti.value == "Leonardo dos Santos" for ti in at.text_input), "o valor atual aparece ao escolher o campo")
+at.text_input(key="pf_alt_novo").set_value("Leonardo dos Santos Ferreira")
+at.text_area(key="pf_alt_motivo").set_value("Inclusão de sobrenome")
 at.button(key="pf_alt_enviar").click()
 at = at.run()
 pedido = next((c[1] for c in chamadas if c[0] == "alteracao"), "")
-conferir("Campo: Endereço" in pedido and "Novo valor: Av. Paulista, 1000 — Bela Vista" in pedido and "Motivo: Mudança de endereço" in pedido, "pedido ao RH com campo, valor atual, novo e motivo")
+conferir("Campo: Nome completo" in pedido and "Novo valor: Leonardo dos Santos Ferreira" in pedido and "Motivo: Inclusão de sobrenome" in pedido, "pedido ao RH com campo, valor atual, novo e motivo")
 conferir("modal_perfil" not in at.session_state, "o modal fecha depois do envio")
 
 # ---------------------------------------------------------------------------
 caso("Só dados próprios (tarefa 16)")
-for nome in ("meu_perfil_colaborador", "salvar_dados_bancarios", "solicitar_alteracao_cadastral"):
+for nome in ("meu_perfil_colaborador", "salvar_dados_bancarios", "salvar_contato_endereco", "solicitar_alteracao_cadastral"):
     parametros = list(inspect.signature(getattr(api_client, nome)).parameters)
     conferir(not any(re.search(r"(^|_)id$|colaborador|user", p) for p in parametros), f"{nome} não recebe id de ninguém ({parametros})")
 at = app(perfil="GESTOR")
