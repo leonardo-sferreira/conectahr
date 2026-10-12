@@ -155,7 +155,7 @@ Duas armadilhas do XanoScript achadas aqui: numa lista literal (`[{v: $x.campo}]
 
 ## Figma
 
-- **Seção 21 "Ponto REP-P"** (463:822): Hoje 463:825, Mês em planilha 464:826, comprovante em PDF 465:830, pedido de correção para incluir 465:856 e para desconsiderar 465:894, estados 465:932; tela do RH "Ponto eletrônico (REP-P)" 467:834.
+- **Seção 21 "Ponto REP-P"** (463:822): Hoje 463:825, Mês em planilha 464:826, comprovante em PDF 465:830, pedido de correção para incluir 465:856 e para desconsiderar 465:894, estados 465:932, aviso de descanso 474:926 (D13; no escuro, ao lado do pedido de correção); tela do RH "Ponto eletrônico (REP-P)" 467:834.
 - **Seção 22 "Férias pela CLT"** (466:830): saldo, pedido e calendário 466:833; venda de dias, mensagens das regras e estados 466:1171.
 - **Feriados:** aba da estrutura da empresa 468:838 (na seção 22).
 - **Modo escuro:** seção 21 — Dark 468:1458 e seção 22 — Dark 468:2226, na página "Protótipo — Dark".

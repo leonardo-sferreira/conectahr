@@ -142,7 +142,8 @@ conferir(m.meses_disponiveis("2026-08-20", [], H) == [(2026, 10), (2026, 9), (20
 
 caso("Resumo, planilha e legenda")
 r = m.resumo_do_mes(linhas)
-conferir(r == {"horas": "34h05", "dias_trabalhados": 5, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1}, f"resumo do mês ({r})")
+conferir(r == {"horas": "34h05", "dias_trabalhados": 5, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1, "saldo": None},
+         f"resumo do mês, sem jornada: sem saldo ({r})")
 conferir(m.colunas_planilha(2) == ["Data", "Dia", "Ent. 1", "Saí. 1", "Ent. 2", "Saí. 2", "Desconsideradas", "Horas", "Situação"], "colunas da planilha")
 conferir(m.pares_do_mes(linhas) == 2 and m.linhas_planilha(linhas)[13][:6] == ["14", "qua", "08:00", "12:00", "13:00", "18:05 (I)"], "a incluída entra no par, em ordem")
 conferir(m.pares_do_mes([{"batidas": [{}] * 5}]) == 3, "quinta marcação abre o 3º par")
@@ -155,6 +156,37 @@ conferir(m.linha_selecionada(linhas, [1])["data"] == d(2) and m.linha_selecionad
          "seleção da planilha: linha em branco não conta")
 ajuste = m.valores_ajuste(linhas, lambda l: l["acao"] == "corrigir")
 conferir(ajuste[1] is False and ajuste[20] is None and len(ajuste) == len(linhas), "coluna Ajuste: caixa no dia que aceita correção, vazia no dia em branco")
+
+caso("Saldo do dia e descanso (design D13 e D14, tarefa 9.4)")
+conferir((m.saldo_do_dia(7.5, 480, True), m.saldo_do_dia(6 + 20 / 60, 360, True), m.saldo_do_dia(7 + 52 / 60, 480, True), m.saldo_do_dia(4, 480, False),
+          m.saldo_do_dia(8 + 11 / 60, 480, True)) == (-30, 20, 0, 240, 11), "cenários da spec: 7h30 = -30, 6h20 em 6h = +20, 7h52 = 0, sábado 4h = +240, 8h11 = +11")
+conferir((m.minutos_texto(-30, True), m.minutos_texto(20, True), m.minutos_texto(0, True), m.minutos_texto(540)) == ("-0h30", "+0h20", "0h00", "9h00"), "saldo com sinal")
+conferir(m.texto_descanso(540, 660) == "Descanso de 9h00 (mínimo 11h)", "selo do descanso")
+clt = m.espelho_do_mes(regs + [dict(reg(16, d(16)), saldo_minutos=-30, descanso_minutos=540)], aus, cor, fer, feri, 2026, 10, date(2026, 10, 20), "2026-10-01",
+                       marcacoes=marcacoes + jornada(160, d(16)), tratamentos=tratamentos, jornada_horas=8, descanso_minimo=660)
+pc = {l["data"].day: l for l in clt}
+conferir(pc[1]["saldo"] == 30 and pc[2]["saldo"] == -240, "dia gravado antes do saldo: a conta da tela (8h30 = +30; incompleto de 4h = -4h00)")
+conferir(pc[16]["saldo"] == -30 and pc[16]["situacao"] == "COMPLETO · Descanso de 9h00 (mínimo 11h)" and pc[16]["descanso"] == 540,
+         "saldo gravado pelo backend vale; descanso abaixo do mínimo no selo (cenário da spec)")
+conferir(pc[5]["saldo"] == -480 and pc[3]["saldo"] == 0 and pc[6]["saldo"] == 0 and pc[8]["saldo"] == 0 and pc[12]["saldo"] == 0 and pc[7]["saldo"] is None
+         and pc[19]["saldo"] == -480, "falta = menos a jornada; folga, atestado, férias e feriado = 0; ausência em análise sem saldo; sem registro = menos a jornada")
+conferir(pc[20]["saldo"] is None and pc[21]["saldo"] is None, "hoje e os dias futuros sem saldo")
+conferir(m.resumo_do_mes(clt)["saldo"] == m.minutos_texto(sum(l["saldo"] or 0 for l in clt), True), "saldo do mês é a soma dos dias")
+cols = m.colunas_planilha(2, True)
+conferir(cols[-3:] == ["Horas", "Saldo", "Situação"] and m.linhas_planilha(clt)[15][-3:] == ["8h30", "-0h30", "COMPLETO · Descanso de 9h00 (mínimo 11h)"],
+         "coluna Saldo entre Horas e Situação")
+conferir(m.legenda(None, True).endswith("(diferença de até 10 min no dia não conta)") and "Saldo" in m.csv_do_mes(clt).decode("utf-8-sig").splitlines()[0], "legenda e CSV com o saldo")
+conferir(not m.tem_saldo(linhas) and "Saldo" not in m.colunas_planilha(2), "PJ (sem jornada): sem a coluna Saldo (cenário da spec)")
+BRT = m.para_brasilia(ms(d(16), 22)).tzinfo
+ontem22 = [mc(800, d(15), 8), mc(801, d(15), 22)]
+aviso = m.aviso_descanso(ontem22, [], datetime(2026, 10, 16, 7, 0, tzinfo=BRT), 660)
+conferir(aviso and aviso["descanso"] == 540 and aviso["falta"] == 120 and m.quando(aviso["ultima"], d(16)) == "Ontem, 15/10, às 22:00",
+         "aviso: saiu às 22:00, marca às 07:00, faltam 2h00 (cenário da spec)")
+conferir(m.aviso_descanso(ontem22, [], datetime(2026, 10, 16, 9, 0, tzinfo=BRT), 660) is None, "11h cumpridas: sem aviso")
+conferir(m.aviso_descanso(ontem22 + [mc(802, d(16), 6)], [], datetime(2026, 10, 16, 7, 0, tzinfo=BRT), 660) is None, "já marcou hoje: sem aviso (só na primeira do dia)")
+conferir(m.aviso_descanso(ontem22, [], datetime(2026, 10, 16, 7, 0, tzinfo=BRT), None) is None, "PJ: sem aviso")
+desc22 = [{"id": 5, "data": d(15).isoformat(), "tipo": "desconsideracao", "marcacao_id": 801}]
+conferir(m.aviso_descanso(ontem22, desc22, datetime(2026, 10, 16, 7, 0, tzinfo=BRT), 660) is None, "a desconsiderada não conta: vale a última válida (08:00)")
 
 caso("Cabeçalho do art. 84 e CSV (tarefa 4.4)")
 REP = {"empregador": {"razao_social": "ConectaRH Tecnologia Ltda (ficticio)", "tipo_identificador": "cnpj", "identificador": "12345678000190",

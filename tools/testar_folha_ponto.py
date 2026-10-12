@@ -70,7 +70,7 @@ def marcacoes(rid, cid, d):
 INICIO = (ANT.replace(day=1) - timedelta(days=60)).isoformat()
 PESSOAS_GESTOR = [
     {"id": 12, "nome": "Carlos Souza", "departamento_id": 1, "cargo_id": 1, "status": "Ativo", "superior_colaborador_id": 20, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": True},
-    {"id": 9, "nome": "Leonardo dos Santos", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False},
+    {"id": 9, "nome": "Leonardo dos Santos", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False, "horas_diarias": 8},
     {"id": 11, "nome": "Juliana Prado", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False},
 ]
 REGISTROS = [reg(100 + i, 9, d) for i, d in enumerate(UTEIS)] + [reg(200 + i, 11, d) for i, d in enumerate(UTEIS[2:], 2)] + [reg(300, 12, UTEIS[0])]
@@ -204,6 +204,7 @@ t = texto(at)
 conferir("Pedidos de correção pendentes (1)" in t and f"{UTEIS[0]:%d/%m}: inclusão de 18:00" in t, "pedido pendente da pessoa")
 df = at.dataframe[0].value
 conferir(df.iloc[UTEIS[1].day - 1]["Ent. 1"] == "08:05 (I)" and df.iloc[UTEIS[1].day - 1]["Desconsideradas"] == "08:00 (D)", "planilha com (I) e (D)")
+conferir("Saldo" in df.columns and str(df.iloc[UTEIS[-1].day - 1]["Saldo"]) == "-8h00" and "Saldo do mês" in texto(at), "CLT: coluna Saldo (falta = -8h00) e saldo do mês")
 conferir(list(df.columns)[-1] == "Ajuste" and str(df.iloc[UTEIS[1].day - 1]["Ajuste"]) == "False", "coluna Ajuste no fim de cada dia")
 at.button(key="fp_aprovar_77").click()
 at = at.run()

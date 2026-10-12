@@ -9,7 +9,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, valores_ajuste
+from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, tem_saldo, valores_ajuste
 from ponto_modelo import TIPOS_PEDIDO
 from theme import estilo_planilha_ponto
 
@@ -29,7 +29,7 @@ def render_planilha(linhas: list[dict], chave: str, ajustavel=None) -> dict | No
     caixa "Ajuste" no fim da linha (`st.data_editor`, só essa coluna editável): marcar devolve o dia, para abrir o pedido
     ou o ajuste na hora. Sem `ajustavel`, só consulta. Devolve o dia marcado ou None."""
     pares = pares_do_mes(linhas)
-    tabela = pd.DataFrame(linhas_planilha(linhas, pares), columns=colunas_planilha(pares))
+    tabela = pd.DataFrame(linhas_planilha(linhas, pares), columns=colunas_planilha(pares, tem_saldo(linhas)))
     altura = 38 + 35 * len(linhas)  # sem rolagem interna: o mês inteiro à vista, como no Figma
     if ajustavel is None:
         st.dataframe(estilo_planilha_ponto(tabela, [l["tom"] for l in linhas]), hide_index=True, width="stretch", height=altura, key=chave)

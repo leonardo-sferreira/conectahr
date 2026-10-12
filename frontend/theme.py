@@ -1368,8 +1368,16 @@ def estilo_planilha_ponto(tabela, tons: list[str], coluna: str = "Situação"):
     O st.dataframe desenha num canvas com as cores do tema base do Streamlit (escuro, em `.streamlit/config.toml`),
     que o CSS não alcança. No modo claro a planilha recebe o filtro `invert(1) hue-rotate(180deg)` (classe
     `crh-planilha` em `_APP_CSS`) e as cores daqui vão já "invertidas", para saírem certas depois do filtro."""
-    if tema_atual() == "escuro":
-        return tabela.style.apply(lambda col: [f"color: {_TOM_PLANILHA_ESCURO.get(t, _TOM_PLANILHA_ESCURO['neu'])}; font-weight: 600" for t in tons], subset=[coluna])
-    fundo, texto = _antes_do_filtro("#FFFFFF"), _antes_do_filtro(GRAFITE)
-    estilo = tabela.style.set_properties(**{"background-color": fundo, "color": texto})
-    return estilo.apply(lambda col: [f"color: {_antes_do_filtro(_TOM_PLANILHA.get(t, _TOM_PLANILHA['neu']))}; font-weight: 600" for t in tons], subset=[coluna])
+    escuro = tema_atual() == "escuro"
+
+    def cor(tom: str) -> str:
+        return _TOM_PLANILHA_ESCURO.get(tom, _TOM_PLANILHA_ESCURO["neu"]) if escuro else _antes_do_filtro(_TOM_PLANILHA.get(tom, _TOM_PLANILHA["neu"]))
+
+    if escuro:
+        estilo = tabela.style
+    else:
+        estilo = tabela.style.set_properties(**{"background-color": _antes_do_filtro("#FFFFFF"), "color": _antes_do_filtro(GRAFITE)})
+    estilo = estilo.apply(lambda col: [f"color: {cor(t)}; font-weight: 600" for t in tons], subset=[coluna])
+    if "Saldo" in tabela.columns:  # saldo positivo em verde, negativo em vermelho (Figma 464:826)
+        estilo = estilo.apply(lambda col: [f"color: {cor('ok' if str(v).startswith('+') else 'err' if str(v).startswith('-') else 'neu')}" for v in col], subset=["Saldo"])
+    return estilo

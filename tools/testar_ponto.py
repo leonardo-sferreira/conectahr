@@ -85,7 +85,8 @@ def _instalar():
     api_client.meus_comunicados = lambda token: {"comunicados": []}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.meu_ponto = lambda token: chamadas.append(("meu_ponto",)) or _falha_ou("ponto", {"registros": [], "marcacoes": estado["marcacoes"], "tratamentos": []})
-    api_client.comprovantes_ponto = lambda token: _falha_ou("comprovantes", {"marcacoes": estado["marcacoes"], "empregador": EMPREGADOR, "trabalhador": TRABALHADOR})
+    api_client.comprovantes_ponto = lambda token: _falha_ou("comprovantes", {"marcacoes": estado["marcacoes"], "empregador": EMPREGADOR, "trabalhador": TRABALHADOR,
+                                                                           "jornada": estado.get("jornada")})
     api_client.meu_banco_horas = lambda token: _falha_ou("banco", {"saldo_horas": 3.3333})
     api_client.minhas_correcoes_ponto = lambda token: {"correcoes": []}
     api_client.minhas_ausencias = lambda token: {"ausencias": []}
@@ -190,6 +191,32 @@ t = texto(at)
 conferir(chamadas.count(("marcar",)) == 3 and "Volta do intervalo" in t and "Saída para intervalo" in t, "três marcações seguidas, todas gravadas (5 no dia)")
 conferir("Ponto marcado às 00:09:22 (UTC-03:00). NSR 000001288." in t and "pt_baixar_ultimo" in downloads(at), "sucesso com hora, segundos, NSR e o comprovante na hora")
 conferir("Em jornada · 5 marcações hoje" in t, "o selo acompanha a quantidade")
+
+caso("Descanso entre jornadas: aviso, não bloqueio (design D13, Figma 'Modal/Aviso de descanso')")
+# Mínimo de 50 horas no teste, para a última marcação de ontem sempre cair dentro do descanso, a qualquer hora do dia.
+JORNADA = {"horas_diarias": 8, "descanso_minimo_minutos": 3000}
+at = app(marcacoes=[marcacao(30, 1300, ONTEM, 22, 0)], jornada=JORNADA)
+at.button(key="pt_marcar").click()
+at = at.run()
+t = texto(at)
+conferir(("marcar",) not in chamadas and at.session_state["modal_ponto"][0] == "descanso", "dentro do descanso: abre o aviso e ainda não marca")
+conferir("Última marcação" in t and "Ontem, " in t and "às 22:00" in t and "(mínimo 50h00)" in t and "seu gestor e o RH serão avisados" in t, "aviso com a última marcação, o descanso e quem é avisado")
+at.button(key="pt_desc_desistir").click()
+at = at.run()
+conferir(("marcar",) not in chamadas and "modal_ponto" not in at.session_state, "desistir não grava nada")
+at.button(key="pt_marcar").click()
+at = at.run()
+at.button(key="pt_desc_confirmar").click()
+at = at.run()
+conferir(chamadas.count(("marcar",)) == 1 and "Ponto marcado às" in texto(at), "confirmar grava a marcação")
+at = app(marcacoes=[marcacao(30, 1300, ONTEM, 22, 0)], jornada={"horas_diarias": 8, "descanso_minimo_minutos": 1})
+at.button(key="pt_marcar").click()
+at = at.run()
+conferir(chamadas.count(("marcar",)) == 1 and "modal_ponto" not in at.session_state, "descanso cumprido: marca direto")
+at = app(marcacoes=[marcacao(30, 1300, ONTEM, 22, 0)], jornada={"horas_diarias": None, "descanso_minimo_minutos": None})
+at.button(key="pt_marcar").click()
+at = at.run()
+conferir(chamadas.count(("marcar",)) == 1, "PJ (sem jornada): sem aviso")
 
 caso("Estados (Figma 465:932)")
 at = app(marcacoes=[])

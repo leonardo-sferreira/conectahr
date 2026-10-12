@@ -27,12 +27,14 @@ from datetime import date, datetime, timedelta
 from comprovante_ponto import formatar_cnpj, formatar_cpf, formatar_nsr
 from onboarding_modelo import data_br
 from pagamento_modelo import MESES
-from ponto_modelo import _DIAS_LONGOS, MARCACOES, ROTULO_CAMPO, TIPOS_AUSENCIA, hora, hora_gravada, horas_trabalhadas
+from ponto_modelo import _DIAS_LONGOS, MARCACOES, ROTULO_CAMPO, TIPOS_AUSENCIA, hora, hora_gravada, horas_trabalhadas, para_brasilia
 
 SEMANA = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 CAMPOS = [c for c, _ in MARCACOES]
 LEGENDA = ("(I) incluída por correção aprovada · (D) desconsiderada, não conta nas horas · Em branco: antes da admissão"
            "{admissao} ou dias que ainda não chegaram")
+LEGENDA_SALDO = " · Saldo: horas menos a jornada do dia útil (diferença de até 10 min no dia não conta)"
+TOLERANCIA_DIA_MIN = 10  # CLT, art. 58, § 1º, pelo limite diário (design D14)
 _STATUS_REGISTRO = {"Completo": ("COMPLETO", "ok"), "Ajustado": ("AJUSTADO", "amb"), "Incompleto": ("INCOMPLETO", "err"), "Aberto": ("EM JORNADA", "amb")}
 _ROTULO_AUSENCIA = {"Atestado": "ATESTADO", "Falta": "FALTA JUSTIFICADA", "Licenca": "LICENÇA", "Afastamento": "AFASTAMENTO"}
 # Situação como aparece na planilha (Figma 464:826).
@@ -142,21 +144,77 @@ def descricao_pedido(c: dict, marcacoes_por_id: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Saldo e descanso (design D13 e D14)
+# ---------------------------------------------------------------------------
+def minutos_texto(minutos, sinal: bool = False) -> str:
+    """-250 -> "-4h10"; com `sinal`, 52 -> "+0h52". Zero é sempre "0h00"."""
+    m = int(round(minutos))
+    prefixo = "-" if m < 0 else ("+" if sinal and m > 0 else "")
+    m = abs(m)
+    return f"{prefixo}{m // 60}h{m % 60:02d}"
+
+
+def saldo_do_dia(horas, jornada_min: int, util: bool) -> int:
+    """Horas trabalhadas menos a jornada do dia útil (fora dele, a jornada esperada é zero). Diferença de até 10
+    minutos no dia não conta; acima disso, conta inteira (Súmula 366 do TST). A mesma conta de
+    `ConectaHR/calcular_dia_ponto`, para os dias gravados antes do saldo existir."""
+    dif = round(float(horas or 0) * 60) - (jornada_min if util else 0)
+    return 0 if abs(dif) <= TOLERANCIA_DIA_MIN else dif
+
+
+def texto_descanso(descanso_min: int, minimo_min: int) -> str:
+    """"Descanso de 9h00 (mínimo 11h)"."""
+    minimo = f"{minimo_min // 60}h" if minimo_min % 60 == 0 else minutos_texto(minimo_min)
+    return f"Descanso de {minutos_texto(descanso_min)} (mínimo {minimo})"
+
+
+def aviso_descanso(marcacoes: list[dict], tratamentos: list[dict], agora: datetime, minimo_min: int | None) -> dict | None:
+    """Antes da primeira marcação do dia (design D13): o descanso desde a última marcação válida do último dia com
+    marcações. Abaixo do mínimo do contrato, {'ultima', 'agora', 'descanso', 'falta'} (datetimes de Brasília e
+    minutos); senão, None. A tela só avisa: quem grava e avisa o superior e o RH é `ponto/marcar`."""
+    if not minimo_min:
+        return None
+    hoje = agora.date()
+    dias = {_dia(mc.get("data")) for mc in marcacoes} | {_dia(t.get("data")) for t in tratamentos}
+    if hoje in dias:
+        return None
+    for d in sorted((d for d in dias if d and d < hoje), reverse=True):
+        batidas, _ = batidas_do_dia([mc for mc in marcacoes if _dia(mc.get("data")) == d], [t for t in tratamentos if _dia(t.get("data")) == d])
+        if not batidas:
+            continue
+        ultima = para_brasilia(batidas[-1]["ms"])
+        if ultima is None:
+            return None
+        descanso = max(int((agora - ultima).total_seconds() // 60), 0)
+        return None if descanso >= minimo_min else {"ultima": ultima, "agora": agora, "descanso": descanso, "falta": minimo_min - descanso}
+    return None
+
+
+def quando(momento: datetime, hoje: date) -> str:
+    """"Ontem, 13/10, às 22:00" ou "10/10, às 22:00"."""
+    texto = f"{momento:%d/%m}, às {momento:%H:%M}"
+    return f"Ontem, {texto}" if momento.date() == hoje - timedelta(days=1) else texto
+
+
+# ---------------------------------------------------------------------------
 # O mês
 # ---------------------------------------------------------------------------
 def _linha_base(d: date) -> dict:
     return {"data": d, "dia": f"{d:%d}", "semana": SEMANA[d.weekday()], "em_branco": False, "batidas": [], "desconsideradas": [],
             "trabalhado": "", "horas": 0.0, "status": "", "situacao": "", "tom": "neu", "registro_id": None, "acao": None, "nota": "",
-            "pendentes": []}
+            "pendentes": [], "saldo": None, "descanso": None}
 
 
 def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list[dict], ferias: list[dict], feriados: list[dict],
                    ano: int, mes: int, hoje: date, admissao=None, inicio: date | None = None, prazo_dias: int | None = None,
-                   marcacoes: list[dict] | None = None, tratamentos: list[dict] | None = None) -> list[dict]:
+                   marcacoes: list[dict] | None = None, tratamentos: list[dict] | None = None, jornada_horas=None,
+                   descanso_minimo: int | None = None) -> list[dict]:
     """Uma linha por dia do mês (ver o cabeçalho do módulo). `acao` é 'corrigir' ou None; `pendentes`, os pedidos de
     correção em análise do dia. `inicio`: quando os registros são só do mês (folha da equipe), a admissão vem de fora.
     `prazo_dias` (tarefa 79): prazo do RH para o colaborador pedir correção; vazio = sem limite. Sem `marcacoes`
-    (None), usa os quatro campos do registro do dia."""
+    (None), usa os quatro campos do registro do dia. `jornada_horas` (horas por dia do contrato; PJ não tem) liga o
+    saldo de cada dia; `descanso_minimo` (minutos), o selo do descanso abaixo do mínimo (design D13 e D14)."""
+    jornada_min = round(float(jornada_horas) * 60) if jornada_horas else None
     inicio_valido = inicio or primeiro_dia(admissao, registros)
     por_dia = {_dia(r.get("data")): r for r in registros if _dia(r.get("data"))}
     data_do_registro = {r.get("id"): d for d, r in por_dia.items()}
@@ -214,9 +272,18 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
                 ultima = max(recusadas, key=lambda c: str(c.get("data_decisao") or ""))
                 nota = f"Correção recusada ({descricao_pedido(ultima, marcacoes_por_id)}): {ultima.get('motivo_decisao') or 'sem motivo informado'}"
             texto = "INCOMPLETO · corrigir" if status == "INCOMPLETO" and d < hoje else None
-            linhas.append(situacao(base, status, tom, texto, batidas=batidas, desconsideradas=desconsideradas,
-                                   trabalhado=horas_trabalhadas(horas) if horas or batidas else "", horas=horas,
-                                   registro_id=(reg or {}).get("id"), acao="corrigir" if d < hoje else None, nota=nota, pendentes=pendentes))
+            linha = situacao(base, status, tom, texto, batidas=batidas, desconsideradas=desconsideradas,
+                             trabalhado=horas_trabalhadas(horas) if horas or batidas else "", horas=horas,
+                             registro_id=(reg or {}).get("id"), acao="corrigir" if d < hoje else None, nota=nota, pendentes=pendentes)
+            if jornada_min is not None and d < hoje:
+                gravado = (reg or {}).get("saldo_minutos")
+                util = d.weekday() < 5 and d not in dias_sem_expediente
+                linha["saldo"] = int(gravado) if gravado is not None else saldo_do_dia(horas, jornada_min, util)
+            descanso = (reg or {}).get("descanso_minutos")
+            if descanso_minimo and descanso is not None and descanso < descanso_minimo:
+                linha["descanso"] = int(descanso)
+                linha["situacao"] = f'{linha["situacao"]} · {texto_descanso(int(descanso), descanso_minimo)}'
+            linhas.append(linha)
             continue
         base["pendentes"] = pendentes
         if pendentes:
@@ -249,6 +316,13 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
         else:
             linhas.append(situacao(base, "SEM REGISTRO", "err", acao="corrigir",
                                    nota=base["nota"] or "Esqueceu de marcar? Peça a correção. Faltou? Registre a ausência."))
+    if jornada_min is not None:
+        for l in linhas:
+            if l["em_branco"] or l["batidas"] or l["saldo"] is not None or l["status"] in ("SEM MARCAÇÃO HOJE", "AUSÊNCIA EM ANÁLISE"):
+                continue
+            # Falta no dia útil: menos a jornada. Folga, feriado, férias e ausência justificada: zero.
+            falta = l["status"] in ("SEM REGISTRO", "FALTA INJUSTIFICADA") and l["data"].weekday() < 5 and l["data"] not in dias_sem_expediente
+            l["saldo"] = -jornada_min if falta else 0
     return aplicar_prazo(linhas, hoje, prazo_dias)
 
 
@@ -300,6 +374,7 @@ def resumo_do_mes(linhas: list[dict]) -> dict:
         "faltas_injustificadas": sum(1 for l in linhas if l["status"] == "FALTA INJUSTIFICADA"),
         "atestados": sum(1 for l in linhas if l["status"] == "ATESTADO"),
         "em_analise": sum(len(l["pendentes"]) for l in linhas),
+        "saldo": minutos_texto(sum(l["saldo"] for l in linhas if l.get("saldo") is not None), sinal=True) if tem_saldo(linhas) else None,
     }
 
 
@@ -354,30 +429,37 @@ def valores_ajuste(linhas: list[dict], ajustavel) -> list:
 # ---------------------------------------------------------------------------
 # Planilha, cabeçalho do art. 84 e CSV
 # ---------------------------------------------------------------------------
+def tem_saldo(linhas: list[dict]) -> bool:
+    """Saldo só para quem tem jornada no contrato (PJ não tem)."""
+    return any(l.get("saldo") is not None for l in linhas)
+
+
 def pares_do_mes(linhas: list[dict]) -> int:
     """Quantos pares de colunas "Ent."/"Saí." a planilha precisa (pelo menos 2)."""
     return max([2] + [(len(l["batidas"]) + 1) // 2 for l in linhas])
 
 
-def colunas_planilha(pares: int) -> list[str]:
+def colunas_planilha(pares: int, com_saldo: bool = False) -> list[str]:
     marcas = [f"{t} {i}" for i in range(1, pares + 1) for t in ("Ent.", "Saí.")]
-    return ["Data", "Dia", *marcas, "Desconsideradas", "Horas", "Situação"]
+    return ["Data", "Dia", *marcas, "Desconsideradas", "Horas", *(["Saldo"] if com_saldo else []), "Situação"]
 
 
 def linhas_planilha(linhas: list[dict], pares: int | None = None) -> list[list[str]]:
-    """As linhas da planilha (Figma 464:826), na ordem de `colunas_planilha`."""
+    """As linhas da planilha (Figma 464:826), na ordem de `colunas_planilha`, com o saldo quando houver."""
     pares = pares or pares_do_mes(linhas)
+    com_saldo = tem_saldo(linhas)
     saida = []
     for l in linhas:
         marcas = [texto_batida(b) for b in l["batidas"]] + [""] * (2 * pares - len(l["batidas"]))
+        saldo = [minutos_texto(l["saldo"], sinal=True) if l.get("saldo") is not None else ""] if com_saldo else []
         saida.append([l["dia"], l["semana"], *marcas, " ".join(texto_desconsiderada(b) for b in l["desconsideradas"]),
-                      l["trabalhado"], l["situacao"]])
+                      l["trabalhado"], *saldo, l["situacao"]])
     return saida
 
 
-def legenda(admissao) -> str:
+def legenda(admissao, com_saldo: bool = False) -> str:
     texto = data_br(str(admissao)) if admissao else None
-    return LEGENDA.format(admissao=f" ({texto})" if texto else "")
+    return LEGENDA.format(admissao=f" ({texto})" if texto else "") + (LEGENDA_SALDO if com_saldo else "")
 
 
 def horario_contratual(jornada: dict | None) -> str:
@@ -430,7 +512,7 @@ def csv_do_mes(linhas: list[dict], cabecalho: dict | None = None) -> bytes:
             escritor.writerow([rotulo, valor])
         escritor.writerow([])
     pares = pares_do_mes(linhas)
-    escritor.writerow([*colunas_planilha(pares), "Observação", "NSR"])
+    escritor.writerow([*colunas_planilha(pares, tem_saldo(linhas)), "Observação", "NSR"])
     for l, valores in zip(linhas, linhas_planilha(linhas, pares)):
         nsrs = " ".join(formatar_nsr(b["nsr"]) for b in l["batidas"] + l["desconsideradas"] if b.get("nsr"))
         escritor.writerow([data_br(l["data"].isoformat()), *valores[1:], l["nota"], nsrs])

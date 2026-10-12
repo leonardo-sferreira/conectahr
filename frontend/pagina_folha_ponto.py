@@ -34,7 +34,7 @@ from decisoes_modelo import validar_motivo
 from folha_modelo import csv_resumo, espelho_da_pessoa, linhas_resumo, meses_da_equipe, meses_da_pessoa, pendentes_da_pessoa
 from pagamento_modelo import MESES
 from planilha_ponto import desmarcar_planilha, formulario_pedido, limpar_formulario, render_planilha, resumo_do_dia
-from ponto_mensal_modelo import anos_disponiveis, csv_do_mes, descricao_pedido, legenda, meses_do_ano, resumo_do_mes, texto_prazo
+from ponto_mensal_modelo import anos_disponiveis, csv_do_mes, descricao_pedido, legenda, meses_do_ano, resumo_do_mes, tem_saldo, texto_prazo
 from ponto_modelo import hoje_brasilia, validar_pedido, valor_solicitado_ms
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
@@ -255,8 +255,10 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
             return
     linhas = espelho_da_pessoa(pessoa, dados, feriados, ano, mes, hoje)
     numeros = resumo_do_mes(linhas)
+    saldo_mes = [("Saldo do mês", numeros["saldo"], "negativo" if numeros["saldo"].startswith("-") else "verde")] if numeros["saldo"] else []
     render_indicadores([
         ("Horas trabalhadas no mês", numeros["horas"], ""),
+        *saldo_mes,
         ("Dias com marcação", str(numeros["dias_trabalhados"]), "verde"),
         ("Sem registro ou incompletos", str(numeros["sem_registro"]), "ambar"),
         ("Faltas injustificadas", str(numeros["faltas_injustificadas"]), "negativo"),
@@ -295,7 +297,7 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
 
     chave = f"fp_planilha_{pid}_{ano}_{mes}"
     escolhida = render_planilha(linhas, chave, ajustavel=None if proprio else lambda l: l["data"] <= hoje)
-    st.html(f'<p class="crh-legenda-ponto">{html.escape(legenda(pessoa.get("data_admissao")))}</p>')
+    st.html(f'<p class="crh-legenda-ponto">{html.escape(legenda(pessoa.get("data_admissao"), tem_saldo(linhas)))}</p>')
     if escolhida:
         desmarcar_planilha(chave)
         st.session_state.modal_folha = ("ajustar", escolhida["data"].isoformat())
