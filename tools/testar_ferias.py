@@ -48,6 +48,13 @@ def ferias_padrao(pendente: bool = True):
     return lista
 
 
+FERIADOS = [{"data": "2026-12-25", "nome": "Natal", "tipo": "feriado", "abrangencia": "nacional", "ativo": True},
+            {"data": "2026-12-24", "nome": "Véspera de Natal", "tipo": "ponto_facultativo", "abrangencia": "nacional", "ativo": True},
+            {"data": "2026-07-09", "nome": "Revolução Constitucionalista", "tipo": "feriado", "abrangencia": "estadual", "estado": "SP", "ativo": True},
+            {"data": "2026-01-25", "nome": "Aniversário de São Paulo", "tipo": "feriado", "abrangencia": "municipal", "estado": "SP", "municipio": "São Paulo", "ativo": True},
+            {"data": "2026-11-20", "nome": "Desativado", "tipo": "feriado", "abrangencia": "nacional", "ativo": False}]
+
+
 def situacao(**extra):
     base = {"tipo_contrato": "CLT", "data_admissao": "2026-01-01", "permite_solicitacao": True, "limite_dias_por_pedido": 23,
             "periodos_usados": 2, "maximo_periodos": 3, "permite_fracionamento": True, "minimo_dias_proximo": 5,
@@ -75,6 +82,8 @@ def _instalar():
     api_client.minhas_ferias = lambda token: _falha_ou("ferias", {"ferias": estado["ferias"]})
     api_client.minha_situacao_ferias = lambda token: _falha_ou("situacao", estado["situacao"])
     api_client.cancelar_ferias = lambda token, fid: chamadas.append(("cancelar", fid)) or _falha_ou("cancelar", {"sucesso": True})
+    api_client.calendario = lambda token: chamadas.append(("calendario",)) or _falha_ou("calendario", {"feriados": estado.get("feriados", FERIADOS)})
+    api_client.importar_feriados = lambda token, ano: chamadas.append(("importar", ano)) or _falha_ou("importar", {"ano": ano, "importados": 14, "ja_existiam": 0})
     api_client.solicitar_ferias = lambda token, i, f, d, obs: chamadas.append(("solicitar", i, f, d, obs)) or _falha_ou("solicitar", {"sucesso": True})
 
 
@@ -202,6 +211,73 @@ at = app(erro_ferias=ApiError("Erro inesperado. Tente novamente.", 500))
 conferir("Erro inesperado" in texto(at) and not at.exception, "erro ao carregar vira alerta")
 at = app(erro_situacao=ApiError("Erro", 500))
 conferir("Não foi possível carregar a situação" in texto(at) and "Férias — 05/07/2026" in texto(at) and at.button(key="fe_solicitar").disabled, "sem a situação: histórico continua e o pedido fica desligado")
+at = app(erro_situacao=ApiError("Sua regra de contrato nao permite ferias.", 400))
+conferir("Não foi possível carregar a situação das suas férias agora: Sua regra de contrato nao permite ferias." in texto(at),
+         "o motivo do backend aparece no cartão, em vez de só 'não foi possível'")
+
+caso("Calendário de férias (Figma 466:833, tarefa 7.3)")
+import ferias_modelo as fm  # noqa: E402
+sem = fm.calendario_mes(2026, 7, FERIADOS, ferias_padrao(), date(2026, 7, 6))
+dias = {d["dia"]: d for s in sem for d in s if d}
+conferir(len(sem) == 5 and sem[0][:3] == [None, None, None] and sem[0][3]["dia"] == 1, "julho de 2026: começa na quarta, domingo na primeira coluna")
+conferir(dias[5]["ferias"] == "aprovada" and dias[19]["ferias"] == "aprovada" and dias[20]["ferias"] is None and dias[6]["hoje"], "férias aprovadas de 05 a 19/07; hoje marcado")
+conferir(dias[9]["marcas"] == [("Revolução Constitucionalista", "feriado", "Revolução Constitucionalista")] and dias[4]["fds"] and not dias[6]["fds"], "feriado estadual no dia; sábado como fim de semana")
+dez = {d["dia"]: d for s in fm.calendario_mes(2026, 12, FERIADOS, [], date(2026, 7, 6)) for d in s if d}
+conferir(dez[24]["marcas"][0][:2] == ("Facultativo", "facultativo") and dez[25]["marcas"][0][:2] == ("Natal", "feriado"), "ponto facultativo e feriado com selos diferentes")
+nov = {d["dia"]: d for s in fm.calendario_mes(2026, 11, FERIADOS, [], date(2026, 7, 6)) for d in s if d}
+conferir(nov[20]["marcas"] == [], "feriado desativado não aparece")
+jan = {d["dia"]: d for s in fm.calendario_mes(2027, 1, [], ferias_padrao(), date(2026, 7, 6)) for d in s if d}
+conferir(jan[10]["ferias"] == "pendente" and jan[21]["ferias"] is None, "pedido em análise aparece como em análise")
+fev = {d["dia"]: d for s in fm.calendario_mes(2026, 2, [], ferias_padrao(), date(2026, 7, 6)) for d in s if d}
+conferir(all(d["ferias"] is None for d in fev.values()), "férias rejeitadas não aparecem")
+conferir(fm.mes_vizinho(2026, 1, -1) == (2025, 12) and fm.mes_vizinho(2026, 12, 1) == (2027, 1), "mês anterior e seguinte na virada do ano")
+at = app()
+conferir(("calendario",) not in chamadas, "o calendário só carrega os feriados quando é aberto")
+at.button(key="fe_calendario").click()
+at = at.run()
+t = texto(at)
+conferir("Dom" in t and "Sáb" in t and "Suas férias" in t and "Pedido em análise" in t and "BrasilAPI" in t and ("calendario",) in chamadas,
+         "Ver calendário abre o mês com a legenda e a origem dos feriados")
+at.session_state["fe_cal_mes"] = (2026, 12)
+at = at.run()
+conferir("Dezembro de 2026" in texto(at) and "Natal" in texto(at) and "Facultativo" in texto(at), "navegar até dezembro mostra o Natal e o facultativo")
+at.button(key="fe_cal_seguinte").click()
+at = at.run()
+conferir("Janeiro de 2027" in texto(at), "› vai para o mês seguinte")
+at = app(erro_calendario=ApiError("Erro inesperado.", 500))
+at.button(key="fe_calendario").click()
+at = at.run()
+conferir("Os feriados não carregaram agora" in texto(at) and "Dom" in texto(at) and not at.exception, "sem os feriados, o calendário aparece com o aviso")
+
+caso("Estrutura da empresa: feriados da BrasilAPI (Figma 468:838, tarefa 7.1)")
+import feriados_modelo as fdm  # noqa: E402
+lf = fdm.linhas_feriados(FERIADOS, 2026)
+conferir([l["data"] for l in lf] == ["25/01", "09/07", "24/12", "25/12"] and lf[0]["abrangencia"] == "Municipal — São Paulo/SP" and lf[1]["abrangencia"] == "Estadual — SP"
+         and lf[2]["tipo"] == "Ponto facultativo" and lf[3]["abrangencia"] == "Nacional", "lista do ano em ordem, com tipo e abrangência; sem o desativado")
+conferir(fdm.mensagem_importacao({"ano": 2026, "importados": 14, "ja_existiam": 0}) == "14 feriados nacionais importados para 2026."
+         and fdm.mensagem_importacao({"ano": 2026, "importados": 0, "ja_existiam": 14}) == "Nenhum feriado novo em 2026: os 14 nacionais já estavam cadastrados."
+         and fdm.mensagem_importacao({"ano": 2027, "importados": 1, "ja_existiam": 13}) == "1 feriado nacional importado para 2027; 13 já estavam cadastrados.",
+         "mensagem da importação")
+
+
+def estrutura(perfil: str, **extra) -> AppTest:
+    at = app(**extra)
+    at.session_state["usuario"] = dict(at.session_state["usuario"], perfil=perfil)
+    return abrir(at, "estrutura-da-empresa")
+
+
+at = estrutura("ADMIN")
+t = texto(at)
+conferir(not at.exception and "Estrutura da empresa" in t and "Revolução Constitucionalista" in t and "BrasilAPI" in t, "Admin vê a lista do ano e a nota da BrasilAPI")
+at.button(key="estr_importar").click()
+at = at.run()
+conferir(("importar", HOJE.year) in chamadas and not at.exception, "importar chama o backend com o ano escolhido")
+at = estrutura("ADMIN", erro_importar=ApiError("Nao foi possivel buscar os feriados na BrasilAPI agora. Tente de novo em instantes.", 400))
+at.button(key="estr_importar").click()
+at = at.run()
+conferir("BrasilAPI agora" in texto(at), "falha da BrasilAPI vira alerta")
+at = estrutura("COLABORADOR")
+conferir("Esta tela é só do RH e do Admin." in texto(at) and "estr_importar" not in chaves(at), "colaborador não importa (o backend também recusa)")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

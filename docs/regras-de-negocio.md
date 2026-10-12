@@ -633,6 +633,8 @@ Entidade `feriado`: `data`, `nome` (máx. 200), `abrangencia` (enum `nacional`/`
 
 Autorização para gerenciar feriados: só RH/ADMIN; `abrangencia` validada contra o enum exato, com default `nacional` quando omitida (`xano-workspace/api/conecta_rh_colaboradores/feriados_POST.xs`). **Não auditado:** criação de feriado.
 
+**Importação dos nacionais (desde 12/10/2026):** `feriados/importar` POST (só RH/ADMIN, auditado com o ano e quantos entraram) chama `ConectaHR/importar_feriados_nacionais`, que busca o ano na BrasilAPI (`brasilapi.com.br/api/feriados/v1/{ano}`; a consulta leva só o ano) e grava só as datas sem feriado nacional ativo ou inativo, então repetir não duplica. Carnaval e Corpus Christi entram com `tipo = ponto_facultativo`; os demais como `feriado`, `abrangencia = nacional`. Ano entre 2000 e 2100; se a BrasilAPI não responder 200, nada é gravado (`xano-workspace/function/conectahr/importar_feriados_nacionais.xs`).
+
 ### 12.5 Catálogos
 
 `catalogos_GET.xs` é um endpoint somente-leitura, aberto a qualquer usuário autenticado ativo, retornando listas estáticas de valores de enum espelhadas das tabelas/endpoints para uso em dropdowns do frontend — o próprio código documenta explicitamente que não é ele mesmo a fonte de validação, apenas um espelho das validações aplicadas em outros lugares (`xano-workspace/api/conecta_rh_colaboradores/catalogos_GET.xs`).

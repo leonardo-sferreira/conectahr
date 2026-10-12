@@ -62,8 +62,10 @@
 ## 7. Feriados e calendário
 
 - [ ] 7.1 Criar `tools/feriados.py` (Páscoa e datas móveis) e carregar 2026 e 2027: nacionais, facultativos federais, estado de São Paulo e cidade de São Paulo. Verificar: o teste confere Páscoa de 2026 em 05/04 e de 2027 em 28/03, Corpus Christi em 04/06/2026 e 27/05/2027, e a lista bate com a portaria federal de pontos facultativos de 2026.
+  - **Em andamento (12/10/2026, D17):** no lugar do script, os nacionais vêm da BrasilAPI por `ConectaHR/importar_feriados_nacionais` e `feriados/importar` (RH e Admin, auditado); 2026 e 2027 importados por `xano function run` (14 cada; repetir 2026 não duplicou). Faltam os facultativos federais, os estaduais e os municipais de SP, que a BrasilAPI não traz.
 - [ ] 7.2 Ajustar `calendario` GET para devolver o tipo, e o CRUD de feriados (RH e Admin, auditado) para aceitar o tipo. Verificar: por HTTP, Gestor recebe 403 ao incluir feriado e o tipo volta na consulta.
 - [ ] 7.3 Mostrar o calendário mensal na tela de férias e a aba "Feriados" na estrutura da empresa; tratar ponto facultativo no espelho do ponto. Verificar: teste com 9 de julho mostra "Feriado estadual (SP)" sem falta, e prints com o Figma.
+  - **Em andamento (12/10/2026):** calendário do mês na tela de férias ("Ver calendário", Figma 466:833: feriados, facultativos, férias aprovadas e em análise, ‹ e ›) e a aba "Feriados" da Estrutura da empresa (lista do ano e importar; sem editar e desativar, que o backend não tem). `tools/testar_ferias.py`: 51/51. Falta o ponto facultativo estadual no espelho e os prints com o Figma.
 
 ## 8. LGPD e integração
 

@@ -754,6 +754,23 @@ _APP_CSS = f"""
   .crh-ponto-status.err {{ color: {ERRO}; }}
   .crh-ponto-status.azul {{ color: #2663D9; }}
   .crh-ponto-status.neu {{ color: {GRAFITE_SECUNDARIO}; }}
+  /* Calendário de férias (Figma 466:833): domingo a sábado, feriado e facultativo em selo, férias no fundo do dia. */
+  .crh-cal {{ border: 1px solid {BORDA}; border-radius: 12px; overflow: hidden; background: #FFFFFF; }}
+  .crh-cal table {{ width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; }}
+  .crh-cal th {{ background: {MARFIM}; font: 500 12px 'Manrope', sans-serif; color: {GRAFITE_SECUNDARIO}; text-align: left; padding: 8px; border: none; }}
+  .crh-cal td {{ border: none; border-top: 1px solid {BORDA}; border-left: 1px solid {BORDA}; height: 58px; vertical-align: top; padding: 6px 8px;
+                font: 500 13px 'Manrope', sans-serif; color: {GRAFITE}; }}
+  .crh-cal td:first-child {{ border-left: none; }}
+  .crh-cal td.fds, .crh-cal td.fora {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cal td.ferias {{ background: #DCFCE7; }}
+  .crh-cal td.analise {{ background: {AMBAR_BG}; }}
+  .crh-cal td.hoje .n {{ font-weight: 800; text-decoration: underline; }}
+  .crh-cal .tag {{ display: block; margin-top: 4px; padding: 1px 6px; border-radius: 999px; font-size: 11px; width: fit-content; max-width: 100%;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO}; }}
+  .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-cal-titulo {{ margin: 0; font: 700 17px 'Sora', sans-serif; color: {GRAFITE}; }}
+  .crh-cal-legenda {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }}
   /* Ponto REP-P (Figma 463:825 e 464:826) */
   .crh-relogio {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.1; color: {GRAFITE}; font-variant-numeric: tabular-nums; }}
   .crh-relogio-nota {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
@@ -986,6 +1003,12 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {ESC_TEXTO_2}; color: {ESC_TEXTO_2}; }}
+  .crh-cal {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-cal th, .crh-cal td.fds, .crh-cal td.fora {{ background: {ESC_NEUTRO}; color: {ESC_TEXTO_2}; }}
+  .crh-cal td {{ border-color: {ESC_BORDA}; color: {ESC_TEXTO}; }}
+  .crh-cal td.ferias {{ background: #16301F; }}
+  .crh-cal td.analise {{ background: {ESC_AMBAR_SUAVE}; }}
+  .crh-cal-titulo {{ color: {ESC_TEXTO}; }}
 </style>
 """
 

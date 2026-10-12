@@ -158,3 +158,54 @@ def regras_do_pedido(situacao: dict) -> str:
     if situacao.get("antecedencia_minima_dias"):
         texto += f"Peça com {situacao['antecedencia_minima_dias']} dias de antecedência. "
     return texto + "Só uma solicitação pode ficar pendente por vez."
+
+
+# ---------------------------------------------------------------------------
+# Calendário do mês (Figma 466:833; change ponto-rep-p-e-ferias-clt, tarefa 7.3)
+# ---------------------------------------------------------------------------
+SEMANA_CALENDARIO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+LEGENDA_CALENDARIO = [("Suas férias", "ok"), ("Pedido em análise", "amb"), ("Feriado", "err"), ("Ponto facultativo", "amb")]
+NOTA_CALENDARIO = "Feriados nacionais da BrasilAPI e os cadastrados pelo RH (estaduais e municipais)."
+
+
+def _dia_iso(valor) -> date | None:
+    try:
+        return date.fromisoformat(str(valor)[:10])
+    except ValueError:
+        return None
+
+
+def calendario_mes(ano: int, mes: int, feriados: list[dict], ferias: list[dict], hoje: date) -> list[list[dict | None]]:
+    """As semanas do mês, de domingo a sábado; None nos dias de outro mês. Cada dia: {'dia', 'data', 'fds', 'hoje',
+    'ferias' ('aprovada', 'pendente' ou None), 'marcas' [(texto, 'feriado' ou 'facultativo', nome completo)]}.
+    Férias rejeitadas e canceladas não aparecem; feriado inativo também não."""
+    por_dia: dict[date, list] = {}
+    for f in feriados:
+        d = _dia_iso(f.get("data"))
+        if d and f.get("ativo", True) and (d.year, d.month) == (ano, mes):
+            facultativo = f.get("tipo") == "ponto_facultativo"
+            nome = f.get("nome") or ("Ponto facultativo" if facultativo else "Feriado")
+            por_dia.setdefault(d, []).append(("Facultativo" if facultativo else nome, "facultativo" if facultativo else "feriado", nome))
+    periodos = []
+    for f in ferias:
+        situacao = {"Aprovada": "aprovada", "Concluida": "aprovada", "Pendente": "pendente"}.get(f.get("status"))
+        inicio, fim = _dia_iso(f.get("data_inicio")), _dia_iso(f.get("data_fim"))
+        if situacao and inicio and fim:
+            periodos.append((inicio, fim, situacao))
+    semanas = []
+    for semana in calendar.Calendar(firstweekday=6).monthdatescalendar(ano, mes):
+        linha = []
+        for d in semana:
+            if d.month != mes:
+                linha.append(None)
+                continue
+            situacao = next((s for i, f, s in periodos if i <= d <= f and s == "aprovada"), None) or next((s for i, f, s in periodos if i <= d <= f), None)
+            linha.append({"dia": d.day, "data": d, "fds": d.weekday() >= 5, "hoje": d == hoje, "ferias": situacao, "marcas": por_dia.get(d, [])})
+        semanas.append(linha)
+    return semanas
+
+
+def mes_vizinho(ano: int, mes: int, passo: int) -> tuple[int, int]:
+    """O mês anterior (-1) ou o seguinte (+1)."""
+    indice = ano * 12 + (mes - 1) + passo
+    return indice // 12, indice % 12 + 1

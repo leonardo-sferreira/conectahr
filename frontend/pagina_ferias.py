@@ -12,8 +12,12 @@ Tudo é do próprio colaborador. Quem decide é o gestor ou o RH, em outra tela;
 pedido (regra do backend).
 
 Diferenças em relação ao Figma: o primeiro cartão mostra "Até N dias" por pedido, e não "Dias
-disponíveis", porque o backend não tem saldo de férias (tarefa 74); "Ver calendário" leva à tela
-Calendário, que ainda não existe (tarefa 56).
+disponíveis", porque o backend não tem saldo de férias (tarefa 74).
+
+"Ver calendário" abre o calendário do mês (Figma 466:833; change ponto-rep-p-e-ferias-clt, tarefa 7.3): feriados
+e pontos facultativos (`calendario`, com os nacionais importados da BrasilAPI pelo RH) e as suas férias aprovadas
+ou em análise. Diferença em relação ao Figma: o calendário fica abaixo dos cartões, e o pedido continua no modal;
+a legenda troca "Período escolhido" por "Pedido em análise".
 """
 
 import html
@@ -22,8 +26,21 @@ from datetime import date
 
 import streamlit as st
 
-from api_client import ApiError, cancelar_ferias, minha_situacao_ferias, minhas_ferias, solicitar_ferias
-from ferias_modelo import dias_do_periodo, historico, regras_do_pedido, resumo, resumo_do_pedido, validar_pedido
+from api_client import ApiError, calendario, cancelar_ferias, minha_situacao_ferias, minhas_ferias, solicitar_ferias
+from ferias_modelo import (
+    LEGENDA_CALENDARIO,
+    NOTA_CALENDARIO,
+    SEMANA_CALENDARIO,
+    calendario_mes,
+    dias_do_periodo,
+    historico,
+    mes_vizinho,
+    regras_do_pedido,
+    resumo,
+    resumo_do_pedido,
+    validar_pedido,
+)
+from pagamento_modelo import MESES
 from theme import alerta, render_hero, render_topbar
 
 _CACHE = "ferias_cache"
@@ -38,9 +55,10 @@ def _carregar(token: str) -> dict:
         return cache["dados"]
     dados = {"ferias": minhas_ferias(token).get("ferias") or []}
     try:
-        dados["situacao"] = minha_situacao_ferias(token)
-    except ApiError:
-        dados["situacao"] = None
+        dados["situacao"], dados["situacao_erro"] = minha_situacao_ferias(token), None
+    except ApiError as erro:
+        # A mensagem do backend vai para a tela: "não foi possível" sozinho escondia o motivo.
+        dados["situacao"], dados["situacao_erro"] = None, erro.message
     st.session_state[_CACHE] = {"em": time.time(), "dados": dados}
     return dados
 
@@ -90,6 +108,54 @@ def _modal_solicitar(situacao: dict) -> None:
             st.rerun()
 
 
+def _feriados(token: str) -> tuple[list[dict], str | None]:
+    """Os feriados de `calendario`, guardados na sessão (são os mesmos para todos e mudam pouco)."""
+    if "fe_feriados" not in st.session_state:
+        try:
+            st.session_state.fe_feriados = calendario(token).get("feriados") or []
+        except ApiError as erro:
+            return [], erro.message
+    return st.session_state.fe_feriados, None
+
+
+def _html_calendario(semanas: list[list[dict | None]]) -> str:
+    cab = "".join(f"<th>{d}</th>" for d in SEMANA_CALENDARIO)
+    linhas = []
+    for semana in semanas:
+        celulas = []
+        for dia in semana:
+            if dia is None:
+                celulas.append('<td class="fora"></td>')
+                continue
+            classes = " ".join(c for c, ok in (("fds", dia["fds"]), ("hoje", dia["hoje"]), ("ferias", dia["ferias"] == "aprovada"),
+                                                ("analise", dia["ferias"] == "pendente")) if ok)
+            marcas = "".join(f'<span class="tag {tipo}" title="{html.escape(nome)}">{html.escape(texto)}</span>' for texto, tipo, nome in dia["marcas"])
+            celulas.append(f'<td class="{classes}"><span class="n">{dia["dia"]}</span>{marcas}</td>')
+        linhas.append(f"<tr>{''.join(celulas)}</tr>")
+    return f'<div class="crh-cal"><table><thead><tr>{cab}</tr></thead><tbody>{"".join(linhas)}</tbody></table></div>'
+
+
+def _calendario(token: str, ferias: list[dict]) -> None:
+    """Calendário do mês (Figma 466:833), com ‹ e › para trocar de mês."""
+    hoje = date.today()
+    ano, mes = st.session_state.get("fe_cal_mes") or (hoje.year, hoje.month)
+    feriados, erro = _feriados(token)
+    with st.container(key="ferias_calendario"):
+        with st.container(horizontal=True, vertical_alignment="center"):
+            if st.button("‹", key="fe_cal_anterior", help="Mês anterior"):
+                st.session_state.fe_cal_mes = mes_vizinho(ano, mes, -1)
+                st.rerun()
+            st.html(f'<p class="crh-cal-titulo">{MESES[mes - 1]} de {ano}</p>', width="content")
+            if st.button("›", key="fe_cal_seguinte", help="Mês seguinte"):
+                st.session_state.fe_cal_mes = mes_vizinho(ano, mes, 1)
+                st.rerun()
+        if erro:
+            alerta(st.empty(), "atencao", f"Os feriados não carregaram agora: {erro}")
+        st.html(_html_calendario(calendario_mes(ano, mes, feriados, ferias, hoje)))
+        st.html('<div class="crh-cal-legenda">' + "".join(f'<span class="crh-selo {tom}">{html.escape(t)}</span>' for t, tom in LEGENDA_CALENDARIO)
+                + f'</div><p class="crh-meta" style="margin-top:8px">{html.escape(NOTA_CALENDARIO)}</p>')
+
+
 def _cancelar(ferias_id: int) -> None:
     try:
         cancelar_ferias(st.session_state.token, ferias_id)
@@ -135,9 +201,13 @@ def pagina_ferias() -> None:
                 width="stretch",
             )
         else:
-            st.html('<div class="crh-painel crh-stat"><p class="crh-meta">Não foi possível carregar a situação das suas férias agora.</p></div>', width="stretch")
-        if st.button("Ver calendário", key="fe_calendario"):
-            st.toast("A tela Calendário ainda está em construção.")
+            motivo = dados.get("situacao_erro") or ""
+            st.html('<div class="crh-painel crh-stat"><p class="crh-meta">Não foi possível carregar a situação das suas férias agora'
+                    f'{": " + html.escape(motivo) if motivo else "."}</p></div>', width="stretch")
+        aberto = st.session_state.get("fe_cal_aberto", False)
+        if st.button("Fechar calendário" if aberto else "Ver calendário", key="fe_calendario"):
+            st.session_state.fe_cal_aberto = not aberto
+            st.rerun()
         if st.button("Solicitar férias", type="primary", key="fe_solicitar", disabled=not (numeros and numeros["pode_pedir"])):
             st.session_state.modal_ferias = True
             st.rerun()
@@ -145,6 +215,9 @@ def pagina_ferias() -> None:
         st.html(f'<p class="crh-meta">{html.escape(numeros["nota"])}</p>')
     if numeros and numeros["motivo_bloqueio"]:
         st.html(f'<p class="crh-nota-ambar">{html.escape(numeros["motivo_bloqueio"])}</p>')
+
+    if st.session_state.get("fe_cal_aberto"):
+        _calendario(token, dados["ferias"])
 
     st.html('<p class="crh-bloco-titulo">Histórico de solicitações</p>')
     linhas = historico(dados["ferias"])
