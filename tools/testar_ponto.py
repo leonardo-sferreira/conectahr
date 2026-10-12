@@ -3,7 +3,7 @@ sem navegador e sem rede.
 
 Roda o app com o AppTest do Streamlit e uma API simulada (dados fictícios). Confere:
 
-  Regras ............. horários de Brasília, ordem "1ª entrada, 1ª saída...", selo do dia, comprovantes de 48 horas,
+  Regras ............. horários de Brasília, o papel de cada marcação (entrada, almoço, volta, saída), selo do dia, comprovantes de 48 horas,
                        validação do pedido de correção (inclusão, desconsideração, motivo de 5 a 150)
   Hoje ............... relógio, "Marcar ponto" sem limite, marcações do dia com NSR e comprovante em PDF
   Estados ............ vazio, sucesso (com o comprovante), erro (antes da admissão), bloqueado (sem empregador),
@@ -85,7 +85,8 @@ def _instalar():
     api_client.meus_comunicados = lambda token: {"comunicados": []}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.meu_ponto = lambda token: chamadas.append(("meu_ponto",)) or _falha_ou("ponto", {"registros": [], "marcacoes": estado["marcacoes"], "tratamentos": []})
-    api_client.comprovantes_ponto = lambda token: _falha_ou("comprovantes", {"marcacoes": estado["marcacoes"], "empregador": EMPREGADOR, "trabalhador": TRABALHADOR})
+    api_client.comprovantes_ponto = lambda token: _falha_ou("comprovantes", {"marcacoes": estado["marcacoes"], "empregador": EMPREGADOR, "trabalhador": TRABALHADOR,
+                                                                           "jornada": estado.get("jornada")})
     api_client.meu_banco_horas = lambda token: _falha_ou("banco", {"saldo_horas": 3.3333})
     api_client.minhas_correcoes_ponto = lambda token: {"correcoes": []}
     api_client.minhas_ausencias = lambda token: {"ausencias": []}
@@ -142,18 +143,24 @@ conferir((m.horas_trabalhadas(8.5), m.horas_trabalhadas(9.0667), m.horas_trabalh
 conferir(m.saldo(3.3333) == ("+3h20", "positivo") and m.saldo(-1.5) == ("-1h30", "negativo") and m.saldo(0)[0] == "0h00", "saldo com sinal e cor")
 noite = datetime(2026, 10, 10, 22, 30, tzinfo=BR)
 conferir(m.hoje_brasilia(noite) == date(2026, 10, 10) and m.titulo_hoje(noite) == "Hoje — sábado, 10/10/2026", "depois das 21h ainda é o mesmo dia (Brasília)")
-conferir([m.rotulo_ordem(i) for i in range(5)] == ["1ª entrada", "1ª saída", "2ª entrada", "2ª saída", "3ª entrada"], "ordem das marcações, sem limite")
+conferir([m.rotulo_marcacao(i, 4) for i in range(4)] == ["Entrada", "Saída para o almoço", "Volta do almoço", "Saída"], "dia de quatro marcações: entrada, almoço, volta e saída")
+conferir([m.rotulo_marcacao(i, 2) for i in range(2)] == ["Entrada", "Saída"] and [m.rotulo_marcacao(i, 3) for i in range(3)] == ["Entrada", "Saída para o almoço", "Volta do almoço"],
+         "jornada sem almoço; dia ainda em andamento depois do almoço")
+conferir([m.rotulo_marcacao(i, 6) for i in range(6)] == ["Entrada", "Saída para o almoço", "Volta do almoço", "Saída para intervalo", "Volta do intervalo", "Saída"],
+         "mais de quatro marcações: intervalos no meio, sem limite")
 dia = date(2026, 10, 14)
 fora_de_ordem = [marcacao(3, 1286, dia, 13, 1), marcacao(1, 1284, dia, 8, 2), marcacao(2, 1285, dia, 12, 5), marcacao(9, 1280, dia - timedelta(days=1), 17, 0)]
 hoje_l = m.linhas_hoje(fora_de_ordem, dia)
-conferir([(l["rotulo"], l["hora"], l["nsr"]) for l in hoje_l] == [("1ª entrada", "08:02", "000001284"), ("1ª saída", "12:05", "000001285"), ("2ª entrada", "13:01", "000001286")],
+conferir([(l["rotulo"], l["hora"], l["nsr"]) for l in hoje_l] == [("Entrada", "08:02", "000001284"), ("Saída para o almoço", "12:05", "000001285"), ("Volta do almoço", "13:01", "000001286")],
          "Hoje: só as do dia, em ordem de NSR, com hora e NSR de 9 dígitos")
-conferir(m.texto_proxima(3) == "A próxima marcação será a 2ª saída. Você pode marcar quantas vezes precisar.", "texto da próxima marcação")
+conferir(m.texto_proxima(0).startswith("A próxima marcação será a entrada.") and m.texto_proxima(2).startswith("A próxima marcação será a volta do almoço.")
+         and m.texto_proxima(3) == "A próxima marcação será a saída (para o almoço, um intervalo ou o fim da jornada). Você pode marcar quantas vezes precisar.",
+         "texto da próxima marcação")
 conferir(m.situacao_hoje(3) == ("Em jornada · 3 marcações hoje", "amb") and m.situacao_hoje(4)[0].startswith("Fora de jornada") and m.situacao_hoje(0) is None, "selo do dia")
 agora = datetime(2026, 10, 14, 13, 5, tzinfo=BR)
 recentes = m.comprovantes_recentes(fora_de_ordem + [marcacao(7, 1200, dia - timedelta(days=3), 8, 0)], agora)
 conferir([c["nsr"] for c in recentes] == ["000001286", "000001285", "000001284", "000001280"] and recentes[0]["quando"] == "14/10/2026 13:01"
-         and recentes[0]["rotulo"] == "2ª entrada", "comprovantes: últimas 48 horas, do mais recente, com a posição no dia")
+         and recentes[0]["rotulo"] == "Volta do almoço", "comprovantes: últimas 48 horas, do mais recente, com o papel no dia")
 conferir(m.validar_pedido(None, None, None, "motivo") == "Escolha o que precisa ser corrigido." and m.validar_pedido("inclusao", None, None, "motivo")
          and m.validar_pedido("desconsideracao", None, None, "motivo") and m.validar_pedido("inclusao", time(13), None, "abc")
          and m.validar_pedido("inclusao", time(13), None, "x" * 151) and m.validar_pedido("inclusao", time(13), None, "Esqueci de marcar") is None
@@ -167,8 +174,8 @@ at = app()
 t = texto(at)
 conferir(not at.exception, "a tela abre sem erro")
 conferir(m.titulo_hoje() in t and "Horário de Brasília (UTC-03:00), pelo servidor" in t and re.search(r"\b\d{2}:\d{2}:\d{2}\b", t), "título, relógio com segundos e a nota do servidor")
-conferir("1ª entrada" in t and "00:02" in t and "000001284" in t and "1ª saída" in t and "000001285" in t, "marcações de hoje com hora e NSR")
-conferir("A próxima marcação será a 2ª entrada" in t and "Fora de jornada · 2 marcações hoje" in t, "próxima marcação e selo")
+conferir("Entrada" in t and "00:02" in t and "000001284" in t and "Saída" in t and "000001285" in t, "marcações de hoje com o papel, a hora e o NSR")
+conferir("A próxima marcação será a volta do almoço" in t and "Fora de jornada · 2 marcações hoje" in t, "próxima marcação e selo")
 d = downloads(at)
 conferir("pt_cp_hoje_20" in d and "pt_cp_hoje_21" in d, "comprovante em PDF de cada marcação de hoje")
 conferir("Comprovantes das últimas 48 horas" in t and "pt_cp_10" in d and "pt_cp_11" in d and "NSR 000001279" in t, "comprovantes das últimas 48 horas, com os de ontem")
@@ -181,9 +188,35 @@ for _ in range(3):
     at.button(key="pt_marcar").click()
     at = at.run()
 t = texto(at)
-conferir(chamadas.count(("marcar",)) == 3 and "5ª" not in t and "3ª saída" in t, "três marcações seguidas, todas gravadas (5 no dia)")
+conferir(chamadas.count(("marcar",)) == 3 and "Volta do intervalo" in t and "Saída para intervalo" in t, "três marcações seguidas, todas gravadas (5 no dia)")
 conferir("Ponto marcado às 00:09:22 (UTC-03:00). NSR 000001288." in t and "pt_baixar_ultimo" in downloads(at), "sucesso com hora, segundos, NSR e o comprovante na hora")
 conferir("Em jornada · 5 marcações hoje" in t, "o selo acompanha a quantidade")
+
+caso("Descanso entre jornadas: aviso, não bloqueio (design D13, Figma 'Modal/Aviso de descanso')")
+# Mínimo de 50 horas no teste, para a última marcação de ontem sempre cair dentro do descanso, a qualquer hora do dia.
+JORNADA = {"horas_diarias": 8, "descanso_minimo_minutos": 3000}
+at = app(marcacoes=[marcacao(30, 1300, ONTEM, 22, 0)], jornada=JORNADA)
+at.button(key="pt_marcar").click()
+at = at.run()
+t = texto(at)
+conferir(("marcar",) not in chamadas and at.session_state["modal_ponto"][0] == "descanso", "dentro do descanso: abre o aviso e ainda não marca")
+conferir("Última marcação" in t and "Ontem, " in t and "às 22:00" in t and "(mínimo 50h00)" in t and "seu gestor e o RH serão avisados" in t, "aviso com a última marcação, o descanso e quem é avisado")
+at.button(key="pt_desc_desistir").click()
+at = at.run()
+conferir(("marcar",) not in chamadas and "modal_ponto" not in at.session_state, "desistir não grava nada")
+at.button(key="pt_marcar").click()
+at = at.run()
+at.button(key="pt_desc_confirmar").click()
+at = at.run()
+conferir(chamadas.count(("marcar",)) == 1 and "Ponto marcado às" in texto(at), "confirmar grava a marcação")
+at = app(marcacoes=[marcacao(30, 1300, ONTEM, 22, 0)], jornada={"horas_diarias": 8, "descanso_minimo_minutos": 1})
+at.button(key="pt_marcar").click()
+at = at.run()
+conferir(chamadas.count(("marcar",)) == 1 and "modal_ponto" not in at.session_state, "descanso cumprido: marca direto")
+at = app(marcacoes=[marcacao(30, 1300, ONTEM, 22, 0)], jornada={"horas_diarias": None, "descanso_minimo_minutos": None})
+at.button(key="pt_marcar").click()
+at = at.run()
+conferir(chamadas.count(("marcar",)) == 1, "PJ (sem jornada): sem aviso")
 
 caso("Estados (Figma 465:932)")
 at = app(marcacoes=[])
@@ -205,7 +238,7 @@ conferir("Sem cadastro de colaborador" in texto(at), "sem colaborador vinculado"
 at = app(erro_ponto=ApiError("Erro inesperado.", 500))
 conferir("Erro inesperado." in texto(at), "erro ao carregar")
 at = app(erro_banco=ApiError("Erro inesperado.", 500))
-conferir("Não foi possível carregar o saldo agora." in texto(at) and "1ª entrada" in texto(at), "sem o saldo, o resto da tela segue")
+conferir("Não foi possível carregar o saldo agora." in texto(at) and "Entrada" in texto(at) and "000001284" in texto(at), "sem o saldo, o resto da tela segue")
 
 caso("Registrar ausência (Figma 221:285)")
 at = app()

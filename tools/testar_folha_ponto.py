@@ -70,7 +70,7 @@ def marcacoes(rid, cid, d):
 INICIO = (ANT.replace(day=1) - timedelta(days=60)).isoformat()
 PESSOAS_GESTOR = [
     {"id": 12, "nome": "Carlos Souza", "departamento_id": 1, "cargo_id": 1, "status": "Ativo", "superior_colaborador_id": 20, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": True},
-    {"id": 9, "nome": "Leonardo dos Santos", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False},
+    {"id": 9, "nome": "Leonardo dos Santos", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False, "horas_diarias": 8},
     {"id": 11, "nome": "Juliana Prado", "departamento_id": 2, "cargo_id": 2, "status": "Ativo", "superior_colaborador_id": 12, "data_admissao": INICIO, "primeiro_registro": INICIO, "e_voce": False},
 ]
 REGISTROS = [reg(100 + i, 9, d) for i, d in enumerate(UTEIS)] + [reg(200 + i, 11, d) for i, d in enumerate(UTEIS[2:], 2)] + [reg(300, 12, UTEIS[0])]
@@ -175,11 +175,8 @@ def app(perfil="GESTOR", pagina="folha-de-ponto", **extra) -> AppTest:
 
 
 def ajustar_dia(at: AppTest, dia: date, pid: int = 9) -> AppTest:
-    """Seleciona o dia na planilha e clica em "Ajustar o dia" (o AppTest não guarda a seleção entre as rodadas)."""
-    at.session_state[f"fp_planilha_{pid}_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [dia.day - 1], "columns": [], "cells": []}}
-    at = at.run()
-    at.session_state[f"fp_planilha_{pid}_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [dia.day - 1], "columns": [], "cells": []}}
-    at.button(key="fp_ajustar_dia").click()
+    """Marca "Ajuste" no dia (o AppTest não edita o st.data_editor: põe direto o estado que a marca grava)."""
+    at.session_state["modal_folha"] = ("ajustar", dia.isoformat())
     return at.run()
 
 
@@ -207,6 +204,9 @@ t = texto(at)
 conferir("Pedidos de correção pendentes (1)" in t and f"{UTEIS[0]:%d/%m}: inclusão de 18:00" in t, "pedido pendente da pessoa")
 df = at.dataframe[0].value
 conferir(df.iloc[UTEIS[1].day - 1]["Ent. 1"] == "08:05 (I)" and df.iloc[UTEIS[1].day - 1]["Desconsideradas"] == "08:00 (D)", "planilha com (I) e (D)")
+conferir("Saldo" in df.columns and str(df.iloc[UTEIS[-1].day - 1]["Saldo"]) == "-8h00" and "Horas positivas" in texto(at) and "Horas negativas" in texto(at),
+         "CLT: coluna Saldo (falta = -8h00) e horas positivas e negativas")
+conferir(list(df.columns)[-1] == "Ajuste" and str(df.iloc[UTEIS[1].day - 1]["Ajuste"]) == "False", "coluna Ajuste no fim de cada dia")
 at.button(key="fp_aprovar_77").click()
 at = at.run()
 conferir(("aprovar", 77) in chamadas, "aprovar o pedido")
@@ -235,6 +235,16 @@ at.text_area(key="fp_aj_motivo").set_value("Saída para o almoço duplicada.")
 at.button(key="fp_aj_ok").click()
 at = at.run()
 conferir(("tratar", 9, UTEIS[0].isoformat(), "desconsideracao", "Saída para o almoço duplicada.", 1001, None) in chamadas, "desconsideração da marcação escolhida")
+at = ajustar_dia(at, UTEIS[0])
+at.radio(key="fp_aj_tipo").set_value("alteracao")
+at = at.run()
+at.selectbox(key="fp_aj_marcacao").set_value(1001)
+at.time_input(key="fp_aj_hora").set_value(time(12, 5))
+at.text_area(key="fp_aj_motivo").set_value("Saída para o almoço às 12h05.")
+at.button(key="fp_aj_ok").click()
+at = at.run()
+conferir(("tratar", 9, UTEIS[0].isoformat(), "alteracao", "Saída para o almoço às 12h05.", 1001, ms(UTEIS[0], 12, 5)) in chamadas,
+         "ajuste direto: corrigir o horário da marcação escolhida")
 at = para_mes_anterior(app(erro_ajustar=ApiError("Voce nao pode ajustar o ponto desta pessoa.", 403)), "fp_r")
 at.button(key="fp_abrir_9").click()
 at = para_mes_anterior(at.run(), "fp_p")
@@ -245,15 +255,24 @@ at.button(key="fp_aj_ok").click()
 at = at.run()
 conferir("nao pode ajustar" in texto(at) and "modal_folha" in at.session_state, "recusa do backend no modal")
 
+caso("O dia de hoje não se ajusta (só a partir de amanhã)")
+at = app()
+at.button(key="fp_abrir_9").click()
+at = at.run()
+df_hoje = at.dataframe[0].value
+conferir(df_hoje.iloc[HOJE.day - 1]["Ajuste"] is None and df_hoje.iloc[HOJE.day - 1]["Data"] == f"{HOJE:%d/%m/%Y}", "hoje sem a caixa Ajuste; data completa")
+at = ajustar_dia(at, HOJE)
+conferir("fp_aj_ok" not in chaves(at) and "modal_folha" not in at.session_state, "nem abrindo o ajuste de hoje à força")
+
 caso("A própria folha: só consulta")
 at = app()
 at.button_group(key="fp_aba").set_value("Por pessoa")
 at = at.run()
 at.selectbox(key="fp_pessoa").set_value(12)
 at = para_mes_anterior(at.run(), "fp_p")
-at.session_state[f"fp_planilha_12_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [UTEIS[0].day - 1], "columns": [], "cells": []}}
-at = at.run()
-conferir("Esta é a sua folha: só consulta" in texto(at) and "Dia selecionado" in texto(at) and "fp_ajustar_dia" not in chaves(at), "sem 'Ajustar o dia' na própria folha")
+conferir("Esta é a sua folha: só consulta" in texto(at) and "Ajuste" not in at.dataframe[0].value.columns, "sem a coluna Ajuste na própria folha")
+at = ajustar_dia(at, UTEIS[0], pid=12)
+conferir("fp_aj_ok" not in chaves(at), "nem abrindo o ajuste à força")
 
 caso("Escopo")
 at = app(pessoas=[PESSOAS_GESTOR[0]])

@@ -5,9 +5,13 @@
 //   inclusoes: [ms] das marcacoes incluidas por tratamento
 // Junta as validas (originais menos as desconsideradas, mais as incluidas), ordena,
 // forma os pares entrada e saida em ordem e soma as horas dos pares completos.
-// Status: "Ajustado" se houve tratamento; "Completo" com numero par (e pelo menos uma);
+// Status: numero impar vale mais que o tratamento (12/10/2026): "Aberto" hoje e "Incompleto" em
+// dia anterior; com numero par, "Ajustado" se houve tratamento e "Completo" se nao (e pelo menos uma);
 // sem nenhuma marcacao, "Aberto" hoje e "Incompleto" em dia anterior;
 // "Aberto" com numero impar no dia de hoje; "Incompleto" com impar em dia anterior.
+// Saldo (design D14): minutos trabalhados menos a jornada (dia util) ou menos zero (folga,
+// feriado, ferias, ausencia justificada); diferenca de ate 10 minutos no dia vira 0 (CLT,
+// art. 58, par. 1o). Sem jornada no contrato (PJ), saldo nulo.
 function "ConectaHR/calcular_dia_ponto" {
   input {
     json marcacoes
@@ -15,6 +19,7 @@ function "ConectaHR/calcular_dia_ponto" {
     json? inclusoes?
     bool e_hoje?=false
     decimal? horas_diarias?
+    bool? dia_util?=true
   }
 
   stack {
@@ -107,15 +112,36 @@ function "ConectaHR/calcular_dia_ponto" {
     }
 
     var $status {
-      value = ($houve_tratamento ? "Ajustado" : ($total == 0 ? ($input.e_hoje ? "Aberto" : "Incompleto") : ($aberta == false ? "Completo" : ($input.e_hoje ? "Aberto" : "Incompleto"))))
+      value = ($aberta ? ($input.e_hoje ? "Aberto" : "Incompleto") : ($houve_tratamento ? "Ajustado" : ($total == 0 ? ($input.e_hoje ? "Aberto" : "Incompleto") : "Completo")))
     }
 
     var $extras {
       value = (($input.horas_diarias != null && $horas > $input.horas_diarias) ? ($horas - $input.horas_diarias) : 0)
     }
+
+    var $esperado_min {
+      value = ($input.dia_util != false && $input.horas_diarias != null ? $input.horas_diarias * 60 : 0)
+    }
+
+    var $diferenca_min {
+      value = (($trabalhado_ms / 60000)|round:0) - $esperado_min
+    }
+
+    var $saldo {
+      value = ($input.horas_diarias == null ? null : (($diferenca_min <= 10 && $diferenca_min >= -10) ? 0 : $diferenca_min))
+    }
   }
 
-  response = {marcacoes: $ordenadas, quantidade: $total, horas_trabalhadas: $horas, horas_extras: $extras, status: $status}
+  response = {
+    marcacoes        : $ordenadas
+    quantidade       : $total
+    horas_trabalhadas: $horas
+    horas_extras     : $extras
+    status           : $status
+    saldo_minutos    : $saldo
+    primeira_ms      : ($total > 0 ? ($ordenadas|first).ms : null)
+    ultima_ms        : ($total > 0 ? ($ordenadas|last).ms : null)
+  }
 
   tags = ["conectahr"]
   guid = "conectahr-calcular-dia-ponto-0001"

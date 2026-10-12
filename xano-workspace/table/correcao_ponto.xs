@@ -15,9 +15,11 @@ table correcao_ponto {
     }
     // REP-P (change ponto-rep-p-e-ferias-clt): "inclusao" pede uma marcacao que faltou
     // (valor_solicitado = data e hora pedida); "desconsideracao" pede para desconsiderar
-    // a marcacao marcacao_id. "ajuste_campo" e o formato antigo, por campo do dia.
+    // a marcacao marcacao_id; "alteracao" corrige o horario da marcacao marcacao_id para
+    // valor_solicitado (aprovada, vira desconsideracao da original + inclusao do horario certo).
+    // "ajuste_campo" e o formato antigo, por campo do dia.
     enum tipo?=ajuste_campo {
-      values = ["ajuste_campo", "inclusao", "desconsideracao"]
+      values = ["ajuste_campo", "inclusao", "desconsideracao", "alteracao"]
     }
     int? marcacao_id {
       table = "marcacao_ponto"

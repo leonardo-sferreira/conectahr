@@ -229,23 +229,45 @@ query "correcoes_ponto/{id}/aprovar" verb=POST {
         // Pedido do REP-P (change ponto-rep-p-e-ferias-clt): inclusao ou desconsideracao vira um
         // tratamento ao lado da marcacao original, que nao e alterada (Portaria 671/2021, art. 82).
         var $e_tratamento {
-          value = ($correcao_atual.tipo == "inclusao" || $correcao_atual.tipo == "desconsideracao")
+          value = ($correcao_atual.tipo == "inclusao" || $correcao_atual.tipo == "desconsideracao" || $correcao_atual.tipo == "alteracao")
         }
 
         conditional {
           if ($e_tratamento) {
-            db.add tratamento_ponto {
-              data = {
-                colaborador_id   : $correcao_atual.colaborador_id
-                data             : $registro_alvo.data
-                tipo             : $correcao_atual.tipo
-                marcacao_id      : $correcao_atual.marcacao_id
-                data_hora        : ($correcao_atual.tipo == "inclusao" ? $correcao_atual.valor_solicitado : null)
-                motivo           : $correcao_atual.justificativa|substr:0:150
-                autor_user_id    : $usuario_autenticado.id
-                correcao_ponto_id: $correcao_atual.id
+            // Alteracao (corrigir o horario): desconsidera a original e inclui o horario certo.
+            conditional {
+              if ($correcao_atual.tipo != "inclusao") {
+                db.add tratamento_ponto {
+                  data = {
+                    colaborador_id   : $correcao_atual.colaborador_id
+                    data             : $registro_alvo.data
+                    tipo             : "desconsideracao"
+                    marcacao_id      : $correcao_atual.marcacao_id
+                    data_hora        : null
+                    motivo           : $correcao_atual.justificativa|substr:0:150
+                    autor_user_id    : $usuario_autenticado.id
+                    correcao_ponto_id: $correcao_atual.id
+                  }
+                } as $tratamento_desconsiderar
               }
-            } as $tratamento_criado
+            }
+
+            conditional {
+              if ($correcao_atual.tipo != "desconsideracao") {
+                db.add tratamento_ponto {
+                  data = {
+                    colaborador_id   : $correcao_atual.colaborador_id
+                    data             : $registro_alvo.data
+                    tipo             : "inclusao"
+                    marcacao_id      : null
+                    data_hora        : $correcao_atual.valor_solicitado
+                    motivo           : $correcao_atual.justificativa|substr:0:150
+                    autor_user_id    : $usuario_autenticado.id
+                    correcao_ponto_id: $correcao_atual.id
+                  }
+                } as $tratamento_incluir
+              }
+            }
 
             function.run "ConectaHR/atualizar_dia_ponto" {
               input = {colaborador_id: $correcao_atual.colaborador_id, data: ($registro_alvo.data|format_timestamp:"Y-m-d":"UTC")}

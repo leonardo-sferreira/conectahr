@@ -110,7 +110,7 @@ def linhas_ferias(fila: list[dict], mapa: dict, meu_colaborador_id, departamento
     return linhas
 
 
-_TIPO_CORRECAO = {"inclusao": "Incluir marcação", "desconsideracao": "Desconsiderar marcação"}
+_TIPO_CORRECAO = {"inclusao": "Incluir marcação", "alteracao": "Corrigir horário", "desconsideracao": "Desconsiderar marcação"}
 
 
 def _momento_correcao(c: dict):
@@ -266,6 +266,8 @@ def minhas_pendencias(central: dict, solicitacoes: list[dict], ferias: list[dict
         titulo = f"Correção de ponto — {_DIAS_LONGOS[momento.weekday()]}, {momento.strftime('%d/%m')}" if momento else "Correção de ponto"
         rotulo, pedido = _rotulo_correcao(c), hora(_momento_correcao(c))
         ligacao = {"inclusao": "às", "desconsideracao": "das"}.get(c.get("tipo"), "para")
+        if c.get("tipo") == "alteracao" and hora(c.get("valor_original")):
+            ligacao = f"de {hora(c.get('valor_original'))} para"
         itens.append(_item(titulo, f"{rotulo} {ligacao} {pedido}" if pedido else rotulo, _CORRECAO[status]))
     secoes.append({"titulo": "Ponto", "itens": itens})
 

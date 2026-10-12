@@ -36,8 +36,21 @@ from api_client import (
 )
 from comprovante_ponto import comprovante_pdf, formatar_nsr, nome_arquivo
 from pagamento_modelo import MESES
-from planilha_ponto import formulario_pedido, limpar_formulario, render_cabecalho, render_planilha, resumo_do_dia
-from ponto_mensal_modelo import aviso_prazo, cabecalho_espelho, csv_do_mes, descricao_dia, espelho_do_mes, legenda, meses_disponiveis, resumo_do_mes, texto_prazo
+from planilha_ponto import desmarcar_planilha, formulario_pedido, limpar_formulario, render_cabecalho, render_planilha, resumo_do_dia
+from ponto_mensal_modelo import (
+    aviso_descanso,
+    aviso_prazo,
+    cabecalho_espelho,
+    csv_do_mes,
+    espelho_do_mes,
+    legenda,
+    meses_disponiveis,
+    minutos_texto,
+    quando,
+    resumo_do_mes,
+    tem_saldo,
+    texto_prazo,
+)
 from ponto_modelo import (
     BRASILIA,
     MOTIVOS_AUSENCIA,
@@ -126,10 +139,15 @@ def _modal_pedido(linha: dict) -> None:
     """`ponto/correcao`: inclusão de uma marcação que faltou ou desconsideração de uma feita por engano (Figma 465:856
     e 465:894). As marcações já em análise ficam fora da desconsideração."""
     resumo_do_dia(linha)
+    if linha["nota"] and not linha["nota"].startswith(("Esqueceu", "Mês encerrado")):
+        st.html(f'<p class="crh-meta" style="margin:0">{html.escape(linha["nota"])}</p>')
     tipo, horario, marcacao_id, motivo = formulario_pedido(linha, "pt_ped")
     if tipo == "inclusao":
         nota = ("A marcação original nunca é alterada. Aprovada, a correção vira um tratamento com o seu motivo e aparece na "
                 "planilha como (I). Quem decide é o seu superior ou o RH.")
+    elif tipo == "alteracao":
+        nota = ("A marcação original continua gravada e no comprovante. Aprovada, ela aparece como (D) e o horário certo entra "
+                "como (I). Quem decide é o seu superior ou o RH.")
     else:
         nota = "A marcação continua gravada e no comprovante. Aprovada, ela aparece como (D) e deixa de contar nas horas."
     st.html(f'<div class="crh-incluso"><p class="n" style="margin:0">{html.escape(nota)}</p></div>')
@@ -145,7 +163,7 @@ def _modal_pedido(linha: dict) -> None:
                 return
             try:
                 pedir_correcao_ponto(st.session_state.token, linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=marcacao_id,
-                                     data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo == "inclusao" else None)
+                                     data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo != "desconsideracao" else None)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
@@ -211,6 +229,46 @@ def _marcar() -> None:
     _invalidar()
 
 
+def _jornada(dados: dict) -> dict:
+    """A jornada do contrato (`ponto/comprovantes`): horas por dia e descanso mínimo. PJ vem sem as duas."""
+    return (dados.get("rep") or {}).get("jornada") or {}
+
+
+def _pedir_marcar(dados: dict) -> None:
+    """Antes de marcar, confere o descanso entre jornadas (design D13): abaixo do mínimo, abre o aviso com Confirmar e
+    Desistir; senão, marca direto. A tela só avisa: o servidor recalcula, grava e avisa o superior e o RH."""
+    ponto = dados["ponto"]
+    aviso = aviso_descanso(ponto.get("marcacoes") or [], ponto.get("tratamentos") or [], datetime.now(BRASILIA),
+                           _jornada(dados).get("descanso_minimo_minutos"))
+    if aviso:
+        st.session_state.modal_ponto = ("descanso", aviso)
+    else:
+        _marcar()
+
+
+@st.dialog("Você está no período de descanso", width="small", on_dismiss=_fechar)
+def _modal_descanso(aviso: dict) -> None:
+    """Figma "Modal/Aviso de descanso" (seção 21): a marcação não é bloqueada (art. 74); desistir não grava nada."""
+    st.html(
+        '<div class="crh-campos crh-campos-direita">'
+        f'<p class="r">Última marcação</p><p class="v">{html.escape(quando(aviso["ultima"], aviso["agora"].date()))}</p>'
+        f'<p class="r">Agora</p><p class="v">{aviso["agora"]:%d/%m, %H:%M}</p>'
+        f'<p class="r">Descanso</p><p class="v"><span class="crh-ponto-status amb">{html.escape(minutos_texto(aviso["descanso"]))} '
+        f'(mínimo {html.escape(minutos_texto(aviso["descanso"] + aviso["falta"]))})</span></p></div>'
+    )
+    st.html(f'<div class="crh-incluso"><p class="n" style="margin:0">Faltam {html.escape(minutos_texto(aviso["falta"]))} para completar o '
+            'descanso mínimo entre jornadas (CLT, art. 66). Se marcar, seu gestor e o RH serão avisados. A marcação é gravada '
+            'normalmente e conta nas horas do dia.</p></div>')
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Desistir", key="pt_desc_desistir"):
+            _fechar()
+            st.rerun()
+        if st.button("Confirmar e marcar", type="primary", key="pt_desc_confirmar"):
+            _fechar()
+            _marcar()
+            st.rerun()
+
+
 def _pdf(marcacao: dict, rep: dict) -> bytes:
     return comprovante_pdf(marcacao, rep.get("empregador") or {}, rep.get("trabalhador") or {})
 
@@ -238,7 +296,7 @@ def _hoje(dados: dict) -> None:
             st.html(f'<p class="crh-cfg-titulo">{html.escape(titulo_hoje())}</p>')
             _relogio()
             st.html('<p class="crh-relogio-nota">Horário de Brasília (UTC-03:00), pelo servidor</p>')
-            st.button("Marcar ponto", type="primary", key="pt_marcar", on_click=_marcar)
+            st.button("Marcar ponto", type="primary", key="pt_marcar", on_click=_pedir_marcar, args=(dados,))
             if selo := situacao_hoje(len(linhas)):
                 st.html(f'<span class="crh-selo {selo[1]}">{html.escape(selo[0])}</span>')
         with direita:
@@ -314,32 +372,31 @@ def _mes(token: str, dados: dict, meses: list[tuple[int, int]], ano: int, mes: i
     hoje = hoje_brasilia()
     linhas = espelho_do_mes(ponto.get("registros") or [], dados["ausencias"], dados["correcoes"], extra["ferias"], extra["feriados"],
                             ano, mes, hoje, extra["admissao"], prazo_dias=extra.get("prazo_dias"),
-                            marcacoes=ponto.get("marcacoes") if "marcacoes" in ponto else None, tratamentos=ponto.get("tratamentos") or [])
+                            marcacoes=ponto.get("marcacoes") if "marcacoes" in ponto else None, tratamentos=ponto.get("tratamentos") or [],
+                            jornada_horas=_jornada(dados).get("horas_diarias"), descanso_minimo=_jornada(dados).get("descanso_minimo_minutos"))
     render_cabecalho(cabecalho_espelho(dados["rep"] or {}, ano, mes, datetime.now(BRASILIA)))
     numeros = resumo_do_mes(linhas)
+    horas_saldo = [("Horas positivas", numeros["positivas"], "verde"), ("Horas negativas", numeros["negativas"], "negativo")] if numeros["positivas"] else []
     render_indicadores([
         ("Horas no mês", numeros["horas"], ""),
+        *horas_saldo,
         ("Dias com marcação", str(numeros["dias_trabalhados"]), ""),
         ("Sem registro", str(numeros["sem_registro"]), ""),
         ("Faltas injustificadas", str(numeros["faltas_injustificadas"]), "negativo"),
-        ("Atestados", str(numeros["atestados"]), ""),
     ])
     prazo_txt = f' · Prazo para pedir correção: {texto_prazo(extra.get("prazo_dias"))}' if extra.get("prazo_dias") else ""
     if numeros["em_analise"] or prazo_txt:
         st.html(f'<p class="crh-meta">Correções em análise: {numeros["em_analise"]}{prazo_txt}</p>')
     if aviso := aviso_prazo(linhas, hoje, extra.get("prazo_dias")):
         alerta(st.empty(), "atencao", aviso)
-    escolhida = render_planilha(linhas, "pt_planilha")
-    st.html(f'<p class="crh-legenda-ponto">{html.escape(legenda(extra["admissao"]))}</p>')
+    escolhida = render_planilha(linhas, "pt_planilha", ajustavel=lambda l: l["acao"] == "corrigir")
+    st.html(f'<p class="crh-legenda-ponto">{html.escape(legenda(extra["admissao"], tem_saldo(linhas)))}</p>')
     if escolhida:
-        with st.container(horizontal=True, vertical_alignment="center", key="ponto_selecionado"):
-            nota = f'<br><span class="crh-meta">{html.escape(escolhida["nota"])}</span>' if escolhida["nota"] else ""
-            st.html(f'<p class="crh-doc-prazo" style="margin:0"><b>Dia selecionado: {html.escape(descricao_dia(escolhida))}</b>{nota}</p>', width="stretch")
-            if escolhida["acao"] == "corrigir":
-                if st.button("Pedir correção do dia", type="primary", key="pt_pedir_dia"):
-                    st.session_state.modal_ponto = ("pedido", escolhida["data"].isoformat())
-                    st.rerun()
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">Selecione uma linha da planilha para pedir a correção do dia. O pedido '
+        desmarcar_planilha("pt_planilha")
+        if escolhida["acao"] == "corrigir":
+            st.session_state.modal_ponto = ("pedido", escolhida["data"].isoformat())
+        st.rerun()
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">Marque "Ajuste" no fim da linha para pedir a correção do dia. O pedido '
             'segue para o seu superior ou para o RH; a marcação original nunca é alterada.</p></div>')
     return linhas
 
@@ -396,6 +453,8 @@ def pagina_ponto() -> None:
         return
     if modal[0] == "ausencia":
         _modal_ausencia()
+    elif modal[0] == "descanso":
+        _modal_descanso(modal[1])
     elif modal[0] == "pedido":
         linha = next((l for l in linhas_mes if l["data"].isoformat() == modal[1] and l["acao"] == "corrigir"), None)
         if linha is None:

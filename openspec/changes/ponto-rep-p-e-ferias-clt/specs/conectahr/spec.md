@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Registro de ponto e correcao
-O sistema SHALL permitir que o colaborador marque o ponto quantas vezes precisar no dia, sem restrição de horário nem de quantidade, a partir da data de admissão; antes da admissão a marcação SHALL ser recusada. As marcações do dia SHALL ser lidas em ordem como pares de entrada e saída, e o sistema SHALL calcular as horas trabalhadas e extras quando aplicável. O dia SHALL usar os status ABERTO (número ímpar de marcações no dia corrente), COMPLETO, INCOMPLETO (número ímpar de marcações em dia anterior, depois da rotina diária) ou AJUSTADO (dia com algum tratamento). O colaborador SHALL poder solicitar a correção de um dia passado, com ou sem marcação, desde que o dia não seja anterior à admissão: pedir a inclusão de uma marcação que faltou ou a desconsideração de uma marcação indevida, com motivo. O horário pedido SHALL estar dentro do dia e não SHALL estar no futuro; uma marcação com pedido pendente não SHALL receber outro pedido. O responsável autorizado pela hierarquia (RH, Admin, o superior direto do colaborador ou, sem superior, o Gestor do departamento ou o substituto de uma delegação vigente desse Gestor) SHALL poder aprovar ou recusar com justificativa, nunca sobre o próprio registro. O mesmo responsável SHALL poder incluir ou desconsiderar diretamente uma marcação da sua equipe, com motivo; o ajuste segue as mesmas regras de horário, recalcula as horas, fica no histórico como correção aprovada, é auditado e avisa a pessoa. Nenhuma correção ou ajuste SHALL alterar ou apagar a marcação original: o resultado é um tratamento registrado ao lado dela.
+O sistema SHALL permitir que o colaborador marque o ponto quantas vezes precisar no dia, sem restrição de horário nem de quantidade, a partir da data de admissão; antes da admissão a marcação SHALL ser recusada. As marcações do dia SHALL ser lidas em ordem como pares de entrada e saída, e o sistema SHALL calcular as horas trabalhadas e extras quando aplicável. O dia SHALL usar os status ABERTO (número ímpar de marcações no dia corrente), COMPLETO, INCOMPLETO (número ímpar de marcações em dia anterior, depois da primeira marcação do dia seguinte ou da rotina diária) ou AJUSTADO (dia fechado, com número par de marcações, que tem algum tratamento). O número ímpar de marcações vale mais que o tratamento: um dia anterior com tratamento e uma marcação sem par SHALL ficar INCOMPLETO, para a saída que falta não sumir da vista. O colaborador SHALL poder solicitar a correção de um dia passado, com ou sem marcação, desde que o dia não seja anterior à admissão; o dia de hoje, ainda em andamento, não SHALL receber correção nem ajuste, que valem a partir do dia seguinte: pedir a inclusão de uma marcação que faltou, a correção do horário de uma marcação escolhida por ele (qualquer uma do dia, identificada pelo papel: Entrada, Saída para o almoço...) ou a desconsideração de uma marcação indevida, com motivo. Aprovada, a correção do horário SHALL virar a desconsideração da marcação escolhida e a inclusão do horário certo. O horário pedido SHALL estar dentro do dia e não SHALL estar no futuro; uma marcação com pedido pendente não SHALL receber outro pedido. O responsável autorizado pela hierarquia (RH, Admin, o superior direto do colaborador ou, sem superior, o Gestor do departamento ou o substituto de uma delegação vigente desse Gestor) SHALL poder aprovar ou recusar com justificativa, nunca sobre o próprio registro. O mesmo responsável SHALL poder incluir ou desconsiderar diretamente uma marcação da sua equipe, com motivo; o ajuste segue as mesmas regras de horário, recalcula as horas, fica no histórico como correção aprovada, é auditado e avisa a pessoa. Nenhuma correção ou ajuste SHALL alterar ou apagar a marcação original: o resultado é um tratamento registrado ao lado dela.
 
 #### Scenario: Jornada concluida
 - **WHEN** o colaborador faz as marcações de entrada e saída do dia, em número par
@@ -14,6 +14,10 @@ O sistema SHALL permitir que o colaborador marque o ponto quantas vezes precisar
 #### Scenario: Marcacoes sem limite
 - **WHEN** o colaborador marca o ponto pela quinta vez no mesmo dia
 - **THEN** o sistema grava a marcação, emite o comprovante e passa a ler três pares de entrada e saída
+
+#### Scenario: Ajuste que deixa o dia sem par
+- **WHEN** um dia anterior tem duas marcações incluídas por tratamento e uma original sem par
+- **THEN** o dia fica INCOMPLETO, a planilha mostra as incluídas com "(I)" e a correção da saída que falta continua disponível
 
 #### Scenario: Correcao aprovada
 - **WHEN** o responsável com permissão aprova o pedido de inclusão de uma marcação de outro colaborador
@@ -48,7 +52,7 @@ O sistema SHALL permitir que o colaborador marque o ponto quantas vezes precisar
 - **THEN** o sistema nega o ajuste; o pedido segue para quem decide pela hierarquia
 
 ### Requirement: Espelho de ponto mensal
-O sistema SHALL oferecer ao colaborador duas visões do próprio ponto: "Hoje", com as marcações do dia em ordem e o comprovante de cada uma, e "Mês", com todos os dias do mês numa planilha, uma linha por dia. Não SHALL haver visão semanal. O mês SHALL poder ser escolhido entre o mês da admissão e o mês atual. A planilha SHALL mostrar, por dia, a data e o dia da semana, todas as marcações em ordem (as incluídas por tratamento identificadas como incluídas e as desconsideradas identificadas como desconsideradas), as horas trabalhadas e uma situação, nesta ordem de precedência: dia anterior à admissão, em branco e sem nenhuma informação; dia com marcação ou tratamento; hoje sem marcação; férias aprovadas; ausência aprovada (pelo tipo: Atestado, Falta justificada, Licença ou Afastamento) ou em análise; ausência recusada, como Falta injustificada; feriado ou ponto facultativo; folga no fim de semana; dia útil sem nada, como "Sem registro" no mês corrente e "Falta injustificada" em mês encerrado. Dias futuros SHALL aparecer em branco. O espelho SHALL trazer o cabeçalho do art. 84 da Portaria nº 671/2021 (empregador, trabalhador com admissão e cargo, data de emissão, período e horário contratual), o resumo do mês (horas, dias com marcação, sem registro, faltas injustificadas e atestados), os pedidos de correção em análise e o motivo de uma correção recusada, e SHALL permitir baixar o mês em CSV.
+O sistema SHALL oferecer ao colaborador duas visões do próprio ponto: "Hoje", com as marcações do dia em ordem e o comprovante de cada uma, e "Mês", com todos os dias do mês numa planilha, uma linha por dia. Não SHALL haver visão semanal. O mês SHALL poder ser escolhido entre o mês da admissão e o mês atual. A planilha SHALL mostrar, por dia, a data completa (dd/mm/aaaa) e o dia da semana, todas as marcações em ordem (as incluídas por tratamento identificadas como incluídas e as desconsideradas identificadas como desconsideradas), as horas trabalhadas, o saldo do dia, o descanso entre jornadas quando for menor que o mínimo e uma situação, nesta ordem de precedência: dia anterior à admissão, em branco e sem nenhuma informação; dia com marcação ou tratamento; hoje sem marcação; férias aprovadas; ausência aprovada (pelo tipo: Atestado, Falta justificada, Licença ou Afastamento) ou em análise; ausência recusada, como Falta injustificada; feriado ou ponto facultativo; folga no fim de semana; dia útil sem nada, como "Sem registro" no mês corrente e "Falta injustificada" em mês encerrado. Dias futuros SHALL aparecer em branco. O espelho SHALL trazer o cabeçalho do art. 84 da Portaria nº 671/2021 (empregador, trabalhador com admissão e cargo, data de emissão, período e horário contratual), o resumo do mês (horas, horas positivas e horas negativas, dias com marcação, sem registro e faltas injustificadas), os pedidos de correção em análise e o motivo de uma correção recusada, e SHALL permitir baixar o mês em CSV.
 
 #### Scenario: Consulta de um mes encerrado
 - **WHEN** o colaborador escolhe um mês anterior
@@ -69,6 +73,10 @@ O sistema SHALL oferecer ao colaborador duas visões do próprio ponto: "Hoje", 
 #### Scenario: Marcacao tratada no espelho
 - **WHEN** um dia tem uma marcação desconsiderada e outra incluída por tratamento
 - **THEN** a planilha mostra as duas, identificadas como desconsiderada e incluída, e as horas contam só a incluída
+
+#### Scenario: Saldo e descanso no espelho
+- **WHEN** o colaborador CLT abre um mês em que trabalhou 7h30 num dia útil e voltou depois de 9h de descanso em outro
+- **THEN** a planilha mostra o saldo -0h30 no primeiro dia e "Descanso de 9h00 (mínimo 11h)" no segundo, e o resumo traz a soma dos saldos do mês
 
 #### Scenario: Pedido de correcao a partir do espelho
 - **WHEN** o colaborador escolhe corrigir um dia passado, com ou sem registro, dentro do prazo
@@ -198,3 +206,43 @@ O sistema SHALL manter os feriados com data, nome, abrangência (nacional, estad
 #### Scenario: RH inclui um feriado
 - **WHEN** o RH inclui um feriado municipal
 - **THEN** o sistema grava o feriado, audita a ação e passa a considerá-lo no espelho e no calendário
+
+### Requirement: Jornada, descanso e saldo do dia
+O dia de ponto SHALL ser o dia civil de Brasília. Uma jornada aberta (número ímpar de marcações) num dia que já passou SHALL ficar INCOMPLETO, sem nenhuma marcação gravada pelo sistema, e a primeira marcação do dia seguinte SHALL começar uma jornada nova. O sistema não SHALL recusar a marcação por causa do descanso entre jornadas (art. 74 da Portaria nº 671/2021); quando a pessoa for marcar antes de completar o descanso mínimo do contrato (11 horas pela CLT, art. 66) desde a última marcação do dia anterior com marcações, a tela SHALL avisar quanto falta e pedir confirmação; confirmada, a marcação SHALL ser gravada, o dia SHALL guardar o descanso real e o superior direto (ou, sem ele, o Gestor do departamento) e o RH SHALL ser avisados. O sistema SHALL calcular o saldo de cada dia como as horas trabalhadas menos a jornada diária do contrato da pessoa (`regra_contrato.horas_diarias`) nos dias úteis de segunda a sexta sem feriado, ponto facultativo, férias ou ausência justificada; nesses outros dias a jornada esperada é zero. Diferenças de até 10 minutos no dia não SHALL contar (CLT, art. 58, § 1º); acima disso, conta a diferença inteira. O dia útil de falta injustificada SHALL ter saldo igual a menos a jornada. Contrato sem jornada diária (PJ) não SHALL ter saldo. O saldo não SHALL ser lançado no banco de horas.
+
+#### Scenario: Jornada aberta na virada do dia
+- **WHEN** o colaborador marca a entrada às 08:00 e não marca a saída até o fim do dia
+- **THEN** o dia fica INCOMPLETO sem saída inventada, e a primeira marcação do dia seguinte é a entrada desse dia
+
+#### Scenario: Marcacao dentro do descanso confirmada
+- **WHEN** o colaborador que marcou a última saída às 22:00 tenta marcar às 07:00 e confirma o aviso de que faltam 2h00 de descanso
+- **THEN** o sistema grava a marcação, o dia mostra "Descanso de 9h00 (mínimo 11h)" e o superior e o RH recebem um aviso
+
+#### Scenario: Marcacao dentro do descanso desistida
+- **WHEN** o colaborador vê o aviso de descanso e desiste
+- **THEN** nada é gravado
+
+#### Scenario: Saida antes da jornada
+- **WHEN** um colaborador CLT trabalha 7h30 num dia útil
+- **THEN** o saldo do dia é -0h30
+
+#### Scenario: Estagiario passa da jornada
+- **WHEN** um estagiário com jornada de 6 horas trabalha 6h20 num dia útil
+- **THEN** o saldo do dia é +0h20
+
+#### Scenario: Diferenca dentro da tolerancia
+- **WHEN** um colaborador CLT trabalha 7h52 num dia útil
+- **THEN** o saldo do dia é 0h00
+
+#### Scenario: Falta injustificada
+- **WHEN** um dia útil de um mês encerrado fica sem marcação nem ausência
+- **THEN** o saldo do dia é menos a jornada (-8h00 para CLT)
+
+#### Scenario: Trabalho em folga ou feriado
+- **WHEN** um colaborador CLT trabalha 4h00 num sábado ou feriado
+- **THEN** o saldo do dia é +4h00
+
+#### Scenario: Contrato sem jornada
+- **WHEN** um colaborador PJ marca o ponto
+- **THEN** o espelho não mostra saldo para ele
+

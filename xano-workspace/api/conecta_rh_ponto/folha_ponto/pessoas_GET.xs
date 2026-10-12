@@ -101,7 +101,7 @@ query "folha_ponto/pessoas" verb=GET {
       where = $db.colaborador.anonimizado_em == null
       sort = {colaborador.nome: "asc"}
       return = {type: "list"}
-      output = ["id", "nome", "departamento_id", "cargo_id", "status", "superior_colaborador_id", "data_admissao", "user_id"]
+      output = ["id", "nome", "departamento_id", "cargo_id", "status", "superior_colaborador_id", "data_admissao", "user_id", "tipo_contrato"]
     } as $todos_colaboradores
 
     var $visiveis {
@@ -136,6 +136,13 @@ query "folha_ponto/pessoas" verb=GET {
       }
     }
 
+    // Jornada diaria de cada contrato, para o saldo do dia na folha (design D14).
+    db.query regra_contrato {
+      where = $db.regra_contrato.ativo == true
+      return = {type: "list"}
+      output = ["tipo_contrato", "horas_diarias"]
+    } as $regras_ativas
+
     var $pessoas {
       value = []
     }
@@ -149,8 +156,24 @@ query "folha_ponto/pessoas" verb=GET {
           output = ["data"]
         } as $primeiro
 
+        var $horas_diarias_p {
+          value = null
+        }
+
+        foreach ($regras_ativas) {
+          each as $rg {
+            conditional {
+              if ($rg.tipo_contrato == $p.tipo_contrato) {
+                var.update $horas_diarias_p {
+                  value = $rg.horas_diarias
+                }
+              }
+            }
+          }
+        }
+
         var.update $pessoas {
-          value = $pessoas|push:{id: $p.id, nome: $p.nome, departamento_id: $p.departamento_id, cargo_id: $p.cargo_id, status: $p.status, superior_colaborador_id: $p.superior_colaborador_id, data_admissao: $p.data_admissao, primeiro_registro: ($primeiro != null ? $primeiro.data : null), e_voce: ($colaborador_autenticado != null && $p.id == $colaborador_autenticado.id)}
+          value = $pessoas|push:{horas_diarias: $horas_diarias_p, id: $p.id, nome: $p.nome, departamento_id: $p.departamento_id, cargo_id: $p.cargo_id, status: $p.status, superior_colaborador_id: $p.superior_colaborador_id, data_admissao: $p.data_admissao, primeiro_registro: ($primeiro != null ? $primeiro.data : null), e_voce: ($colaborador_autenticado != null && $p.id == $colaborador_autenticado.id)}
         }
       }
     }

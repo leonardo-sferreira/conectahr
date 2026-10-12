@@ -12,7 +12,7 @@ query "folha_ponto/tratar" verb=POST {
     int colaborador_id
     date data
     enum tipo {
-      values = ["inclusao", "desconsideracao"]
+      values = ["inclusao", "desconsideracao", "alteracao"]
     }
 
     int? marcacao_id?
@@ -182,9 +182,10 @@ query "folha_ponto/tratar" verb=POST {
       value = $input.data|format_timestamp:"Y-m-d":"UTC"
     }
 
-    precondition ($dia <= $hoje_brasilia) {
+    // O dia de hoje ainda esta em andamento: a correcao vale a partir do dia seguinte (decisao do usuario, 12/10/2026).
+    precondition ($dia < $hoje_brasilia) {
       error_type = "inputerror"
-      error = "Nao e possivel corrigir um dia futuro."
+      error = "O dia de hoje ainda esta em andamento. A correcao pode ser pedida a partir de amanha."
     }
 
     precondition ($colaborador_alvo.data_admissao == null || $dia >= ($colaborador_alvo.data_admissao|format_timestamp:"Y-m-d":"UTC")) {
@@ -201,25 +202,58 @@ query "folha_ponto/tratar" verb=POST {
       input = {colaborador_id: $colaborador_alvo.id, data: $dia}
     } as $dia_atual
 
-    db.add tratamento_ponto {
-      data = {
-        colaborador_id: $colaborador_alvo.id
-        data          : $dia
-        tipo          : $input.tipo
-        marcacao_id   : ($input.tipo == "desconsideracao" ? $input.marcacao_id : null)
-        data_hora     : ($input.tipo == "inclusao" ? $input.data_hora : null)
-        motivo        : $input.motivo
-        autor_user_id : $usuario_autenticado.id
-      }
-    } as $tratamento_criado
+    // Alteracao (corrigir o horario): desconsidera a original e inclui o horario certo.
+    var $tratamento_id {
+      value = null
+    }
 
-    // Desconsideracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
+    conditional {
+      if ($input.tipo != "inclusao") {
+        db.add tratamento_ponto {
+          data = {
+            colaborador_id: $colaborador_alvo.id
+            data          : $dia
+            tipo          : "desconsideracao"
+            marcacao_id   : $input.marcacao_id
+            data_hora     : null
+            motivo        : $input.motivo
+            autor_user_id : $usuario_autenticado.id
+          }
+        } as $tratamento_desconsiderar
+
+        var.update $tratamento_id {
+          value = $tratamento_desconsiderar.id
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo != "desconsideracao") {
+        db.add tratamento_ponto {
+          data = {
+            colaborador_id: $colaborador_alvo.id
+            data          : $dia
+            tipo          : "inclusao"
+            marcacao_id   : null
+            data_hora     : $input.data_hora
+            motivo        : $input.motivo
+            autor_user_id : $usuario_autenticado.id
+          }
+        } as $tratamento_incluir
+
+        var.update $tratamento_id {
+          value = $tratamento_incluir.id
+        }
+      }
+    }
+
+    // Desconsideracao e alteracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
     var $momento_original {
       value = null
     }
 
     conditional {
-      if ($input.tipo == "desconsideracao") {
+      if ($input.tipo != "inclusao") {
         db.get marcacao_ponto {
           field_name = "id"
           field_value = $input.marcacao_id
@@ -238,7 +272,7 @@ query "folha_ponto/tratar" verb=POST {
         colaborador_id      : $colaborador_alvo.id
         tipo                : $input.tipo
         marcacao_id         : $input.marcacao_id
-        valor_solicitado    : ($input.tipo == "inclusao" ? $input.data_hora : null)
+        valor_solicitado    : ($input.tipo != "desconsideracao" ? $input.data_hora : null)
         valor_original      : $momento_original
         justificativa       : $input.motivo
         status              : "aprovada"
@@ -258,7 +292,7 @@ query "folha_ponto/tratar" verb=POST {
         user_id     : $usuario_autenticado.id
         acao        : "tratar_ponto"
         recurso     : "tratamento_ponto"
-        registro_id : $tratamento_criado.id
+        registro_id : $tratamento_id
         justificativa: $input.motivo
         valor_novo  : "tipo=" ~ $input.tipo ~ "; dia=" ~ $dia ~ "; colaborador_id=" ~ ($colaborador_alvo.id|to_text)
         resultado   : "sucesso"
@@ -273,7 +307,7 @@ query "folha_ponto/tratar" verb=POST {
             destinatario_user_id: $colaborador_alvo.user_id
             tipo                : "ponto_ajustado"
             titulo              : "Seu ponto foi ajustado"
-            mensagem            : "O dia " ~ ($input.data|format_timestamp:"d/m/Y":"UTC") ~ " teve uma marcacao " ~ ($input.tipo == "inclusao" ? "incluida" : "desconsiderada") ~ ". Motivo: " ~ $input.motivo
+            mensagem            : "O dia " ~ ($input.data|format_timestamp:"d/m/Y":"UTC") ~ " teve uma marcacao " ~ ($input.tipo == "inclusao" ? "incluida" : ($input.tipo == "alteracao" ? "com o horario corrigido" : "desconsiderada")) ~ ". Motivo: " ~ $input.motivo
             recurso             : "registro_ponto"
             registro_id         : $dia_recalculado.registro.id
           }

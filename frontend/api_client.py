@@ -10,6 +10,7 @@ A base URL fica em .streamlit/secrets.toml (nunca versionado - ver .gitignore).
 
 import logging
 import re
+import time
 
 import requests
 import streamlit as st
@@ -69,6 +70,9 @@ GRUPO_FERIAS = "AI-dSGch"
 GRUPO_USUARIOS = "GjsM93yp"
 
 
+_PAUSA_429_S = 3
+
+
 def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
     # Uma base URL que não começa com http (ex.: texto de exemplo esquecido nos
     # secrets) gera uma mensagem de configuração clara, em vez do erro do requests.
@@ -103,6 +107,11 @@ def _request(method: str, path: str, token: str | None, canonical: str, payload:
 
     try:
         resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
+        if resp.status_code == 429:
+            # Plano gratuito do Xano: 10 requisições a cada 20 s. Uma nova tentativa depois de uma pausa curta
+            # evita que uma tela com várias consultas mostre erro só por ter chegado ao limite.
+            time.sleep(_PAUSA_429_S)
+            resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
     except requests.RequestException as exc:
         # O detalhe técnico (host, SSL, retries) vai só para o log do servidor,
         # nunca para a tela (spec: erro do backend sem detalhes internos).
@@ -601,6 +610,12 @@ def atualizar_dados_pessoais(token: str, colaborador_id: int, dados: dict) -> di
 def calendario(token: str) -> dict:
     """GET calendario -> {feriados, ferias, ausencias}. Os feriados valem para todos."""
     return _get("calendario", token, GRUPO_COLABORADORES)
+
+
+def importar_feriados(token: str, ano: int) -> dict:
+    """POST feriados/importar (RH e Admin) -> {ano, importados, ja_existiam}: os feriados nacionais do ano, da BrasilAPI.
+    Só grava as datas que ainda não têm feriado nacional."""
+    return _post("feriados/importar", {"ano": int(ano)}, token, GRUPO_COLABORADORES)
 
 
 

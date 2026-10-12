@@ -37,6 +37,7 @@ Resultado da busca por endereços externos em `xano-workspace/`, `frontend/`, `R
 | `github.com` | Link e repositório | Dados da equipe | Sim (GitHub) |
 | `www.w3.org` | Identificador de formato (SVG), sem acesso à rede | Não | Não se aplica |
 | `your-instance.xano.io` | Texto de exemplo na documentação | Não | Não se aplica |
+| `brasilapi.com.br` | API pública de feriados nacionais, chamada pelo Xano em `ConectaHR/importar_feriados_nacionais` (desde 12/10/2026) | **Não**: a consulta leva só o ano; nada da empresa nem de pessoas | Não é operador (não trata dado pessoal) |
 
 Para repetir a busca: `grep -rhoE "https?://[A-Za-z0-9._-]+" xano-workspace frontend README.md .streamlit/config.toml`.
 

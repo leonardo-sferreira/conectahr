@@ -51,6 +51,7 @@ O hash do registro 7 é o SHA-256 (hex minúsculo, 64 caracteres) da concatenaç
 - O dia é calculado por uma **função** do Xano (`ConectaHR/dia_de_ponto`) a partir das marcações e dos tratamentos: ordena, descarta as desconsideradas, soma as incluídas, forma os pares, calcula as horas e o status. A função alimenta `registro_ponto`, que vira um cache do dia, atualizado a cada marcação e a cada tratamento. Assim, a Central, a rotina diária e o banco de horas continuam lendo `registro_ponto` e a mudança fica contida.
 - `correcao_ponto` passa a guardar `tipo` (`inclusao` ou `desconsideracao`), `marcacao_id` e `data_hora` pedida, no lugar de `campo` e `valor_solicitado`. Os pedidos antigos continuam legíveis.
 - O cálculo puro fica em `ConectaHR/calcular_dia_ponto` (testável por `xano function run`, sem banco) e `ConectaHR/atualizar_dia_ponto` lê a ARP e os tratamentos e grava o cache. A ARP tem um campo `data` (dia local da marcação), fora do AFD, só para a consulta do dia.
+- **Status com tratamento (12/10/2026, decisão do usuário):** o número ímpar vale mais que o tratamento. Dia anterior com marcação sem par é `Incompleto` (hoje, `Aberto`), mesmo com tratamento; `Ajustado` é só o dia fechado (par) com tratamento. Antes, qualquer tratamento virava `Ajustado` e escondia a saída que faltava (visto na conta de teste em 11/10).
 - *Alternativa:* calcular o dia só no frontend. Rejeitada: o backend é dono das regras (AGENTS.md, seção 3), e o cálculo das horas precisa ser o mesmo para a pessoa, o gestor e o AEJ.
 - **Pedido e ajuste (12/10/2026):** o colaborador pede por `ponto/correcao` (data, tipo, `marcacao_id` ou `data_hora`, motivo de 5 a 150) e o responsável ajusta direto por `folha_ponto/tratar`. Na desconsideração, `correcao_ponto.valor_original` guarda o horário da marcação, para a Central mostrar o dia e a hora do pedido. Os endpoints de antes (`ponto/{id}/solicitar_correcao`, `ponto/solicitar_correcao_dia` e `folha_ponto/ajustar`) gravavam o horário direto em `registro_ponto`, fora da ARP; foram desativados em 12/10/2026: exigem a sessão e só recusam, indicando o caminho novo.
 
@@ -79,10 +80,11 @@ O `ponto/marcar` antigo recusava a volta do intervalo antes do mínimo e a saíd
 
 ### D8. Planilha do mês com `st.dataframe`
 
-Uma linha por dia: Data, Dia, os pares "Ent. 1", "Saí. 1", "Ent. 2"… (até o maior número de pares do mês, com as marcações originais e as incluídas), "Desconsideradas", Horas e Situação. As desconsideradas ficam numa coluna própria para não deslocar os pares. O `dataframe` não risca texto, então a incluída sai como "18:05 (I)" e a desconsiderada como "08:01 (D)", com a legenda abaixo. A correção do dia é pedida pela seleção da linha (`on_select`), não por botões em cada linha (Figma 464:826).
+Uma linha por dia: Data, Dia, os pares "Ent. 1", "Saí. 1", "Ent. 2"… (até o maior número de pares do mês, com as marcações originais e as incluídas), "Desconsideradas", Horas e Situação. As desconsideradas ficam numa coluna própria para não deslocar os pares. O `dataframe` não risca texto, então a incluída sai como "18:05 (I)" e a desconsiderada como "08:01 (D)", com a legenda abaixo. A correção do dia é pedida pela caixa "Ajuste" no fim de cada linha (decisão do usuário, 12/10/2026, no lugar da seleção da linha do Figma 464:826): a planilha vira `st.data_editor` com só essa coluna editável, e marcar a caixa abre o pedido (colaborador) ou o ajuste (gestor e RH, na folha) na hora. O `dataframe` não aceita botão em célula. A caixa só aparece nos dias que aceitam correção; na própria folha do gestor, não aparece.
 
 - *Alternativa:* tabela em HTML. Rejeitada: o pedido é "formato de planilha", e o `dataframe` dá rolagem, ordenação e cópia como numa planilha.
 - **Modo claro (12/10/2026):** o `dataframe` desenha num canvas com as cores do tema base do Streamlit, que é escuro (`.streamlit/config.toml`), e nem o CSS nem o Styler alcançam o cabeçalho e a coluna de seleção. No modo claro a planilha recebe `filter: invert(1) hue-rotate(180deg)`, e as cores das células vão já "invertidas" (`estilo_planilha_ponto` em `theme.py`). Trocar o tema base para claro mexeria em todas as telas; fica para outra change.
+- **Nomes das colunas x nomes no dia (12/10/2026, decisão do usuário):** a planilha do mês mantém "Ent. 1", "Saí. 1", "Ent. 2"…, porque preenche pela posição e um dia de duas marcações poria a saída final na coluna do almoço. Já a tela "Hoje" e os comprovantes nomeiam cada marcação pelo papel (Entrada, Saída para o almoço, Volta do almoço, Saída; intervalos no meio), que é o que o funcionário consulta no dia.
 - A tela usa a mesma planilha na folha da equipe (`frontend/planilha_ponto.py`), com "Ajustar o dia" no lugar de "Pedir correção do dia".
 
 ### D9. Saldo de férias calculado no backend, sem tabela nova
@@ -98,6 +100,40 @@ O período aquisitivo vigente começa na admissão e renova a cada `periodo_aqui
 ### D11. Figma primeiro
 
 Antes de cada tela: seção 21 "Ponto REP-P" (Hoje, Mês em planilha, comprovante em PDF, estados), seção 22 "Férias pela CLT" (pedido com venda e saldo, calendário, mensagens), a tela do RH "Empregador, REP-P e arquivos" e a aba de feriados na estrutura da empresa, nos modos claro e escuro.
+
+### D12. Virada do dia sem marcação automática (12/10/2026)
+
+O dia é o dia civil de Brasília, como já é para `marcacao_ponto.data`. O plano do Xano não tem tarefa agendada, então o dia aberto vira INCOMPLETO em três momentos: na primeira marcação do dia seguinte (`ponto/marcar` recalcula o dia anterior com `ConectaHR/atualizar_dia_ponto`), na rotina diária e, na tela, que já mostra o dia passado com jornada aberta como INCOMPLETO. Ninguém grava uma saída no lugar da pessoa: a saída que faltou vem por pedido de correção (art. 74 proíbe a marcação automática). Jornada que passa da meia-noite fica dividida em dois dias; o grupo aceitou isso (não há turno noturno no projeto).
+
+### D13. Descanso entre jornadas: aviso, não bloqueio (12/10/2026)
+
+O usuário pediu bloquear a marcação dentro do descanso. O art. 74 proíbe restringir a marcação, e bloquear não impede o trabalho, só deixa de registrá-lo; a CLT (art. 66) obriga o empregador a dar o descanso, e as horas que invadem o intervalo são pagas como extras (TST, OJ 355 da SDI-1). Decisão do usuário: aviso com confirmação.
+
+- O descanso é o tempo entre a última marcação válida do dia anterior com marcações e a primeira do dia novo.
+- A tela calcula pelo `meu_ponto` e, abaixo do mínimo, abre o aviso "Você está no período de descanso (faltam 2h10). Se marcar, seu gestor e o RH serão avisados." com Confirmar e Desistir.
+- `ponto/marcar` recalcula no servidor (a tela não é a regra), guarda `registro_ponto.descanso_minutos` na primeira marcação do dia e, abaixo do mínimo, cria `notificacao_interna` para o superior direto (ou o Gestor do departamento) e para o RH. A marcação sempre é gravada; a confirmação é só da tela.
+- O mínimo fica em `regra_contrato.descanso_minimo_minutos` (CLT 660), para poder variar por contrato.
+
+### D14. Saldo do dia com a tolerância diária (12/10/2026)
+
+- `ConectaHR/calcular_dia_ponto` recebe a jornada e se o dia é útil, e devolve `saldo_minutos`; `registro_ponto` guarda o valor. Dia útil = segunda a sexta sem feriado ou ponto facultativo do calendário.
+- **Tolerância simplificada:** a CLT fala em até 5 minutos por marcação e 10 no dia, comparando cada marcação com o horário de entrada e saída. O cadastro não tem esses horários (D7), então vale o limite diário: diferença de até 10 minutos, saldo 0; acima disso, a diferença inteira (Súmula 366 do TST). Quando o cadastro ganhar os horários (AEJ, grupo 5), a regra por marcação entra.
+- O espelho (`ponto_mensal_modelo.py`) completa os dias sem marcação: falta injustificada = menos a jornada; folga, feriado, férias e ausência justificada = 0. Férias e ausência aprovadas em dia com marcação: a jornada esperada é zero e as horas viram saldo positivo.
+- A jornada vem de `ponto/comprovantes` (colaborador) e de `folha_ponto/pessoas` (folha da equipe, que passa a devolver `horas_diarias`). PJ sem `horas_diarias`: sem saldo.
+- Só segunda a sexta: o sábado de quem tem 44 horas semanais fica fora (decisão do usuário em 12/10/2026). O saldo não vai para o banco de horas.
+- **Resumo (decisão do usuário, 12/10/2026):** no lugar de um saldo único, "Horas positivas" (soma dos dias com saldo positivo) e "Horas negativas" (soma dos negativos), lado a lado; o cartão "Atestados" saiu, porque a planilha já mostra cada atestado. A coluna Data traz a data completa (dd/mm/aaaa).
+
+### D17. Feriados nacionais da BrasilAPI (12/10/2026)
+
+Pedido do usuário: os feriados do Brasil vêm de uma API pública, no lugar do `tools/feriados.py` da tarefa 7.1. `ConectaHR/importar_feriados_nacionais` chama `https://brasilapi.com.br/api/feriados/v1/{ano}` (gratuita, sem chave; a consulta leva só o ano, nenhum dado pessoal) e grava só as datas que ainda não têm feriado nacional, então repetir não duplica e não mexe no que o RH cadastrou. Carnaval e Corpus Christi entram como `ponto_facultativo` (são facultativos no serviço público federal, não feriados em lei). `feriados/importar` (RH e Admin, auditado) é o gatilho, pelo botão da aba "Feriados" da Estrutura da empresa; 2026 e 2027 já foram importados (14 datas cada). A BrasilAPI não traz os estaduais, os municipais nem os facultativos federais (Quarta-feira de Cinzas, Servidor Público, vésperas): continuam com o RH. Se a BrasilAPI cair, a importação falha com mensagem e nada é gravado; os feriados já gravados continuam valendo.
+
+### D16. Corrigir o horário de uma marcação (12/10/2026)
+
+Pedido do usuário: o colaborador escolhe a marcação que quer corrigir (a lista mostra o papel no dia, "Entrada · 08:15 · NSR") e informa o horário certo, num pedido só. Novo tipo `alteracao` em `correcao_ponto` (`marcacao_id` + `valor_solicitado`; `valor_original` guarda o horário de antes). `ConectaHR/validar_tratamento` aplica as regras das duas pontas. Aprovado (`correcoes_ponto/{id}/aprovar`) ou feito como ajuste direto (`folha_ponto/tratar`), vira dois tratamentos ligados ao mesmo pedido: a desconsideração da original e a inclusão do horário certo. A marcação original continua na ARP (art. 82); `tratamento_ponto` não ganhou tipo novo. Figma: "Modal/Corrigir horário" 477:848 (escuro 477:1167).
+
+### D15. O dia de hoje não se corrige (12/10/2026)
+
+Decisão do usuário: o dia ainda em andamento não recebe pedido de correção nem ajuste direto; o ajuste do dia 12 vale a partir do dia 13. `ponto/correcao` e `folha_ponto/tratar` recusam `dia >= hoje` (data de Brasília) com "O dia de hoje ainda está em andamento. A correção pode ser pedida a partir de amanhã."; a planilha não mostra a caixa "Ajuste" no dia de hoje.
 
 ## Risks / Trade-offs
 
@@ -132,7 +168,7 @@ Duas armadilhas do XanoScript achadas aqui: numa lista literal (`[{v: $x.campo}]
 
 ## Figma
 
-- **Seção 21 "Ponto REP-P"** (463:822): Hoje 463:825, Mês em planilha 464:826, comprovante em PDF 465:830, pedido de correção para incluir 465:856 e para desconsiderar 465:894, estados 465:932; tela do RH "Ponto eletrônico (REP-P)" 467:834.
+- **Seção 21 "Ponto REP-P"** (463:822): Hoje 463:825, Mês em planilha 464:826, comprovante em PDF 465:830, pedido de correção para incluir 465:856 e para desconsiderar 465:894, estados 465:932, aviso de descanso 474:926 (D13; no escuro, ao lado do pedido de correção); tela do RH "Ponto eletrônico (REP-P)" 467:834.
 - **Seção 22 "Férias pela CLT"** (466:830): saldo, pedido e calendário 466:833; venda de dias, mensagens das regras e estados 466:1171.
 - **Feriados:** aba da estrutura da empresa 468:838 (na seção 22).
 - **Modo escuro:** seção 21 — Dark 468:1458 e seção 22 — Dark 468:2226, na página "Protótipo — Dark".

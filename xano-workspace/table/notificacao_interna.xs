@@ -16,7 +16,7 @@ table notificacao_interna {
     }
 
     enum tipo {
-      values = ["ferias_aprovada", "documento_vencendo", "avaliacao_disponivel", "solicitacao_respondida", "ponto_ajustado", "beneficio_atualizado"]
+      values = ["ferias_aprovada", "documento_vencendo", "avaliacao_disponivel", "solicitacao_respondida", "ponto_ajustado", "descanso_interjornada", "beneficio_atualizado"]
     }
 
     text titulo filters=trim|max:150

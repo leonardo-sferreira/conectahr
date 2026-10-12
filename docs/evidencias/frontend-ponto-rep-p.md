@@ -43,8 +43,8 @@ Assim, a Central de Pendências mostra o dia e a hora também nesse tipo de pedi
 
 ```
 python tools/testar_comprovante.py    # 18 verificações (PDF do comprovante, art. 79)
-python tools/testar_ponto.py          # 33 verificações (Hoje, estados, ausência)
-python tools/testar_ponto_mensal.py   # 56 verificações (mês, admissão, art. 84, CSV, pedido de correção)
+python tools/testar_ponto.py          # 35 verificações (Hoje, estados, ausência)
+python tools/testar_ponto_mensal.py   # 58 verificações (mês, admissão, art. 84, CSV, pedido de correção)
 python tools/testar_folha_ponto.py    # 40 verificações (folha da equipe com tratamentos e ajuste)
 python tools/testar_decisoes.py       # 62 verificações (Central, com os pedidos do REP-P)
 ```
@@ -57,7 +57,7 @@ perfil, privacidade, REP-P e solicitações).
 
 | Estado | Caso | Resultado |
 |---|---|---|
-| Sucesso | Hoje: título, relógio com segundos, as marcações em ordem ("1ª entrada", "1ª saída"...) com hora e NSR de 9 dígitos | ok |
+| Sucesso | Hoje: título, relógio com segundos, as marcações em ordem, com o papel de cada uma ("Entrada", "Saída para o almoço", "Volta do almoço", "Saída"; num dia com mais, "Saída para intervalo" e "Volta do intervalo"), a hora e o NSR de 9 dígitos | ok |
 | Sucesso | Três marcações seguidas, todas gravadas: sem ordem nem limite (art. 74) | ok |
 | Sucesso | Depois de marcar: "Ponto marcado às 00:09:22 (UTC-03:00). NSR …" e o comprovante na hora | ok |
 | Sucesso | Comprovante em PDF de cada marcação de hoje e das últimas 48 horas | ok |
@@ -65,6 +65,7 @@ perfil, privacidade, REP-P e solicitações).
 | Sucesso | Mês: todos os dias, em pares "Ent. 1", "Saí. 1"…; a 5ª marcação abre o 3º par | ok |
 | Sucesso | Incluída aparece como "18:05 (I)"; desconsiderada vai para a coluna própria como "08:01 (D)"; tratamento desfeito não vale | ok |
 | Sucesso | Situações: completo, ajustado, incompleto (com "corrigir"), hoje em jornada, férias, atestado, ausência em análise, falta injustificada, feriado e ponto facultativo pelo nome, folga, sem registro | ok |
+| Sucesso | Tratamento com marcação sem par: INCOMPLETO, não AJUSTADO, para a saída que falta não sumir (desde 12/10/2026) | ok |
 | Sucesso | Admissão em 15/10: dias 1 a 14 em branco, sem situação e sem falta; dias futuros em branco | ok |
 | Sucesso | Cabeçalho do art. 84 (empregador, CNPJ, local, trabalhador, CPF, admissão, cargo, horário contratual, emissão e período), na tela e no CSV | ok |
 | Sucesso | CSV com BOM e ";", cabeçalho, planilha, observação, NSR de cada marcação e a legenda | ok |

@@ -24,6 +24,12 @@ table registro_ponto {
     }
 
     text observacao? filters=trim|max:500
+    // Jornada (change ponto-rep-p-e-ferias-clt, D13 e D14): saldo do dia contra a jornada do
+    // contrato, com a tolerancia diaria; descanso desde a ultima marcacao valida do dia anterior.
+    int? saldo_minutos
+    int? descanso_minutos
+    timestamp? primeira_valida
+    timestamp? ultima_valida
   }
 
   index = [

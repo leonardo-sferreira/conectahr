@@ -13,6 +13,8 @@ from datetime import date
 
 from ponto_mensal_modelo import espelho_do_mes, meses_disponiveis, primeiro_dia, resumo_do_mes
 
+DESCANSO_MINIMO_CLT = 660  # CLT, art. 66: 11 horas
+
 
 def _da_pessoa(itens: list[dict], colaborador_id) -> list[dict]:
     return [i for i in itens if i.get("colaborador_id") == colaborador_id]
@@ -43,6 +45,8 @@ def espelho_da_pessoa(pessoa: dict, mes_dados: dict, feriados: list[dict], ano: 
         feriados, ano, mes, hoje, pessoa.get("data_admissao"), inicio=inicio_da_pessoa(pessoa),
         marcacoes=_da_pessoa(mes_dados["marcacoes"], pid) if "marcacoes" in mes_dados else None,
         tratamentos=_da_pessoa(mes_dados.get("tratamentos") or [], pid),
+        # A jornada vem de `folha_ponto/pessoas` (PJ sem); o descanso mínimo é o da CLT, como no backend (design D13).
+        jornada_horas=pessoa.get("horas_diarias"), descanso_minimo=DESCANSO_MINIMO_CLT if pessoa.get("horas_diarias") else None,
     )
 
 

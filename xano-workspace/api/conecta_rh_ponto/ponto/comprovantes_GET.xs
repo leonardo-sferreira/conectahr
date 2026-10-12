@@ -103,7 +103,7 @@ query "ponto/comprovantes" verb=GET {
     marcacoes: $marcacoes
     empregador: ($empregador != null ? {razao_social: $empregador.razao_social, tipo_identificador: $empregador.tipo_identificador, identificador: $empregador.identificador, cno_caepf: $empregador.cno_caepf, local_prestacao: $empregador.local_prestacao, inpi_registro: $empregador.inpi_registro} : null)
     trabalhador: {nome: $colaborador_autenticado.nome, cpf: $cpf, data_admissao: $colaborador_autenticado.data_admissao, cargo: ($cargo != null ? $cargo.nome : null)}
-    jornada: ($regra != null ? {horas_diarias: $regra.horas_diarias, horas_semanais: $regra.horas_semanais, intervalo_minutos: $regra.intervalo_minutos} : null)
+    jornada: ($regra != null ? {horas_diarias: $regra.horas_diarias, horas_semanais: $regra.horas_semanais, intervalo_minutos: $regra.intervalo_minutos, descanso_minimo_minutos: ($regra.horas_diarias != null ? ($regra.descanso_minimo_minutos != null ? $regra.descanso_minimo_minutos : 660) : null)} : null)
   }
 
   guid = "conectahr-ponto-comprovantes-get-0001"

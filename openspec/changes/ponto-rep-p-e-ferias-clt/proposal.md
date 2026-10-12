@@ -15,6 +15,11 @@ O ponto do ConectaRH foi feito como controle interno experimental: guarda um reg
 - **AFD** (leiaute oficial de 31/07/2026, registros 1, 2, 5, 6, 7 e 9) e **AEJ** (registros 01 a 08 e 99), gerados pelo RH para um intervalo de datas.
 - Cadastro do **empregador** (CNPJ ou CPF, razão social, local da prestação de serviço) e dos dados do REP-P (número de registro no INPI, CNPJ do desenvolvedor). As alterações entram no AFD (registro 2).
 
+**Jornada (decidido em 12/10/2026):**
+- **Virada do dia:** a jornada que ficou aberta (número ímpar de marcações) fecha como INCOMPLETO na virada do dia, sem marcação automática (art. 74). O dia seguinte começa do zero, sem continuar o anterior.
+- **Descanso entre jornadas** (CLT, art. 66, 11h): a marcação não é bloqueada, porque o art. 74 proíbe restringir. Dentro das 11h, a tela pede confirmação; se a pessoa confirmar, a marcação é gravada, o dia fica sinalizado no espelho e na folha com o descanso real, e o gestor e o RH recebem um aviso.
+- **Saldo do dia:** horas trabalhadas menos a jornada diária do contrato (`regra_contrato`: CLT 8h, Estágio 6h, Aprendiz 6h, Temporário 8h; PJ não tem jornada, então não tem saldo), com a tolerância da CLT (art. 58, § 1º). Aparece por dia e no total do mês, no espelho e na folha. Não é lançado no banco de horas, que continua manual.
+
 **Tela de ponto:**
 - Dias anteriores à admissão ficam em branco, sem situação. A marcação só é aceita a partir da data de admissão.
 - **BREAKING (tela):** sai a visão semanal. Ficam "Hoje" (as marcações do dia, com o comprovante de cada uma) e "Mês" (todas as marcações do mês numa planilha, uma linha por dia).

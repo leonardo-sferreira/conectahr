@@ -4,6 +4,7 @@
 //             futuro;
 //   desconsideracao: marcacao que nao existe, de outra pessoa ou de outro dia, ja
 //             desconsiderada ou com pedido pendente.
+//   alteracao: as duas regras (a marcacao a corrigir e o horario certo).
 function "ConectaHR/validar_tratamento" {
   input {
     int colaborador_id
@@ -14,16 +15,16 @@ function "ConectaHR/validar_tratamento" {
   }
 
   stack {
-    precondition ($input.tipo == "inclusao" || $input.tipo == "desconsideracao") {
+    precondition ($input.tipo == "inclusao" || $input.tipo == "desconsideracao" || $input.tipo == "alteracao") {
       error_type = "inputerror"
-      error = "Escolha incluir uma marcacao ou desconsiderar uma marcacao."
+      error = "Escolha incluir, corrigir o horario ou desconsiderar uma marcacao."
     }
 
     conditional {
-      if ($input.tipo == "inclusao") {
+      if ($input.tipo == "inclusao" || $input.tipo == "alteracao") {
         precondition ($input.data_hora != null) {
           error_type = "inputerror"
-          error = "Informe o horario da marcacao que faltou."
+          error = ($input.tipo == "alteracao" ? "Informe o horario certo da marcacao." : "Informe o horario da marcacao que faltou.")
         }
 
         // Meia-noite de Brasilia = 03:00 UTC; a janela vai ate as 06:00 do dia seguinte.
@@ -48,10 +49,10 @@ function "ConectaHR/validar_tratamento" {
     }
 
     conditional {
-      if ($input.tipo == "desconsideracao") {
+      if ($input.tipo == "desconsideracao" || $input.tipo == "alteracao") {
         precondition ($input.marcacao_id != null) {
           error_type = "inputerror"
-          error = "Escolha a marcacao a desconsiderar."
+          error = ($input.tipo == "alteracao" ? "Escolha a marcacao a corrigir." : "Escolha a marcacao a desconsiderar.")
         }
 
         db.get marcacao_ponto {

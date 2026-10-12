@@ -754,6 +754,23 @@ _APP_CSS = f"""
   .crh-ponto-status.err {{ color: {ERRO}; }}
   .crh-ponto-status.azul {{ color: #2663D9; }}
   .crh-ponto-status.neu {{ color: {GRAFITE_SECUNDARIO}; }}
+  /* Calendário de férias (Figma 466:833): domingo a sábado, feriado e facultativo em selo, férias no fundo do dia. */
+  .crh-cal {{ border: 1px solid {BORDA}; border-radius: 12px; overflow: hidden; background: #FFFFFF; }}
+  .crh-cal table {{ width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; }}
+  .crh-cal th {{ background: {MARFIM}; font: 500 12px 'Manrope', sans-serif; color: {GRAFITE_SECUNDARIO}; text-align: left; padding: 8px; border: none; }}
+  .crh-cal td {{ border: none; border-top: 1px solid {BORDA}; border-left: 1px solid {BORDA}; height: 58px; vertical-align: top; padding: 6px 8px;
+                font: 500 13px 'Manrope', sans-serif; color: {GRAFITE}; }}
+  .crh-cal td:first-child {{ border-left: none; }}
+  .crh-cal td.fds, .crh-cal td.fora {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cal td.ferias {{ background: #DCFCE7; }}
+  .crh-cal td.analise {{ background: {AMBAR_BG}; }}
+  .crh-cal td.hoje .n {{ font-weight: 800; text-decoration: underline; }}
+  .crh-cal .tag {{ display: block; margin-top: 4px; padding: 1px 6px; border-radius: 999px; font-size: 11px; width: fit-content; max-width: 100%;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO}; }}
+  .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-cal-titulo {{ margin: 0; font: 700 17px 'Sora', sans-serif; color: {GRAFITE}; }}
+  .crh-cal-legenda {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }}
   /* Ponto REP-P (Figma 463:825 e 464:826) */
   .crh-relogio {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.1; color: {GRAFITE}; font-variant-numeric: tabular-nums; }}
   .crh-relogio-nota {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
@@ -986,6 +1003,12 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {ESC_TEXTO_2}; color: {ESC_TEXTO_2}; }}
+  .crh-cal {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-cal th, .crh-cal td.fds, .crh-cal td.fora {{ background: {ESC_NEUTRO}; color: {ESC_TEXTO_2}; }}
+  .crh-cal td {{ border-color: {ESC_BORDA}; color: {ESC_TEXTO}; }}
+  .crh-cal td.ferias {{ background: #16301F; }}
+  .crh-cal td.analise {{ background: {ESC_AMBAR_SUAVE}; }}
+  .crh-cal-titulo {{ color: {ESC_TEXTO}; }}
 </style>
 """
 
@@ -1368,8 +1391,16 @@ def estilo_planilha_ponto(tabela, tons: list[str], coluna: str = "Situação"):
     O st.dataframe desenha num canvas com as cores do tema base do Streamlit (escuro, em `.streamlit/config.toml`),
     que o CSS não alcança. No modo claro a planilha recebe o filtro `invert(1) hue-rotate(180deg)` (classe
     `crh-planilha` em `_APP_CSS`) e as cores daqui vão já "invertidas", para saírem certas depois do filtro."""
-    if tema_atual() == "escuro":
-        return tabela.style.apply(lambda col: [f"color: {_TOM_PLANILHA_ESCURO.get(t, _TOM_PLANILHA_ESCURO['neu'])}; font-weight: 600" for t in tons], subset=[coluna])
-    fundo, texto = _antes_do_filtro("#FFFFFF"), _antes_do_filtro(GRAFITE)
-    estilo = tabela.style.set_properties(**{"background-color": fundo, "color": texto})
-    return estilo.apply(lambda col: [f"color: {_antes_do_filtro(_TOM_PLANILHA.get(t, _TOM_PLANILHA['neu']))}; font-weight: 600" for t in tons], subset=[coluna])
+    escuro = tema_atual() == "escuro"
+
+    def cor(tom: str) -> str:
+        return _TOM_PLANILHA_ESCURO.get(tom, _TOM_PLANILHA_ESCURO["neu"]) if escuro else _antes_do_filtro(_TOM_PLANILHA.get(tom, _TOM_PLANILHA["neu"]))
+
+    if escuro:
+        estilo = tabela.style
+    else:
+        estilo = tabela.style.set_properties(**{"background-color": _antes_do_filtro("#FFFFFF"), "color": _antes_do_filtro(GRAFITE)})
+    estilo = estilo.apply(lambda col: [f"color: {cor(t)}; font-weight: 600" for t in tons], subset=[coluna])
+    if "Saldo" in tabela.columns:  # saldo positivo em verde, negativo em vermelho (Figma 464:826)
+        estilo = estilo.apply(lambda col: [f"color: {cor('ok' if str(v).startswith('+') else 'err' if str(v).startswith('-') else 'neu')}" for v in col], subset=["Saldo"])
+    return estilo

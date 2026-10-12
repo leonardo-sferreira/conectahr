@@ -2,7 +2,7 @@
 // incluir uma marcacao que faltou ou desconsiderar uma marcacao feita por engano, com motivo.
 // A marcacao original nunca e alterada: aprovado, o pedido vira um tratamento
 // (correcoes_ponto/{id}/aprovar). Vale para dia com ou sem marcacao, do dia da admissao ate
-// hoje, dentro do prazo definido pelo RH. Substitui ponto/{id}/solicitar_correcao e
+// ontem (o dia de hoje so a partir de amanha), dentro do prazo definido pelo RH. Substitui ponto/{id}/solicitar_correcao e
 // ponto/solicitar_correcao_dia.
 query "ponto/correcao" verb=POST {
   api_group = "ConectaRH - Ponto"
@@ -11,7 +11,7 @@ query "ponto/correcao" verb=POST {
   input {
     date data
     enum tipo {
-      values = ["inclusao", "desconsideracao"]
+      values = ["inclusao", "desconsideracao", "alteracao"]
     }
 
     int? marcacao_id?
@@ -89,9 +89,10 @@ query "ponto/correcao" verb=POST {
       value = $input.data|format_timestamp:"Y-m-d":"UTC"
     }
 
-    precondition ($dia <= $hoje_brasilia) {
+    // O dia de hoje ainda esta em andamento: a correcao vale a partir do dia seguinte (decisao do usuario, 12/10/2026).
+    precondition ($dia < $hoje_brasilia) {
       error_type = "inputerror"
-      error = "Nao e possivel corrigir um dia futuro."
+      error = "O dia de hoje ainda esta em andamento. A correcao pode ser pedida a partir de amanha."
     }
 
     precondition ($colaborador_autenticado.data_admissao == null || $dia >= ($colaborador_autenticado.data_admissao|format_timestamp:"Y-m-d":"UTC")) {
@@ -123,13 +124,13 @@ query "ponto/correcao" verb=POST {
       }
     }
 
-    // Desconsideracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
+    // Desconsideracao e alteracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
     var $momento_original {
       value = null
     }
 
     conditional {
-      if ($input.tipo == "desconsideracao") {
+      if ($input.tipo != "inclusao") {
         db.get marcacao_ponto {
           field_name = "id"
           field_value = $input.marcacao_id
@@ -147,7 +148,7 @@ query "ponto/correcao" verb=POST {
         colaborador_id   : $colaborador_autenticado.id
         tipo             : $input.tipo
         marcacao_id      : $input.marcacao_id
-        valor_solicitado : ($input.tipo == "inclusao" ? $input.data_hora : null)
+        valor_solicitado : ($input.tipo != "desconsideracao" ? $input.data_hora : null)
         valor_original   : $momento_original
         justificativa    : $input.justificativa
         status           : "pendente"
