@@ -49,7 +49,7 @@ def pagina_estrutura() -> None:
         st.space("stretch")
         ano = st.selectbox("Ano", anos, index=anos.index(hoje.year), format_func=lambda a: f"Ano: {a}", key="estr_ano", label_visibility="collapsed", width=130)
         st.button("Importar feriados nacionais", type="primary", key="estr_importar", on_click=_importar, args=(ano,),
-                  help="Busca na BrasilAPI os feriados nacionais do ano e grava os que faltam.")
+                  help="Traz os feriados nacionais do ano.")
 
     if erro_acao := st.session_state.pop("estr_erro", None):
         alerta(st.empty(), "erro", erro_acao)

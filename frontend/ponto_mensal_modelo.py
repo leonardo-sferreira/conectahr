@@ -412,6 +412,67 @@ def alvo_da_chave(chave: str | None) -> dict | None:
     return {"marcacao_id": numero if chave[0] == "m" else None, "tratamento_id": numero if chave[0] == "t" else None}
 
 
+def nome_celula(indice: int) -> str:
+    """A coluna da planilha pela posição (a partir de 0): "Ent. 1", "Saí. 1", "Ent. 2"..."""
+    return f"{'Ent.' if indice % 2 == 0 else 'Saí.'} {indice // 2 + 1}"
+
+
+def celulas_do_dia(linha: dict) -> list[dict]:
+    """As células do dia que o pedido pode escolher (pedido do usuário, 12/10/2026): as preenchidas, na ordem da planilha,
+    e a primeira vazia. Cada uma: {'indice', 'nome', 'batida' (ou None), 'editavel', 'texto'}; `editavel` diz se dá para
+    corrigir o horário ou desconsiderar (a marcação não tem pedido em análise)."""
+    editaveis = {id(b) for b in desconsideraveis(linha)}
+    celulas = []
+    for i, b in enumerate(linha["batidas"]):
+        hora_txt = f"{b['hora']} (I)" if b.get("incluida") else b["hora"]
+        celulas.append({"indice": i, "nome": nome_celula(i), "batida": b, "editavel": id(b) in editaveis,
+                        "texto": f"{nome_celula(i)} · {hora_txt}" + ("" if id(b) in editaveis else " · em análise")})
+    n = len(linha["batidas"])
+    celulas.append({"indice": n, "nome": nome_celula(n), "batida": None, "editavel": False, "texto": f"{nome_celula(n)} · vazia"})
+    return celulas
+
+
+ACOES_CELULA = {"alteracao": "Corrigir o horário", "inclusao": "Incluir uma marcação antes desta (as seguintes andam uma casa)",
+                "desconsideracao": "Desconsiderar esta marcação"}
+
+
+def acoes_da_celula(celula: dict) -> list[str]:
+    """O que dá para fazer na célula: a vazia recebe uma inclusão; a preenchida, corrigir, incluir antes ou desconsiderar
+    (só incluir antes, se ela já tem pedido em análise)."""
+    if celula["batida"] is None:
+        return ["inclusao"]
+    return ["alteracao", "inclusao", "desconsideracao"] if celula["editavel"] else ["inclusao"]
+
+
+def _minutos(hhmm: str) -> int | None:
+    try:
+        h, m = str(hhmm).split(":")[:2]
+        return int(h) * 60 + int(m[:2])
+    except ValueError:
+        return None
+
+
+def erro_posicao(linha: dict, indice: int, tipo: str, horario) -> str | None:
+    """A planilha ordena as marcações pelo horário: confere se o horário pedido fica mesmo na célula escolhida. Na inclusão,
+    entre a anterior e a que hoje ocupa a célula; na correção, entre a anterior e a seguinte."""
+    if horario is None or tipo == "desconsideracao":
+        return None
+    t = horario.hour * 60 + horario.minute
+    tempos = [_minutos(b["hora"]) for b in linha["batidas"]]
+    anterior = tempos[indice - 1] if indice > 0 else None
+    seguinte = tempos[indice + 1] if tipo == "alteracao" and indice + 1 < len(tempos) else tempos[indice] if tipo == "inclusao" and indice < len(tempos) else None
+    if (anterior is None or t > anterior) and (seguinte is None or t < seguinte):
+        return None
+    fmt = lambda m: f"{m // 60:02d}:{m % 60:02d}"  # noqa: E731
+    if anterior is not None and seguinte is not None:
+        faixa = f"entre {fmt(anterior)} e {fmt(seguinte)}"
+    elif anterior is not None:
+        faixa = f"depois de {fmt(anterior)}"
+    else:
+        faixa = f"antes de {fmt(seguinte)}"
+    return f"Para ficar em {nome_celula(indice)}, o horário precisa ser {faixa}."
+
+
 def texto_opcao_marcacao(linha: dict, batida: dict) -> str:
     """A marcação na lista do pedido, com o papel no dia: "Entrada · 08:15 · NSR 000001231" ou, a incluída por
     correção, "Saída · 18:00 (I) · incluída"."""

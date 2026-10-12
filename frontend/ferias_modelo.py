@@ -165,7 +165,7 @@ def regras_do_pedido(situacao: dict) -> str:
 # ---------------------------------------------------------------------------
 SEMANA_CALENDARIO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 LEGENDA_CALENDARIO = [("Suas férias", "ok"), ("Pedido em análise", "amb"), ("Feriado", "err"), ("Ponto facultativo", "amb")]
-NOTA_CALENDARIO = "Feriados nacionais da BrasilAPI e os cadastrados pelo RH (estaduais e municipais)."
+NOTA_CALENDARIO = "Feriado e ponto facultativo são dias sem expediente."
 
 
 def _dia_iso(valor) -> date | None:

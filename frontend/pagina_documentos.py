@@ -72,10 +72,6 @@ def _modal_enviar() -> None:
         key="env_link",
         help="O sistema ainda não recebe arquivos: informe o link https do arquivo, guardado num endereço aprovado pela empresa.",
     )
-    st.html(
-        '<p class="crh-nota-verde">Conta para a etapa "Enviar os documentos obrigatórios". O RH confere e você '
-        "recebe o resultado por notificação.</p>"
-    )
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="btn_env_cancelar"):
@@ -126,10 +122,6 @@ def _abrir_arquivo(token: str, documento_id: int) -> None:
 
 
 def _tabela_pendentes(token: str, linhas: list[dict]) -> None:
-    st.html(
-        '<div class="crh-painel" style="padding:22px"><p class="crh-nota-ambar">Estes envios contam para a etapa '
-        '"Enviar os documentos obrigatórios" do seu onboarding. Depois de enviados, vão para a conferência do RH.</p></div>'
-    )
     if link := st.session_state.get("doc_link_aberto"):
         with st.container(horizontal=True):
             st.html('<p class="crh-meta">Link do arquivo pronto (vale por 5 minutos).</p>', width="content")
@@ -162,7 +154,6 @@ def _tabela_pendentes(token: str, linhas: list[dict]) -> None:
                         if st.button("Ver", type="tertiary", key=f"btn_doc_ver_{i}"):
                             _abrir_arquivo(token, linha["documento_id"])
                             st.rerun()
-    st.html('<p class="crh-meta">A lista vem dos documentos obrigatórios por cargo e das pendências abertas pelo RH.</p>')
 
 
 def pagina_documentos() -> None:

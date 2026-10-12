@@ -166,7 +166,6 @@ def _modal_encerrar(pessoa: dict, linha: dict) -> None:
     st.html(f'<p class="crh-meta" style="margin:0">{html.escape(linha["nome"])} de {html.escape(pessoa.get("nome") or "")}, desde {html.escape(linha["desde"])}</p>')
     fim = st.date_input("Último dia", value=date.today(), format="DD/MM/YYYY", key="ben_e_fim")
     obs = st.text_input("Motivo (opcional)", max_chars=500, key="ben_e_obs")
-    st.html('<p class="crh-nota-ambar">Encerrar não apaga: o benefício fica no histórico da pessoa.</p>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Voltar", key="ben_e_voltar"):

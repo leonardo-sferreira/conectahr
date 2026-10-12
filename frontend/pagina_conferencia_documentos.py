@@ -155,10 +155,6 @@ def _modal_recusar(linha: dict) -> None:
 def _modal_arquivar(linha: dict) -> None:
     rotulo_data = "Venceu em" if linha["status"] == "vencido" else "Enviado em"
     _resumo_documento(linha, (rotulo_data, linha["validade"] if linha["status"] == "vencido" else linha["enviado"]))
-    st.html(
-        '<p class="crh-nota-ambar">Arquivar não apaga: o documento sai das listas, deixa de ser editável e fica '
-        "guardado até o fim do prazo de retenção. Só documentos recusados, vencidos ou substituídos podem ser arquivados.</p>"
-    )
     obs = st.text_area("Observação (opcional)", max_chars=1000, key="rh_arquivar_obs", height=80)
     slot = st.empty()
     if _botoes("Arquivar", "rh_arquivar_ok"):
@@ -181,7 +177,6 @@ def _modal_pedir(mapa_pessoas: dict) -> None:
     tipo = st.selectbox("Documento", TIPOS_ENVIO, index=None, placeholder="Escolha o documento", format_func=rotulo_tipo, key="rh_pedir_tipo")
     prazo = st.date_input("Prazo", value=date.today() + timedelta(days=10), min_value=date.today(), format="DD/MM/YYYY", key="rh_pedir_prazo")
     obs = st.text_input("Observação", max_chars=500, key="rh_pedir_obs")
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A pessoa recebe a pendência por e-mail e na tela Documentos. Não dá para abrir duas pendências iguais.</p></div>')
     slot = st.empty()
     if _botoes("Pedir documento", "rh_pedir_ok", voltar="Cancelar"):
         erro_campo = validar_pedido(colaborador, tipo, prazo, date.today())
@@ -218,10 +213,6 @@ def _modal_vencidos() -> None:
         for r, v in (('Viraram "Vencido"', int(resultado.get("total_vencidos") or 0)), ("Alertas enviados", int(resultado.get("total_alertas") or 0)))
     )
     st.html(f'<div class="crh-campos crh-campos-direita">{campos}</div>')
-    st.html(
-        '<p class="crh-nota-ambar">Os alertas saem 30, 15 e 7 dias antes e no dia do vencimento. Rodar de novo no mesmo '
-        "dia não reenvia o mesmo alerta. O colaborador continua ativo.</p>"
-    )
     if _botoes("Fechar", "rh_vencidos_fechar", voltar=None):
         st.session_state.pop("rh_vencidos_resultado", None)
         _fechar()
@@ -243,7 +234,7 @@ def _modal_regra(cargos: dict) -> None:
     with c4:
         evento = st.selectbox("Contando", list(EVENTOS_RETENCAO), format_func=EVENTOS_RETENCAO.get, key="rh_regra_evento")
     st.html(
-        '<div class="crh-incluso"><p class="n" style="margin:0">A pessoa admitida recebe a pendência com esse prazo. "Guardar por" define '
+        '<div class="crh-incluso"><p class="n" style="margin:0">"Guardar por" define '
         "quando o documento pode ser anonimizado. Prazos a confirmar com o jurídico.</p></div>"
     )
     slot = st.empty()
@@ -432,7 +423,7 @@ def pagina_conferencia_documentos() -> None:
 
     if link := st.session_state.get("rh_link_aberto"):
         with st.container(horizontal=True, vertical_alignment="center"):
-            st.html('<p class="crh-meta">Link do arquivo pronto (vale por 5 minutos). A abertura fica registrada na auditoria.</p>', width="content")
+            st.html('<p class="crh-meta">Link do arquivo pronto (vale por 5 minutos).</p>', width="content")
             st.link_button("Abrir arquivo", link)
     if erro_link := st.session_state.pop("rh_link_erro", None):
         alerta(st.empty(), "erro", erro_link)
@@ -441,14 +432,10 @@ def pagina_conferencia_documentos() -> None:
     if aba == _ABAS[0]:
         linhas = linhas_para_conferir(dados["documentos"], mapa, usuario.get("colaborador_id"), tipo)
         _tabela_conferir(linhas)
-        _nota(
-            "Ninguém decide o próprio documento. Arquivo bloqueado na verificação não pode ser aprovado: recuse e peça "
-            'outro link. Arquivar não apaga: o documento fica guardado até o fim do prazo de retenção. Documento aprovado '
-            'com validade vencida vira "Vencido" ao processar.'
-        )
+        _nota('"Vencido": documento aprovado com a validade já passada.')
     elif aba == _ABAS[1]:
         _tabela_pendencias(linhas_pendencias(dados["pendencias"], mapa, usuario.get("id"), hoje))
-        _nota('A pendência fecha sozinha quando a pessoa envia um documento do mesmo tipo. "Atrasada": o prazo passou e o documento não chegou. Pedido cancelado não aparece.')
+        _nota('"Atrasada": o prazo passou e o documento não chegou.')
     else:
         regras = _regras(token)
         if isinstance(regras, ApiError):
@@ -458,7 +445,7 @@ def pagina_conferencia_documentos() -> None:
             cargos = {c.get("id"): c.get("nome") for c in org.get("cargos") or []}
             deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or []}
             _tabela_regras(linhas_regras(regras, cargos, deps))
-            _nota('As regras valem para as próximas admissões: cada pessoa recebe a pendência com o prazo de envio. "Guardar por" define quando o documento pode ser anonimizado (prazos a confirmar com o jurídico).')
+            _nota('"Guardar por" define quando o documento pode ser anonimizado (prazos a confirmar com o jurídico).')
 
     # Modal aberto (fica na tela enquanto a marca estiver na sessão).
     modal = st.session_state.get("modal_rh")

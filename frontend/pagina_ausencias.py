@@ -65,8 +65,7 @@ def _campos(linhas: list[tuple[str, str]], destaque: str | None = None) -> None:
 @st.dialog("Rejeitar ausência", width="small", on_dismiss=_fechar)
 def _modal_rejeitar(linha: dict) -> None:
     _campos([("Pessoa", linha["pessoa"]), ("Tipo", linha["tipo"]), ("Data", linha["periodo"])])
-    texto = st.text_area("Justificativa (obrigatória)", max_chars=1000, key="aus_rej_texto", height=90, help="Não escreva diagnóstico nem código CID: o diagnóstico fica só no atestado.")
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O colaborador recebe a justificativa por notificação.</p></div>')
+    texto = st.text_area("Justificativa (obrigatória)", max_chars=1000, key="aus_rej_texto", height=90, help="Não escreva diagnóstico nem código CID.")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Voltar", key="aus_rej_voltar"):
@@ -89,7 +88,6 @@ def _modal_rejeitar(linha: dict) -> None:
 @st.dialog("Registrar ausência", width="small", on_dismiss=_fechar)
 def _modal_registrar(linha: dict) -> None:
     _campos([("Pessoa", linha["pessoa"]), ("Tipo", linha["tipo"]), ("Data", linha["periodo"]), ("Aprovada em", linha["aprovada_em"])], destaque="Aprovada em")
-    st.html('<p class="crh-meta" style="font-size:14px">Registrar confirma o lançamento administrativo: o dia fica justificado no espelho de ponto e não desconta do banco de horas.</p>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Voltar", key="aus_reg_voltar"):
@@ -201,7 +199,7 @@ def pagina_ausencias() -> None:
 
     if link := st.session_state.get("aus_link"):
         with st.container(horizontal=True, vertical_alignment="center"):
-            st.html('<p class="crh-meta">Link do comprovante pronto (temporário). A abertura fica registrada na auditoria.</p>', width="content")
+            st.html('<p class="crh-meta">Link do comprovante pronto.</p>', width="content")
             st.link_button("Abrir comprovante", link)
     if erro_acao := st.session_state.pop("aus_erro", None):
         alerta(st.empty(), "erro", erro_acao)
@@ -210,12 +208,6 @@ def pagina_ausencias() -> None:
     mapa = pessoas(org)
     meu = usuario.get("colaborador_id")
     _tabela(linhas_ausencias(por_status[status], mapa, meu, tipo, dep), status, token)
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.html('<div class="crh-painel crh-bloco"><p class="crh-bloco-titulo" style="margin-top:0">Como a ausência anda</p><p class="crh-meta">Pendente → Aprovada pelo RH → Registrada (o dia fica justificado no espelho de ponto). Rejeitar exige justificativa. Ausência não pode ser apagada.</p></div>')
-    with c2:
-        st.html('<div class="crh-painel crh-bloco"><p class="crh-bloco-titulo" style="margin-top:0">Privacidade</p><p class="crh-meta">O comprovante médico é visto só pelo RH e Admin. O gestor vê apenas que a pessoa esteve ausente.</p></div>')
 
     modal = st.session_state.get("modal_ausencia")
     if not modal:

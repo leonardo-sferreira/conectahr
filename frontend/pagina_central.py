@@ -149,7 +149,7 @@ def _modal_ferias(linha: dict) -> None:
             conflito = {"_erro": erro.message}
         conflito["_id"] = linha["id"]
         st.session_state.central_conflito = conflito
-    st.html('<p class="crh-meta" style="margin:0">Conferência (só informa, não bloqueia)</p>')
+    st.html('<p class="crh-meta" style="margin:0">Conferência</p>')
     if conflito.get("_erro"):
         st.html(f'<p class="crh-nota-ambar">Não foi possível conferir agora: {html.escape(conflito["_erro"])}</p>')
     else:
@@ -178,8 +178,7 @@ def _modal_ferias(linha: dict) -> None:
 def _modal_rejeitar_ausencia(linha: dict) -> None:
     _campos([("Pessoa", linha["pessoa"]), ("Tipo", linha["tipo"]), ("Período", linha["periodo"])])
     texto = st.text_area("Justificativa (obrigatória)", max_chars=1000, key="central_aus_motivo", height=90,
-                         help="Não escreva diagnóstico nem código CID: o diagnóstico fica só no atestado, com o RH.")
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A pessoa recebe a justificativa. O comprovante é visto só pelo RH.</p></div>')
+                         help="Não escreva diagnóstico nem código CID.")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Voltar", key="central_aus_voltar"):
@@ -203,7 +202,6 @@ def _modal_rejeitar_ausencia(linha: dict) -> None:
 def _modal_rejeitar_correcao(linha: dict) -> None:
     _campos([("Pessoa", linha["pessoa"]), ("Pedido", f"{linha['campo']} · {linha['horario']}"), ("Dia", linha["dia"])])
     motivo = st.text_area("Motivo (obrigatório, 5 caracteres ou mais)", max_chars=1000, key="central_cor_motivo", height=90)
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O colaborador recebe o motivo por notificação. O registro do dia continua como estava.</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Voltar", key="central_cor_voltar"):
@@ -341,7 +339,7 @@ def _minhas(token: str, central: dict | None) -> None:
     if dados["falhas"]:
         alerta(st.empty(), "atencao", "Parte das suas pendências não carregou agora. O que aparece abaixo pode estar incompleto.")
     if not secoes:
-        st.html('<div class="crh-painel crh-bloco"><p class="crh-meta">Nada pendente por aqui. Pedidos e decisões dos últimos 30 dias aparecem nesta tela.</p></div>')
+        st.html('<div class="crh-painel crh-bloco"><p class="crh-meta">Nada pendente por aqui.</p></div>')
         return
     for s in secoes:
         itens = "".join(
@@ -350,7 +348,6 @@ def _minhas(token: str, central: dict | None) -> None:
             for i in s["itens"]
         )
         st.html(f'<p class="crh-bloco-titulo">{html.escape(s["titulo"])}</p><div class="crh-ct">{itens}</div>')
-    st.html('<p class="crh-meta">Avaliações, metas e PDI entram aqui quando a Trajetória existir.</p>')
 
 
 # ---------------------------------------------------------------------------
@@ -431,7 +428,6 @@ def pagina_central() -> None:
         st.html('<p class="crh-meta">Aprovar troca o horário no registro do dia e recalcula o banco de horas. Rejeitar exige motivo. Ninguém decide a própria correção.</p>')
     elif aba == "ausencias":
         _tabela_ausencias(linhas_ausencias_fila(fila_ausencias, mapa, meu, departamento), token)
-        st.html('<p class="crh-meta">Aqui aparecem só o tipo e o período: o comprovante (atestado) é visto só pelo RH. Depois de aprovada, o RH registra a ausência. Rejeitar exige justificativa.</p>')
     else:
         _minhas(token, central)
 

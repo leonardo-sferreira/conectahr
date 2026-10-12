@@ -41,7 +41,6 @@ from perfil_modelo import (
     cargo_e_departamento,
     conta_bancaria,
     contato_e_endereco,
-    conta_mascarada,
     dados_pessoais,
     descricao_alteracao,
     organograma_pessoal,
@@ -92,10 +91,6 @@ def _campos(pares: list[tuple[str, str]]) -> str:
 # ---------------------------------------------------------------------------
 @st.dialog("Editar dados bancários", width="medium", on_dismiss=_fechar)
 def _modal_bancarios(atual: dict) -> None:
-    st.html(
-        '<p class="crh-cfg-texto">Esses dados são usados só para o pagamento. RH e Admin consultam; seu gestor '
-        "não tem acesso.</p>"
-    )
     opcoes = BANCOS + ["Outro banco"]
     banco_atual = atual.get("banco") or ""
     indice = opcoes.index(banco_atual) if banco_atual in BANCOS else (len(BANCOS) if banco_atual else None)
@@ -111,10 +106,6 @@ def _modal_bancarios(atual: dict) -> None:
     tipo = st.radio(
         "Tipo de conta", tipos, format_func=TIPOS_CONTA.get, horizontal=True, key="pf_tipo",
         index=tipos.index(atual["tipo_conta"]) if atual.get("tipo_conta") in tipos else 0,
-    )
-    st.html(
-        f'<div class="crh-incluso"><p class="n" style="margin:0">A alteração fica registrada na auditoria com a conta '
-        f"mascarada{(' (' + html.escape(conta_mascarada(conta)) + ')') if conta else ''}.</p></div>"
     )
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
@@ -145,10 +136,6 @@ _CHAVES_CONTATO = ("pf_ct_telefone", "pf_ct_email", "pf_ct_cep", "pf_ct_logradou
 
 @st.dialog("Editar contato e endereço", width="medium", on_dismiss=_fechar)
 def _modal_contato(atual: dict) -> None:
-    st.html(
-        '<p class="crh-cfg-texto">Telefone, e-mail pessoal e endereço mudam na hora, sem pedido ao RH. Nome, CPF e '
-        "data de nascimento continuam por solicitação ao RH.</p>"
-    )
     d = {}
     c1, c2 = st.columns([1, 1.6])
     d["telefone"] = c1.text_input("Telefone", value=atual.get("telefone") or "", max_chars=20, placeholder="(11) 96666-5555", key="pf_ct_telefone")
@@ -164,10 +151,6 @@ def _modal_contato(atual: dict) -> None:
     d["cidade"] = c1.text_input("Cidade", value=atual.get("cidade") or "", max_chars=100, key="pf_ct_cidade")
     uf = (atual.get("estado") or "").upper()
     d["estado"] = c2.selectbox("Estado (UF)", UFS, index=UFS.index(uf) if uf in UFS else None, placeholder="UF", key="pf_ct_estado")
-    st.html(
-        '<div class="crh-incluso"><p class="n" style="margin:0">A alteração vale na hora e fica registrada na auditoria '
-        "com telefone, e-mail e endereço mascarados. O RH vê o dado novo no seu cadastro.</p></div>"
-    )
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pf_contato_cancelar"):
@@ -195,19 +178,11 @@ def _modal_contato(atual: dict) -> None:
 
 @st.dialog("Solicitar alteração cadastral", width="medium", on_dismiss=_fechar)
 def _modal_alteracao(valores_atuais: dict) -> None:
-    st.html(
-        '<p class="crh-cfg-texto">Nome, CPF, data de nascimento e cargo mudam por pedido ao RH, que confere e aplica '
-        'no cadastro. Telefone, e-mail pessoal e endereço você altera direto, em "Contato e endereço".</p>'
-    )
     campo = st.selectbox("Campo a alterar", CAMPOS_ALTERACAO, index=None, placeholder="Escolha o campo", key="pf_alt_campo")
     atual = valores_atuais.get(campo, "") if campo else ""
     st.text_input("Valor atual", value=atual, disabled=True, key=f"pf_alt_atual_{campo or 'nenhum'}")
     novo = st.text_input("Novo valor", max_chars=1500, key="pf_alt_novo")
     motivo = st.text_area("Motivo", max_chars=400, key="pf_alt_motivo", height=80)
-    st.html(
-        '<div class="crh-incluso"><p class="n" style="margin:0">Você acompanha o status na Central de Pendências: '
-        "recebida → em análise → atendida ou indeferida. Se o RH precisar de comprovante, ele pede pela tela Documentos.</p></div>"
-    )
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pf_alt_cancelar"):
@@ -341,7 +316,6 @@ def pagina_perfil() -> None:
             if st.button("Editar contato e endereço", type="primary", key="pf_btn_contato"):
                 st.session_state.modal_perfil = "contato"
         st.html(_campos(contato_e_endereco(perfil)))
-        st.html('<p class="crh-cfg-nota">Você altera direto, sem pedido ao RH. A alteração fica registrada na auditoria, com telefone, e-mail e endereço mascarados.</p>')
     _cartao_campos("perfil_card_cargo", "Cargo e departamento", cargo_e_departamento(perfil, nome_gestor))
 
     conta = conta_bancaria(perfil)
@@ -359,7 +333,6 @@ def pagina_perfil() -> None:
             st.html(_campos(conta))
         else:
             st.html('<p class="crh-meta">Nenhuma conta cadastrada. Cadastre para receber o pagamento.</p>')
-        st.html('<p class="crh-cfg-nota">Visível para RH e Admin apenas para fins de pagamento — seu gestor não tem acesso a estes dados.</p>')
 
     _cartao_organograma(org)
 

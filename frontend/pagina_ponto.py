@@ -36,7 +36,7 @@ from api_client import (
 )
 from comprovante_ponto import comprovante_pdf, formatar_nsr, nome_arquivo
 from pagamento_modelo import MESES
-from planilha_ponto import desmarcar_planilha, formulario_pedido, limpar_formulario, render_cabecalho, render_planilha, resumo_do_dia
+from planilha_ponto import desmarcar_planilha, erro_do_formulario, formulario_pedido, limpar_formulario, render_cabecalho, render_planilha, resumo_do_dia
 from ponto_mensal_modelo import (
     aviso_descanso,
     aviso_prazo,
@@ -64,7 +64,6 @@ from ponto_modelo import (
     texto_proxima,
     titulo_hoje,
     validar_ausencia,
-    validar_pedido,
     valor_solicitado_ms,
 )
 from theme import alerta, render_hero, render_indicadores, render_topbar
@@ -72,9 +71,7 @@ from theme import alerta, render_hero, render_indicadores, render_topbar
 _CACHE = "ponto_cache"
 _VALIDADE_CACHE_S = 20
 _BLOQUEADO = "ponto ainda nao esta liberado"
-AVISO_REP = ("Ponto no modelo REP-P da Portaria MTP nº 671/2021. Nenhuma marcação pode ser alterada ou apagada; uma correção "
-             "aprovada aparece como tratamento, com o motivo. Sem registro no INPI e sem assinatura ICP-Brasil, este ponto ainda "
-             "não vale como REP-P para a fiscalização.")
+AVISO_REP = "Sem registro no INPI e sem assinatura ICP-Brasil, este ponto ainda não vale como REP-P para a fiscalização."
 
 
 def _carregar(token: str) -> dict:
@@ -142,22 +139,13 @@ def _modal_pedido(linha: dict) -> None:
     if linha["nota"] and not linha["nota"].startswith(("Esqueceu", "Mês encerrado")):
         st.html(f'<p class="crh-meta" style="margin:0">{html.escape(linha["nota"])}</p>')
     tipo, horario, alvo, motivo = formulario_pedido(linha, "pt_ped")
-    if tipo == "inclusao":
-        nota = ("A marcação original nunca é alterada. Aprovada, a correção vira um tratamento com o seu motivo e aparece na "
-                "planilha como (I). Quem decide é o seu superior ou o RH.")
-    elif tipo == "alteracao":
-        nota = ("A marcação original continua gravada e no comprovante. Aprovada, ela aparece como (D) e o horário certo entra "
-                "como (I). Quem decide é o seu superior ou o RH.")
-    else:
-        nota = "A marcação continua gravada e no comprovante. Aprovada, ela aparece como (D) e deixa de contar nas horas."
-    st.html(f'<div class="crh-incluso"><p class="n" style="margin:0">{html.escape(nota)}</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pt_ped_cancelar"):
             _fechar()
             st.rerun()
         if st.button("Enviar pedido", type="primary", key="pt_ped_enviar"):
-            erro_campo = validar_pedido(tipo, horario, alvo, motivo)
+            erro_campo = erro_do_formulario(linha, tipo, horario, alvo, motivo)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
@@ -181,11 +169,8 @@ def _modal_ausencia() -> None:
     inicio = c1.date_input("De", value=date.today(), format="DD/MM/YYYY", key="pt_aus_inicio")
     fim = c2.date_input("Até", value=date.today(), format="DD/MM/YYYY", key="pt_aus_fim")
     motivo = st.selectbox("Motivo", list(MOTIVOS_AUSENCIA), format_func=MOTIVOS_AUSENCIA.get, index=None, placeholder="Escolha o motivo", key="pt_aus_motivo")
-    observacao = st.text_area("Observação (opcional)", max_chars=1000, key="pt_aus_obs", height=70, help="Não escreva diagnóstico nem código CID: isso fica só no atestado, com o RH.")
-    st.html(
-        '<p class="crh-nota-verde">O dia fica justificado no espelho de ponto e não desconta do banco de horas. O atestado é '
-        "visto só pelo RH; o gestor vê apenas a ausência. Entregue o atestado ao RH: o sistema ainda não recebe arquivos.</p>"
-    )
+    observacao = st.text_area("Observação (opcional)", max_chars=1000, key="pt_aus_obs", height=70, help="Não escreva diagnóstico nem código CID.")
+    st.html('<p class="crh-nota-verde">Entregue o atestado ao RH.</p>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pt_aus_cancelar"):
@@ -396,8 +381,6 @@ def _mes(token: str, dados: dict, meses: list[tuple[int, int]], ano: int, mes: i
         if escolhida["acao"] == "corrigir":
             st.session_state.modal_ponto = ("pedido", escolhida["data"].isoformat())
         st.rerun()
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">Marque "Ajuste" no fim da linha para pedir a correção do dia. O pedido '
-            'segue para o seu superior ou para o RH; a marcação original nunca é alterada.</p></div>')
     return linhas
 
 
