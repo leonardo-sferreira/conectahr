@@ -170,7 +170,9 @@ t = texto(at)
 conferir("Hoje —" in t and "Entrada 08:02" in t and "Saída almoço 12:05" in t, "caixas do dia com as marcações feitas")
 conferir("Saldo do banco de horas +3h20" in t, "saldo do banco de horas")
 conferir("Controle interno experimental" in t and "Portaria nº 671/2021" in t, "aviso de controle interno experimental")
-conferir("Espelho de ponto" in t and at.button_group(key="pt_visao").value == "Semana" and "8h30" in t and "COMPLETO" in t, "espelho da semana")
+# Na segunda-feira (UTC) a semana só tem o dia de hoje, ainda aberto: não há dia completo para mostrar.
+dia_completo = ("8h30" in t and "COMPLETO" in t) if HOJE != SEGUNDA else f"{HOJE:%d/%m}" in t
+conferir("Espelho de ponto" in t and at.button_group(key="pt_visao").value == "Semana" and dia_completo, "espelho da semana")
 conferir([k for k in chaves(at) if k == "pt_marcar"] == ["pt_marcar"] and {"pt_editar_hora_entrada", "pt_editar_inicio_intervalo"} <= chaves(at), "um só 'Marcar agora'; 'Editar' nas marcações feitas")
 conferir(not any(c[0] in ("marcar", "correcao", "ausencia") for c in chamadas), "abrir a tela não marca nem envia nada")
 
