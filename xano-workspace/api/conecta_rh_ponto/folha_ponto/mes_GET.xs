@@ -140,19 +140,25 @@ query "folha_ponto/mes" verb=GET {
       }
     }
 
-    precondition ($input.colaborador_id == null || ($ids_visiveis|contains:$input.colaborador_id)) {
+    // Ids em texto (",9,12,"): o contains numa lista montada com push nao reconheceu o id
+    // nas chamadas por HTTP (12/10/2026); o texto com virgulas nas pontas e exato.
+    var $ids_visiveis_txt {
+      value = "," ~ ($ids_visiveis|join:",") ~ ","
+    }
+
+    precondition ($input.colaborador_id == null || ($ids_visiveis_txt|contains:("," ~ ($input.colaborador_id|to_text) ~ ","))) {
       error_type = "accessdenied"
       error = "Voce nao pode consultar a folha de ponto desta pessoa."
     }
 
     var $alvos {
-      value = $ids_visiveis
+      value = $ids_visiveis_txt
     }
 
     conditional {
       if ($input.colaborador_id != null) {
         var.update $alvos {
-          value = []|push:$input.colaborador_id
+          value = "," ~ ($input.colaborador_id|to_text) ~ ","
         }
       }
     }
@@ -178,7 +184,7 @@ query "folha_ponto/mes" verb=GET {
     foreach ($registros_mes) {
       each as $r {
         conditional {
-          if ($alvos|contains:$r.colaborador_id) {
+          if ($alvos|contains:("," ~ ($r.colaborador_id|to_text) ~ ",")) {
             var.update $registros {
               value = $registros|push:$r
             }
@@ -202,7 +208,7 @@ query "folha_ponto/mes" verb=GET {
     foreach ($marcacoes_mes) {
       each as $mc {
         conditional {
-          if ($alvos|contains:$mc.colaborador_id) {
+          if ($alvos|contains:("," ~ ($mc.colaborador_id|to_text) ~ ",")) {
             var.update $marcacoes {
               value = $marcacoes|push:$mc
             }
@@ -225,7 +231,7 @@ query "folha_ponto/mes" verb=GET {
     foreach ($tratamentos_mes) {
       each as $tr {
         conditional {
-          if ($alvos|contains:$tr.colaborador_id) {
+          if ($alvos|contains:("," ~ ($tr.colaborador_id|to_text) ~ ",")) {
             var.update $tratamentos {
               value = $tratamentos|push:$tr
             }
@@ -247,7 +253,7 @@ query "folha_ponto/mes" verb=GET {
     foreach ($ausencias_mes) {
       each as $a {
         conditional {
-          if ($alvos|contains:$a.colaborador_id) {
+          if ($alvos|contains:("," ~ ($a.colaborador_id|to_text) ~ ",")) {
             var.update $ausencias {
               value = $ausencias|push:$a
             }
@@ -269,7 +275,7 @@ query "folha_ponto/mes" verb=GET {
     foreach ($ferias_mes) {
       each as $f {
         conditional {
-          if ($alvos|contains:$f.colaborador_id) {
+          if ($alvos|contains:("," ~ ($f.colaborador_id|to_text) ~ ",")) {
             var.update $ferias_lista {
               value = $ferias_lista|push:$f
             }

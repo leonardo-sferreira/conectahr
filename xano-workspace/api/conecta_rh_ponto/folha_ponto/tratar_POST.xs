@@ -148,12 +148,18 @@ query "folha_ponto/tratar" verb=POST {
       }
     }
 
+    // Ids em texto (",9,12,"): o contains numa lista montada com push nao reconheceu o id
+    // nas chamadas por HTTP (12/10/2026); o texto com virgulas nas pontas e exato.
+    var $ids_visiveis_txt {
+      value = "," ~ ($ids_visiveis|join:",") ~ ","
+    }
+
     precondition ($colaborador_autenticado == null || $input.colaborador_id != $colaborador_autenticado.id) {
       error_type = "accessdenied"
       error = "Voce nao pode ajustar o proprio ponto: peca a correcao, que vai para o seu superior."
     }
 
-    precondition ($ids_visiveis|contains:$input.colaborador_id) {
+    precondition ($ids_visiveis_txt|contains:("," ~ ($input.colaborador_id|to_text) ~ ",")) {
       error_type = "accessdenied"
       error = "Voce nao pode ajustar o ponto desta pessoa."
     }
