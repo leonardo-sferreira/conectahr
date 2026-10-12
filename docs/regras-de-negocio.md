@@ -186,7 +186,8 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 - `ponto/marcar`: exige colaborador `ATIVO`; usa a data de hoje para localizar/criar o registro do dia (índice único evita duplicidade); marcações seguem ordem estrita entrada → início intervalo → fim intervalo → saída, cada uma condicionada ao estado dos campos anteriores; erro `inputerror` se todos os 4 marcadores já existem (`xano-workspace/api/conecta_rh_ponto/ponto/marcar_POST.xs`).
 - `ponto/{id}/solicitar_correcao`: colaborador só solicita correção do próprio registro; `campo` validado contra o enum; bloqueia solicitação duplicada quando já existe correção `pendente` para o mesmo registro+campo; `valor_original` é lido do campo atual no momento da solicitação; desde 11/10/2026, o horário pedido precisa estar na janela do dia do registro (da meia-noite UTC até as 06:00 de Brasília do dia seguinte), não pode ser no futuro e respeita a ordem das marcações existentes (`xano-workspace/api/conecta_rh_ponto/ponto/id/solicitar_correcao_POST.xs`).
 - **Benefícios (desde 11/10/2026):** catálogo `beneficio` (RH e Admin cadastram, nome único; desativado não aceita novos vínculos) e `colaborador_beneficio` (RH e Admin vinculam: benefício ativo, pessoa não desligada, sem outro vínculo vigente do mesmo benefício, fim ≥ início; encerrar preenche o fim e desativa, sem apagar). O colaborador consulta só os seus em `meus_beneficios`. Tudo auditado (`xano-workspace/api/conecta_rh_colaboradores/beneficios*`, `colaboradores/id/beneficios_*`, `colaborador_beneficios/id/encerrar_POST.xs`, `meus_beneficios_GET.xs`).
-- **Hierarquia (desde 11/10/2026):** `colaborador.superior_colaborador_id` (definido por RH ou Admin em `colaboradores/{id}/superior`, sem ciclo e sem desligado). `correcoes_ponto/{id}/aprovar` e `rejeitar`: com superior, decidem o superior, RH ou Admin; sem superior, o Gestor do departamento (ou delegação), RH ou Admin; ninguém decide o próprio pedido. A fila `correcoes_ponto` do Gestor segue a mesma regra.
+- **Hierarquia (desde 11/10/2026):** `colaborador.superior_colaborador_id` (definido por RH ou Admin em `colaboradores/{id}/superior`, sem ciclo e sem desligado). `correcoes_ponto/{id}/aprovar` e `rejeitar`: com superior, decidem o superior, RH ou Admin; sem superior, o Gestor do departamento (ou delegação), RH ou Admin; ninguém decide o próprio pedido. A fila `correcoes_ponto` segue a mesma regra. Desde a tarefa 83, a regra vale para qualquer perfil (o superior não precisa ser Gestor) e também para `ferias/{id}/aprovar|rejeitar`, `ferias/{id}/verificar_conflito` e `ausencias/{id}/aprovar|rejeitar` (recusa: "Voce nao tem permissao para decidir esta ausencia."); `ausencias/{id}/registrar` continua só RH e Admin. A `central_de_tarefas` usa o mesmo escopo, devolve `e_superior` e `fila_ausencias_pendentes` (só `id`, `colaborador_id`, `tipo`, `data_inicio`, `data_fim` e `status`).
+- **Prazo para pedir correção (desde 11/10/2026, tarefa 79):** tabela `configuracao` (chave única `prazo_correcao_ponto_dias`, `valor_inteiro`). `ponto/prazo_correcao` GET (qualquer perfil) e PATCH (RH e Admin; 1 a 3650 dias ou vazio = sem limite; auditado). Com prazo, `ponto/{id}/solicitar_correcao` e `ponto/solicitar_correcao_dia` recusam o dia anterior a hoje − prazo (data de Brasília). O ajuste direto (`folha_ponto/ajustar`) não tem prazo (`xano-workspace/api/conecta_rh_ponto/ponto/prazo_correcao_*.xs`, `xano-workspace/table/configuracao.xs`).
 - **Folha de ponto (desde 11/10/2026):** `folha_ponto/pessoas`, `folha_ponto/mes` e `folha_ponto/ajustar` — RH e Admin veem todos; os demais, a si mesmos, quem os tem como superior direto e, de quem não tem superior, o departamento que gerenciam. O ajuste direto recusa o próprio ponto e marcação com pedido pendente, confere janela, futuro e ordem, recalcula as horas, grava correção aprovada, audita (`ajustar_ponto`) e notifica (`ponto_ajustado`).
 - `ponto/solicitar_correcao_dia` (desde 11/10/2026): correção de um dia passado sem nenhuma marcação; cria o registro do dia (`Incompleto`) e a correção; só o próprio colaborador não desligado, dia anterior a hoje (Brasília), não antes da admissão e sem registro existente; mesma janela e regra de futuro (`xano-workspace/api/conecta_rh_ponto/ponto/solicitar_correcao_dia_POST.xs`).
 - `correcoes_ponto/{id}/aprovar` e `/rejeitar`: exigem `status == "pendente"` (`xano-workspace/api/conecta_rh_ponto/correcoes_ponto/id/aprovar_POST.xs`, `rejeitar_POST.xs`).
@@ -214,8 +215,8 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 | Ver próprio espelho de ponto | Qualquer colaborador autenticado |
 | Listar ponto de outro colaborador | RH, ADMIN |
 | Solicitar correção | Próprio colaborador dono do registro |
-| Aprovar/rejeitar correção | RH, ADMIN, ou Gestor do departamento do colaborador |
-| Listar correções pendentes | RH/ADMIN (todas); Gestor (só do seu departamento) |
+| Aprovar/rejeitar correção | RH, ADMIN, o superior direto do colaborador ou, sem superior, o Gestor do departamento (qualquer perfil, desde a tarefa 83) |
+| Listar correções pendentes | RH/ADMIN (todas); os demais, pela mesma hierarquia |
 | Ver próprias correções | Próprio colaborador |
 
 (`xano-workspace/api/conecta_rh_ponto/ponto/marcar_POST.xs`, `meu_ponto_GET.xs`, `ponto_GET.xs`, `ponto/id/solicitar_correcao_POST.xs`, `correcoes_ponto/id/aprovar_POST.xs`, `rejeitar_POST.xs`, `correcoes_ponto_GET.xs`, `minhas_correcoes_ponto_GET.xs`)
@@ -259,11 +260,12 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 | Ação | Perfis permitidos | Escopo |
 |---|---|---|
 | Solicitar/editar/cancelar férias | qualquer perfil com colaborador ativo | só o dono |
-| Aprovar/rejeitar férias | RH, ADMIN | sem restrição de departamento no código |
-| Verificar conflito de férias | RH, ADMIN, GESTOR | — |
+| Aprovar/rejeitar férias | RH, ADMIN, superior direto ou, sem superior, Gestor do departamento (e delegação) | hierarquia (tarefa 83) |
+| Verificar conflito de férias | RH, ADMIN e quem decide pela hierarquia | não o próprio |
 | Listar todas as férias | RH, ADMIN | — |
 | Solicitar ausência | qualquer perfil com colaborador ativo | só o dono |
-| Aprovar/rejeitar/registrar ausência | RH, ADMIN | sem restrição de departamento no código |
+| Aprovar/rejeitar ausência | RH, ADMIN, superior direto ou, sem superior, Gestor do departamento | hierarquia (tarefa 83) |
+| Registrar ausência aprovada | RH, ADMIN | — |
 | Excluir ausência | ninguém (bloqueado) | — |
 
 Não há verificação de escopo por departamento do aprovador em nenhum endpoint de férias/ausências — diferente do fluxo de desligamento, que possui essa checagem para o Gestor (ver seção 6) — não mapeado.

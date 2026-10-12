@@ -74,8 +74,10 @@ O que o backend confere em todo pedido:
 
 ## 4. O que fica fora (decisões, não brechas)
 
-- **Prazo para pedir correção.** O backend não limita quantos dias atrás a pessoa pode pedir. Fechar o período depois da
-  folha é uma regra de negócio a definir com o RH. Até lá, o gestor ou o RH avalia cada pedido.
+- **Prazo para pedir correção (tarefa 79).** O RH define o prazo na Folha de ponto; começa sem limite. Com prazo, o
+  espelho tira o botão dos dias anteriores a hoje − prazo, marca "Fora do prazo para pedir correção." e avisa acima da
+  tabela que o gestor ou o RH podem ajustar. O backend recusa o pedido fora do prazo do mesmo jeito, mesmo que a tela
+  esteja desatualizada. O ajuste direto do gestor e do RH não tem prazo.
 - **Feriados estaduais e municipais**, pela razão do item 2.
 - **Validade legal.** O registro continua sendo "controle interno experimental", e não um REP (Portaria nº 671/2021),
   como a tela já avisa.

@@ -76,6 +76,8 @@ def _falha_ou(chave, resposta):
 
 def _instalar():
     api_client.auth_me = lambda token: {"autenticado": True}
+    api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}  # menu Equipe (tarefa 83)
+    api_client.prazo_correcao = lambda token: {"prazo_dias": None}  # prazo de correção (tarefa 79)
     api_client.central_de_tarefas = lambda token: {}
     api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
     api_client.aniversariantes = lambda token: {"aniversariantes": []}

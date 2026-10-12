@@ -23,7 +23,7 @@ real continua sendo do backend.
 
 import streamlit as st
 
-from api_client import ApiError, auth_me, logout
+from api_client import ApiError, auth_me, folha_pessoas, logout
 from pagina_ausencias import pagina_ausencias
 from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
 from pagina_beneficios import pagina_beneficios
@@ -75,7 +75,7 @@ _MENU_RH = [
     "Ciclos de avaliação",
     "Pedidos LGPD",
 ]
-# Grupo "Equipe" do menu (Figma 241:560), só para o Gestor.
+# Grupo "Equipe" do menu (Figma 241:560): o Gestor vê todo; quem é superior direto sem o perfil Gestor (tarefa 83) vê só a folha.
 _MENU_EQUIPE = [
     "Minha equipe",
     "Folha de ponto da equipe",
@@ -193,10 +193,19 @@ _PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
 ativo_no_menu = {"Meu onboarding": "Início"}.get(pagina_atual.title, pagina_atual.title)
-if ativo_no_menu == "Folha de ponto" and str(st.session_state.usuario.get("perfil", "")).upper() == "GESTOR":
+perfil = str(st.session_state.usuario.get("perfil", "")).upper()
+
+# Quem é superior direto de alguém decide e vê a folha da equipe, qualquer que seja o perfil (tarefa 83).
+# Conferido uma vez por sessão; se a chamada falhar, o menu fica como o do perfil.
+if perfil not in ("RH", "ADMIN", "GESTOR") and "tem_equipe" not in st.session_state:
+    try:
+        st.session_state.tem_equipe = any(not p.get("e_voce") for p in folha_pessoas(st.session_state.token).get("pessoas") or [])
+    except ApiError:
+        st.session_state.tem_equipe = False
+menu_equipe = _MENU_EQUIPE if perfil == "GESTOR" else ["Folha de ponto da equipe"] if st.session_state.get("tem_equipe") else []
+if ativo_no_menu == "Folha de ponto" and menu_equipe:
     ativo_no_menu = "Folha de ponto da equipe"
 
-perfil = str(st.session_state.usuario.get("perfil", "")).upper()
 with st.sidebar:
     render_sidebar_logo()
     for rotulo, restrito in _MENU:
@@ -220,9 +229,9 @@ with st.sidebar:
                 if rotulo in _PAGINAS_DO_MENU:
                     st.switch_page(_PAGINAS_DO_MENU[rotulo])
                 st.toast(f"A tela {rotulo} ainda está em construção.")
-    if perfil == "GESTOR":
+    if menu_equipe:
         st.html('<p class="crh-nav-grupo">Equipe</p>')
-        for rotulo in _MENU_EQUIPE:
+        for rotulo in menu_equipe:
             if rotulo == ativo_no_menu:
                 render_nav_ativo(rotulo)
             elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):

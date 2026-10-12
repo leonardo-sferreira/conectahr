@@ -64,10 +64,7 @@ query "ferias/{id}/verificar_conflito" verb=GET {
       value = $usuario_autenticado.perfil|trim|to_upper
     }
 
-    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || $perfil_autenticado == "GESTOR") {
-      error_type = "accessdenied"
-      error = "Somente RH, ADMIN ou Gestor podem verificar conflitos de ferias."
-    }
+    // Quem pode ver e conferido mais abaixo, pela hierarquia (tarefa 83).
 
     db.get ferias {
       field_name = "id"
@@ -87,6 +84,43 @@ query "ferias/{id}/verificar_conflito" verb=GET {
     precondition ($colaborador_solicitante != null) {
       error_type = "notfound"
       error = "Colaborador relacionado a solicitacao nao encontrado."
+    }
+
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $usuario_autenticado.id
+    } as $colaborador_do_decisor
+
+    // Hierarquia (tarefas 81 e 83): RH e Admin; o superior direto da pessoa; ou, se ela nao tem
+    // superior, o gestor do departamento dela. Vale para qualquer perfil.
+    var $pode_ver_conflito {
+      value = ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN")
+    }
+
+    conditional {
+      if ($pode_ver_conflito == false && $colaborador_do_decisor != null && $colaborador_solicitante.superior_colaborador_id != null) {
+        var.update $pode_ver_conflito {
+          value = ($colaborador_solicitante.superior_colaborador_id == $colaborador_do_decisor.id)
+        }
+      }
+    }
+
+    conditional {
+      if ($pode_ver_conflito == false && $colaborador_do_decisor != null && $colaborador_solicitante.superior_colaborador_id == null) {
+        db.query departamento {
+          where = $db.departamento.gestor_colaborador_id == $colaborador_do_decisor.id && $db.departamento.id == $colaborador_solicitante.departamento_id
+          return = {type: "single"}
+        } as $departamento_do_decisor_pode_ver_conflito
+
+        var.update $pode_ver_conflito {
+          value = ($departamento_do_decisor_pode_ver_conflito != null)
+        }
+      }
+    }
+
+    precondition ($pode_ver_conflito && ($colaborador_do_decisor == null || $colaborador_do_decisor.id != $colaborador_solicitante.id)) {
+      error_type = "accessdenied"
+      error = "Voce nao pode verificar conflitos desta solicitacao de ferias."
     }
 
     var $hoje {

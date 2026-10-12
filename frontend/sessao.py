@@ -76,6 +76,8 @@ _CHAVES_SESSAO = (
     # Folha de ponto da equipe e do RH.
     "folha_cache",
     "modal_folha",
+    # Superior direto sem o perfil Gestor (tarefa 83).
+    "tem_equipe",
     # Benefícios.
     "beneficios_cache",
     "modal_beneficio",

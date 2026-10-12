@@ -135,6 +135,25 @@ def linhas_correcoes(correcoes: list[dict], mapa: dict, meu_colaborador_id, depa
     return linhas
 
 
+def linhas_ausencias_fila(fila: list[dict], mapa: dict, meu_colaborador_id, departamento_id=None) -> list[dict]:
+    """Aba Ausências da Central (tarefa 83): só tipo, período e situação — nunca o comprovante nem o motivo.
+    {'id', 'pessoa', 'detalhe', 'tipo', 'periodo', 'proprio'}."""
+    linhas = []
+    for a in fila:
+        if a.get("status") not in (None, "Pendente"):
+            continue
+        p = _pessoa(mapa, a.get("colaborador_id"))
+        if not _no_filtro(p, departamento_id):
+            continue
+        linhas.append({
+            "id": a.get("id"), "pessoa": p["nome"], "detalhe": p["detalhe"],
+            "tipo": TIPOS_AUSENCIA.get(a.get("tipo"), a.get("tipo") or "—"),
+            "periodo": periodo(a.get("data_inicio"), a.get("data_fim")),
+            "proprio": meu_colaborador_id is not None and a.get("colaborador_id") == meu_colaborador_id,
+        })
+    return linhas
+
+
 def conferencia_ferias(resposta: dict) -> list[str]:
     """O resultado de `verificar_conflito` em frases curtas (só informa, não bloqueia)."""
     partes = []

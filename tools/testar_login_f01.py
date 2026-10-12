@@ -123,6 +123,8 @@ def _instalar_api_simulada():
     api_client.trocar_senha = _trocar_senha
     api_client.logout = lambda token: chamadas.append("logout") or {}
     api_client.auth_me = lambda token: chamadas.append("auth_me") or {"autenticado": True}
+    api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}  # menu Equipe (tarefa 83)
+    api_client.prazo_correcao = lambda token: {"prazo_dias": None}  # prazo de correção (tarefa 79)
     api_client.esqueci_senha = lambda email: {"mensagem": "ok"}
     api_client.onboarding = _onboarding
     api_client.concluir_item_onboarding = _concluir

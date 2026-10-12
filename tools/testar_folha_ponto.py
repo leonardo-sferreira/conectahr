@@ -108,6 +108,8 @@ def _falha_ou(chave, resposta):
 
 
 api_client.auth_me = lambda token: {"autenticado": True}
+api_client.prazo_correcao = lambda token: {"prazo_dias": estado.get("prazo")}  # prazo de correção (tarefa 79)
+api_client.definir_prazo_correcao = lambda token, dias: chamadas.append(("prazo", dias)) or _falha_ou("prazo", {"prazo_dias": dias})
 api_client.central_de_tarefas = lambda token: {}
 api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
@@ -227,6 +229,40 @@ at = para_mes_anterior(app("RH", ve_todos=True), "fp_r")
 conferir("fp_dep" in [s.key for s in at.selectbox] and "nav_Minha equipe" not in chaves(at), "RH: filtro de departamento, menu RH")
 at = app(erro_pessoas=ApiError("Erro inesperado. Tente novamente.", 500))
 conferir("Erro inesperado" in texto(at) and not at.exception, "erro ao carregar vira alerta")
+
+caso("Superior sem o perfil Gestor (tarefa 83)")
+at = app("COLABORADOR", pessoas=[dict(PESSOAS_GESTOR[0], e_voce=True), PESSOAS_GESTOR[1]])
+conferir("Folha de ponto da equipe" in texto(at) and "nav_Minha equipe" not in chaves(at) and at.session_state["tem_equipe"], "colaborador que é superior: menu Equipe só com a folha (item ativo)")
+at = app("COLABORADOR", "", pessoas=[dict(PESSOAS_GESTOR[0], e_voce=True), PESSOAS_GESTOR[1]])
+conferir("nav_Folha de ponto da equipe" in chaves(at), "colaborador que é superior: o item aparece nas outras telas")
+conferir("Você ainda não tem equipe" not in texto(at), "colaborador que é superior: vê a folha da equipe")
+
+caso("Prazo para pedir correção (tarefa 79)")
+at = app("RH", ve_todos=True, prazo=None)
+conferir("Prazo para o colaborador pedir correção: Sem limite" in texto(at), "RH: mostra o prazo atual")
+at.button(key="fp_prazo_alterar").click()
+at = at.run()
+at.toggle(key="fp_prazo_sem").set_value(False)
+at = at.run()
+at.number_input(key="fp_prazo_dias").set_value(15)
+at.button(key="fp_prazo_salvar").click()
+at = at.run()
+conferir(("prazo", 15) in chamadas and "modal_folha" not in at.session_state, "RH: salva o prazo em dias")
+at = app("RH", ve_todos=True, prazo=15)
+at.button(key="fp_prazo_alterar").click()
+at = at.run()
+at.toggle(key="fp_prazo_sem").set_value(True)
+at.button(key="fp_prazo_salvar").click()
+at = at.run()
+conferir(("prazo", None) in chamadas, "RH: volta para sem limite")
+at = app("RH", ve_todos=True, erro_prazo=ApiError("Prazo invalido.", 400))
+at.button(key="fp_prazo_alterar").click()
+at = at.run()
+at.button(key="fp_prazo_salvar").click()
+at = at.run()
+conferir("Prazo invalido" in texto(at) and "modal_folha" in at.session_state, "recusa do backend no modal, que continua aberto")
+at = app()
+conferir("fp_prazo_alterar" not in chaves(at), "gestor: não altera o prazo")
 
 caso("Superior direto na ficha (Colaboradores)")
 at = app("RH", "colaboradores")

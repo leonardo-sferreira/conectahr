@@ -132,7 +132,7 @@ query "correcoes_ponto/{id}/rejeitar" verb=POST {
     }
 
     conditional {
-      if ($perfil_autenticado == "GESTOR" && $colaborador_autenticado != null && $colaborador_da_correcao.superior_colaborador_id == null) {
+      if ($colaborador_autenticado != null && $colaborador_da_correcao.superior_colaborador_id == null) {
         db.query departamento {
           where = $db.departamento.gestor_colaborador_id == $colaborador_autenticado.id
           return = {type: "single"}

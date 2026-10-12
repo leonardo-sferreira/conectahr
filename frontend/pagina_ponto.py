@@ -23,6 +23,7 @@ from datetime import date, datetime, timezone
 import streamlit as st
 
 from api_client import (
+    prazo_correcao,
     calendario,
     ApiError,
     marcar_ponto,
@@ -52,7 +53,7 @@ from ponto_modelo import (
     valor_solicitado_ms,
 )
 from pagamento_modelo import MESES
-from ponto_mensal_modelo import anos_disponiveis, campos_livres, csv_do_mes, espelho_do_mes, meses_disponiveis, meses_do_ano, resumo_do_mes
+from ponto_mensal_modelo import anos_disponiveis, campos_livres, csv_do_mes, espelho_do_mes, meses_disponiveis, meses_do_ano, resumo_do_mes, texto_prazo, aviso_prazo
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _CACHE = "ponto_cache"
@@ -86,7 +87,11 @@ def _carregar_mes(token: str) -> dict:
     cache = st.session_state.get("ponto_mes_cache")
     if cache and time.time() - cache["em"] < _VALIDADE_CACHE_S:
         return cache["dados"]
-    dados = {"ferias": [], "feriados": [], "admissao": None}
+    dados = {"ferias": [], "feriados": [], "admissao": None, "prazo_dias": None}
+    try:
+        dados["prazo_dias"] = prazo_correcao(token).get("prazo_dias")
+    except ApiError:
+        pass
     try:
         dados["ferias"] = minhas_ferias(token).get("ferias") or []
     except ApiError:
@@ -328,7 +333,7 @@ def pagina_ponto() -> None:
             st.space("stretch")
         ano_mes = (ano, numero_mes)
         linhas_mes = espelho_do_mes(dados["registros"], dados["ausencias"], dados["correcoes"], extra["ferias"], extra["feriados"],
-                                    ano_mes[0], ano_mes[1], hoje_local, extra["admissao"])
+                                    ano_mes[0], ano_mes[1], hoje_local, extra["admissao"], prazo_dias=extra.get("prazo_dias"))
         numeros = resumo_do_mes(linhas_mes)
         render_indicadores([
             ("Horas trabalhadas no mês", numeros["horas"], ""),
@@ -336,7 +341,10 @@ def pagina_ponto() -> None:
             ("Sem registro ou incompletos", str(numeros["sem_registro"]), "ambar"),
             ("Faltas injustificadas", str(numeros["faltas_injustificadas"]), "negativo"),
         ])
-        st.html(f'<p class="crh-meta">Atestados no mês: {numeros["atestados"]} · Correções em análise: {numeros["em_analise"]}</p>')
+        prazo_txt = f' · Prazo para pedir correção: {texto_prazo(extra.get("prazo_dias"))}' if extra.get("prazo_dias") else ""
+        st.html(f'<p class="crh-meta">Atestados no mês: {numeros["atestados"]} · Correções em análise: {numeros["em_analise"]}{prazo_txt}</p>')
+        if aviso := aviso_prazo(linhas_mes, hoje_local, extra.get("prazo_dias")):
+            alerta(st.empty(), "atencao", aviso)
         _espelho(linhas_mes, "Nenhum dia neste mês ainda.")
         with st.container(horizontal=True, vertical_alignment="center"):
             st.html('<p class="crh-meta">Cada dia mostra as quatro marcações, o tempo trabalhado e a situação. Dia sem registro, '

@@ -20,6 +20,7 @@ import streamlit as st
 
 from api_client import (
     ApiError,
+    aprovar_ausencia,
     aprovar_correcao_ponto,
     aprovar_ferias,
     central_de_tarefas,
@@ -30,6 +31,7 @@ from api_client import (
     minhas_pendencias_documento,
     minhas_solicitacoes,
     organograma,
+    rejeitar_ausencia,
     rejeitar_correcao_ponto,
     rejeitar_ferias,
     solicitacoes_rh,
@@ -37,6 +39,7 @@ from api_client import (
 )
 from decisoes_modelo import (
     conferencia_ferias,
+    linhas_ausencias_fila,
     linhas_correcoes,
     linhas_ferias,
     minhas_pendencias,
@@ -50,7 +53,7 @@ DECISORES = ("GESTOR", "RH", "ADMIN")
 _CACHE = "central_cache"
 _CACHE_MINHAS = "central_minhas_cache"
 _VALIDADE_CACHE_S = 20
-_ABAS = ["ferias", "correcoes", "minhas"]
+_ABAS = ["ferias", "correcoes", "ausencias", "minhas"]
 
 
 def _invalidar() -> None:
@@ -171,6 +174,31 @@ def _modal_ferias(linha: dict) -> None:
         _concluir(f"Férias de {linha['pessoa']} {'aprovadas' if aprovar else 'rejeitadas'}. A pessoa recebe o aviso.")
 
 
+@st.dialog("Rejeitar ausência", width="small", on_dismiss=_fechar)
+def _modal_rejeitar_ausencia(linha: dict) -> None:
+    _campos([("Pessoa", linha["pessoa"]), ("Tipo", linha["tipo"]), ("Período", linha["periodo"])])
+    texto = st.text_area("Justificativa (obrigatória)", max_chars=1000, key="central_aus_motivo", height=90,
+                         help="Não escreva diagnóstico nem código CID: o diagnóstico fica só no atestado, com o RH.")
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A pessoa recebe a justificativa. O comprovante é visto só pelo RH.</p></div>')
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Voltar", key="central_aus_voltar"):
+            _fechar()
+            st.rerun()
+        if st.button("Rejeitar ausência", type="primary", key="aus_rej_ok"):
+            erro_campo = validar_motivo(texto)
+            if erro_campo:
+                alerta(slot, "erro", erro_campo)
+                return
+            try:
+                rejeitar_ausencia(st.session_state.token, linha["id"], texto.strip())
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            st.session_state.pop("central_aus_motivo", None)
+            _concluir(f"Ausência de {linha['pessoa']} rejeitada. A pessoa vê a justificativa.")
+
+
 @st.dialog("Rejeitar correção de ponto", width="small", on_dismiss=_fechar)
 def _modal_rejeitar_correcao(linha: dict) -> None:
     _campos([("Pessoa", linha["pessoa"]), ("Campo", f"{linha['campo']} · pedido {linha['horario']}"), ("Dia", linha["dia"])])
@@ -273,6 +301,39 @@ def _tabela_correcoes(linhas: list[dict], token: str) -> None:
                             st.rerun()
 
 
+def _tabela_ausencias(linhas: list[dict], token: str) -> None:
+    pesos = [2.8, 1.4, 2.2, 3]
+    with st.container(key="rh_tabela"):
+        with st.container(key="rh_cab"):
+            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Pessoa", "Tipo", "Período", ""]):
+                coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
+        if not linhas:
+            _vazio("Nenhuma ausência para decidir.")
+        for i, l in enumerate(linhas):
+            with st.container(key=f"rh_linf_{i}"):
+                c = st.columns(pesos, vertical_alignment="center")
+                _pessoa(c[0], l["pessoa"], l["detalhe"])
+                _texto(c[1], l["tipo"])
+                _texto(c[2], l["periodo"])
+                with c[3]:
+                    if l["proprio"]:
+                        st.html('<p class="crh-meta">Sua ausência: outra pessoa decide</p>')
+                        continue
+                    with st.container(horizontal=True, gap="small"):
+                        if st.button("Rejeitar", type="tertiary", key=f"rh_recusar_aus_c_{l['id']}"):
+                            st.session_state.modal_central = ("rejeitar_ausencia", l["id"])
+                            st.rerun()
+                        if st.button("Aprovar", type="tertiary", key=f"central_aus_aprovar_{l['id']}"):
+                            try:
+                                aprovar_ausencia(token, l["id"])
+                            except ApiError as erro:
+                                st.session_state.central_erro = erro.message
+                                st.rerun()
+                            _invalidar()
+                            st.session_state.aviso_toast = f"Ausência de {l['pessoa']} aprovada. O RH registra."
+                            st.rerun()
+
+
 def _minhas(token: str, central: dict | None) -> None:
     with st.spinner("Carregando..."):
         dados = _carregar_minhas(token, central)
@@ -301,12 +362,19 @@ def pagina_central() -> None:
         st.toast(aviso)
     perfil = str(usuario.get("perfil", "")).upper()
 
+    # Quem decide (tarefa 83): RH, Admin e Gestor, e também quem é superior direto de alguém, de qualquer perfil.
+    central_leve = None
     if perfil not in DECISORES:
-        render_hero("Central de Pendências", "Suas solicitações, férias, ausências e documentos pendentes em um só lugar.")
-        _minhas(token, None)
-        return
+        try:
+            central_leve = central_de_tarefas(token)
+        except ApiError:
+            central_leve = None
+        if not (central_leve or {}).get("e_superior"):
+            render_hero("Central de Pendências", "Suas solicitações, férias, ausências e documentos pendentes em um só lugar.")
+            _minhas(token, central_leve)
+            return
 
-    render_hero("Central de Pendências", "Pedidos da sua equipe para decidir. O Gestor vê só o próprio departamento; RH e Admin veem todos.")
+    render_hero("Central de Pendências", "Pedidos da sua equipe para decidir: quem tem você como superior direto (ou, sem superior, o departamento que você gerencia). RH e Admin veem todos.")
     with st.spinner("Carregando..."):
         try:
             dados, erro = _carregar_filas(token), None
@@ -319,14 +387,16 @@ def pagina_central() -> None:
     central = dados["central"]
     mapa = pessoas(dados["organograma"])
     fila_ferias = central.get("fila_ferias_pendentes") or []
+    fila_ausencias = central.get("fila_ausencias_pendentes") or []
     render_indicadores([
         ("Férias para decidir", str(len(fila_ferias)), "ambar"),
         ("Correções de ponto", str(len(dados["correcoes"])), "azul"),
+        ("Ausências para decidir", str(len(fila_ausencias)), "negativo"),
         ("Documentos para conferir", str(len(central.get("fila_documentos_pendentes") or [])), "verde"),
-        ("Desligamentos para decidir", str(len(central.get("fila_desligamentos_pendentes") or [])), ""),
     ])
 
-    rotulos = {"ferias": f"Férias ({len(fila_ferias)})", "correcoes": f"Correções de ponto ({len(dados['correcoes'])})", "minhas": "Minhas pendências"}
+    rotulos = {"ferias": f"Férias ({len(fila_ferias)})", "correcoes": f"Correções de ponto ({len(dados['correcoes'])})",
+               "ausencias": f"Ausências ({len(fila_ausencias)})", "minhas": "Minhas pendências"}
     with st.container(horizontal=True, vertical_alignment="center", key="rh_barra"):
         with st.container(key="cfg_abas", width="content"):
             aba = st.segmented_control("Aba", _ABAS, default="ferias", required=True, format_func=rotulos.get, key="central_aba", label_visibility="collapsed")
@@ -359,6 +429,9 @@ def pagina_central() -> None:
             alerta(st.empty(), "erro", dados["erro_correcoes"])
         _tabela_correcoes(linhas_correcoes(dados["correcoes"], mapa, meu, departamento), token)
         st.html('<p class="crh-meta">Aprovar troca o horário no registro do dia e recalcula o banco de horas. Rejeitar exige motivo. Ninguém decide a própria correção.</p>')
+    elif aba == "ausencias":
+        _tabela_ausencias(linhas_ausencias_fila(fila_ausencias, mapa, meu, departamento), token)
+        st.html('<p class="crh-meta">Aqui aparecem só o tipo e o período: o comprovante (atestado) é visto só pelo RH. Depois de aprovada, o RH registra a ausência. Rejeitar exige justificativa.</p>')
     else:
         _minhas(token, central)
 
@@ -372,6 +445,12 @@ def pagina_central() -> None:
             _fechar()  # o pedido saiu da fila desde que a linha foi desenhada
             return
         _modal_ferias(linha)
+    elif acao == "rejeitar_ausencia":
+        linha = next((l for l in linhas_ausencias_fila(fila_ausencias, mapa, meu) if l["id"] == item_id and not l["proprio"]), None)
+        if linha is None:
+            _fechar()
+            return
+        _modal_rejeitar_ausencia(linha)
     elif acao == "rejeitar_correcao":
         linha = next((l for l in linhas_correcoes(dados["correcoes"], mapa, meu) if l["id"] == item_id and not l["proprio"]), None)
         if linha is None:

@@ -20,7 +20,7 @@ Dias futuros não aparecem. Os meses vão do primeiro ponto registrado até hoje
 import calendar
 import csv
 import io
-from datetime import date
+from datetime import date, timedelta
 
 from onboarding_modelo import data_br
 from pagamento_modelo import MESES
@@ -76,10 +76,11 @@ def _cobre(item: dict, d: date) -> bool:
 
 
 def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list[dict], ferias: list[dict], feriados: list[dict],
-                   ano: int, mes: int, hoje: date, admissao=None, inicio: date | None = None) -> list[dict]:
+                   ano: int, mes: int, hoje: date, admissao=None, inicio: date | None = None, prazo_dias: int | None = None) -> list[dict]:
     """Uma linha por dia: {'dia', 'data', 'marcas', 'trabalhado', 'horas', 'status', 'tom', 'registro_id', 'acao', 'nota',
     'pendentes'}. `acao`: 'corrigir' (há registro), 'corrigir_dia' (dia passado sem registro) ou None."""
     # `inicio`: quando os registros são só do mês (folha da equipe), a data do primeiro ponto vem de fora.
+    # `prazo_dias` (tarefa 79): prazo do RH para o colaborador pedir correção; o backend recusa fora dele. Vazio = sem limite.
     inicio_valido = inicio or primeiro_dia(admissao, registros)
     por_dia = {_dia(r.get("data")): r for r in registros if _dia(r.get("data"))}
     feriados_nac = {_dia(f.get("data")): f.get("nome") or "Feriado" for f in feriados
@@ -143,7 +144,44 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
         else:
             linhas.append(dict(base, status="SEM REGISTRO", tom="err", acao="corrigir_dia",
                                nota="Esqueceu de marcar? Peça a correção. Faltou? Registre a ausência."))
+    return aplicar_prazo(linhas, hoje, prazo_dias)
+
+
+NOTA_PRAZO = "Fora do prazo para pedir correção."
+
+
+def limite_prazo(hoje: date, prazo_dias: int | None) -> date | None:
+    """Primeiro dia que ainda aceita pedido de correção (o backend compara a data com hoje − prazo)."""
+    if not prazo_dias or prazo_dias <= 0:
+        return None
+    return hoje - timedelta(days=int(prazo_dias))
+
+
+def aplicar_prazo(linhas: list[dict], hoje: date, prazo_dias: int | None) -> list[dict]:
+    """Tira a ação de corrigir dos dias fora do prazo e explica o porquê. Pedidos já em análise continuam visíveis."""
+    limite = limite_prazo(hoje, prazo_dias)
+    if limite is None:
+        return linhas
+    for l in linhas:  # o aviso completo (gestor ou RH ajustam) fica acima da tabela: aviso_prazo()
+        if l["acao"] and l["data"] < limite:
+            l["acao"] = None
+            l["nota"] = f'{l["nota"]} · {NOTA_PRAZO}' if l["nota"] and not l["nota"].startswith(("Esqueceu", "Mês encerrado")) else NOTA_PRAZO
     return linhas
+
+
+def aviso_prazo(linhas: list[dict], hoje: date, prazo_dias: int | None) -> str:
+    """Aviso acima do espelho quando algum dia do mês já passou do prazo; vazio quando não há."""
+    limite = limite_prazo(hoje, prazo_dias)
+    if limite is None or not any(l["data"] < limite for l in linhas):
+        return ""
+    return (f"Dias antes de {data_br(limite.isoformat())} passaram do prazo de {texto_prazo(prazo_dias)} para pedir correção. "
+            "Se algo estiver errado, fale com o seu gestor ou com o RH, que podem ajustar.")
+
+
+def texto_prazo(prazo_dias: int | None) -> str:
+    if not prazo_dias:
+        return "Sem limite"
+    return f"{prazo_dias} dia{'s' if prazo_dias != 1 else ''}"
 
 
 def resumo_do_mes(linhas: list[dict]) -> dict:

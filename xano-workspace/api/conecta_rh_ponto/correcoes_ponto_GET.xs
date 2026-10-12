@@ -58,10 +58,7 @@ query correcoes_ponto verb=GET {
       value = $usuario_autenticado.perfil|trim|to_upper
     }
 
-    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || $perfil_autenticado == "GESTOR") {
-      error_type = "accessdenied"
-      error = "Voce nao tem permissao para consultar correcoes de ponto."
-    }
+    // Qualquer perfil: RH e Admin veem todas; os demais, so as da propria equipe (tarefa 83).
 
     db.query correcao_ponto {
       where = $db.correcao_ponto.status == "pendente"
@@ -80,7 +77,7 @@ query correcoes_ponto verb=GET {
     }
 
     conditional {
-      if ($perfil_autenticado == "GESTOR" && $colaborador_autenticado != null) {
+      if ($colaborador_autenticado != null) {
         db.query departamento {
           where = $db.departamento.gestor_colaborador_id == $colaborador_autenticado.id
           return = {type: "single"}
@@ -102,7 +99,7 @@ query correcoes_ponto verb=GET {
 
     conditional {
       // Sem departamento gerenciado, o Gestor nao ve fila nenhuma (antes caia em "ve tudo").
-      if ($departamento_escopo_id == null && $perfil_autenticado != "GESTOR") {
+      if ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
         var.update $correcoes_no_escopo {
           value = $correcoes_pendentes
         }
@@ -112,7 +109,7 @@ query correcoes_ponto verb=GET {
     // Gestor (tarefa 81): as correcoes de quem tem ele como superior direto e, de quem nao
     // tem superior, as do departamento que ele gerencia. Nunca as proprias.
     conditional {
-      if ($perfil_autenticado == "GESTOR" && $colaborador_autenticado != null) {
+      if ($perfil_autenticado != "RH" && $perfil_autenticado != "ADMIN" && $colaborador_autenticado != null) {
         foreach ($correcoes_pendentes) {
           each as $correcao_item {
             db.get colaborador {
