@@ -95,8 +95,9 @@ Figma:
 | `7-hoje-escuro` e `8-mes-escuro` | 468:1458 |
 | `9-folha-ajuste` | ajuste direto como tratamento |
 
-## Depois do merge
+## Endpoints antigos desativados
 
-Os endpoints antigos `ponto/{id}/solicitar_correcao`, `ponto/solicitar_correcao_dia` e `folha_ponto/ajustar` ainda
-estão ativos, porque o app publicado ainda os usa até este frontend entrar no ar. Depois do deploy, eles devem
-passar a recusar o pedido e indicar os novos.
+Desde 12/10/2026, `ponto/{id}/solicitar_correcao`, `ponto/solicitar_correcao_dia` e `folha_ponto/ajustar` só
+recusam o pedido (400) e indicam o caminho novo (`ponto/correcao` e `folha_ponto/tratar`). Eles gravavam o horário
+direto no registro do dia, sem passar pela ARP, o que o REP-P não permite. Até este frontend ir ao ar, o app publicado
+mostra essa mensagem a quem tentar pedir correção pela tela antiga.
