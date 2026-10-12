@@ -111,7 +111,7 @@ def _modal_ajustar(pessoa: dict, linha: dict) -> None:
                 return
             try:
                 tratar_ponto(st.session_state.token, pessoa["id"], linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=marcacao_id,
-                             data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo == "inclusao" else None)
+                             data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo != "desconsideracao" else None)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return

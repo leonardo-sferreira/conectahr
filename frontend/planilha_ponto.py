@@ -9,7 +9,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, tem_saldo, valores_ajuste
+from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, tem_saldo, texto_opcao_marcacao, valores_ajuste
 from ponto_modelo import TIPOS_PEDIDO
 from theme import estilo_planilha_ponto
 
@@ -59,18 +59,20 @@ def resumo_do_dia(linha: dict) -> None:
 
 
 def formulario_pedido(linha: dict, prefixo: str) -> tuple:
-    """Campos do pedido (ou do ajuste): (tipo, horário, marcacao_id, motivo). A desconsideração só oferece as marcações
-    originais que ainda não estão em análise; sem nenhuma, só a inclusão."""
-    opcoes_desc = desconsideraveis(linha)
-    tipos = list(TIPOS_PEDIDO) if opcoes_desc else ["inclusao"]
+    """Campos do pedido (ou do ajuste): (tipo, horário, marcacao_id, motivo). Corrigir o horário e desconsiderar só
+    oferecem as marcações originais que ainda não estão em análise, com o papel no dia; sem nenhuma, só a inclusão."""
+    opcoes = desconsideraveis(linha)
+    tipos = list(TIPOS_PEDIDO) if opcoes else ["inclusao"]
     tipo = st.radio("O que precisa ser corrigido?", tipos, format_func=TIPOS_PEDIDO.get, key=f"{prefixo}_tipo")
     horario = marcacao_id = None
-    if tipo == "inclusao":
-        horario = st.time_input("Horário da marcação que faltou", value=None, step=60, key=f"{prefixo}_hora")
-    else:
-        por_id = {b["marcacao_id"]: b for b in opcoes_desc}
-        marcacao_id = st.selectbox("Marcação a desconsiderar", list(por_id), index=None, placeholder="Escolha a marcação", key=f"{prefixo}_marcacao",
-                                   format_func=lambda i: f"{por_id[i]['hora']} · NSR {str(por_id[i]['nsr'] or '').rjust(9, '0')}")
+    if tipo != "inclusao":
+        por_id = {b["marcacao_id"]: b for b in opcoes}
+        rotulo = "Marcação a corrigir" if tipo == "alteracao" else "Marcação a desconsiderar"
+        marcacao_id = st.selectbox(rotulo, list(por_id), index=None, placeholder="Escolha a marcação", key=f"{prefixo}_marcacao",
+                                   format_func=lambda i: texto_opcao_marcacao(linha, por_id[i]))
+    if tipo != "desconsideracao":
+        rotulo = "Horário certo" if tipo == "alteracao" else "Horário da marcação que faltou"
+        horario = st.time_input(rotulo, value=None, step=60, key=f"{prefixo}_hora")
     motivo = st.text_area("Motivo", max_chars=150, key=f"{prefixo}_motivo", height=80)
     return tipo, horario, marcacao_id, motivo
 

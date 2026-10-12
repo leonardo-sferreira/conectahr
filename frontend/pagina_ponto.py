@@ -145,6 +145,9 @@ def _modal_pedido(linha: dict) -> None:
     if tipo == "inclusao":
         nota = ("A marcação original nunca é alterada. Aprovada, a correção vira um tratamento com o seu motivo e aparece na "
                 "planilha como (I). Quem decide é o seu superior ou o RH.")
+    elif tipo == "alteracao":
+        nota = ("A marcação original continua gravada e no comprovante. Aprovada, ela aparece como (D) e o horário certo entra "
+                "como (I). Quem decide é o seu superior ou o RH.")
     else:
         nota = "A marcação continua gravada e no comprovante. Aprovada, ela aparece como (D) e deixa de contar nas horas."
     st.html(f'<div class="crh-incluso"><p class="n" style="margin:0">{html.escape(nota)}</p></div>')
@@ -160,7 +163,7 @@ def _modal_pedido(linha: dict) -> None:
                 return
             try:
                 pedir_correcao_ponto(st.session_state.token, linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=marcacao_id,
-                                     data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo == "inclusao" else None)
+                                     data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo != "desconsideracao" else None)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return

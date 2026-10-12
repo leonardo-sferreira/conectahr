@@ -27,7 +27,7 @@ from datetime import date, datetime, timedelta
 from comprovante_ponto import formatar_cnpj, formatar_cpf, formatar_nsr
 from onboarding_modelo import data_br
 from pagamento_modelo import MESES
-from ponto_modelo import _DIAS_LONGOS, MARCACOES, ROTULO_CAMPO, TIPOS_AUSENCIA, hora, hora_gravada, horas_trabalhadas, para_brasilia
+from ponto_modelo import _DIAS_LONGOS, MARCACOES, ROTULO_CAMPO, TIPOS_AUSENCIA, hora, hora_gravada, horas_trabalhadas, para_brasilia, rotulo_marcacao
 
 SEMANA = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 CAMPOS = [c for c, _ in MARCACOES]
@@ -140,6 +140,10 @@ def descricao_pedido(c: dict, marcacoes_por_id: dict) -> str:
     if c.get("tipo") == "desconsideracao":
         mc = marcacoes_por_id.get(c.get("marcacao_id"))
         return f"desconsiderar {hora_gravada(mc)}" if mc else "desconsiderar uma marcação"
+    if c.get("tipo") == "alteracao":
+        mc = marcacoes_por_id.get(c.get("marcacao_id"))
+        original = hora_gravada(mc) if mc else hora(c.get("valor_original")) or "uma marcação"
+        return f"corrigir {original} para {hora(c.get('valor_solicitado')) or 'outro horário'}"
     return ROTULO_CAMPO.get(c.get("campo"), "marcação")
 
 
@@ -382,9 +386,15 @@ def resumo_do_mes(linhas: list[dict]) -> dict:
 
 
 def desconsideraveis(linha: dict) -> list[dict]:
-    """As marcações originais do dia que ainda podem ser desconsideradas (sem pedido em análise para elas)."""
-    em_analise = {c.get("marcacao_id") for c in linha.get("pendentes", []) if c.get("tipo") == "desconsideracao"}
+    """As marcações originais do dia que ainda podem ser desconsideradas ou corrigidas (sem pedido em análise para elas)."""
+    em_analise = {c.get("marcacao_id") for c in linha.get("pendentes", []) if c.get("tipo") in ("desconsideracao", "alteracao")}
     return [b for b in linha["batidas"] if not b["incluida"] and b["marcacao_id"] and b["marcacao_id"] not in em_analise]
+
+
+def texto_opcao_marcacao(linha: dict, batida: dict) -> str:
+    """A marcação na lista do pedido, com o papel no dia: "Entrada · 08:15 · NSR 000001231"."""
+    indice = linha["batidas"].index(batida) if batida in linha["batidas"] else 0
+    return f"{rotulo_marcacao(indice, len(linha['batidas']))} · {batida['hora']} · NSR {str(batida['nsr'] or '').rjust(9, '0')}"
 
 
 def dia_longo(d: date, com_ano: bool = True) -> str:

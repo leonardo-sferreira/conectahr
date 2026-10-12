@@ -203,6 +203,11 @@ conferir((lr[0]["campo"], lr[0]["dia"], lr[0]["horario"]) == ("Incluir marcaçã
          "correção no REP-P: incluir ou desconsiderar, com o dia e o horário")
 itens_rep = {s["titulo"]: s["itens"] for s in m.minhas_pendencias({}, [], [], [], [], rep_p, HOJE)}["Ponto"]
 conferir([i["titulo"] for i in itens_rep] == ["Correção de ponto — sexta-feira, 09/10", "Correção de ponto — quarta-feira, 07/10"], "minhas pendências: correções do REP-P com o dia")
+alt = [{"id": 3, "colaborador_id": 9, "tipo": "alteracao", "marcacao_id": 5, "valor_original": "2026-10-07T11:15:00Z", "valor_solicitado": "2026-10-07T11:00:00Z", "status": "pendente"}]
+la = m.linhas_correcoes(alt, mapa, None)[0]
+conferir((la["campo"], la["horario"], la["original"]) == ("Corrigir horário", "08:00", "08:15"), "corrigir horário na fila de decisão: o novo horário e o de antes")
+item_alt = {s["titulo"]: s["itens"] for s in m.minhas_pendencias({}, [], [], [], [], alt, HOJE)}["Ponto"][0]
+conferir("Corrigir horário de 08:15 para 08:00" in str(item_alt), f"minhas pendências: corrigir de X para Y ({item_alt})")
 conf = {"antecedencia_dias": 148, "periodo_aquisitivo_cumprido": True, "ferias_sobrepostas": [], "ausencias_sobrepostas": [], "colegas_de_ferias_no_periodo": [{}], "tamanho_equipe": 4}
 conferir(" · ".join(m.conferencia_ferias(conf)) == "Antecedência de 148 dias · período aquisitivo cumprido · sem sobreposição com férias ou ausências · 1 de 4 colegas do departamento de férias no período", "conferência de conflitos em frases")
 conferir(not m.tem_alerta(conf) and m.tem_alerta(dict(conf, ferias_sobrepostas=[{}])) and m.tem_alerta(dict(conf, periodo_aquisitivo_cumprido=False)), "alerta só com sobreposição ou período não cumprido")

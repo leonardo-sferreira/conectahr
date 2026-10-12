@@ -11,7 +11,7 @@ query "ponto/correcao" verb=POST {
   input {
     date data
     enum tipo {
-      values = ["inclusao", "desconsideracao"]
+      values = ["inclusao", "desconsideracao", "alteracao"]
     }
 
     int? marcacao_id?
@@ -124,13 +124,13 @@ query "ponto/correcao" verb=POST {
       }
     }
 
-    // Desconsideracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
+    // Desconsideracao e alteracao: o horario da marcacao fica em valor_original, para quem decide ver o dia e a hora.
     var $momento_original {
       value = null
     }
 
     conditional {
-      if ($input.tipo == "desconsideracao") {
+      if ($input.tipo != "inclusao") {
         db.get marcacao_ponto {
           field_name = "id"
           field_value = $input.marcacao_id
@@ -148,7 +148,7 @@ query "ponto/correcao" verb=POST {
         colaborador_id   : $colaborador_autenticado.id
         tipo             : $input.tipo
         marcacao_id      : $input.marcacao_id
-        valor_solicitado : ($input.tipo == "inclusao" ? $input.data_hora : null)
+        valor_solicitado : ($input.tipo != "desconsideracao" ? $input.data_hora : null)
         valor_original   : $momento_original
         justificativa    : $input.justificativa
         status           : "pendente"

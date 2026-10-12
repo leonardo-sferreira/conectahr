@@ -123,6 +123,10 @@ O usuário pediu bloquear a marcação dentro do descanso. O art. 74 proíbe res
 - Só segunda a sexta: o sábado de quem tem 44 horas semanais fica fora (decisão do usuário em 12/10/2026). O saldo não vai para o banco de horas.
 - **Resumo (decisão do usuário, 12/10/2026):** no lugar de um saldo único, "Horas positivas" (soma dos dias com saldo positivo) e "Horas negativas" (soma dos negativos), lado a lado; o cartão "Atestados" saiu, porque a planilha já mostra cada atestado. A coluna Data traz a data completa (dd/mm/aaaa).
 
+### D16. Corrigir o horário de uma marcação (12/10/2026)
+
+Pedido do usuário: o colaborador escolhe a marcação que quer corrigir (a lista mostra o papel no dia, "Entrada · 08:15 · NSR") e informa o horário certo, num pedido só. Novo tipo `alteracao` em `correcao_ponto` (`marcacao_id` + `valor_solicitado`; `valor_original` guarda o horário de antes). `ConectaHR/validar_tratamento` aplica as regras das duas pontas. Aprovado (`correcoes_ponto/{id}/aprovar`) ou feito como ajuste direto (`folha_ponto/tratar`), vira dois tratamentos ligados ao mesmo pedido: a desconsideração da original e a inclusão do horário certo. A marcação original continua na ARP (art. 82); `tratamento_ponto` não ganhou tipo novo. Figma: "Modal/Corrigir horário" 477:848 (escuro 477:1167).
+
 ### D15. O dia de hoje não se corrige (12/10/2026)
 
 Decisão do usuário: o dia ainda em andamento não recebe pedido de correção nem ajuste direto; o ajuste do dia 12 vale a partir do dia 13. `ponto/correcao` e `folha_ponto/tratar` recusam `dia >= hoje` (data de Brasília) com "O dia de hoje ainda está em andamento. A correção pode ser pedida a partir de amanhã."; a planilha não mostra a caixa "Ajuste" no dia de hoje.

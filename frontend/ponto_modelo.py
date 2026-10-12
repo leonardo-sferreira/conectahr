@@ -176,16 +176,24 @@ def comprovantes_recentes(marcacoes: list[dict], agora: datetime | None = None, 
     return saida
 
 
-TIPOS_PEDIDO = {"inclusao": "Incluir uma marcação que faltou", "desconsideracao": "Desconsiderar uma marcação feita por engano"}
+# "alteracao" (12/10/2026, pedido do usuário): corrigir o horário de uma marcação num pedido só; aprovado, a original
+# vira (D) e o horário certo entra como (I).
+TIPOS_PEDIDO = {"inclusao": "Incluir uma marcação que faltou", "alteracao": "Corrigir o horário de uma marcação",
+                "desconsideracao": "Desconsiderar uma marcação feita por engano"}
 
 
 def validar_pedido(tipo: str | None, horario: time | None, marcacao_id: int | None, motivo: str) -> str | None:
-    """Pedido de correção (ou ajuste direto) no REP-P: inclusão com horário, desconsideração com a marcação, e o motivo
+    """Pedido de correção (ou ajuste direto) no REP-P: inclusão com horário, desconsideração com a marcação, alteração com
+    as duas, e o motivo
     de 5 a 150 caracteres (art. 82: todo tratamento tem motivo)."""
     if tipo not in TIPOS_PEDIDO:
         return "Escolha o que precisa ser corrigido."
     if tipo == "inclusao" and horario is None:
         return "Informe o horário da marcação que faltou."
+    if tipo == "alteracao" and not marcacao_id:
+        return "Escolha a marcação a corrigir."
+    if tipo == "alteracao" and horario is None:
+        return "Informe o horário certo da marcação."
     if tipo == "desconsideracao" and not marcacao_id:
         return "Escolha a marcação a desconsiderar."
     texto = (motivo or "").strip()

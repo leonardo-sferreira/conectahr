@@ -328,6 +328,33 @@ at.text_area(key="pt_ped_motivo").set_value("Marquei duas vezes.")
 at.button(key="pt_ped_enviar").click()
 at = at.run()
 conferir(("pedido", D_REG.isoformat(), "desconsideracao", "Marquei duas vezes.", 500, None) in chamadas, "envia a marcação a desconsiderar")
+
+caso("Tela: corrigir o horário de uma marcação (Figma 477:848)")
+at = pedir(app(), IDX_REG)
+conferir(at.radio(key="pt_ped_tipo").options == ["Incluir uma marcação que faltou", "Corrigir o horário de uma marcação", "Desconsiderar uma marcação feita por engano"],
+         "três opções: incluir, corrigir o horário e desconsiderar")
+at.radio(key="pt_ped_tipo").set_value("alteracao")
+at = at.run()
+opcoes = at.selectbox(key="pt_ped_marcacao").options
+conferir(opcoes[0].startswith("Entrada · 08:00 · NSR") and opcoes[1].startswith("Saída para o almoço · 12:00"), f"a marcação com o papel no dia, para escolher qualquer uma ({opcoes[:2]})")
+at.button(key="pt_ped_enviar").click()
+at = at.run()
+conferir("Escolha a marcação a corrigir." in texto(at) and not any(c[0] == "pedido" for c in chamadas), "sem a marcação: não envia")
+at.selectbox(key="pt_ped_marcacao").set_value(500)
+at.text_area(key="pt_ped_motivo").set_value("Cheguei às 7h45, marquei atrasado.")
+at.button(key="pt_ped_enviar").click()
+at = at.run()
+conferir("Informe o horário certo da marcação." in texto(at) and not any(c[0] == "pedido" for c in chamadas), "sem o horário certo: não envia")
+at.time_input(key="pt_ped_hora").set_value(time(7, 45))
+at.button(key="pt_ped_enviar").click()
+at = at.run()
+conferir(("pedido", D_REG.isoformat(), "alteracao", "Cheguei às 7h45, marquei atrasado.", 500, ms(D_REG, 7, 45)) in chamadas,
+         "envia a marcação escolhida (a entrada, não a última) e o horário certo")
+mcs = {500: {"id": 500, "data_hora_marcacao": ms(D_REG, 8)}}
+conferir(m.descricao_pedido({"tipo": "alteracao", "marcacao_id": 500, "valor_solicitado": ms(D_REG, 7, 45)}, mcs) == "corrigir 08:00 para 07:45", "pedido em análise: corrigir X para Y")
+pend = dict(m.espelho_do_mes([reg(1, D_REG)], [], [], [], [], D_REG.year, D_REG.month, D_REG + timedelta(days=1), D_REG.isoformat(), marcacoes=MARC_REG)[D_REG.day - 1],
+            pendentes=[{"tipo": "alteracao", "marcacao_id": 500}])
+conferir(500 not in [b["marcacao_id"] for b in m.desconsideraveis(pend)], "marcação com pedido de correção de horário em análise sai da lista")
 at = pedir(app(erro_pedido=ApiError("O prazo para pedir correcao deste dia acabou.", 400)), IDX_SEM)
 at.time_input(key="pt_ped_hora").set_value(time(17, 0))
 at.text_area(key="pt_ped_motivo").set_value("Saí às 17h.")
