@@ -30,6 +30,8 @@ table regra_contrato {
     int? antecedencia_ferias
     // Maximo de dias que podem ser vendidos por periodo aquisitivo (CLT: 10).
     int? maximo_abono
+    // Descanso minimo entre jornadas, em minutos (CLT, art. 66: 660). Vazio = 660 quando ha jornada.
+    int? descanso_minimo_minutos
     bool? permite_solicitacao_ferias
     date data_inicio
     date? data_fim
