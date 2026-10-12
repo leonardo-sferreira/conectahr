@@ -25,6 +25,8 @@ table colaborador_beneficio {
     date? data_fim
     text? observacao filters=trim|max:500
     bool ativo?=true
+    // true quando o RH mudou o valor so desta pessoa (tarefa 85); "alterar para todos" pode manter.
+    bool valor_personalizado?=false
     int? criado_por_user_id {
       table = "user"
     }

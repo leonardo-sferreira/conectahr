@@ -8,6 +8,8 @@ query beneficios verb=POST {
     text tipo filters=trim
     text? operadora? filters=trim|max:100
     text? descricao? filters=trim|max:500
+    decimal? valor_empresa_padrao? filters=min:0
+    decimal? desconto_padrao? filters=min:0
   }
 
   stack {
@@ -87,6 +89,8 @@ query beneficios verb=POST {
         tipo              : $input.tipo
         operadora         : $input.operadora
         descricao         : $input.descricao
+        valor_empresa_padrao: ($input.valor_empresa_padrao != null ? $input.valor_empresa_padrao : 0)
+        desconto_padrao     : ($input.desconto_padrao != null ? $input.desconto_padrao : 0)
         ativo             : true
         criado_por_user_id: $usuario_autenticado.id
         updated_at        : "now"

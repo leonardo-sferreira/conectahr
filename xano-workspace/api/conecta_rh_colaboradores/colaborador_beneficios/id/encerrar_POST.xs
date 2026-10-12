@@ -92,6 +92,31 @@ query "colaborador_beneficios/{id}/encerrar" verb=POST {
       data = {data_fim: $input.data_fim, ativo: false, observacao: ($input.observacao != null ? $input.observacao : $vinculo.observacao), encerrado_por_user_id: $usuario_autenticado.id, updated_at: "now"}
     } as $vinculo_encerrado
 
+    db.get beneficio {
+      field_name = "id"
+      field_value = $vinculo.beneficio_id
+    } as $beneficio_encerrado
+
+    db.get colaborador {
+      field_name = "id"
+      field_value = $vinculo.colaborador_id
+    } as $pessoa_aviso
+
+    conditional {
+      if ($pessoa_aviso != null && $pessoa_aviso.user_id != null) {
+        db.add notificacao_interna {
+          data = {
+            destinatario_user_id: $pessoa_aviso.user_id
+            tipo                : "beneficio_atualizado"
+            titulo              : "Seu beneficio " ~ ($beneficio_encerrado != null ? $beneficio_encerrado.nome : "") ~ " foi encerrado"
+            mensagem            : "O beneficio vale ate " ~ ($input.data_fim|to_text) ~ " e fica no seu historico. Duvidas: fale com o RH."
+            recurso             : "beneficio"
+            registro_id         : $vinculo.beneficio_id
+          }
+        } as $aviso_beneficio
+      }
+    }
+
     db.add auditoria {
       data = {
         user_id    : $usuario_autenticado.id
