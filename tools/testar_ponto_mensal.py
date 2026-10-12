@@ -88,7 +88,7 @@ conferir(abs(m.horas_dos_pares(validas[:4]) - (3 + 59 / 60 + 4.5)) < 1e-9, "hora
 caso("Situação de cada dia (outubro de 2026, hoje = 15/10)")
 H = date(2026, 10, 15)
 d = lambda n: date(2026, 10, n)  # noqa: E731
-marcacoes = jornada(10, d(1)) + jornada(20, d(2))[:3] + jornada(130, d(13)) + jornada(140, d(14)) + jornada(150, d(15))[:3]
+marcacoes = jornada(10, d(1)) + jornada(20, d(2))[:3] + jornada(130, d(13)) + jornada(140, d(14))[:3] + jornada(150, d(15))[:3]
 tratamentos = [{"id": 9, "data": d(14).isoformat(), "tipo": "inclusao", "data_hora": ms(d(14), 18, 5), "motivo": "Ficou até mais tarde"}]
 regs = [reg(1, d(1)), reg(2, d(2), "Incompleto", 4), reg(13, d(13)), reg(14, d(14), "Ajustado", 9.08), reg(15, d(15), "Aberto", 4)]
 aus = [{"tipo": "Atestado", "data_inicio": "2026-10-06", "data_fim": "2026-10-06", "status": "Aprovada"},
@@ -117,6 +117,14 @@ conferir(por[13]["nota"] == "Em análise: desconsiderar 13:00" and [b["hora"] fo
 conferir(por[14]["situacao"] == "AJUSTADO" and por[14]["batidas"][-1]["incluida"] and "Correção recusada (inclusão de 07:50): Não confere com a portaria." == por[14]["nota"],
          "dia ajustado com a incluída; o motivo da recusa aparece")
 conferir(por[15]["situacao"] == "HOJE · em jornada" and por[15]["acao"] is None, "hoje em jornada, sem correção")
+D11 = date(2026, 10, 11)
+impar = m.espelho_do_mes([reg(11, D11, "Ajustado", 9)], [], [], [], [], 2026, 10, H, "2026-10-01",
+                         marcacoes=[mc(900, D11, 18, 3)],
+                         tratamentos=[{"id": 31, "data": D11.isoformat(), "tipo": "inclusao", "data_hora": ms(D11, 9, 0), "motivo": "Entrada"},
+                                      {"id": 32, "data": D11.isoformat(), "tipo": "inclusao", "data_hora": ms(D11, 18, 0), "motivo": "Saida"}])[10]
+conferir(impar["status"] == "INCOMPLETO" and impar["situacao"] == "INCOMPLETO · corrigir" and impar["acao"] == "corrigir"
+         and [m.texto_batida(b) for b in impar["batidas"]] == ["09:00 (I)", "18:00 (I)", "18:03"],
+         "tratamento com marcação sem par: INCOMPLETO, mesmo gravado como Ajustado")
 so_feri = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], feri, 2026, 10, date(2026, 10, 31), "2026-10-01", marcacoes=[])}
 conferir(so_feri[28]["situacao"] == "Ponto facultativo — Dia do Servidor Público" and so_feri[28]["status"] != "SEM REGISTRO", "ponto facultativo pelo tipo, sem falta")
 so_sem = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 10, H, "2026-10-01", marcacoes=[])}
@@ -136,9 +144,10 @@ caso("Resumo, planilha e legenda")
 r = m.resumo_do_mes(linhas)
 conferir(r == {"horas": "34h05", "dias_trabalhados": 5, "sem_registro": 1, "faltas_injustificadas": 1, "atestados": 1, "em_analise": 1}, f"resumo do mês ({r})")
 conferir(m.colunas_planilha(2) == ["Data", "Dia", "Ent. 1", "Saí. 1", "Ent. 2", "Saí. 2", "Desconsideradas", "Horas", "Situação"], "colunas da planilha")
-conferir(m.pares_do_mes(linhas) == 3 and m.linhas_planilha(linhas)[13][:9] == ["14", "qua", "08:00", "12:00", "13:00", "17:30", "18:05 (I)", "", ""], "quinta marcação abre o 3º par")
-dia7 = m.espelho_do_mes([reg(7, D, "Ajustado", 9.5)], [], [], [], [], 2026, 10, H, "2026-10-01", marcacoes=marcs, tratamentos=trats[:2])[6]
-conferir(m.linhas_planilha([dia7])[0][-3:] == ["08:01 (D)", "9h30", "AJUSTADO"] and m.marcacoes_texto(dia7) == "08:01 (D) · 08:03 · 12:02 · 13:00 · 17:30 · 18:05 (I)",
+conferir(m.pares_do_mes(linhas) == 2 and m.linhas_planilha(linhas)[13][:6] == ["14", "qua", "08:00", "12:00", "13:00", "18:05 (I)"], "a incluída entra no par, em ordem")
+conferir(m.pares_do_mes([{"batidas": [{}] * 5}]) == 3, "quinta marcação abre o 3º par")
+dia7 = m.espelho_do_mes([reg(7, D, "Ajustado", 9.5)], [], [], [], [], 2026, 10, H, "2026-10-01", marcacoes=marcs[:4], tratamentos=trats[:2])[6]
+conferir(m.linhas_planilha([dia7])[0][-3:] == ["08:01 (D)", "9h30", "AJUSTADO"] and m.marcacoes_texto(dia7) == "08:01 (D) · 08:03 · 12:02 · 13:00 · 18:05 (I)",
          "desconsiderada na coluna própria; texto do dia com (I) e (D)")
 conferir(m.legenda("2026-10-05").endswith("antes da admissão (05/10/2026) ou dias que ainda não chegaram"), "legenda com a admissão")
 conferir(m.descricao_dia(por[2]) == "sexta-feira, 02/10 — Incompleto (falta a saída)", "descrição do dia selecionado")
@@ -167,7 +176,7 @@ cab_tab = next(i for i, l in enumerate(tabela) if l and l[0] == "Data")
 conferir(tabela[cab_tab][-3:] == ["Situação", "Observação", "NSR"] and tabela[cab_tab + 1][0] == "01/10/2026"
          and tabela[cab_tab + 1][-1].split() == [str(b["nsr"]).rjust(9, "0") for b in por[1]["batidas"]],
          "CSV com a planilha, a observação e o NSR de cada marcação")
-conferir(tabela[cab_tab + 14][6] == "18:05 (I)" and tabela[-1][0].startswith("(I) incluída"), "CSV com (I) e a legenda")
+conferir(tabela[cab_tab + 14][5] == "18:05 (I)" and tabela[-1][0].startswith("(I) incluída"), "CSV com (I) e a legenda")
 
 caso("Prazo para pedir correção (tarefa 79)")
 conferir(m.limite_prazo(H, None) is None and m.limite_prazo(H, 5) == date(2026, 10, 10) and m.texto_prazo(1) == "1 dia", "limite e texto do prazo")

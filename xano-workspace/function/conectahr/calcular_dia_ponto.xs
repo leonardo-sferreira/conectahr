@@ -5,7 +5,8 @@
 //   inclusoes: [ms] das marcacoes incluidas por tratamento
 // Junta as validas (originais menos as desconsideradas, mais as incluidas), ordena,
 // forma os pares entrada e saida em ordem e soma as horas dos pares completos.
-// Status: "Ajustado" se houve tratamento; "Completo" com numero par (e pelo menos uma);
+// Status: numero impar vale mais que o tratamento (12/10/2026): "Aberto" hoje e "Incompleto" em
+// dia anterior; com numero par, "Ajustado" se houve tratamento e "Completo" se nao (e pelo menos uma);
 // sem nenhuma marcacao, "Aberto" hoje e "Incompleto" em dia anterior;
 // "Aberto" com numero impar no dia de hoje; "Incompleto" com impar em dia anterior.
 // Saldo (design D14): minutos trabalhados menos a jornada (dia util) ou menos zero (folga,
@@ -111,7 +112,7 @@ function "ConectaHR/calcular_dia_ponto" {
     }
 
     var $status {
-      value = ($houve_tratamento ? "Ajustado" : ($total == 0 ? ($input.e_hoje ? "Aberto" : "Incompleto") : ($aberta == false ? "Completo" : ($input.e_hoje ? "Aberto" : "Incompleto"))))
+      value = ($aberta ? ($input.e_hoje ? "Aberto" : "Incompleto") : ($houve_tratamento ? "Ajustado" : ($total == 0 ? ($input.e_hoje ? "Aberto" : "Incompleto") : "Completo")))
     }
 
     var $extras {

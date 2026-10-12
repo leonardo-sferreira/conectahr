@@ -201,6 +201,10 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
         if batidas or desconsideradas or reg and (reg.get("status") in ("Ajustado",) or trat_dia.get(d)):
             horas = float(reg.get("horas_trabalhadas") or 0) if reg else horas_dos_pares(batidas)
             status, tom = _STATUS_REGISTRO.get((reg or {}).get("status"), ("COMPLETO" if len(batidas) % 2 == 0 else "INCOMPLETO", "ok" if len(batidas) % 2 == 0 else "err"))
+            if status == "AJUSTADO" and len(batidas) % 2:
+                # Número ímpar vale mais que o tratamento (12/10/2026): a saída que falta não some da vista,
+                # mesmo num dia gravado antes dessa regra.
+                status, tom = ("EM JORNADA", "amb") if d == hoje else ("INCOMPLETO", "err")
             if status == "EM JORNADA" and d < hoje:
                 status, tom = "INCOMPLETO", "err"
             nota = ""
