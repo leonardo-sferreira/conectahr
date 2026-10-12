@@ -7,7 +7,8 @@ Dados: `meu_perfil_colaborador` (só o próprio colaborador, sem id), `central_d
 `minhas_pendencias_documento` (pendências), `organograma` (nome, cargo e departamento dos colegas, sem
 dado bancário nem pessoal).
 
-Regras do desenho: dados pessoais e de cargo são só consulta e mudam por solicitação ao RH; os dados
+Regras do desenho: telefone, e-mail pessoal e endereço a própria pessoa edita, sem pedido ao RH (tarefa 72,
+Figma 459:1152); nome, CPF, data de nascimento e cargo são só consulta e mudam por solicitação ao RH; os dados
 bancários a própria pessoa edita; o salário não aparece.
 """
 
@@ -28,8 +29,12 @@ BANCOS = [
     "336 — C6 Bank", "341 — Itaú Unibanco", "380 — PicPay", "422 — Safra", "748 — Sicredi", "756 — Sicoob",
 ]
 
-# Campos que a pessoa pode pedir para o RH corrigir (Figma 202:509, "Campo a alterar").
-CAMPOS_ALTERACAO = ["Nome completo", "CPF", "Data de nascimento", "Telefone", "E-mail pessoal", "Endereço"]
+# Campos que a pessoa pode pedir para o RH corrigir (Figma 202:509, "Campo a alterar"). Telefone, e-mail
+# pessoal e endereço ela edita direto, em "Contato e endereço".
+CAMPOS_ALTERACAO = ["Nome completo", "CPF", "Data de nascimento"]
+
+UFS = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ",
+       "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]
 
 
 def cpf(valor) -> str:
@@ -76,10 +81,42 @@ def dados_pessoais(perfil: dict, email_login: str | None) -> list[tuple[str, str
         ("Nome completo", c.get("nome") or "—"),
         ("E-mail corporativo", email_login or "—"),
         ("CPF", cpf(c.get("cpf"))),
-        ("Telefone", telefone(c.get("telefone"))),
         ("Data de nascimento", data_br(c.get("data_nascimento")) or "—"),
-        ("Endereço", endereco(c)),
     ]
+
+
+def contato_e_endereco(perfil: dict) -> list[tuple[str, str]]:
+    """Cartão "Contato e endereço" (Figma 459:822): o que a pessoa edita sem pedido ao RH."""
+    c = perfil.get("colaborador") or {}
+    return [
+        ("Telefone", telefone(c.get("telefone"))),
+        ("E-mail pessoal", c.get("email_pessoal") or "—"),
+        ("Endereço", endereco(c)),
+        ("CEP", cep(c.get("cep"))),
+    ]
+
+
+def cep(valor) -> str:
+    n = re.sub(r"\D", "", str(valor or ""))
+    return f"{n[:5]}-{n[5:]}" if len(n) == 8 else (valor or "—")
+
+
+def validar_contato(d: dict) -> dict:
+    """{campo: mensagem} para o modal "Editar contato e endereço" (vazio quando está tudo certo). As mesmas
+    regras o backend confere em `meu_perfil_colaborador` PATCH."""
+    erros = {}
+    if len(re.sub(r"\D", "", d.get("telefone") or "")) not in (10, 11):
+        erros["telefone"] = "Telefone com DDD: 10 ou 11 números."
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", (d.get("email_pessoal") or "").strip()):
+        erros["email_pessoal"] = "Informe um e-mail pessoal válido."
+    if len(re.sub(r"\D", "", d.get("cep") or "")) != 8:
+        erros["cep"] = "CEP com 8 números."
+    for campo, nome in (("logradouro", "o logradouro"), ("numero", "o número"), ("bairro", "o bairro"), ("cidade", "a cidade")):
+        if not (d.get(campo) or "").strip():
+            erros[campo] = f"Preencha {nome}."
+    if (d.get("estado") or "").strip().upper() not in UFS:
+        erros["estado"] = "Escolha o estado (UF)."
+    return erros
 
 
 def cargo_e_departamento(perfil: dict, nome_gestor: str | None) -> list[tuple[str, str]]:
