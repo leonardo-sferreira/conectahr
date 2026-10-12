@@ -100,9 +100,19 @@ def hoje_brasilia(agora: datetime | None = None) -> date:
     return (agora or datetime.now(timezone.utc)).astimezone(BRASILIA).date()
 
 
-def rotulo_ordem(indice: int) -> str:
-    """Posição da marcação no dia (a partir de 0) -> "1ª entrada", "1ª saída", "2ª entrada"..."""
-    return f"{indice // 2 + 1}ª {'entrada' if indice % 2 == 0 else 'saída'}"
+def rotulo_marcacao(indice: int, total: int) -> str:
+    """O papel da marcação no dia, pela posição (a partir de 0) e o total de marcações do dia: Entrada, Saída para o
+    almoço, Volta do almoço e, a última de um dia com número par, Saída. Num dia com mais de quatro, as do meio são
+    "Saída para intervalo" e "Volta do intervalo" (o REP-P não limita as marcações, art. 74)."""
+    if indice == 0:
+        return "Entrada"
+    if indice == total - 1 and total % 2 == 0:
+        return "Saída"
+    if indice == 1:
+        return "Saída para o almoço"
+    if indice == 2:
+        return "Volta do almoço"
+    return "Saída para intervalo" if indice % 2 else "Volta do intervalo"
 
 
 def marcacoes_do_dia(marcacoes: list[dict], dia: date) -> list[dict]:
@@ -117,13 +127,23 @@ def hora_gravada(marcacao: dict) -> str:
 
 
 def linhas_hoje(marcacoes: list[dict], hoje: date) -> list[dict]:
-    """Tabela do "Hoje" (Figma 463:825): {'rotulo', 'hora', 'nsr', 'marcacao'} em ordem."""
-    return [{"rotulo": rotulo_ordem(i), "hora": hora_gravada(m), "nsr": str(m.get("nsr") or "").rjust(9, "0"), "marcacao": m}
-            for i, m in enumerate(marcacoes_do_dia(marcacoes, hoje))]
+    """Tabela do "Hoje" (Figma 463:825): {'rotulo', 'hora', 'nsr', 'marcacao'} em ordem; o rótulo é o papel da marcação."""
+    do_dia = marcacoes_do_dia(marcacoes, hoje)
+    return [{"rotulo": rotulo_marcacao(i, len(do_dia)), "hora": hora_gravada(m), "nsr": str(m.get("nsr") or "").rjust(9, "0"), "marcacao": m}
+            for i, m in enumerate(do_dia)]
 
 
 def texto_proxima(quantidade: int) -> str:
-    return f"A próxima marcação será a {rotulo_ordem(quantidade)}. Você pode marcar quantas vezes precisar."
+    """O que a próxima marcação vai registrar, pelo que já foi marcado hoje."""
+    if quantidade == 0:
+        proxima = "a entrada"
+    elif quantidade % 2:
+        proxima = "a saída (para o almoço, um intervalo ou o fim da jornada)"
+    elif quantidade == 2:
+        proxima = "a volta do almoço"
+    else:
+        proxima = "a volta do intervalo"
+    return f"A próxima marcação será {proxima}. Você pode marcar quantas vezes precisar."
 
 
 def situacao_hoje(quantidade: int) -> tuple[str, str] | None:
@@ -138,20 +158,21 @@ def situacao_hoje(quantidade: int) -> tuple[str, str] | None:
 
 def comprovantes_recentes(marcacoes: list[dict], agora: datetime | None = None, horas: int = 48) -> list[dict]:
     """Comprovantes das últimas `horas` horas, do mais recente para o mais antigo (art. 80: pelo menos 48 horas).
-    Cada um: {'quando', 'rotulo', 'nsr', 'marcacao'}; o rótulo é a posição da marcação no dia dela."""
+    Cada um: {'quando', 'rotulo', 'nsr', 'marcacao'}; o rótulo é o papel da marcação no dia dela."""
     agora = agora or datetime.now(timezone.utc)
     desde = (agora - timedelta(hours=horas)).timestamp() * 1000
-    ordem = {}
+    rotulos = {}
     for dia in {_data(m.get("data")) for m in marcacoes}:
-        for i, m in enumerate(marcacoes_do_dia(marcacoes, dia)):
-            ordem[m.get("id")] = i
+        do_dia = marcacoes_do_dia(marcacoes, dia)
+        for i, m in enumerate(do_dia):
+            rotulos[m.get("id")] = rotulo_marcacao(i, len(do_dia))
     recentes = [m for m in marcacoes if (m.get("data_hora_marcacao") or 0) >= desde]
     recentes.sort(key=lambda m: m.get("nsr") or 0, reverse=True)
     saida = []
     for m in recentes:
         texto = str(m.get("data_hora_marcacao_txt") or "")
         quando = f"{texto[8:10]}/{texto[5:7]}/{texto[:4]} {texto[11:16]}" if len(texto) >= 16 else ""
-        saida.append({"quando": quando, "rotulo": rotulo_ordem(ordem.get(m.get("id"), 0)), "nsr": str(m.get("nsr") or "").rjust(9, "0"), "marcacao": m})
+        saida.append({"quando": quando, "rotulo": rotulos.get(m.get("id"), "Entrada"), "nsr": str(m.get("nsr") or "").rjust(9, "0"), "marcacao": m})
     return saida
 
 

@@ -208,7 +208,7 @@ O dia de ponto SHALL ser o dia civil de Brasília. Uma jornada aberta (número �
 
 #### Scenario: Jornada aberta na virada do dia
 - **WHEN** o colaborador marca a entrada às 08:00 e não marca a saída até o fim do dia
-- **THEN** o dia fica INCOMPLETO sem saída inventada, e a primeira marcação do dia seguinte é a 1ª entrada desse dia
+- **THEN** o dia fica INCOMPLETO sem saída inventada, e a primeira marcação do dia seguinte é a entrada desse dia
 
 #### Scenario: Marcacao dentro do descanso confirmada
 - **WHEN** o colaborador que marcou a última saída às 22:00 tenta marcar às 07:00 e confirma o aviso de que faltam 2h00 de descanso

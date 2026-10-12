@@ -12,7 +12,8 @@ Telas: Ponto → **Hoje** e **Mês** (`frontend/pagina_ponto.py`, Figma 463:825 
 ## 1. O que o colaborador vê
 
 - **Hoje:** o relógio do servidor e o botão "Marcar ponto", que funciona quantas vezes a pessoa precisar, sem ordem
-  nem limite (art. 74). Abaixo, as marcações do dia em ordem ("1ª entrada", "1ª saída", "2ª entrada"…), com a hora, o
+  nem limite (art. 74). Abaixo, as marcações do dia em ordem, com o papel de cada uma ("Entrada", "Saída para o almoço", "Volta do almoço" e, ao fechar o
+  dia, "Saída"; num dia com mais de quatro, "Saída para intervalo" e "Volta do intervalo"), com a hora, o
   NSR e o comprovante em PDF de cada uma. Também aparecem os comprovantes das últimas 48 horas (art. 80).
 - **Mês:** de um seletor que vai do mês atual até o mês da **admissão**, sem limite. A tela mostra:
   - o cabeçalho do art. 84: empregador, CNPJ, local, trabalhador, CPF, admissão, cargo, horário contratual, data de

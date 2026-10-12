@@ -57,7 +57,7 @@ perfil, privacidade, REP-P e solicitações).
 
 | Estado | Caso | Resultado |
 |---|---|---|
-| Sucesso | Hoje: título, relógio com segundos, as marcações em ordem ("1ª entrada", "1ª saída"...) com hora e NSR de 9 dígitos | ok |
+| Sucesso | Hoje: título, relógio com segundos, as marcações em ordem, com o papel de cada uma ("Entrada", "Saída para o almoço", "Volta do almoço", "Saída"; num dia com mais, "Saída para intervalo" e "Volta do intervalo"), a hora e o NSR de 9 dígitos | ok |
 | Sucesso | Três marcações seguidas, todas gravadas: sem ordem nem limite (art. 74) | ok |
 | Sucesso | Depois de marcar: "Ponto marcado às 00:09:22 (UTC-03:00). NSR …" e o comprovante na hora | ok |
 | Sucesso | Comprovante em PDF de cada marcação de hoje e das últimas 48 horas | ok |
