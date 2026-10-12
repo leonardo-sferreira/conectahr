@@ -627,11 +627,11 @@ _APP_CSS = f"""
   .crh-titulo-pagina .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 15px; color: {GRAFITE_SECUNDARIO}; }}
 
   /* Abas de Configurações: controle segmentado no estilo do Figma (fundo marfim, ativa em âmbar). */
-  .st-key-cfg_abas [data-testid="stButtonGroup"] {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 4px; width: fit-content; }}
-  .st-key-cfg_abas button {{ border: none !important; background: transparent; border-radius: 10px !important; padding: 8px 18px; }}
-  .st-key-cfg_abas button p {{ font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE_SECUNDARIO}; }}
-  .st-key-cfg_abas button[aria-checked="true"] {{ background: {AMBAR} !important; }}
-  .st-key-cfg_abas button[aria-checked="true"] p {{ color: {GRAFITE}; font-weight: 600; }}
+  .st-key-cfg_abas [data-testid="stButtonGroup"], .st-key-faq_cats [data-testid="stButtonGroup"] {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 4px; width: fit-content; }}
+  .st-key-cfg_abas button, .st-key-faq_cats button {{ border: none !important; background: transparent; border-radius: 10px !important; padding: 8px 18px; }}
+  .st-key-cfg_abas button p, .st-key-faq_cats button p {{ font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-cfg_abas button[aria-checked="true"], .st-key-faq_cats button[aria-checked="true"] {{ background: {AMBAR} !important; }}
+  .st-key-cfg_abas button[aria-checked="true"] p, .st-key-faq_cats button[aria-checked="true"] p {{ color: {GRAFITE}; font-weight: 600; }}
 
   /* Cartões de Configurações → Privacidade e de Documentos. */
   div[class*="st-key-cfg_card_"], .st-key-doc_lista {{
@@ -774,7 +774,12 @@ _APP_CSS = f"""
   /* Ponto REP-P (Figma 463:825 e 464:826) */
   .crh-relogio {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.1; color: {GRAFITE}; font-variant-numeric: tabular-nums; }}
   .crh-relogio-nota {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
-  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 10px; }}
+  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab, .st-key-faq_card_comunicados, .st-key-faq_card_perguntas,
+  .st-key-inicio_faq {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 10px; }}
+  /* Comunicados e FAQ (Figma 217:154): perguntas que abrem ao clicar. */
+  .st-key-faq_card_comunicados [data-testid="stExpander"] details, .st-key-faq_card_perguntas [data-testid="stExpander"] details {{ border: 1px solid {BORDA}; border-radius: 12px; background: white; }}
+  .st-key-faq_card_perguntas [data-testid="stExpander"] details[open] {{ border-color: {AMBAR}; }}
+  .st-key-faq_card_comunicados [data-testid="stExpander"] summary p, .st-key-faq_card_perguntas [data-testid="stExpander"] summary p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-bottom: 1px solid {BORDA}; padding: 4px 0; }}
   .st-key-ponto_comprovantes button p, .st-key-ponto_tabela .stDownloadButton button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600 !important; font-size: 13px !important; }}
   .crh-espelho-cab {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 24px; margin: 0; }}
@@ -944,7 +949,10 @@ _ESCURO_CSS = f"""
   .st-key-ponto_tabela .st-key-ponto_cab {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
   .st-key-ponto_topo_espelho button[kind="secondary"], .st-key-ponto_card_ausencia button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-ponto_topo_espelho button[kind="secondary"] p, .st-key-ponto_card_ausencia button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
-  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab, .st-key-faq_card_comunicados, .st-key-faq_card_perguntas,
+  .st-key-inicio_faq {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-faq_card_comunicados [data-testid="stExpander"] details, .st-key-faq_card_perguntas [data-testid="stExpander"] details {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .st-key-faq_card_comunicados [data-testid="stExpander"] summary p, .st-key-faq_card_perguntas [data-testid="stExpander"] summary p {{ color: {ESC_TEXTO}; }}
   .crh-relogio, .crh-espelho-cab .v {{ color: {ESC_TEXTO}; }}
   .crh-relogio-nota, .crh-espelho-cab .r, .crh-legenda-ponto {{ color: {ESC_TEXTO_2}; }}
   .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-color: {ESC_BORDA}; }}
@@ -977,8 +985,8 @@ _ESCURO_CSS = f"""
   .crh-menu-conta {{ border-color: {ESC_BORDA}; }}
   .st-key-btn_menu_config button p, .crh-menu-tema {{ color: {ESC_TEXTO} !important; }}
   .st-key-menu_tema_linha {{ border-color: {ESC_BORDA}; }}
-  .st-key-cfg_abas [data-testid="stButtonGroup"], .st-key-menu_tema [data-testid="stButtonGroup"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
-  .st-key-cfg_abas button p, .st-key-menu_tema button p {{ color: {ESC_TEXTO_2}; }}
+  .st-key-cfg_abas [data-testid="stButtonGroup"], .st-key-faq_cats [data-testid="stButtonGroup"], .st-key-menu_tema [data-testid="stButtonGroup"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
+  .st-key-cfg_abas button p, .st-key-faq_cats button p, .st-key-menu_tema button p {{ color: {ESC_TEXTO_2}; }}
   .st-key-pref_aniversario [data-testid="stWidgetLabel"] p, .st-key-pref_mural [data-testid="stWidgetLabel"] p {{ color: {ESC_TEXTO} !important; }}
   div[class*="st-key-cfg_card_"] button[kind="secondary"], .st-key-btn_aviso_voltar button {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   div[class*="st-key-cfg_card_"] button[kind="secondary"] p, .st-key-btn_aviso_voltar button p {{ color: {ESC_TEXTO} !important; }}
