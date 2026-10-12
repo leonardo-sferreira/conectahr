@@ -96,7 +96,7 @@ def _modal_ajustar(pessoa: dict, linha: dict) -> None:
     resumo_do_dia(linha)
     if linha["nota"] and not linha["nota"].startswith(("Esqueceu", "Mês encerrado")):
         st.html(f'<p class="crh-meta" style="margin:0">{html.escape(linha["nota"])}</p>')
-    tipo, horario, marcacao_id, motivo = formulario_pedido(linha, "fp_aj")
+    tipo, horario, alvo, motivo = formulario_pedido(linha, "fp_aj")
     st.html('<div class="crh-incluso"><p class="n" style="margin:0">O ajuste vale na hora como tratamento: a marcação original não muda, '
             'o motivo fica no histórico do dia e a pessoa é avisada. Marcações com pedido pendente ficam fora: decida o pedido.</p></div>')
     slot = st.empty()
@@ -105,12 +105,12 @@ def _modal_ajustar(pessoa: dict, linha: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Ajustar", type="primary", key="fp_aj_ok"):
-            erro_campo = validar_pedido(tipo, horario, marcacao_id, motivo)
+            erro_campo = validar_pedido(tipo, horario, alvo, motivo)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
             try:
-                tratar_ponto(st.session_state.token, pessoa["id"], linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=marcacao_id,
+                tratar_ponto(st.session_state.token, pessoa["id"], linha["data"].isoformat(), tipo, motivo.strip(), marcacao_id=(alvo or {}).get("marcacao_id"), tratamento_id=(alvo or {}).get("tratamento_id"),
                              data_hora_ms=valor_solicitado_ms(linha["data"], horario) if tipo != "desconsideracao" else None)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)

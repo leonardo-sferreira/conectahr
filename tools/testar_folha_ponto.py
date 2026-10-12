@@ -136,8 +136,8 @@ api_client.organograma = lambda token: {"departamentos": [{"id": 1, "nome": "Rec
 api_client.calendario = lambda token: {"feriados": []}
 api_client.folha_pessoas = lambda token: chamadas.append(("pessoas",)) or _falha_ou("pessoas", {"ve_todos": estado.get("ve_todos", False), "pessoas": estado["pessoas"]})
 api_client.folha_mes = lambda token, a, m, cid=None: chamadas.append(("mes", a, m, cid)) or _falha_ou("mes", MES_PESSOA_9 if cid == 9 else MES_EQUIPE)
-api_client.tratar_ponto = lambda token, cid, d, tipo, mot, marcacao_id=None, data_hora_ms=None: (
-    chamadas.append(("tratar", cid, d, tipo, mot, marcacao_id, data_hora_ms)) or _falha_ou("ajustar", {"sucesso": True}))
+api_client.tratar_ponto = lambda token, cid, d, tipo, mot, marcacao_id=None, data_hora_ms=None, tratamento_id=None: (
+    chamadas.append(("tratar", cid, d, tipo, mot, marcacao_id, data_hora_ms) + ((tratamento_id,) if tratamento_id else ())) or _falha_ou("ajustar", {"sucesso": True}))
 api_client.aprovar_correcao_ponto = lambda token, cid: chamadas.append(("aprovar", cid)) or _falha_ou("decidir", {"sucesso": True})
 api_client.rejeitar_correcao_ponto = lambda token, cid, mot: chamadas.append(("rejeitar", cid, mot)) or _falha_ou("decidir", {"sucesso": True})
 api_client.colaboradores = lambda token: {"colaboradores": [dict(c, departamento_id=2, cargo_id=2) for c in colabs]}
@@ -230,7 +230,7 @@ conferir(("tratar", 9, ultimo.isoformat(), "inclusao", "Esqueceu de marcar; port
 at = ajustar_dia(at, UTEIS[0])
 at.radio(key="fp_aj_tipo").set_value("desconsideracao")
 at = at.run()
-at.selectbox(key="fp_aj_marcacao").set_value(1001)
+at.selectbox(key="fp_aj_marcacao").set_value("m1001")
 at.text_area(key="fp_aj_motivo").set_value("Saída para o almoço duplicada.")
 at.button(key="fp_aj_ok").click()
 at = at.run()
@@ -238,7 +238,7 @@ conferir(("tratar", 9, UTEIS[0].isoformat(), "desconsideracao", "Saída para o a
 at = ajustar_dia(at, UTEIS[0])
 at.radio(key="fp_aj_tipo").set_value("alteracao")
 at = at.run()
-at.selectbox(key="fp_aj_marcacao").set_value(1001)
+at.selectbox(key="fp_aj_marcacao").set_value("m1001")
 at.time_input(key="fp_aj_hora").set_value(time(12, 5))
 at.text_area(key="fp_aj_motivo").set_value("Saída para o almoço às 12h05.")
 at.button(key="fp_aj_ok").click()

@@ -5,12 +5,15 @@
 //   desconsideracao: marcacao que nao existe, de outra pessoa ou de outro dia, ja
 //             desconsiderada ou com pedido pendente.
 //   alteracao: as duas regras (a marcacao a corrigir e o horario certo).
+//   Com tratamento_id (marcacao incluida), a marcacao e essa inclusao: valida, do dia, nao desfeita
+//   e sem pedido pendente.
 function "ConectaHR/validar_tratamento" {
   input {
     int colaborador_id
     text data
     text tipo
     int? marcacao_id?
+    int? tratamento_id?
     timestamp? data_hora?
   }
 
@@ -49,7 +52,43 @@ function "ConectaHR/validar_tratamento" {
     }
 
     conditional {
-      if ($input.tipo == "desconsideracao" || $input.tipo == "alteracao") {
+      if (($input.tipo == "desconsideracao" || $input.tipo == "alteracao") && $input.tratamento_id != null) {
+        // Marcacao incluida por tratamento: so uma inclusao valida, da pessoa e do dia, ainda nao
+        // desfeita e sem outro pedido em analise.
+        db.get tratamento_ponto {
+          field_name = "id"
+          field_value = $input.tratamento_id
+        } as $inclusao_alvo
+
+        precondition ($inclusao_alvo != null && $inclusao_alvo.tipo == "inclusao" && $inclusao_alvo.anula_tratamento_id == null && $inclusao_alvo.colaborador_id == $input.colaborador_id && ($inclusao_alvo.data|format_timestamp:"Y-m-d":"UTC") == $input.data) {
+          error_type = "inputerror"
+          error = "A marcacao escolhida nao e deste dia."
+        }
+
+        db.query tratamento_ponto {
+          where = $db.tratamento_ponto.anula_tratamento_id == $input.tratamento_id
+          return = {type: "single"}
+        } as $ja_desfeita
+
+        precondition ($ja_desfeita == null) {
+          error_type = "inputerror"
+          error = "Esta marcacao ja foi desconsiderada."
+        }
+
+        db.query correcao_ponto {
+          where = $db.correcao_ponto.tratamento_id == $input.tratamento_id && $db.correcao_ponto.status == "pendente"
+          return = {type: "single"}
+        } as $pedido_pendente_inclusao
+
+        precondition ($pedido_pendente_inclusao == null) {
+          error_type = "inputerror"
+          error = "Ja existe um pedido em analise para esta marcacao."
+        }
+      }
+    }
+
+    conditional {
+      if (($input.tipo == "desconsideracao" || $input.tipo == "alteracao") && $input.tratamento_id == null) {
         precondition ($input.marcacao_id != null) {
           error_type = "inputerror"
           error = ($input.tipo == "alteracao" ? "Escolha a marcacao a corrigir." : "Escolha a marcacao a desconsiderar.")

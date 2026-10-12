@@ -782,7 +782,7 @@ _APP_CSS = f"""
   .crh-espelho-cab .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; }}
   .st-key-ponto_selecionado {{ background: {AMBAR_BG}; border-radius: 12px; padding: 12px 16px; }}
   .crh-legenda-ponto {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; }}
-  .st-key-pt_planilha [data-testid="stDataFrame"], div[class*="st-key-fp_planilha_"] [data-testid="stDataFrame"] {{ filter: invert(1) hue-rotate(180deg); border-radius: 12px; }}
+  div[class*="st-key-pt_planilha"] [data-testid="stDataFrame"], div[class*="st-key-fp_planilha_"] [data-testid="stDataFrame"] {{ filter: invert(1) hue-rotate(180deg); border-radius: 12px; }}
   .st-key-ponto_selecionado button[kind="primary"] {{ padding: 0.6rem 1.3rem; white-space: nowrap; }}
   .st-key-ponto_topo_espelho .stSelectbox > div > div {{ background: white !important; border: 1px solid {BORDA} !important; border-radius: 10px; }}
   .st-key-ponto_topo_espelho .stSelectbox div:has(> input[role="combobox"]), .st-key-ponto_topo_espelho .stSelectbox div:has(> div > input[role="combobox"]) {{ background: transparent !important; }}
@@ -949,7 +949,7 @@ _ESCURO_CSS = f"""
   .crh-relogio-nota, .crh-espelho-cab .r, .crh-legenda-ponto {{ color: {ESC_TEXTO_2}; }}
   .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-color: {ESC_BORDA}; }}
   .st-key-ponto_selecionado {{ background: {ESC_AMBAR_SUAVE}; }}
-  .st-key-pt_planilha [data-testid="stDataFrame"], div[class*="st-key-fp_planilha_"] [data-testid="stDataFrame"] {{ filter: none; }}
+  div[class*="st-key-pt_planilha"] [data-testid="stDataFrame"], div[class*="st-key-fp_planilha_"] [data-testid="stDataFrame"] {{ filter: none; }}
   .st-key-ponto_selecionado p {{ color: {ESC_TEXTO}; }}
   .st-key-perfil_card_pendencias {{ border-color: {AMBAR} !important; }}
   .crh-campos-grid .r, .crh-pf-item .d, .crh-org-seta, .crh-org-pessoa .d {{ color: {ESC_TEXTO_2} !important; }}
