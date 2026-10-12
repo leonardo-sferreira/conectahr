@@ -113,6 +113,12 @@ Antes de cada tela: seção 21 "Ponto REP-P" (Hoje, Mês em planilha, comprovant
 4. Publicar os endpoints novos e os alterados; publicar o frontend.
 5. **Volta atrás:** os endpoints antigos continuam no Git; a ARP e os tratamentos são só acréscimo, e `registro_ponto` continua preenchido, então voltar o frontend e os endpoints restaura o comportamento anterior sem perda.
 
+### Migração executada (12/10/2026)
+
+`ConectaHR/migrar_ponto_rep` (pela CLI, uma vez; recusa a segunda execução): 4 registros de empregado (tipo 5), 3 marcações (tipo 7) de 2 dias, nenhuma correção aprovada para converter em tratamento. A ARP ficou com NSR 1 (evento 07), 2 (empregador de exemplo), 3 a 6 (empregados) e 7 a 9 (marcações); a cadeia de hashes confere (`tools/testar_rep_p.py --xano`). A data e hora de gravação das marcações migradas é a da migração.
+
+Duas armadilhas do XanoScript achadas aqui: numa lista literal (`[{v: $x.campo}]`) as variáveis não são avaliadas (usar `|push:`); e a variável do laço chegou nula dentro de um `else` com laço aninhado (copiar para uma variável de fora antes do condicional).
+
 ## Open Questions
 
 - O número de registro no INPI e o CNPJ do desenvolvedor: o grupo informa os valores (ou usa os de exemplo marcados como fictícios) na tela do RH.

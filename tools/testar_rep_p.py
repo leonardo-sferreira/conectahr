@@ -75,6 +75,10 @@ if "--xano" in sys.argv:
     r = xano("ConectaHR/hash_registro_rep", {"nsr": 42, "data_hora_marcacao_txt": DH, "cpf": "12345678909", "data_hora_gravacao_txt": DH, "coletor": "02", "offline": False, "hash_anterior": anterior})
     conferir(r.get("linha_base") == base and r.get("hash") == m.hash_marcacao(base, anterior), "backend e frontend calculam a mesma linha e o mesmo hash")
     conferir(xano("ConectaHR/data_hora_afd", {"momento": 1619552640000}) == "2021-04-27T16:44:00-0300", "data e hora no formato DH do exemplo do leiaute")
+    arp = xano("ConectaHR/registros_arp", {"inicio": "2026-01-01", "fim": "2030-12-31"})
+    nsrs = [r["nsr"] for r in arp]
+    conferir(nsrs == list(range(1, len(nsrs) + 1)), f"ARP com NSR de 1 a {len(nsrs)}, sem repetir nem pular")
+    conferir(m.conferir_cadeia(arp) == [], f"cadeia de hashes das {sum(1 for r in arp if r['tipo_registro'] == 7)} marcações gravadas confere")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

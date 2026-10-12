@@ -187,6 +187,53 @@ query "folha_ponto/mes" verb=GET {
       }
     }
 
+    // REP-P: marcacoes (sem CPF nem hash) e tratamentos do mes das pessoas visiveis.
+    db.query marcacao_ponto {
+      where = $db.marcacao_ponto.tipo_registro == 7 && $db.marcacao_ponto.data >= $inicio && $db.marcacao_ponto.data < $fim
+      sort = {marcacao_ponto.nsr: "asc"}
+      return = {type: "list"}
+      output = ["id", "nsr", "colaborador_id", "data", "data_hora_marcacao"]
+    } as $marcacoes_mes
+
+    var $marcacoes {
+      value = []
+    }
+
+    foreach ($marcacoes_mes) {
+      each as $mc {
+        conditional {
+          if ($alvos|contains:$mc.colaborador_id) {
+            var.update $marcacoes {
+              value = $marcacoes|push:$mc
+            }
+          }
+        }
+      }
+    }
+
+    db.query tratamento_ponto {
+      where = $db.tratamento_ponto.data >= $inicio && $db.tratamento_ponto.data < $fim
+      sort = {tratamento_ponto.id: "asc"}
+      return = {type: "list"}
+      output = ["id", "colaborador_id", "data", "tipo", "marcacao_id", "data_hora", "motivo", "anula_tratamento_id", "created_at"]
+    } as $tratamentos_mes
+
+    var $tratamentos {
+      value = []
+    }
+
+    foreach ($tratamentos_mes) {
+      each as $tr {
+        conditional {
+          if ($alvos|contains:$tr.colaborador_id) {
+            var.update $tratamentos {
+              value = $tratamentos|push:$tr
+            }
+          }
+        }
+      }
+    }
+
     db.query ausencia {
       where = $db.ausencia.data_inicio < $fim && $db.ausencia.data_fim >= $inicio
       return = {type: "list"}
@@ -255,6 +302,8 @@ query "folha_ponto/mes" verb=GET {
     inicio    : $inicio
     fim       : $fim
     registros : $registros
+    marcacoes : $marcacoes
+    tratamentos: $tratamentos
     ausencias : $ausencias
     ferias    : $ferias_lista
     correcoes : $correcoes

@@ -75,6 +75,22 @@ query meu_ponto verb=GET {
       return = {type: "list"}
     } as $registros_ponto
 
+    // REP-P: as marcacoes da ARP (com NSR) e os tratamentos do proprio colaborador. O dia em
+    // registro_ponto e o resumo; as marcacoes sao a fonte (change ponto-rep-p-e-ferias-clt).
+    db.query marcacao_ponto {
+      where = $db.marcacao_ponto.colaborador_id == $colaborador_autenticado.id && $db.marcacao_ponto.tipo_registro == 7
+      sort = {marcacao_ponto.nsr: "asc"}
+      return = {type: "list"}
+      output = ["id", "nsr", "data", "data_hora_marcacao", "data_hora_marcacao_txt"]
+    } as $marcacoes
+
+    db.query tratamento_ponto {
+      where = $db.tratamento_ponto.colaborador_id == $colaborador_autenticado.id
+      sort = {tratamento_ponto.id: "asc"}
+      return = {type: "list"}
+      output = ["id", "data", "tipo", "marcacao_id", "data_hora", "motivo", "correcao_ponto_id", "anula_tratamento_id", "created_at"]
+    } as $tratamentos
+
     // Conta os registros encontrados.
     var $quantidade {
       value = $registros_ponto|count
@@ -85,6 +101,8 @@ query meu_ponto verb=GET {
     sucesso   : true
     quantidade: $quantidade
     registros : $registros_ponto
+    marcacoes : $marcacoes
+    tratamentos: $tratamentos
   }
 
   guid = "conectahr-ponto-meu-ponto-0001"
