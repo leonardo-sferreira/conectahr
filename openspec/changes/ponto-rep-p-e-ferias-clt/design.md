@@ -99,6 +99,27 @@ O período aquisitivo vigente começa na admissão e renova a cada `periodo_aqui
 
 Antes de cada tela: seção 21 "Ponto REP-P" (Hoje, Mês em planilha, comprovante em PDF, estados), seção 22 "Férias pela CLT" (pedido com venda e saldo, calendário, mensagens), a tela do RH "Empregador, REP-P e arquivos" e a aba de feriados na estrutura da empresa, nos modos claro e escuro.
 
+### D12. Virada do dia sem marcação automática (12/10/2026)
+
+O dia é o dia civil de Brasília, como já é para `marcacao_ponto.data`. O plano do Xano não tem tarefa agendada, então o dia aberto vira INCOMPLETO em três momentos: na primeira marcação do dia seguinte (`ponto/marcar` recalcula o dia anterior com `ConectaHR/atualizar_dia_ponto`), na rotina diária e, na tela, que já mostra o dia passado com jornada aberta como INCOMPLETO. Ninguém grava uma saída no lugar da pessoa: a saída que faltou vem por pedido de correção (art. 74 proíbe a marcação automática). Jornada que passa da meia-noite fica dividida em dois dias; o grupo aceitou isso (não há turno noturno no projeto).
+
+### D13. Descanso entre jornadas: aviso, não bloqueio (12/10/2026)
+
+O usuário pediu bloquear a marcação dentro do descanso. O art. 74 proíbe restringir a marcação, e bloquear não impede o trabalho, só deixa de registrá-lo; a CLT (art. 66) obriga o empregador a dar o descanso, e as horas que invadem o intervalo são pagas como extras (TST, OJ 355 da SDI-1). Decisão do usuário: aviso com confirmação.
+
+- O descanso é o tempo entre a última marcação válida do dia anterior com marcações e a primeira do dia novo.
+- A tela calcula pelo `meu_ponto` e, abaixo do mínimo, abre o aviso "Você está no período de descanso (faltam 2h10). Se marcar, seu gestor e o RH serão avisados." com Confirmar e Desistir.
+- `ponto/marcar` recalcula no servidor (a tela não é a regra), guarda `registro_ponto.descanso_minutos` na primeira marcação do dia e, abaixo do mínimo, cria `notificacao_interna` para o superior direto (ou o Gestor do departamento) e para o RH. A marcação sempre é gravada; a confirmação é só da tela.
+- O mínimo fica em `regra_contrato.descanso_minimo_minutos` (CLT 660), para poder variar por contrato.
+
+### D14. Saldo do dia com a tolerância diária (12/10/2026)
+
+- `ConectaHR/calcular_dia_ponto` recebe a jornada e se o dia é útil, e devolve `saldo_minutos`; `registro_ponto` guarda o valor. Dia útil = segunda a sexta sem feriado ou ponto facultativo do calendário.
+- **Tolerância simplificada:** a CLT fala em até 5 minutos por marcação e 10 no dia, comparando cada marcação com o horário de entrada e saída. O cadastro não tem esses horários (D7), então vale o limite diário: diferença de até 10 minutos, saldo 0; acima disso, a diferença inteira (Súmula 366 do TST). Quando o cadastro ganhar os horários (AEJ, grupo 5), a regra por marcação entra.
+- O espelho (`ponto_mensal_modelo.py`) completa os dias sem marcação: falta injustificada = menos a jornada; folga, feriado, férias e ausência justificada = 0. Férias e ausência aprovadas em dia com marcação: a jornada esperada é zero e as horas viram saldo positivo.
+- A jornada vem de `ponto/comprovantes` (colaborador) e de `folha_ponto/pessoas` (folha da equipe, que passa a devolver `horas_diarias`). PJ sem `horas_diarias`: sem saldo.
+- Só segunda a sexta: o sábado de quem tem 44 horas semanais fica fora (decisão do usuário em 12/10/2026). O saldo não vai para o banco de horas.
+
 ## Risks / Trade-offs
 
 - [Migração com o original perdido: as correções antigas sobrescreveram horários] → Reconstruir o original a partir de `correcao_ponto.valor_anterior` e da auditoria; o que não tiver origem é migrado como está, e a migração grava um relatório com a contagem. Como é ambiente acadêmico, a base pode ser recriada se preferirem.

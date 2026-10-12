@@ -69,3 +69,12 @@
 
 - [ ] 8.1 Atualizar `docs/lgpd/registro-de-operacoes.md`, `retencao.md` e o aviso de privacidade (documento e cópias no Figma) com o CPF no comprovante, no AFD e no AEJ e a ARP fora da anonimização pelo prazo legal. Verificar: documento e Figma com os mesmos textos.
 - [ ] 8.2 Conferência de ponta a ponta: marcar, pedir correção, aprovar, ver o espelho com "(I)", gerar AFD e AEJ e pedir férias com venda, num ambiente de teste. Verificar: o roteiro executado com os resultados em `docs/evidencias/frontend-ponto-rep-p.md`, e `openspec validate ponto-rep-p-e-ferias-clt` passando.
+
+## 9. Jornada, descanso e saldo (decidido em 12/10/2026)
+
+- [ ] 9.1 Desenhar no Figma (seção 21) o aviso de descanso com Confirmar e Desistir, a coluna "Saldo" e o selo "Descanso de 9h00 (mínimo 11h)" na planilha do mês e da folha, e o saldo do mês no resumo, nos modos claro e escuro. Verificar: nós listados no `design.md` e prints.
+- [ ] 9.2 Backend: `regra_contrato.descanso_minimo_minutos` (CLT 660); `calcular_dia_ponto` com `saldo_minutos` (tolerância diária de 10 minutos, dia útil sem feriado) e `registro_ponto.saldo_minutos` e `descanso_minutos`; `ponto/marcar` recalcula o dia anterior aberto (INCOMPLETO), mede o descanso e avisa o superior e o RH por `notificacao_interna` abaixo do mínimo; `folha_ponto/pessoas` devolve `horas_diarias`. Verificar: `xano function run` com os cenários de saldo da spec (7h30 = -30, 6h20 em 6h = +20, 7h52 = 0, sábado 4h = +240) e, por HTTP, uma marcação dentro do descanso gravada com a notificação criada.
+- [ ] 9.3 Tela "Hoje": aviso de descanso com confirmação antes de chamar `ponto/marcar`; desistir não grava nada. Verificar: `tools/testar_ponto.py` cobre confirmar e desistir.
+- [ ] 9.4 Espelho e folha: coluna "Saldo" (com o saldo dos dias sem marcação: falta = menos a jornada, demais = 0), selo do descanso, saldo do mês no resumo e no CSV, sem saldo para PJ. Verificar: `tools/testar_ponto_mensal.py` e `tools/testar_folha_ponto.py` com os cenários da spec.
+- [ ] 9.5 Documentar em `docs/regras-de-negocio.md` (4.7), `docs/ponto/rep-p.md` e `docs/fluxos/ponto-mensal.md`, e registrar as evidências (prints com o Figma e o teste por HTTP) em `docs/evidencias/frontend-ponto-rep-p.md`. Verificar: os documentos descrevem as três regras e as decisões D12 a D14.
+
