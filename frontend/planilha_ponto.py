@@ -9,7 +9,7 @@ import html
 import pandas as pd
 import streamlit as st
 
-from ponto_mensal_modelo import colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta
+from ponto_mensal_modelo import COLUNA_AJUSTE, colunas_planilha, desconsideraveis, dia_longo, linha_selecionada, linhas_planilha, marcacoes_texto, pares_do_mes, situacao_curta, valores_ajuste
 from ponto_modelo import TIPOS_PEDIDO
 from theme import estilo_planilha_ponto
 
@@ -24,17 +24,28 @@ def render_cabecalho(cabecalho: dict) -> None:
             f'<div><p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p></div>' for r, v in cabecalho["campos"]) + "</div>")
 
 
-def render_planilha(linhas: list[dict], chave: str, selecionavel: bool = True) -> dict | None:
-    """A planilha do mês, uma linha por dia. Devolve o dia escolhido (linha da planilha) ou None."""
+def render_planilha(linhas: list[dict], chave: str, ajustavel=None) -> dict | None:
+    """A planilha do mês, uma linha por dia. Com `ajustavel` (função que diz se o dia aceita ajuste), cada dia ganha a
+    caixa "Ajuste" no fim da linha (`st.data_editor`, só essa coluna editável): marcar devolve o dia, para abrir o pedido
+    ou o ajuste na hora. Sem `ajustavel`, só consulta. Devolve o dia marcado ou None."""
     pares = pares_do_mes(linhas)
     tabela = pd.DataFrame(linhas_planilha(linhas, pares), columns=colunas_planilha(pares))
-    estilo = estilo_planilha_ponto(tabela, [l["tom"] for l in linhas])
     altura = 38 + 35 * len(linhas)  # sem rolagem interna: o mês inteiro à vista, como no Figma
-    if not selecionavel:
-        st.dataframe(estilo, hide_index=True, width="stretch", height=altura, key=chave)
+    if ajustavel is None:
+        st.dataframe(estilo_planilha_ponto(tabela, [l["tom"] for l in linhas]), hide_index=True, width="stretch", height=altura, key=chave)
         return None
-    evento = st.dataframe(estilo, hide_index=True, width="stretch", height=altura, key=chave, on_select="rerun", selection_mode="single-row")
-    return linha_selecionada(linhas, list(evento.selection.rows) if evento else [])
+    tabela[COLUNA_AJUSTE] = valores_ajuste(linhas, ajustavel)
+    editada = st.data_editor(
+        estilo_planilha_ponto(tabela, [l["tom"] for l in linhas]), hide_index=True, width="stretch", height=altura, key=chave,
+        disabled=[c for c in tabela.columns if c != COLUNA_AJUSTE], num_rows="fixed",
+        column_config={COLUNA_AJUSTE: st.column_config.CheckboxColumn(COLUNA_AJUSTE, help="Marque para ajustar o dia", width="small")},
+    )
+    return linha_selecionada(linhas, [i for i, v in enumerate(editada[COLUNA_AJUSTE]) if v is True])
+
+
+def desmarcar_planilha(chave: str) -> None:
+    """Tira a marca da caixa "Ajuste" (o estado do `st.data_editor`), para o dia não abrir de novo."""
+    st.session_state.pop(chave, None)
 
 
 def resumo_do_dia(linha: dict) -> None:

@@ -153,6 +153,8 @@ conferir(m.legenda("2026-10-05").endswith("antes da admissão (05/10/2026) ou di
 conferir(m.descricao_dia(por[2]) == "sexta-feira, 02/10 — Incompleto (falta a saída)", "descrição do dia selecionado")
 conferir(m.linha_selecionada(linhas, [1])["data"] == d(2) and m.linha_selecionada(linhas, [20]) is None and m.linha_selecionada(linhas, []) is None,
          "seleção da planilha: linha em branco não conta")
+ajuste = m.valores_ajuste(linhas, lambda l: l["acao"] == "corrigir")
+conferir(ajuste[1] is False and ajuste[20] is None and len(ajuste) == len(linhas), "coluna Ajuste: caixa no dia que aceita correção, vazia no dia em branco")
 
 caso("Cabeçalho do art. 84 e CSV (tarefa 4.4)")
 REP = {"empregador": {"razao_social": "ConectaRH Tecnologia Ltda (ficticio)", "tipo_identificador": "cnpj", "identificador": "12345678000190",
@@ -227,15 +229,9 @@ def texto(at: AppTest) -> str:
     return html_lib.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", bruto)))
 
 
-def selecionar(at: AppTest, indice: int) -> AppTest:
-    at.session_state["pt_planilha"] = {"selection": {"rows": [indice], "columns": [], "cells": []}}
-    return at.run()
-
-
 def pedir(at: AppTest, indice: int) -> AppTest:
-    """Clica em "Pedir correção do dia" com a linha selecionada (o AppTest não guarda a seleção entre as rodadas)."""
-    at.session_state["pt_planilha"] = {"selection": {"rows": [indice], "columns": [], "cells": []}}
-    at.button(key="pt_pedir_dia").click()
+    """Marca "Ajuste" no dia (o AppTest não edita o st.data_editor: põe direto o estado que a marca grava)."""
+    at.session_state["modal_ponto"] = ("pedido", date(ANT.year, ANT.month, indice + 1).isoformat())
     return at.run()
 
 
@@ -265,12 +261,12 @@ conferir("Horas no mês" in t and "Atestados" in t and "Correções em análise:
 df = at.dataframe[0].value
 conferir(len(df) == ANT.day and list(df.columns)[:4] == ["Data", "Dia", "Ent. 1", "Saí. 1"] and df.iloc[IDX_REG]["Ent. 1"] == "08:00"
          and df.iloc[IDX_SEM]["Situação"] == "Falta injustificada", "planilha com todos os dias, os pares e a falta em mês encerrado")
-conferir(any(b.key == "pt_baixar_mes" for b in at.get("download_button")) and "Selecione uma linha da planilha" in t, "baixar CSV e a orientação da seleção")
+conferir(any(b.key == "pt_baixar_mes" for b in at.get("download_button")) and 'Marque "Ajuste" no fim da linha' in t, "baixar CSV e a orientação do ajuste")
+conferir(list(df.columns)[-1] == "Ajuste" and str(df.iloc[IDX_SEM]["Ajuste"]) == "False", "coluna Ajuste no fim da linha")
 
 caso("Tela: pedir a inclusão num dia sem marcação (Figma 465:856)")
-at = selecionar(at, IDX_SEM)
-conferir("Dia selecionado:" in texto(at) and "Falta injustificada" in texto(at), "barra do dia selecionado")
 at = pedir(at, IDX_SEM)
+conferir("Falta injustificada" in texto(at), "o pedido mostra a situação do dia")
 conferir([o for o in at.radio(key="pt_ped_tipo").options] == ["Incluir uma marcação que faltou"], "sem marcação no dia: só a inclusão")
 at.button(key="pt_ped_enviar").click()
 at = at.run()
@@ -283,7 +279,7 @@ conferir(("pedido", D_SEM.isoformat(), "inclusao", "Esqueci de marcar a entrada.
          "envia a data, a inclusão e o horário de Brasília; o modal fecha")
 
 caso("Tela: pedir a desconsideração (Figma 465:894)")
-at = pedir(selecionar(app(), IDX_REG), IDX_REG)
+at = pedir(app(), IDX_REG)
 at.radio(key="pt_ped_tipo").set_value("desconsideracao")
 at = at.run()
 opcoes = at.selectbox(key="pt_ped_marcacao").options
@@ -293,7 +289,7 @@ at.text_area(key="pt_ped_motivo").set_value("Marquei duas vezes.")
 at.button(key="pt_ped_enviar").click()
 at = at.run()
 conferir(("pedido", D_REG.isoformat(), "desconsideracao", "Marquei duas vezes.", 500, None) in chamadas, "envia a marcação a desconsiderar")
-at = pedir(selecionar(app(erro_pedido=ApiError("O prazo para pedir correcao deste dia acabou.", 400)), IDX_SEM), IDX_SEM)
+at = pedir(app(erro_pedido=ApiError("O prazo para pedir correcao deste dia acabou.", 400)), IDX_SEM)
 at.time_input(key="pt_ped_hora").set_value(time(17, 0))
 at.text_area(key="pt_ped_motivo").set_value("Saí às 17h.")
 at.button(key="pt_ped_enviar").click()
@@ -301,9 +297,9 @@ at = at.run()
 conferir("prazo para pedir correcao" in texto(at) and "modal_ponto" in at.session_state, "recusa do backend no modal, que continua aberto")
 
 caso("Tela: prazo e falhas parciais")
-at = selecionar(app(prazo=1), IDX_SEM)
+at = app(prazo=1)
 t = texto(at)
-conferir("pt_pedir_dia" not in {b.key for b in at.button} and "passaram do prazo de 1 dia" in t and "Prazo para pedir correção: 1 dia" in t, "fora do prazo: sem botão, com o aviso")
+conferir(at.dataframe[0].value.iloc[IDX_SEM]["Ajuste"] is None and "passaram do prazo de 1 dia" in t and "Prazo para pedir correção: 1 dia" in t, "fora do prazo: sem a caixa de ajuste, com o aviso")
 at = app(erro_calendario=ApiError("Erro inesperado.", 500))
 conferir(not at.exception and at.dataframe[0].value.iloc[IDX_SEM]["Situação"] == "Falta injustificada", "sem o calendário, o mês aparece do mesmo jeito")
 

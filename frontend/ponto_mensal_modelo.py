@@ -343,6 +343,14 @@ def linha_selecionada(linhas: list[dict], linhas_tabela: list[int]) -> dict | No
     return None if linha["em_branco"] else linha
 
 
+COLUNA_AJUSTE = "Ajuste"
+
+
+def valores_ajuste(linhas: list[dict], ajustavel) -> list:
+    """A coluna "Ajuste": caixa desmarcada (False) no dia que aceita ajuste, vazia (None) nos demais."""
+    return [False if not l["em_branco"] and ajustavel(l) else None for l in linhas]
+
+
 # ---------------------------------------------------------------------------
 # Planilha, cabeçalho do art. 84 e CSV
 # ---------------------------------------------------------------------------

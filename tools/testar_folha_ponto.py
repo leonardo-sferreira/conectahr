@@ -175,11 +175,8 @@ def app(perfil="GESTOR", pagina="folha-de-ponto", **extra) -> AppTest:
 
 
 def ajustar_dia(at: AppTest, dia: date, pid: int = 9) -> AppTest:
-    """Seleciona o dia na planilha e clica em "Ajustar o dia" (o AppTest não guarda a seleção entre as rodadas)."""
-    at.session_state[f"fp_planilha_{pid}_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [dia.day - 1], "columns": [], "cells": []}}
-    at = at.run()
-    at.session_state[f"fp_planilha_{pid}_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [dia.day - 1], "columns": [], "cells": []}}
-    at.button(key="fp_ajustar_dia").click()
+    """Marca "Ajuste" no dia (o AppTest não edita o st.data_editor: põe direto o estado que a marca grava)."""
+    at.session_state["modal_folha"] = ("ajustar", dia.isoformat())
     return at.run()
 
 
@@ -207,6 +204,7 @@ t = texto(at)
 conferir("Pedidos de correção pendentes (1)" in t and f"{UTEIS[0]:%d/%m}: inclusão de 18:00" in t, "pedido pendente da pessoa")
 df = at.dataframe[0].value
 conferir(df.iloc[UTEIS[1].day - 1]["Ent. 1"] == "08:05 (I)" and df.iloc[UTEIS[1].day - 1]["Desconsideradas"] == "08:00 (D)", "planilha com (I) e (D)")
+conferir(list(df.columns)[-1] == "Ajuste" and str(df.iloc[UTEIS[1].day - 1]["Ajuste"]) == "False", "coluna Ajuste no fim de cada dia")
 at.button(key="fp_aprovar_77").click()
 at = at.run()
 conferir(("aprovar", 77) in chamadas, "aprovar o pedido")
@@ -251,9 +249,9 @@ at.button_group(key="fp_aba").set_value("Por pessoa")
 at = at.run()
 at.selectbox(key="fp_pessoa").set_value(12)
 at = para_mes_anterior(at.run(), "fp_p")
-at.session_state[f"fp_planilha_12_{ANT.year}_{ANT.month}"] = {"selection": {"rows": [UTEIS[0].day - 1], "columns": [], "cells": []}}
-at = at.run()
-conferir("Esta é a sua folha: só consulta" in texto(at) and "Dia selecionado" in texto(at) and "fp_ajustar_dia" not in chaves(at), "sem 'Ajustar o dia' na própria folha")
+conferir("Esta é a sua folha: só consulta" in texto(at) and "Ajuste" not in at.dataframe[0].value.columns, "sem a coluna Ajuste na própria folha")
+at = ajustar_dia(at, UTEIS[0], pid=12)
+conferir("fp_aj_ok" not in chaves(at), "nem abrindo o ajuste à força")
 
 caso("Escopo")
 at = app(pessoas=[PESSOAS_GESTOR[0]])

@@ -36,8 +36,8 @@ from api_client import (
 )
 from comprovante_ponto import comprovante_pdf, formatar_nsr, nome_arquivo
 from pagamento_modelo import MESES
-from planilha_ponto import formulario_pedido, limpar_formulario, render_cabecalho, render_planilha, resumo_do_dia
-from ponto_mensal_modelo import aviso_prazo, cabecalho_espelho, csv_do_mes, descricao_dia, espelho_do_mes, legenda, meses_disponiveis, resumo_do_mes, texto_prazo
+from planilha_ponto import desmarcar_planilha, formulario_pedido, limpar_formulario, render_cabecalho, render_planilha, resumo_do_dia
+from ponto_mensal_modelo import aviso_prazo, cabecalho_espelho, csv_do_mes, espelho_do_mes, legenda, meses_disponiveis, resumo_do_mes, texto_prazo
 from ponto_modelo import (
     BRASILIA,
     MOTIVOS_AUSENCIA,
@@ -126,6 +126,8 @@ def _modal_pedido(linha: dict) -> None:
     """`ponto/correcao`: inclusão de uma marcação que faltou ou desconsideração de uma feita por engano (Figma 465:856
     e 465:894). As marcações já em análise ficam fora da desconsideração."""
     resumo_do_dia(linha)
+    if linha["nota"] and not linha["nota"].startswith(("Esqueceu", "Mês encerrado")):
+        st.html(f'<p class="crh-meta" style="margin:0">{html.escape(linha["nota"])}</p>')
     tipo, horario, marcacao_id, motivo = formulario_pedido(linha, "pt_ped")
     if tipo == "inclusao":
         nota = ("A marcação original nunca é alterada. Aprovada, a correção vira um tratamento com o seu motivo e aparece na "
@@ -329,17 +331,14 @@ def _mes(token: str, dados: dict, meses: list[tuple[int, int]], ano: int, mes: i
         st.html(f'<p class="crh-meta">Correções em análise: {numeros["em_analise"]}{prazo_txt}</p>')
     if aviso := aviso_prazo(linhas, hoje, extra.get("prazo_dias")):
         alerta(st.empty(), "atencao", aviso)
-    escolhida = render_planilha(linhas, "pt_planilha")
+    escolhida = render_planilha(linhas, "pt_planilha", ajustavel=lambda l: l["acao"] == "corrigir")
     st.html(f'<p class="crh-legenda-ponto">{html.escape(legenda(extra["admissao"]))}</p>')
     if escolhida:
-        with st.container(horizontal=True, vertical_alignment="center", key="ponto_selecionado"):
-            nota = f'<br><span class="crh-meta">{html.escape(escolhida["nota"])}</span>' if escolhida["nota"] else ""
-            st.html(f'<p class="crh-doc-prazo" style="margin:0"><b>Dia selecionado: {html.escape(descricao_dia(escolhida))}</b>{nota}</p>', width="stretch")
-            if escolhida["acao"] == "corrigir":
-                if st.button("Pedir correção do dia", type="primary", key="pt_pedir_dia"):
-                    st.session_state.modal_ponto = ("pedido", escolhida["data"].isoformat())
-                    st.rerun()
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">Selecione uma linha da planilha para pedir a correção do dia. O pedido '
+        desmarcar_planilha("pt_planilha")
+        if escolhida["acao"] == "corrigir":
+            st.session_state.modal_ponto = ("pedido", escolhida["data"].isoformat())
+        st.rerun()
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">Marque "Ajuste" no fim da linha para pedir a correção do dia. O pedido '
             'segue para o seu superior ou para o RH; a marcação original nunca é alterada.</p></div>')
     return linhas
 
