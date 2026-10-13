@@ -9,7 +9,10 @@ Estados do anexo (tarefa 62): o backend verifica o link na hora do envio e grava
 `estado_verificacao` = "liberado" ou "bloqueado" (com `motivo_bloqueio`). "enviado" e
 "em_verificacao" só existem durante o envio. Por isso a tela mostra o selo do `status` do
 documento e, só quando o arquivo foi bloqueado, troca o selo por "Arquivo bloqueado" e mostra o
-motivo: é o único estado do anexo que pede uma ação da pessoa (enviar outro link).
+motivo: é o único estado do anexo que pede uma ação da pessoa (enviar outro arquivo).
+
+Anexo (change anexo-de-arquivos): a pessoa anexa PDF, JPG ou PNG de até 10 MB, guardado num armazenamento
+privado; não informa link.
 """
 
 from onboarding_modelo import TIPOS_DOCUMENTO, data_br
@@ -27,6 +30,10 @@ BLOQUEADO = ("Arquivo bloqueado", "err")
 
 # Tipos que a própria pessoa pode enviar (holerite e informe de rendimentos são só do RH).
 TIPOS_ENVIO = [t for t in TIPOS_DOCUMENTO if t != "outro"] + ["outro"]
+
+# Arquivos aceitos no anexo (change anexo-de-arquivos, D6): extensão -> tipo de conteúdo, e o limite do bucket.
+TIPOS_ARQUIVO = {"pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png"}
+TAMANHO_MAXIMO = 10 * 1024 * 1024
 
 
 def rotulo_tipo(tipo: str | None) -> str:
@@ -62,7 +69,7 @@ def linha_documento(documento: dict) -> dict:
         detalhe = f"Enviado em {enviado}" if enviado else "Enviado"
     if documento.get("estado_verificacao") == "bloqueado":
         selo, tom = BLOQUEADO
-        detalhe = documento.get("motivo_bloqueio") or "O arquivo não passou na verificação. Envie outro link."
+        detalhe = documento.get("motivo_bloqueio") or "O arquivo não passou na verificação. Envie outro arquivo."
     return {"id": documento.get("id"), "titulo": titulo, "detalhe": detalhe, "badge": selo, "tipo": tom}
 
 
@@ -123,18 +130,25 @@ def tem_pendencia_aberta(pendencias: list[dict]) -> bool:
     return any(p.get("status") == "pendente" for p in pendencias)
 
 
-def validar_envio(tipo: str | None, link: str, numero: str = "") -> str | None:
-    """Mensagem de erro do formulário "Enviar documento" ou None. O backend confere de novo (domínio
-    aprovado, extensão, duplicidade)."""
+def extensao(nome_arquivo: str) -> str:
+    """Extensão em minúsculas, sem o ponto ("RG frente.JPG" -> "jpg"); "" quando não há."""
+    nome = (nome_arquivo or "").strip()
+    return nome.rsplit(".", 1)[-1].lower() if "." in nome else ""
+
+
+def validar_envio(tipo: str | None, nome_arquivo: str | None, tamanho: int | None, numero: str = "") -> str | None:
+    """Mensagem de erro do formulário "Enviar documento" ou None (change anexo-de-arquivos). O backend e o
+    armazenamento conferem de novo o tipo e o tamanho."""
     if not tipo:
         return "Escolha o tipo de documento."
-    link = (link or "").strip()
-    if not link:
-        return "Informe o link do arquivo."
-    if not link.lower().startswith("https://"):
-        return "O link do arquivo precisa começar com https://."
-    if len(link) > 2000:
-        return "O link do arquivo pode ter no máximo 2000 caracteres."
+    if not nome_arquivo:
+        return "Anexe o arquivo do documento."
+    if extensao(nome_arquivo) not in TIPOS_ARQUIVO:
+        return "Envie um arquivo PDF, JPG ou PNG."
+    if not tamanho:
+        return "O arquivo está vazio. Escolha outro."
+    if tamanho > TAMANHO_MAXIMO:
+        return "O arquivo pode ter no máximo 10 MB."
     if len(numero or "") > 100:
         return "O número pode ter no máximo 100 caracteres."
     return None

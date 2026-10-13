@@ -150,6 +150,40 @@ query "documentos/{id}/arquivo" verb=GET {
       value = ($tem_link ? ($documento.arquivo_url|trim) : null)
     }
 
+    // Arquivo anexado pela tela (change anexo-de-arquivos, D4): fica no bucket privado do Supabase e so abre com
+    // um link assinado de 5 minutos. Links de outros dominios aprovados voltam como estao.
+    var $prefixo_supabase {
+      value = ($env.SUPABASE_URL != null ? (($env.SUPABASE_URL|trim) ~ "/storage/v1/object/documentos/") : null)
+    }
+
+    conditional {
+      if ($arquivo_url_normalizado != null && $prefixo_supabase != null && $env.SUPABASE_SERVICE_KEY != null) {
+        conditional {
+          if ($arquivo_url_normalizado|starts_with:$prefixo_supabase) {
+            var $caminho_supabase {
+              value = $arquivo_url_normalizado|replace:$prefixo_supabase:""
+            }
+
+            api.request {
+              url = ($env.SUPABASE_URL|trim) ~ "/storage/v1/object/sign/documentos/" ~ $caminho_supabase
+              method = "POST"
+              headers = ["Content-Type: application/json", "apikey: " ~ $env.SUPABASE_SERVICE_KEY, "Authorization: Bearer " ~ $env.SUPABASE_SERVICE_KEY]
+              params = {expiresIn: 300}
+            } as $resposta_assinatura
+
+            precondition ($resposta_assinatura.response.status == 200 && $resposta_assinatura.response.result.signedURL != null) {
+              error_type = "standard"
+              error = "Nao foi possivel abrir o arquivo agora. Tente de novo em instantes."
+            }
+
+            var.update $arquivo_url_normalizado {
+              value = ($env.SUPABASE_URL|trim) ~ "/storage/v1" ~ $resposta_assinatura.response.result.signedURL
+            }
+          }
+        }
+      }
+    }
+
     // Imagens privadas: link temporario assinado (5 minutos).
     var $url_imagem_frente {
       value = null

@@ -69,6 +69,8 @@ de colaborador desligado e regras para menores de 18 anos.
 ## Limites conhecidos
 
 - Plano gratuito do Xano: 10 requisições a cada 20 segundos, sem tarefas agendadas e **sem upload de
-  arquivo privado** (documento entra por link de domínio aprovado; o atestado não é guardado).
+  arquivo privado**. O arquivo anexado em Documentos vai do Streamlit direto para um bucket privado do
+  Supabase Storage, por um endereço de envio de uso único gerado pelo Xano, e abre por link assinado de
+  5 minutos (change `anexo-de-arquivos`). O atestado não é guardado.
 - Bases legais e prazos de guarda são sugestões, "a confirmar com o jurídico".
 - O ponto do MVP é controle interno experimental, sem certificação (ver [`backlog-rep.md`](backlog-rep.md)).

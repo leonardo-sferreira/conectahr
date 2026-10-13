@@ -10,9 +10,9 @@ Endpoints: `meus_documentos`, `minhas_pendencias_documento`, `documentos` (POST)
 `documentos/{id}/arquivo` (abre o arquivo; só dono, RH e Admin; cada abertura é auditada). A tela
 não tem opção de excluir: o backend recusa a exclusão física e só o RH arquiva (tarefa 28).
 
-Diferença em relação ao Figma: o modal pede o **link** do arquivo em vez de anexar um arquivo,
-porque o plano do Xano não aceita upload (o backend só aceita `arquivo_url` https de um domínio
-aprovado). Decisão registrada no design.md da change (tarefa 62).
+Anexo (change anexo-de-arquivos): o modal recebe o arquivo (PDF, JPG ou PNG, até 10 MB). O plano do Xano
+não recebe arquivo, então a tela pede a `documentos/envio_arquivo` um endereço de envio de uso único, manda o
+arquivo para o armazenamento privado (Supabase) e cadastra o documento com o `arquivo_url` devolvido.
 """
 
 import html
@@ -20,8 +20,10 @@ import time
 
 import streamlit as st
 
-from api_client import ApiError, abrir_arquivo_documento, enviar_documento, meus_documentos, minhas_pendencias_documento
-from documentos_modelo import TIPOS_ENVIO, linhas_pendentes, lista_documentos, rotulo_tipo, tem_pendencia_aberta, validar_envio
+from api_client import (ApiError, abrir_arquivo_documento, enviar_documento, meus_documentos, minhas_pendencias_documento,
+                        preparar_envio_arquivo, subir_arquivo)
+from documentos_modelo import (TIPOS_ARQUIVO, TIPOS_ENVIO, extensao, linhas_pendentes, lista_documentos, rotulo_tipo,
+                               tem_pendencia_aberta, validar_envio)
 from onboarding_dados import invalidar_cache as invalidar_onboarding
 from theme import alerta, render_hero, render_lista_documentos, render_topbar
 
@@ -65,12 +67,11 @@ def _modal_enviar() -> None:
         numero = st.text_input("Número", max_chars=100, key="env_numero")
     with col_data:
         emissao = st.date_input("Data de emissão", value=None, format="DD/MM/YYYY", key="env_emissao")
-    link = st.text_input(
-        "Link do arquivo",
-        placeholder="https://",
-        max_chars=2000,
-        key="env_link",
-        help="O sistema ainda não recebe arquivos: informe o link https do arquivo, guardado num endereço aprovado pela empresa.",
+    arquivo = st.file_uploader(
+        "Arquivo",
+        type=list(TIPOS_ARQUIVO),
+        key="env_arquivo",
+        help="PDF ou foto do documento (JPG ou PNG), até 10 MB. No celular, dá para tirar a foto na hora.",
     )
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
@@ -78,28 +79,34 @@ def _modal_enviar() -> None:
             _fechar_modal()
             st.rerun()
         if st.button("Enviar para o RH", type="primary", key="btn_env_enviar"):
-            erro_campo = validar_envio(tipo, link, numero)
+            erro_campo = validar_envio(tipo, arquivo.name if arquivo else None, arquivo.size if arquivo else None, numero)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
+            token = st.session_state.token
+            colaborador_id = st.session_state.usuario.get("colaborador_id")
+            ext = extensao(arquivo.name)
             try:
-                enviar_documento(
-                    st.session_state.token,
-                    {
-                        "colaborador_id": st.session_state.usuario.get("colaborador_id"),
-                        "tipo": tipo,
-                        "nome_documento": rotulo_tipo(tipo),
-                        "numero_documento": numero.strip(),
-                        "data_emissao": emissao.isoformat() if emissao else None,
-                        "arquivo_url": link.strip(),
-                    },
-                )
+                with st.spinner("Enviando o arquivo..."):
+                    envio = preparar_envio_arquivo(token, colaborador_id, ext)
+                    subir_arquivo(envio["upload_url"], arquivo.getvalue(), TIPOS_ARQUIVO[ext])
+                    enviar_documento(
+                        token,
+                        {
+                            "colaborador_id": colaborador_id,
+                            "tipo": tipo,
+                            "nome_documento": rotulo_tipo(tipo),
+                            "numero_documento": numero.strip(),
+                            "data_emissao": emissao.isoformat() if emissao else None,
+                            "arquivo_url": envio["arquivo_url"],
+                        },
+                    )
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
             _invalidar()
             _fechar_modal()
-            for chave in ("env_tipo", "env_numero", "env_emissao", "env_link"):
+            for chave in ("env_tipo", "env_numero", "env_emissao", "env_arquivo"):
                 st.session_state.pop(chave, None)
             st.session_state.aviso_toast = "Documento enviado. O RH vai conferir."
             st.rerun()

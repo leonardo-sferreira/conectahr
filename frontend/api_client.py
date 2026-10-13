@@ -368,6 +368,24 @@ def enviar_documento(token: str, dados: dict) -> dict:
     return _post("documentos", {k: v for k, v in dados.items() if v not in (None, "")}, token, GRUPO_DOCUMENTOS)
 
 
+def preparar_envio_arquivo(token: str, colaborador_id: int, extensao: str) -> dict:
+    """POST documentos/envio_arquivo -> {upload_url, arquivo_url} (change anexo-de-arquivos). O Xano gera um endereço
+    de envio de uso único no armazenamento privado; a chave do armazenamento não passa pelo Streamlit."""
+    return _post("documentos/envio_arquivo", {"colaborador_id": colaborador_id, "extensao": extensao}, token, GRUPO_DOCUMENTOS)
+
+
+def subir_arquivo(upload_url: str, conteudo: bytes, tipo_conteudo: str) -> None:
+    """PUT do arquivo no endereço de envio devolvido por `preparar_envio_arquivo`. Não leva o token do ConectaRH."""
+    try:
+        resp = requests.put(upload_url, data=conteudo, headers={"Content-Type": tipo_conteudo}, timeout=60)
+    except requests.RequestException as exc:
+        _log.warning("Falha de conexão no envio do arquivo: %s", exc)
+        raise ApiError(_MENSAGEM_SEM_CONEXAO, 0) from exc
+    if not resp.ok:
+        _log.warning("Envio do arquivo recusado pelo armazenamento: HTTP %s", resp.status_code)
+        raise ApiError("Não foi possível enviar o arquivo. Confira se é PDF, JPG ou PNG de até 10 MB e tente de novo.", resp.status_code)
+
+
 def abrir_arquivo_documento(token: str, documento_id: int) -> dict:
     """GET documentos/{id}/arquivo -> {arquivo_url, expira_em_segundos}. Só o dono, o RH e o Admin; cada
     abertura grava `acessar_arquivo_documento` na auditoria."""
