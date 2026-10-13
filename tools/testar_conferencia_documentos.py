@@ -199,8 +199,10 @@ conferir(len(pend) == 3 and all(p["documento"] != "CPF" for p in pend), "pendên
 conferir(any(p["situacao"] == ("Atrasada", "err") for p in pend) and pend[-1]["situacao"] == ("Atendida", "ok"), "prazo vencido vira 'Atrasada'; atendidas no fim")
 conferir([p["pedido_por"] for p in pend if p["documento"] == "CTPS"] == ["Você"] and "RH" in [p["pedido_por"] for p in pend], "'Pedido por': Você ou RH (sem buscar a lista de usuários)")
 reg = linhas_regras(REGRAS, {3: "Motorista"}, {})
-conferir(reg[0]["vale_para"] == "Contrato CLT" and reg[0]["guardar"] == "5 anos depois do desligamento", "regra: contrato e prazo de guarda por extenso")
-conferir(reg[1]["vale_para"] == "Cargo: Motorista" and reg[2]["vale_para"] == "Até 17 anos" and reg[2]["guardar"] == "—", "regra: cargo, idade e guarda vazia")
+por_vale = {l["vale_para"]: l for l in reg}
+conferir(por_vale["Contrato CLT"]["guardar"] == "5 anos depois do desligamento", "regra: contrato e prazo de guarda por extenso")
+conferir("Cargo: Motorista" in por_vale and por_vale["Até 17 anos"]["guardar"] == "—", "regra: cargo, idade e guarda vazia")
+conferir(reg[-1]["vale_para"] == "Contrato CLT", "regras agrupadas por contrato: as sem contrato primeiro, depois CLT")
 conferir(validar_motivo("abc") and validar_motivo("Imagem cortada") is None, "motivo da recusa: no mínimo 5 caracteres")
 conferir(validar_pedido(None, "ctps", HOJE, HOJE) and validar_pedido(11, "ctps", HOJE - timedelta(days=1), HOJE) and validar_pedido(11, "ctps", HOJE, HOJE) is None, "pedido: colaborador, documento e prazo não passado")
 conferir(validar_regra(None, 10, 5) and validar_regra("ctps", 10, 5) is None, "nova regra: documento obrigatório")

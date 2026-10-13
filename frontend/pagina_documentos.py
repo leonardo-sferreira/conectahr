@@ -75,9 +75,9 @@ def _campos_do_tipo(tipo: str | None) -> dict:
 def _widget(tipo: str, campo: dict):
     rotulo = campo["rotulo"] + ("" if campo["obrigatorio"] else " (opcional)")
     chave = f"env_c_{tipo}_{campo['chave']}"
-    if campo["tipo"] in ("data", "validade"):
+    if campo["tipo"] in ("data", "validade", "periodo"):
         hoje = date.today()
-        maximo = date(hoje.year + 30, 12, 31) if campo["tipo"] == "validade" else hoje
+        maximo = hoje if campo["tipo"] == "data" else date(hoje.year + 30, 12, 31)
         return st.date_input(rotulo, value=None, min_value=date(1940, 1, 1), max_value=maximo, format="DD/MM/YYYY", key=chave, help=campo["ajuda"])
     if campo["tipo"] == "opcao":
         opcoes = campo["opcoes"]

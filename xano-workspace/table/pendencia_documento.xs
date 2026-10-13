@@ -26,6 +26,11 @@ table pendencia_documento {
         "documentacao_migratoria"
         "certificado_reservista"
         "documentacao_responsavel_legal"
+        "titulo_eleitor"
+        "certidao_civil"
+        "termo_compromisso_estagio"
+        "cartao_cnpj"
+        "contrato_social"
         "outro"
       ]
     }

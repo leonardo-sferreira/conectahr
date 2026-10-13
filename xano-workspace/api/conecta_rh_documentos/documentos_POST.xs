@@ -132,7 +132,7 @@ query documentos verb=POST {
     }
 
     // Valida o tipo usando os valores exatos do Enum.
-    precondition ($input.tipo == "rg" || $input.tipo == "cpf" || $input.tipo == "cin" || $input.tipo == "cnh" || $input.tipo == "ctps" || $input.tipo == "aso_admissional" || $input.tipo == "laudo_deficiencia" || $input.tipo == "certificado_profissional" || $input.tipo == "comprovante_residencia" || $input.tipo == "comprovante_escolaridade" || $input.tipo == "registro_profissional" || $input.tipo == "documentacao_migratoria" || $input.tipo == "certificado_reservista" || $input.tipo == "documentacao_responsavel_legal" || $input.tipo == "outro" || $input.tipo == "holerite" || $input.tipo == "informe_rendimentos") {
+    precondition ($input.tipo == "rg" || $input.tipo == "cpf" || $input.tipo == "cin" || $input.tipo == "cnh" || $input.tipo == "ctps" || $input.tipo == "aso_admissional" || $input.tipo == "laudo_deficiencia" || $input.tipo == "certificado_profissional" || $input.tipo == "comprovante_residencia" || $input.tipo == "comprovante_escolaridade" || $input.tipo == "registro_profissional" || $input.tipo == "documentacao_migratoria" || $input.tipo == "certificado_reservista" || $input.tipo == "documentacao_responsavel_legal" || $input.tipo == "titulo_eleitor" || $input.tipo == "certidao_civil" || $input.tipo == "termo_compromisso_estagio" || $input.tipo == "cartao_cnpj" || $input.tipo == "contrato_social" || $input.tipo == "outro" || $input.tipo == "holerite" || $input.tipo == "informe_rendimentos") {
       error_type = "inputerror"
       error = "Tipo de documento invalido."
     }
