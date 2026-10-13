@@ -6,6 +6,9 @@ versionado neste repositório, o link abaixo é a fonte de verdade.
 
 **Arquivo:** https://www.figma.com/design/fph1M5tB4rA4gqfIysSmkn
 
+**O que está no Streamlit e ainda não no Figma:** ver [`figma-pendencias.md`](figma-pendencias.md)
+(situação de 13/10/2026).
+
 ## Páginas
 
 - **ConectaRH — Protótipo**: 13 telas navegáveis, cobrindo os fluxos da tarefa 7.13
