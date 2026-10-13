@@ -48,7 +48,8 @@ NOTIFICACOES = [
     {"id": 1, "tipo": "ferias_aprovada", "titulo": "Férias aprovadas", "mensagem": "Suas férias de 15/10 a 29/10 foram aprovadas.",
      "recurso": "ferias", "registro_id": 9, "lida": False, "criada_em": ms(AGORA - timedelta(minutes=5))},
     {"id": 2, "tipo": "documento_vencendo", "titulo": "Documento vencendo", "mensagem": "Seu ASO vence em 15 dias.",
-     "recurso": "documento", "registro_id": 4, "lida": False, "criada_em": ms(AGORA - timedelta(days=1, hours=1))},
+     "recurso": "documento", "registro_id": 4, "lida": False,
+     "criada_em": ms((AGORA - timedelta(days=1)).replace(hour=12, minute=0))},  # ontem ao meio-dia: "ontem" a qualquer hora do teste
 ]
 
 

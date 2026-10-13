@@ -246,7 +246,8 @@ def _cartao_organograma(org: dict | None) -> None:
             st.html('<p class="crh-cfg-titulo">Organograma</p>', width="content")
             st.space("stretch")
             if st.button("Ver organograma completo →", type="tertiary", key="pf_ver_org"):
-                st.toast("O organograma completo ainda está em construção.")
+                st.session_state.ir_organograma = True
+                st.rerun()
         if org is None or org["voce"] is None:
             st.html('<p class="crh-meta">Não foi possível montar o organograma agora.</p>')
             return

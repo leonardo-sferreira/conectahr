@@ -88,6 +88,14 @@ Catálogos organizacionais.
   aprovar ações da equipe daquele departamento (correção de ponto, desligamento etc.).
 - **Regras estruturais:** o vínculo gestor-departamento também tem histórico
   (`HistoricoGestorDepartamento`), com um único gestor vigente por vez.
+- **Cargo** tem um `nivel_hierarquico_id` opcional (desde 13/10/2026, change `organograma-hierarquia`).
+
+### NivelHierarquico
+
+A hierarquia da empresa, cadastrada por cada empresa (ex.: CEO, Diretoria, Head, Gerência,
+Coordenação, Supervisão, Analista, Operador, Estagiário), com `nome` e `ordem` (a menor fica em cima).
+Mantida pelo RH e pelo Admin; desativar não apaga o vínculo do cargo. O organograma segue o superior
+direto do colaborador (`superior_colaborador_id`) e usa o nível do cargo para ordenar e rotular.
 
 ### HistoricoProfissional
 

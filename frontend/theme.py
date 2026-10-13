@@ -785,11 +785,19 @@ _APP_CSS = f"""
   /* Ponto REP-P (Figma 463:825 e 464:826) */
   .crh-relogio {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.1; color: {GRAFITE}; font-variant-numeric: tabular-nums; }}
   .crh-relogio-nota {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
-  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab, .st-key-faq_card_comunicados, .st-key-faq_card_perguntas,
+  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab, .st-key-faq_card_comunicados, .st-key-faq_card_perguntas, .st-key-org_card,
   .st-key-inicio_faq {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 10px; }}
   /* Comunicados e FAQ (Figma 217:154): perguntas que abrem ao clicar. */
   .st-key-faq_card_comunicados [data-testid="stExpander"] details, .st-key-faq_card_perguntas [data-testid="stExpander"] details {{ border: 1px solid {BORDA}; border-radius: 12px; background: white; }}
   .st-key-faq_card_perguntas [data-testid="stExpander"] details[open] {{ border-color: {AMBAR}; }}
+  /* Organograma (Figma 224:3593): pessoas em cartões clicáveis; a pessoa em foco em destaque âmbar. */
+  .st-key-org_card button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 12px; padding: 10px 14px; text-align: left; }}
+  .st-key-org_card button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-org_card button[kind="secondary"] p strong {{ font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  .crh-org-foco {{ display: flex; align-items: center; gap: 12px; width: fit-content; background: {AMBAR_BG}; border: 1px solid {AMBAR}; border-radius: 12px; padding: 12px 16px; }}
+  .crh-org-foco .av {{ width: 32px; height: 32px; border-radius: 50%; background: {GRAFITE}; color: {AMBAR}; display: flex; align-items: center; justify-content: center; font: 600 12px 'Manrope', sans-serif; flex: none; }}
+  .crh-org-foco .t {{ margin: 0; font: 600 14px 'Manrope', sans-serif; color: {GRAFITE}; }}
+  .crh-org-foco .d {{ margin: 2px 0 0; font: 400 13px 'Manrope', sans-serif; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-faq_card_comunicados [data-testid="stExpander"] summary p, .st-key-faq_card_perguntas [data-testid="stExpander"] summary p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-bottom: 1px solid {BORDA}; padding: 4px 0; }}
   .st-key-ponto_comprovantes button p, .st-key-ponto_tabela .stDownloadButton button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600 !important; font-size: 13px !important; }}
@@ -960,10 +968,16 @@ _ESCURO_CSS = f"""
   .st-key-ponto_tabela .st-key-ponto_cab {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
   .st-key-ponto_topo_espelho button[kind="secondary"], .st-key-ponto_card_ausencia button[kind="secondary"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-ponto_topo_espelho button[kind="secondary"] p, .st-key-ponto_card_ausencia button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
-  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab, .st-key-faq_card_comunicados, .st-key-faq_card_perguntas,
+  .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab, .st-key-faq_card_comunicados, .st-key-faq_card_perguntas, .st-key-org_card,
   .st-key-inicio_faq {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-faq_card_comunicados [data-testid="stExpander"] details, .st-key-faq_card_perguntas [data-testid="stExpander"] details {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .st-key-faq_card_comunicados [data-testid="stExpander"] summary p, .st-key-faq_card_perguntas [data-testid="stExpander"] summary p {{ color: {ESC_TEXTO}; }}
+  .st-key-org_card button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .st-key-org_card button[kind="secondary"] p {{ color: {ESC_TEXTO_2}; }}
+  .st-key-org_card button[kind="secondary"] p strong {{ color: {ESC_TEXTO}; }}
+  .crh-org-foco {{ background: {ESC_AMBAR_SUAVE}; }}
+  .crh-org-foco .t {{ color: {ESC_TEXTO}; }}
+  .crh-org-foco .d {{ color: {ESC_TEXTO_2}; }}
   .crh-relogio, .crh-espelho-cab .v {{ color: {ESC_TEXTO}; }}
   .crh-relogio-nota, .crh-espelho-cab .r, .crh-legenda-ponto {{ color: {ESC_TEXTO_2}; }}
   .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-color: {ESC_BORDA}; }}

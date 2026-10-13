@@ -41,6 +41,7 @@ from pagina_folha_ponto import pagina_folha_ponto
 from pagina_inicio import pagina_inicio
 from pagina_meu_onboarding import pagina_meu_onboarding
 from pagina_onboarding import pagina_onboarding
+from pagina_organograma import pagina_organograma
 from pagina_pagamento import pagina_pagamento
 from pagina_perfil import pagina_perfil
 from pagina_ponto import pagina_ponto
@@ -77,6 +78,8 @@ _MENU_RH = [
     "Pesquisas de clima",
     "Ciclos de avaliação",
     "Pedidos LGPD",
+    # Feriados, níveis da hierarquia e cargos (change organograma-hierarquia): o RH também mantém.
+    "Estrutura da empresa",
 ]
 # Grupo "Equipe" do menu (Figma 241:560): o Gestor vê todo; quem é superior direto sem o perfil Gestor (tarefa 83) vê só a folha.
 _MENU_EQUIPE = [
@@ -91,7 +94,6 @@ _MENU_EQUIPE = [
 _MENU_ADMIN = [
     "Usuários e perfis",
     "Sessões ativas",
-    "Estrutura da empresa",
     "Indicadores gerais",
     "Integrações e e-mails",
 ]
@@ -177,8 +179,9 @@ PG_SOLICITACOES = st.Page(pagina_solicitacoes, title="Solicitações ao RH", url
 PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de documentos", url_path="conferencia-de-documentos")
 PG_ESTRUTURA = st.Page(pagina_estrutura, title="Estrutura da empresa", url_path="estrutura-da-empresa")
 PG_FAQ = st.Page(pagina_faq, title="Comunicados e FAQ", url_path="comunicados-e-faq")
+PG_ORGANOGRAMA = st.Page(pagina_organograma, title="Organograma", url_path="organograma")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -191,6 +194,7 @@ _ATALHOS = {
     "ir_central": PG_CENTRAL,
     "ir_solicitacoes": PG_SOLICITACOES,
     "ir_faq": PG_FAQ,
+    "ir_organograma": PG_ORGANOGRAMA,
     # Destinos do sino de notificações (notificacoes_modelo.destino).
     "ir_ferias": PG_FERIAS,
     "ir_ponto": PG_PONTO,
@@ -210,7 +214,7 @@ _PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
-ativo_no_menu = {"Meu onboarding": "Início"}.get(pagina_atual.title, pagina_atual.title)
+ativo_no_menu = {"Meu onboarding": "Início", "Organograma": "Perfil"}.get(pagina_atual.title, pagina_atual.title)
 perfil = str(st.session_state.usuario.get("perfil", "")).upper()
 
 # Quem é superior direto de alguém decide e vê a folha da equipe, qualquer que seja o perfil (tarefa 83).
