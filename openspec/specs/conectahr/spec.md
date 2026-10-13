@@ -78,15 +78,19 @@ O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, 
 - **THEN** o sistema permite as operacoes administrativas conforme suas permissoes e registra a acao
 
 ### Requirement: Organograma da empresa
-O sistema SHALL apresentar uma visualizacao hierarquica da estrutura organizacional, reunindo departamentos, gestores e colaboradores vinculados, a partir dos dados ja mantidos de cargo, departamento e vinculo gestor-colaborador. O organograma SHALL incluir todo colaborador cujo status nao seja `Desligado`, inclusive quem estiver de ferias ou afastado. O sistema SHALL restringir a visualizacao a nome, cargo e departamento de cada pessoa, sem expor dados sensiveis.
+O sistema SHALL apresentar o organograma a qualquer usuário autenticado, de qualquer perfil, montado pelo vínculo de superior direto (`colaborador.superior_colaborador_id`): quem não tem superior direto (ou cujo superior não está mais no organograma) fica no topo, e abaixo de cada pessoa ficam as pessoas que a têm como superior direto. O organograma SHALL incluir todo colaborador cujo status não seja `Desligado`, inclusive quem estiver de férias ou afastado. Cada pessoa SHALL aparecer com nome, cargo, nível do cargo e departamento, e nenhum outro dado (sem e-mail, CPF, salário ou dado de contato). A pessoa SHALL poder navegar: escolher alguém e ver o superior dessa pessoa e quem está abaixo dela, seguir o caminho até o topo, voltar à própria posição, buscar por nome ou cargo e filtrar por departamento. Dentro de um mesmo superior, as pessoas SHALL aparecer pela ordem do nível do cargo e depois pelo nome; cargo sem nível vem depois dos que têm nível.
 
 #### Scenario: Consulta do organograma
-- **WHEN** um usuario autenticado acessa o organograma
-- **THEN** o sistema exibe departamentos, gestores e colaboradores em estrutura hierarquica, mostrando apenas nome, cargo e departamento de cada pessoa
+- **WHEN** um usuário autenticado de qualquer perfil abre o organograma
+- **THEN** o sistema mostra a posição dele, o caminho até o topo e quem está abaixo dele, com nome, cargo, nível e departamento de cada pessoa
+
+#### Scenario: Navegar pela hierarquia
+- **WHEN** a pessoa clica no topo do organograma (ex.: a pessoa sem superior direto)
+- **THEN** o sistema mostra quem tem essa pessoa como superior direto, e clicar em qualquer um deles desce mais um nível
 
 #### Scenario: Colaborador de ferias no organograma
-- **WHEN** um colaborador esta com status `Ferias` ou `Afastado`
-- **THEN** ele continua aparecendo no organograma; somente colaboradores `Desligado` sao omitidos
+- **WHEN** um colaborador está com status `Ferias` ou `Afastado`
+- **THEN** ele continua aparecendo no organograma; somente colaboradores `Desligado` são omitidos
 
 ### Requirement: Pesquisa global de colaboradores
 O sistema SHALL permitir buscar colaboradores por nome, CPF, matricula (id), cargo ou departamento, retornando somente os registros dentro do escopo de acesso do usuario que pesquisa.
@@ -1080,3 +1084,78 @@ Um novo serviço externo SHALL entrar nessa lista antes de receber dados (LGPD, 
 #### Scenario: Novo serviço externo
 - **WHEN** o código passa a enviar dados pessoais para um serviço que não está na lista de operadores
 - **THEN** isso é tratado como defeito, e a mudança só é integrada depois que a lista e o registro de operações forem atualizados
+
+### Requirement: Cadastro de cargos pelo RH
+O sistema SHALL permitir que RH e Admin cadastrem e editem os cargos da empresa com nome, senioridade (Júnior, Pleno, Sênior, Especialista ou nenhuma), departamento (opcional), nível hierárquico (opcional), salário base e descrição. O nome do cargo SHALL ser o título completo que vai para a carteira de trabalho, incluindo a senioridade quando houver (ex.: "Desenvolvedor Front-end Pleno"), e SHALL ser único. A tela SHALL mostrar o nome que vai para a carteira antes de salvar. Só RH e Admin SHALL poder cadastrar ou editar cargos, e cada ação SHALL ser auditada. Na admissão, o cargo SHALL ser escolhido entre os ativos do departamento escolhido e os que não têm departamento.
+
+#### Scenario: RH cadastra as senioridades de um cargo
+- **WHEN** o RH cadastra "Desenvolvedor Front-end" como Júnior, Pleno e Sênior no departamento de TI
+- **THEN** o sistema grava três cargos, "Desenvolvedor Front-end Júnior", "Desenvolvedor Front-end Pleno" e "Desenvolvedor Front-end Sênior", e os três aparecem na admissão de alguém de TI
+
+#### Scenario: Cargo com o mesmo nome
+- **WHEN** o RH tenta cadastrar um cargo com o nome de um cargo que já existe
+- **THEN** o sistema recusa com mensagem clara e não grava nada
+
+#### Scenario: Colaborador tenta cadastrar cargo
+- **WHEN** um Colaborador ou Gestor tenta cadastrar ou editar um cargo
+- **THEN** o sistema recusa com permissão negada
+
+### Requirement: Niveis hierarquicos da empresa
+O sistema SHALL permitir que RH e Admin mantenham os níveis hierárquicos da empresa (nome e ordem, do topo para a base: por exemplo CEO, Diretoria, Head, Gerência, Coordenação, Supervisão, Analista, Operador, Estagiário), sem uma lista fixa no código. Cada cargo SHALL poder ter um nível. A inclusão, a edição (nome e ordem), a desativação de um nível e a troca do nível de um cargo SHALL ser auditadas, e só RH e Admin SHALL poder fazê-las. Um nível desativado SHALL deixar de rotular os cargos no organograma, sem apagar o vínculo.
+
+#### Scenario: RH cadastra a hierarquia
+- **WHEN** o RH cadastra os níveis "Diretoria" (ordem 1) e "Coordenação" (ordem 2) e liga cada cargo ao seu nível
+- **THEN** o organograma mostra o nível de cada pessoa e ordena as pessoas de um mesmo superior por esse nível
+
+#### Scenario: Colaborador tenta mudar a hierarquia
+- **WHEN** um Colaborador ou Gestor tenta incluir um nível ou mudar o nível de um cargo
+- **THEN** o sistema recusa com permissão negada e não grava nada
+
+### Requirement: Campos do documento por tipo
+O envio de documento SHALL pedir só os campos do tipo escolhido (por exemplo: RG com número, órgão emissor, UF e data de expedição; CPF só com o número; comprovante de residência só com a data de emissão). O backend SHALL validar os campos obrigatórios de cada tipo, as opções fechadas, a UF, as datas e o CPF pelos dígitos verificadores, e SHALL recusar com mensagem clara sem gravar nada. O CPF informado nos tipos CPF e CIN SHALL ser igual ao da ficha do colaborador. Laudo de deficiência e ASO SHALL NOT pedir CID nem diagnóstico. A conferência do RH SHALL mostrar os dados informados ao lado do arquivo.
+
+#### Scenario: Colaborador envia o RG
+- **WHEN** o colaborador escolhe RG, informa número, órgão emissor, UF e data de expedição e anexa o arquivo
+- **THEN** o documento é gravado com esses dados e o RH os vê na conferência
+
+#### Scenario: Campo obrigatório em branco
+- **WHEN** o colaborador envia uma CNH sem a validade
+- **THEN** o sistema recusa com "Informe a validade." e não grava nada
+
+#### Scenario: CPF diferente da ficha
+- **WHEN** o colaborador envia o tipo CPF com um número válido que não é o da ficha dele
+- **THEN** o sistema recusa com a mensagem de que o CPF não confere com o cadastro
+
+#### Scenario: Comprovante de residência antigo
+- **WHEN** o colaborador envia um comprovante de residência emitido há mais de 90 dias
+- **THEN** o sistema recusa e pede um comprovante dos últimos 90 dias
+
+### Requirement: Apresentação dos benefícios
+O colaborador SHALL ver na tela Benefícios o número de benefícios ativos e, para cada um, um item que abre com a descrição, os links úteis e os materiais cadastrados pelo RH, sem valores nem descontos. RH e Admin SHALL poder editar a apresentação de cada benefício (descrição, até 10 links https e materiais PDF, JPG ou PNG de até 10 MB). Os materiais SHALL ficar em armazenamento privado e abrir por link assinado de 5 minutos, só para quem tem o benefício ativo, para o RH e para o Admin, com cada abertura auditada.
+
+#### Scenario: Colaborador abre o material do plano de saúde
+- **WHEN** o colaborador com o plano de saúde ativo abre o item do benefício e clica em "Abrir" no guia do plano
+- **THEN** o sistema gera um link que vale 5 minutos e registra a abertura na auditoria
+
+#### Scenario: Material de benefício que a pessoa não tem
+- **WHEN** um colaborador pede o material de um benefício que ele não tem ativo
+- **THEN** o sistema recusa com permissão negada
+
+#### Scenario: RH cadastra um link sem https
+- **WHEN** o RH salva um link que não começa com https://
+- **THEN** o sistema recusa com mensagem clara e não grava nada
+
+### Requirement: Documentos obrigatórios pré-definidos por contrato
+O sistema SHALL vir com a matriz de documentos obrigatórios preenchida por tipo de contrato (CLT, Temporário, Aprendiz, Estágio e PJ), com prazo de envio, faixa de idade quando houver e prazo de guarda, e SHALL permitir que o RH acrescente regras por cargo ou departamento. A carga das regras SHALL poder ser repetida sem duplicar nem alterar regras que o RH já cadastrou. Um RG aprovado SHALL cumprir a regra da CIN e vice-versa.
+
+#### Scenario: Estagiário
+- **WHEN** o RH consulta os documentos obrigatórios de um estagiário maior de idade
+- **THEN** a lista tem CPF, RG, comprovante de residência, declaração de matrícula e termo de compromisso de estágio, sem CTPS nem ASO
+
+#### Scenario: Carga repetida
+- **WHEN** a carga das regras roda de novo
+- **THEN** nenhuma regra é duplicada e as do RH continuam como estão
+
+#### Scenario: CIN no lugar do RG
+- **WHEN** a pessoa tem a CIN aprovada e a regra pede RG
+- **THEN** o RG não aparece como pendente
