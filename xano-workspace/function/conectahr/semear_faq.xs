@@ -17,7 +17,10 @@ function "ConectaHR/semear_faq" {
         |push:{categoria: "ponto", titulo: "O que é o saldo do dia?", conteudo: "São as horas trabalhadas menos a jornada do seu contrato, em dia útil. Diferença de até 10 minutos no dia não conta (CLT, art. 58). Em folga, feriado, férias e ausência justificada, a jornada esperada é zero."}
         |push:{categoria: "ponto", titulo: "O que é o descanso entre jornadas?", conteudo: "São 11 horas entre o fim de um dia de trabalho e o começo do seguinte (CLT, art. 66). Se você for marcar antes disso, a tela avisa quanto falta."}
         |push:{categoria: "ponto", titulo: "Faltei com atestado. Como registro?", conteudo: "Em Ponto, na visão Hoje, use \"Registrar ausência ou atestado\" e entregue o atestado ao RH. Não escreva diagnóstico nem código CID no sistema."}
-        |push:{categoria: "documentos", titulo: "Como envio um documento?", conteudo: "Na tela Documentos, escolha o documento pendente e informe o link do arquivo. O RH confere e você vê o resultado na mesma tela."}
+        |push:{categoria: "documentos", titulo: "Como envio um documento?", conteudo: "Na tela Documentos, use \"Enviar documento\" (ou \"Enviar →\" num documento pendente), escolha o tipo, preencha os campos que aparecem para ele e anexe o arquivo: PDF ou foto, até 10 MB. No celular, dá para tirar a foto na hora. O RH confere e você vê o resultado na mesma tela."}
+        |push:{categoria: "documentos", titulo: "Quais dados preciso preencher em cada documento?", conteudo: "Ao escolher o tipo, aparecem só os campos dele. RG: número, órgão emissor, UF e data de expedição. CPF: só o número. CNH: registro, categoria, UF, emissão e validade. Comprovante de residência: a data de emissão, dos últimos 90 dias. Copie do documento: o RH compara o que você digitou com o arquivo."}
+        |push:{categoria: "documentos", titulo: "Que documentos preciso entregar na admissão?", conteudo: "Depende do contrato. CLT, temporário e aprendiz: CPF, RG ou CIN, CTPS (a digital é o CPF), comprovante de residência, comprovante de escolaridade, ASO admissional e título de eleitor (de 18 a 70 anos). Estágio: CPF, RG, comprovante de residência, declaração de matrícula e termo de compromisso. PJ: CPF e RG do representante, cartão CNPJ, contrato social ou CCMEI e comprovante de endereço da empresa. Menores de 18 anos também entregam a documentação do responsável. Os que faltam aparecem na tela Documentos."}
+        |push:{categoria: "politicas_internas", titulo: "Onde vejo meus benefícios?", conteudo: "Na tela Benefícios. Abra cada benefício para ver o que ele cobre, os links da operadora e os materiais do RH, como guias e tabelas. Dúvidas sobre valores e descontos: fale com o RH."}
         |push:{categoria: "documentos", titulo: "O que significa \"Atrasada\" numa pendência?", conteudo: "Que o prazo de envio passou e o documento ainda não chegou. Envie assim que puder."}
         |push:{categoria: "documentos", titulo: "Meu documento foi recusado. E agora?", conteudo: "O motivo aparece no documento, na tela Documentos. Corrija e envie de novo."}
         |push:{categoria: "politicas_internas", titulo: "Como mudo meu telefone ou endereço?", conteudo: "Em Perfil, no cartão \"Contato e endereço\". Nome, CPF, data de nascimento e cargo mudam por solicitação ao RH, no mesmo Perfil."}
@@ -112,10 +115,52 @@ function "ConectaHR/semear_faq" {
         }
       }
     }
+
+    // Correcoes de texto (13/10/2026: o documento passou a ser anexado, sem link). Troca so quando o artigo ainda
+    // esta com o texto antigo, palavra por palavra: o que o RH editou fica como esta.
+    var $correcoes {
+      value = []
+        |push:{titulo: "Como envio um documento?", antigo: "Na tela Documentos, escolha o documento pendente e informe o link do arquivo. O RH confere e você vê o resultado na mesma tela."}
+    }
+
+    var $corrigidos {
+      value = 0
+    }
+
+    foreach ($correcoes) {
+      each as $correcao {
+        foreach ($existentes) {
+          each as $existente {
+            conditional {
+              if ($existente.titulo == $correcao.titulo && $existente.conteudo == $correcao.antigo) {
+                foreach ($artigos) {
+                  each as $novo_texto {
+                    conditional {
+                      if ($novo_texto.titulo == $correcao.titulo) {
+                        db.edit artigo_faq {
+                          field_name = "id"
+                          field_value = $existente.id
+                          data = {conteudo: $novo_texto.conteudo, updated_at: "now"}
+                        } as $artigo_corrigido
+
+                        var.update $corrigidos {
+                          value = $corrigidos + 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   response = {
     criados    : $criados
+    corrigidos : $corrigidos
     ja_existiam: ($artigos|count) - $criados
   }
 

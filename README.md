@@ -39,10 +39,10 @@ instrumento coletivo ou exceção individual, sempre com o histórico de qual re
 
 | | |
 |---|---|
-| **Backend** | 58 tabelas, 30 funções e 224 endpoints em 10 grupos de API (219 autenticados, todos com a guarda de acesso conferida no CI) |
+| **Backend** | 59 tabelas, 32 funções e 228 endpoints em 10 grupos de API (223 autenticados, todos com a guarda de acesso conferida no CI) |
 | **Frontend** | 22 telas Streamlit, 20 módulos de regra de tela testáveis sem rede, tema claro e escuro |
-| **Especificação** | Spec principal com 65 requisitos e 201 cenários; 6 changes arquivadas e 5 em andamento no OpenSpec |
-| **Testes** | 20 suítes automatizadas (865 verificações) no pipeline, mais testes por HTTP contra o backend real, por perfil |
+| **Especificação** | Spec principal com 70 requisitos e 217 cenários; 11 changes arquivadas e 3 em andamento no OpenSpec |
+| **Testes** | 20 suítes automatizadas (909 verificações) no pipeline, mais testes por HTTP contra o backend real, por perfil |
 | **Documentação** | Regras de negócio mapeadas do código, modelo de domínio, LGPD (RIPD, operadores, retenção) e evidências |
 
 ---
@@ -68,10 +68,11 @@ instrumento coletivo ou exceção individual, sempre com o histórico de qual re
   10 minutos, horas positivas e negativas, aviso de descanso entre jornadas (11h) e pedido de ajuste
   pela célula da marcação: incluir, corrigir o horário ou desconsiderar, sempre com motivo.
 - **Férias** com calendário do mês (feriados nacionais pela BrasilAPI, facultativos e férias da equipe).
-- **Documentos:** anexar o arquivo (PDF ou foto do celular, até 10 MB), acompanhar a conferência do RH
-  e as pendências da admissão.
+- **Documentos:** anexar o arquivo (PDF ou foto do celular, até 10 MB) preenchendo só os campos de cada tipo
+  (RG com órgão emissor e UF, CNH com categoria e validade, CPF só o número…), validados e conferidos pelo RH.
 - **Pagamento:** holerites e informes de rendimentos, só para o dono.
-- **Benefícios** e **Configurações → Privacidade:** preferências, exportação dos próprios dados e pedido LGPD.
+- **Benefícios:** cada benefício ativo com a descrição, os links da operadora e os materiais do RH.
+- **Configurações → Privacidade:** preferências, exportação dos próprios dados e pedido LGPD.
 
 ### Gestor
 
@@ -84,7 +85,10 @@ instrumento coletivo ou exceção individual, sempre com o histórico de qual re
 - **Colaboradores:** admissão com cargo filtrado pelo departamento, criação de acesso e vínculo de ficha.
 - **Estrutura da empresa:** feriados (com importação dos nacionais), níveis hierárquicos e **cadastro de
   cargos** com senioridade (Júnior, Pleno, Sênior, Especialista), departamento, nível e salário base.
-- **Conferência de documentos**, **Ausências**, **Solicitações ao RH** (com a alteração cadastral aplicada).
+- **Conferência de documentos:** os dados preenchidos ao lado do arquivo, que abre em um clique, e a matriz de
+  **documentos obrigatórios por contrato** (CLT, temporário, aprendiz, estágio e PJ) já pré-definida.
+- **Benefícios:** catálogo com descrição, links e materiais anexados; vínculo por pessoa com valor e desconto.
+- **Ausências** e **Solicitações ao RH** (com a alteração cadastral aplicada).
 - **Usuários e perfis** (Admin): criar, trocar perfil, ativar, desativar e vincular à ficha.
 
 ---
@@ -95,7 +99,7 @@ instrumento coletivo ou exceção individual, sempre com o histórico de qual re
 flowchart LR
     U([Pessoa no navegador]) --> FE[Frontend<br/>Streamlit]
     FE -- "HTTPS + token de sessão" --> BE[Backend<br/>Xano · XanoScript]
-    BE --> DB[(Banco relacional<br/>58 tabelas)]
+    BE --> DB[(Banco relacional<br/>59 tabelas)]
     BE -- "e-mail transacional" --> BR[Brevo]
     BE -- "feriados nacionais" --> BA[BrasilAPI]
     BE -- "gera endereço de envio<br/>e link assinado (5 min)" --> SB[(Supabase Storage<br/>bucket privado)]
@@ -105,7 +109,7 @@ flowchart LR
 - **O backend decide tudo:** regras de negócio, autorização por perfil e escopo, e persistência. O
   frontend nunca é mecanismo de segurança; o menu por perfil é só conveniência.
 - **Guarda replicada em cada endpoint:** usuário ativo, senha definitiva e sessão válida, nessa ordem e
-  antes da primeira escrita. Um verificador estático confere os 219 endpoints autenticados a cada PR.
+  antes da primeira escrita. Um verificador estático confere os 223 endpoints autenticados a cada PR.
 - **Arquivos fora do Xano:** o plano gratuito não aceita upload, então o arquivo vai do Streamlit direto
   para um bucket privado do Supabase, por um endereço de uso único gerado pelo Xano. A chave do Supabase
   fica só no ambiente do Xano; o arquivo abre por link assinado de 5 minutos, com auditoria.
@@ -141,7 +145,7 @@ O mapa completo, com o arquivo de cada regra, está em [`docs/regras-de-negocio.
 | **Acesso** | Ninguém decide um pedido em que é o próprio colaborador; o Gestor só vê o próprio departamento ou quem tem a ele como superior direto; sessão revogável por dispositivo |
 | **Ponto (REP-P)** | NSR sequencial e hash SHA-256 encadeado; o dia é o dia civil de Brasília; jornada aberta vira INCOMPLETO na virada, sem marcação automática; saldo com tolerância de 10 min (CLT art. 58 §1º); descanso de 11h avisado, nunca bloqueado (art. 74); o dia de hoje só é ajustável a partir de amanhã |
 | **Férias e ausências** | Antecedência, limite proporcional ao tempo de casa e conferência de conflito na equipe; feriados e facultativos no calendário |
-| **Documentos** | Só PDF, JPG e PNG de até 10 MB; arquivo em bucket privado com nome aleatório; abertura só pelo dono, RH ou Admin, sempre auditada; prazo de retenção por tipo de documento |
+| **Documentos** | Campos próprios de cada tipo, validados no backend (CPF igual ao da ficha, CNH com 11 dígitos, comprovante de residência dos últimos 90 dias); só PDF, JPG e PNG de até 10 MB; arquivo em bucket privado com nome aleatório; abertura só pelo dono, RH ou Admin, sempre auditada; prazo de retenção por tipo de documento |
 | **Cargos** | Nome do cargo é o título da carteira com a senioridade ("Analista de Contas a Pagar Pleno"); único; na admissão, só os cargos do departamento escolhido |
 | **Notificações** | Pedido novo avisa quem decide; decisão avisa quem pediu; mudança que afeta a pessoa avisa a pessoa |
 
@@ -181,25 +185,25 @@ AFD e do AEJ ainda está em construção. Detalhes em [`docs/ponto/rep-p.md`](do
 O pipeline **Validar** ([`.github/workflows/validar.yml`](.github/workflows/validar.yml)) roda em todo Pull Request:
 
 1. sintaxe de todo o Python do frontend e das ferramentas;
-2. **guarda de acesso** dos 219 endpoints autenticados do Xano (`tools/checar_endpoints.py`), incluindo a
+2. **guarda de acesso** dos 223 endpoints autenticados do Xano (`tools/checar_endpoints.py`), incluindo a
    proibição de editar ou apagar as tabelas só de inclusão do ponto;
 3. fontes servidas pelo próprio app, sem Google Fonts (`tools/checar_fontes_locais.py`);
 4. teste de fumaça do frontend;
-5. **20 suítes de tela, com 865 verificações**, usando o `AppTest` do Streamlit e uma API simulada, sem rede e sem dado real;
+5. **20 suítes de tela, com 909 verificações**, usando o `AppTest` do Streamlit e uma API simulada, sem rede e sem dado real;
 6. busca de segredos versionados.
 
 | Suíte | Verificações | Suíte | Verificações |
 |---|---:|---|---:|
 | Entrada e login (F01) | 52 | Ponto (Hoje) | 41 |
 | Onboarding | 52 | Espelho de ponto mensal | 95 |
-| Privacidade e Documentos | 86 | Folha de ponto e hierarquia | 46 |
-| Conferência de documentos | 52 | REP-P (hash e cadeia) | 7 |
+| Privacidade e Documentos | 108 | Folha de ponto e hierarquia | 46 |
+| Conferência de documentos | 55 | REP-P (hash e cadeia) | 7 |
 | Meu perfil | 60 | Comprovante em PDF | 18 |
-| Férias | 51 | Benefícios | 21 |
+| Férias | 51 | Benefícios | 39 |
 | Pagamento | 40 | Organograma | 33 |
 | Central de Pendências e Ausências | 64 | Cargos | 16 |
 | Colaboradores e Usuários | 52 | Comunicados e FAQ | 25 |
-| Solicitações ao RH | 34 | Notificações | 20 |
+| Solicitações ao RH | 35 | Notificações | 20 |
 
 O backend é testado **por HTTP contra o Xano real**, com um caso que deve passar e um que deve falhar por
 perfil; os resultados ficam em [`docs/evidencias/`](docs/evidencias/), sem dado pessoal. O que não foi
@@ -288,8 +292,11 @@ A spec principal está em [`openspec/specs/conectahr/spec.md`](openspec/specs/co
 | `corrigir-brechas-e-alinhar-documentacao` | Arquivada | Auditoria de segurança e alinhamento da documentação |
 | `adequacao-lgpd` | Arquivada | Adequação à LGPD |
 | `concluir-mvp-conectarh` | Arquivada | Consolidou e concluiu as anteriores |
-| `organograma-hierarquia` | Concluída | Organograma pelo superior direto e níveis hierárquicos da empresa |
-| `cadastro-de-cargos` | Concluída | Cargos com senioridade e departamento |
+| `organograma-hierarquia` | Arquivada | Organograma pelo superior direto e níveis hierárquicos da empresa |
+| `cadastro-de-cargos` | Arquivada | Cargos com senioridade e departamento |
+| `campos-por-tipo-de-documento` | Arquivada | Campos de cada tipo de documento, validados e mostrados ao RH |
+| `apresentacao-de-beneficios` | Arquivada | Benefícios com descrição, links e materiais no Supabase |
+| `documentos-obrigatorios-por-contrato` | Arquivada | 38 regras de documentos obrigatórios por contrato e cinco tipos novos |
 | `anexo-de-arquivos` | Concluída (falta o Figma) | Anexo de arquivo com Supabase Storage |
 | `ponto-rep-p-e-ferias-clt` | Em andamento | Ponto REP-P, jornada, feriados e férias pela CLT |
 | `concluir-frontend-streamlit` | Em andamento | Telas restantes, acessibilidade e deploy |
@@ -328,7 +335,7 @@ A spec principal está em [`openspec/specs/conectahr/spec.md`](openspec/specs/co
 
 | Versão | Marco |
 |---|---|
-| [v0.3.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.3.0) | Frontend com 22 telas, ponto REP-P, organograma, cargos, notificações, FAQ e anexo de arquivos no Supabase |
+| [v0.3.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.3.0) | Frontend com 22 telas, ponto REP-P, organograma, cargos, notificações, FAQ, anexo de arquivos no Supabase, campos por documento, benefícios e documentos obrigatórios por contrato |
 | [v0.2.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.2.0) | Backend, segurança, LGPD, especificações e documentação concluídos |
 | [v0.1.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.1.0) | Backend do MVP e fundação do OpenSpec |
 
