@@ -56,7 +56,7 @@ def _abrir(n: dict) -> None:
     """Marca como lida (se ainda não estava) e pede ao app.py a tela do assunto."""
     if not n.get("lida"):
         _marcar(n["id"])
-    st.session_state[destino(n)] = True
+    st.session_state[destino(n, (st.session_state.get("usuario") or {}).get("perfil"))] = True
 
 
 def _preferencias() -> None:

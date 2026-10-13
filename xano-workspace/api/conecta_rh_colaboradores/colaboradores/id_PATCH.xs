@@ -171,6 +171,11 @@ query "colaboradores/{id}" verb=PATCH {
         resultado     : "sucesso"
       }
     } as $evento_auditoria
+
+    // Aviso (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $colaborador_atual.id, autor_user_id: $usuario_rh.id, tipo: "cadastro_atualizado", titulo: "Seu cadastro foi atualizado", mensagem: "O RH atualizou o seu cadastro. Confira em Perfil.", recurso: "colaborador", registro_id: $colaborador_atual.id}
+    } as $aviso_cadastro
   }
 
   response = {

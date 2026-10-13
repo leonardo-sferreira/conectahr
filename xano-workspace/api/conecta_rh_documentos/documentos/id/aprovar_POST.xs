@@ -155,6 +155,11 @@ query "documentos/{id}/aprovar" verb=POST {
         resultado     : "sucesso"
       }
     } as $evento_auditoria
+
+    // Avisa quem pediu do retorno (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $documento_atual.colaborador_id, autor_user_id: $usuario_autenticado.id, tipo: "pedido_decidido", titulo: "Documento aprovado", mensagem: "Seu documento " ~ ($documento_atual.nome_documento != null ? $documento_atual.nome_documento : "enviado") ~ " foi aprovado.", recurso: "documento", registro_id: $documento_atual.id}
+    } as $aviso_retorno
   }
 
   response = {

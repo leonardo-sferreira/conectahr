@@ -160,6 +160,16 @@ conferir([m.destino({"tipo": t}) for t in ("ferias_aprovada", "ponto_ajustado", 
          == ["ir_ferias", "ir_ponto", "ir_folha", "ir_central", "ir_beneficios", "ir_documentos"], "cada tipo leva à sua tela")
 conferir(m.destino({"tipo": "novo_tipo", "recurso": "correcao_ponto"}) == "ir_ponto" and m.destino({"tipo": "x", "recurso": "y"}) == "ir_inicio",
          "tipo novo: vale o recurso; sem nada, o Início")
+novo = lambda r: {"tipo": "pedido_novo", "recurso": r}  # noqa: E731
+decidido = lambda r: {"tipo": "pedido_decidido", "recurso": r}  # noqa: E731
+conferir([m.destino(novo(r)) for r in ("correcao_ponto", "ferias", "solicitacao_rh", "documento", "solicitacao_desligamento")]
+         == ["ir_central", "ir_central", "ir_solicitacoes", "ir_conferencia", "ir_central"], "pedido novo: a tela de quem decide")
+conferir(m.destino(novo("ausencia"), "RH") == "ir_ausencias" and m.destino(novo("ausencia"), "GESTOR") == "ir_central",
+         "ausência nova: o RH vai a Ausências; o gestor, à Central de Pendências")
+conferir([m.destino(decidido(r)) for r in ("correcao_ponto", "ferias", "ausencia", "documento")] == ["ir_ponto", "ir_ferias", "ir_central", "ir_documentos"],
+         "retorno do pedido: a tela de quem pediu")
+conferir([m.destino({"tipo": t}) for t in ("cadastro_atualizado", "documento_pedido", "holerite_disponivel")] == ["ir_perfil", "ir_documentos", "ir_pagamento"],
+         "mudanças que afetam a pessoa: Perfil, Documentos e Pagamento")
 agora = datetime(2026, 10, 12, 15, 0, tzinfo=BR)
 conferir([m.quando(ms(agora - d), agora) for d in (timedelta(seconds=20), timedelta(minutes=5), timedelta(hours=2), timedelta(hours=16), timedelta(days=9))]
          == ["agora", "há 5 min", "há 2 horas", "ontem", "03/10"], "quando: agora, minutos, horas, ontem e a data")

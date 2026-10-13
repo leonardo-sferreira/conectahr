@@ -124,6 +124,11 @@ query solicitacoes verb=POST {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Avisa quem decide o pedido (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar_decisores" {
+      input = {colaborador_id: $colaborador_autenticado.id, autor_user_id: $usuario_autenticado.id, quem: "rh", tipo: "pedido_novo", titulo: "Nova solicitação ao RH", mensagem: $colaborador_autenticado.nome ~ " abriu uma solicitação ao RH.", recurso: "solicitacao_rh", registro_id: $solicitacao_criada.id}
+    } as $avisos_decisores
   }
 
   response = {

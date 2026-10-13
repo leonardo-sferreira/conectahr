@@ -196,6 +196,10 @@ _ATALHOS = {
     "ir_ponto": PG_PONTO,
     "ir_folha": PG_FOLHA,
     "ir_beneficios": PG_BENEFICIOS,
+    "ir_ausencias": PG_AUSENCIAS,
+    "ir_conferencia": PG_CONFERENCIA,
+    "ir_perfil": PG_PERFIL,
+    "ir_pagamento": PG_PAGAMENTO,
 }
 for marca, destino in _ATALHOS.items():
     if st.session_state.pop(marca, False):

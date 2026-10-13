@@ -229,6 +229,11 @@ query "ferias/solicitacoes" verb=POST {
         updated_at      : "now"
       }
     } as $solicitacao_criada
+
+    // Avisa quem decide o pedido (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar_decisores" {
+      input = {colaborador_id: $colaborador_autenticado.id, autor_user_id: $usuario_autenticado.id, quem: "superior", tipo: "pedido_novo", titulo: "Pedido de férias", mensagem: $colaborador_autenticado.nome ~ " pediu férias de " ~ ($input.data_inicio|format_timestamp:"d/m/Y":"UTC") ~ " a " ~ ($input.data_fim|format_timestamp:"d/m/Y":"UTC") ~ ".", recurso: "ferias", registro_id: $solicitacao_criada.id}
+    } as $avisos_decisores
   }
 
   response = {

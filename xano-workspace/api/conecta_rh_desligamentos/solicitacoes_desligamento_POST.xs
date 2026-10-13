@@ -216,6 +216,11 @@ query solicitacoes_desligamento verb=POST {
         updated_at         : "now"
       }
     } as $solicitacao_criada
+
+    // Aviso (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar_decisores" {
+      input = {colaborador_id: $colaborador_alvo.id, autor_user_id: $usuario_autenticado.id, quem: "rh", tipo: "pedido_novo", titulo: "Pedido de desligamento", mensagem: $colaborador_solicitante.nome ~ " pediu o desligamento de " ~ $colaborador_alvo.nome ~ ".", recurso: "solicitacao_desligamento", registro_id: $solicitacao_criada.id}
+    } as $aviso_rh
   }
 
   response = {

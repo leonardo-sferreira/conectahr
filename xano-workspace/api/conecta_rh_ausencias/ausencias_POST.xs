@@ -185,6 +185,11 @@ query ausencias verb=POST {
         updated_at    : "now"
       }
     } as $ausencia_criada
+
+    // Avisa quem decide o pedido (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar_decisores" {
+      input = {colaborador_id: $colaborador_autenticado.id, autor_user_id: $usuario_autenticado.id, quem: "superior_e_rh", tipo: "pedido_novo", titulo: "Ausência registrada", mensagem: $colaborador_autenticado.nome ~ " registrou uma ausência de " ~ ($input.data_inicio|format_timestamp:"d/m/Y":"UTC") ~ " a " ~ ($input.data_fim|format_timestamp:"d/m/Y":"UTC") ~ ".", recurso: "ausencia", registro_id: $ausencia_criada.id}
+    } as $avisos_decisores
   }
 
   response = {

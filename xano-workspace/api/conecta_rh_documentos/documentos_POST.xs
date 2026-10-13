@@ -383,6 +383,23 @@ query documentos verb=POST {
             } as $pendencia_atendida
           }
         }
+
+        // Avisos (parte 2 das notificacoes, 12/10/2026): holerite ou informe lancado pelo RH avisa a pessoa;
+        // documento enviado pela propria pessoa avisa o RH, que confere. Documento que o RH envia por alguem
+        // nao avisa ninguem.
+        conditional {
+          if ($emitido_pelo_rh) {
+            function.run "ConectaHR/notificar" {
+              input = {colaborador_id: $colaborador_destino.id, autor_user_id: $usuario_autenticado.id, tipo: "holerite_disponivel", titulo: ($input.tipo == "holerite" ? "Novo holerite disponível" : "Informe de rendimentos disponível"), mensagem: ($input.tipo == "holerite" ? "Seu holerite está disponível na tela Pagamento." : "Seu informe de rendimentos está disponível na tela Pagamento."), recurso: "documento", registro_id: $documento_criado.id}
+            } as $aviso_holerite
+          }
+
+          elseif ($colaborador_destino.user_id == $usuario_autenticado.id) {
+            function.run "ConectaHR/notificar_decisores" {
+              input = {colaborador_id: $colaborador_destino.id, autor_user_id: $usuario_autenticado.id, quem: "rh", tipo: "pedido_novo", titulo: "Documento para conferir", mensagem: $colaborador_destino.nome ~ " enviou um documento para conferência.", recurso: "documento", registro_id: $documento_criado.id}
+            } as $aviso_conferencia
+          }
+        }
       }
     }
   }

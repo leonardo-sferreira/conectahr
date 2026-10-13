@@ -16,7 +16,10 @@ table notificacao_interna {
     }
 
     enum tipo {
-      values = ["ferias_aprovada", "documento_vencendo", "avaliacao_disponivel", "solicitacao_respondida", "ponto_ajustado", "descanso_interjornada", "beneficio_atualizado"]
+      // pedido_novo: para quem decide; pedido_decidido: o retorno para quem pediu;
+      // cadastro_atualizado, documento_pedido e holerite_disponivel: mudancas que afetam a pessoa
+      // (parte 2 das notificacoes, 12/10/2026).
+      values = ["ferias_aprovada", "documento_vencendo", "avaliacao_disponivel", "solicitacao_respondida", "ponto_ajustado", "descanso_interjornada", "beneficio_atualizado", "pedido_novo", "pedido_decidido", "cadastro_atualizado", "documento_pedido", "holerite_disponivel"]
     }
 
     text titulo filters=trim|max:150
