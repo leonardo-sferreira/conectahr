@@ -120,21 +120,6 @@ def linhas_niveis(niveis: list[dict], cargos: list[dict]) -> list[dict]:
              "cargos": uso.get(n.get("id"), 0)} for n in sorted(niveis, key=lambda n: (int(n.get("ordem") or 0), _sem_acento(n.get("nome") or "")))]
 
 
-def linhas_cargos(cargos: list[dict], niveis: list[dict], colaboradores: list[dict]) -> list[dict]:
-    """{'id', 'nome', 'nivel_id', 'nivel', 'pessoas'} por nível e nome: o nível de cada cargo e quantas pessoas o ocupam."""
-    por_id = {n.get("id"): n for n in niveis}
-    ocupacao = {}
-    for c in colaboradores:
-        ocupacao[c.get("cargo_id")] = ocupacao.get(c.get("cargo_id"), 0) + 1
-    linhas = []
-    for c in cargos:
-        nivel = por_id.get(c.get("nivel_hierarquico_id"))
-        linhas.append({"id": c.get("id"), "nome": c.get("nome") or "", "nivel_id": c.get("nivel_hierarquico_id") if nivel else None,
-                       "nivel": (nivel or {}).get("nome") or SEM_NIVEL, "ordem": int((nivel or {}).get("ordem") or _ORDEM_SEM_NIVEL),
-                       "pessoas": ocupacao.get(c.get("id"), 0)})
-    return sorted(linhas, key=lambda l: (l["ordem"], _sem_acento(l["nome"])))
-
-
 def validar_nivel(nome: str, ordem) -> str | None:
     if len((nome or "").strip()) < 2:
         return "Escreva o nome do nível (pelo menos 2 caracteres)."

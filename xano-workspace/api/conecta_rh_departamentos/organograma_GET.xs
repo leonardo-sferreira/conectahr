@@ -71,7 +71,7 @@ query organograma verb=GET {
     db.query cargo {
       where = $db.cargo.ativo == true
       return = {type: "list"}
-      output = ["id", "nome", "nivel_hierarquico_id"]
+      output = ["id", "nome", "nivel_hierarquico_id", "senioridade", "departamento_id"]
     } as $cargos
 
     // Niveis ativos, para rotular e ordenar (change organograma-hierarquia, D2).

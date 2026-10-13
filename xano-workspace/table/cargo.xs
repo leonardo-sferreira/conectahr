@@ -18,6 +18,17 @@ table cargo {
     int? nivel_hierarquico_id? {
       table = "nivel_hierarquico"
     }
+
+    // Senioridade e departamento do cargo (change cadastro-de-cargos, D1 e D3). O nome continua sendo
+    // o titulo completo, como vai para a carteira ("Desenvolvedor Front-end Pleno"); a senioridade fica
+    // separada para filtrar e rotular. Cargo sem departamento serve a qualquer departamento.
+    enum? senioridade? {
+      values = ["junior", "pleno", "senior", "especialista"]
+    }
+
+    int? departamento_id? {
+      table = "departamento"
+    }
   }
 
   index = [

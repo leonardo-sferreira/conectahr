@@ -88,7 +88,10 @@ Catálogos organizacionais.
   aprovar ações da equipe daquele departamento (correção de ponto, desligamento etc.).
 - **Regras estruturais:** o vínculo gestor-departamento também tem histórico
   (`HistoricoGestorDepartamento`), com um único gestor vigente por vez.
-- **Cargo** tem um `nivel_hierarquico_id` opcional (desde 13/10/2026, change `organograma-hierarquia`).
+- **Cargo** tem um `nivel_hierarquico_id` opcional (desde 13/10/2026, change `organograma-hierarquia`), uma `senioridade`
+  opcional (Júnior, Pleno, Sênior, Especialista) e um `departamento_id` opcional (change `cadastro-de-cargos`). O `nome` é o
+  título completo, como vai para a carteira ("Desenvolvedor Front-end Pleno"); cada senioridade é um cargo próprio, e a
+  promoção é uma troca de cargo. Cargo sem departamento serve a qualquer departamento.
 
 ### NivelHierarquico
 
