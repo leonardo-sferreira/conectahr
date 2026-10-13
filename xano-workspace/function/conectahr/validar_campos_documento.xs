@@ -91,17 +91,42 @@ function "ConectaHR/validar_campos_documento" {
       value = (($d|get:"descricao") != null ? (($d|get:"descricao")|to_text|trim) : "")
     }
 
+    // Campos dos tipos da change documentos-obrigatorios-por-contrato.
+    var $zona {
+      value = (($d|get:"zona") != null ? (($d|get:"zona")|to_text|trim) : "")
+    }
+
+    var $secao {
+      value = (($d|get:"secao") != null ? (($d|get:"secao")|to_text|trim) : "")
+    }
+
+    var $tipo_certidao {
+      value = (($d|get:"tipo_certidao") != null ? (($d|get:"tipo_certidao")|to_text|trim|to_lower) : "")
+    }
+
+    var $apolice {
+      value = (($d|get:"apolice_seguro") != null ? (($d|get:"apolice_seguro")|to_text|trim) : "")
+    }
+
+    var $razao_social {
+      value = (($d|get:"razao_social") != null ? (($d|get:"razao_social")|to_text|trim) : "")
+    }
+
+    var $natureza {
+      value = (($d|get:"natureza") != null ? (($d|get:"natureza")|to_text|trim|to_lower) : "")
+    }
+
     // ---------- Quais campos cada tipo usa (D1) ----------
     var $usa_numero {
-      value = (",rg,cpf,cin,cnh,ctps,registro_profissional,documentacao_migratoria,certificado_reservista,outro,"|contains:$t)
+      value = (",rg,cpf,cin,cnh,ctps,registro_profissional,documentacao_migratoria,certificado_reservista,titulo_eleitor,certidao_civil,cartao_cnpj,outro,"|contains:$t)
     }
 
     var $exige_numero {
-      value = ($usa_numero && $input.tipo != "outro")
+      value = ($usa_numero && $input.tipo != "outro" && $input.tipo != "certidao_civil")
     }
 
     var $usa_uf {
-      value = (",rg,cin,cnh,ctps,registro_profissional,"|contains:$t)
+      value = (",rg,cin,cnh,ctps,registro_profissional,titulo_eleitor,"|contains:$t)
     }
 
     var $exige_uf {
@@ -109,28 +134,28 @@ function "ConectaHR/validar_campos_documento" {
     }
 
     var $usa_emissao {
-      value = (",rg,cin,cnh,aso_admissional,laudo_deficiencia,certificado_profissional,comprovante_residencia,comprovante_escolaridade,documentacao_migratoria,certificado_reservista,outro,"|contains:$t)
+      value = (",rg,cin,cnh,aso_admissional,laudo_deficiencia,certificado_profissional,comprovante_residencia,comprovante_escolaridade,documentacao_migratoria,certificado_reservista,certidao_civil,termo_compromisso_estagio,cartao_cnpj,contrato_social,outro,"|contains:$t)
     }
 
     var $exige_emissao {
-      value = ($usa_emissao && $input.tipo != "outro")
+      value = ($usa_emissao && $input.tipo != "outro" && $input.tipo != "certidao_civil" && $input.tipo != "cartao_cnpj")
     }
 
     var $usa_validade {
-      value = (",cin,cnh,certificado_profissional,registro_profissional,documentacao_migratoria,outro,"|contains:$t)
+      value = (",cin,cnh,certificado_profissional,registro_profissional,documentacao_migratoria,termo_compromisso_estagio,outro,"|contains:$t)
     }
 
     var $exige_validade {
-      value = ($input.tipo == "cin" || $input.tipo == "cnh")
+      value = ($input.tipo == "cin" || $input.tipo == "cnh" || $input.tipo == "termo_compromisso_estagio")
     }
 
     // ---------- Rotulos das mensagens ----------
     var $rotulo_numero {
-      value = ($input.tipo == "rg" ? "o numero do RG" : ($input.tipo == "cpf" ? "o numero do CPF" : ($input.tipo == "cin" ? "o numero da CIN (o CPF)" : ($input.tipo == "cnh" ? "o numero de registro da CNH" : ($input.tipo == "ctps" ? "o numero da CTPS" : ($input.tipo == "documentacao_migratoria" ? "o numero do RNM" : ($input.tipo == "certificado_reservista" ? "o numero do certificado" : "o numero do registro")))))))
+      value = ($input.tipo == "rg" ? "o numero do RG" : ($input.tipo == "cpf" ? "o numero do CPF" : ($input.tipo == "cin" ? "o numero da CIN (o CPF)" : ($input.tipo == "cnh" ? "o numero de registro da CNH" : ($input.tipo == "ctps" ? "o numero da CTPS" : ($input.tipo == "documentacao_migratoria" ? "o numero do RNM" : ($input.tipo == "certificado_reservista" ? "o numero do certificado" : ($input.tipo == "titulo_eleitor" ? "o numero do titulo" : ($input.tipo == "cartao_cnpj" ? "o CNPJ" : "o numero do registro")))))))))
     }
 
     var $rotulo_emissao {
-      value = (($input.tipo == "rg" || $input.tipo == "cin") ? "a data de expedicao" : ($input.tipo == "aso_admissional" ? "a data do exame" : ($input.tipo == "laudo_deficiencia" ? "a data do laudo" : ($input.tipo == "certificado_profissional" ? "a data de conclusao" : ($input.tipo == "comprovante_escolaridade" ? "a data de conclusao ou da declaracao" : "a data de emissao")))))
+      value = (($input.tipo == "rg" || $input.tipo == "cin") ? "a data de expedicao" : ($input.tipo == "aso_admissional" ? "a data do exame" : ($input.tipo == "laudo_deficiencia" ? "a data do laudo" : ($input.tipo == "certificado_profissional" ? "a data de conclusao" : ($input.tipo == "comprovante_escolaridade" ? "a data de conclusao ou da declaracao" : ($input.tipo == "termo_compromisso_estagio" ? "o inicio do estagio" : ($input.tipo == "contrato_social" ? "a data do registro ou da ultima alteracao" : "a data de emissao")))))))
     }
 
     // ---------- Obrigatorios, na ordem da tela ----------
@@ -207,6 +232,46 @@ function "ConectaHR/validar_campos_documento" {
     }
 
     conditional {
+      if ($input.tipo == "certidao_civil" && $tipo_certidao == "") {
+        var.update $faltas {
+          value = $faltas|push:"Informe se e certidao de nascimento ou de casamento."
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "termo_compromisso_estagio" && $instituicao == "") {
+        var.update $faltas {
+          value = $faltas|push:"Informe a instituicao de ensino."
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "termo_compromisso_estagio" && $apolice == "") {
+        var.update $faltas {
+          value = $faltas|push:"Informe o numero da apolice do seguro contra acidentes."
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "cartao_cnpj" && $razao_social == "") {
+        var.update $faltas {
+          value = $faltas|push:"Informe a razao social."
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "contrato_social" && $natureza == "") {
+        var.update $faltas {
+          value = $faltas|push:"Informe o tipo da empresa."
+        }
+      }
+    }
+
+    conditional {
       if ($exige_numero && $numero == "") {
         var.update $faltas {
           value = $faltas|push:("Informe " ~ $rotulo_numero ~ ".")
@@ -234,6 +299,14 @@ function "ConectaHR/validar_campos_documento" {
       if ($exige_uf && $uf == "") {
         var.update $faltas {
           value = $faltas|push:"Informe a UF."
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "titulo_eleitor" && ($zona == "" || $secao == "")) {
+        var.update $faltas {
+          value = $faltas|push:"Informe a zona e a secao eleitoral."
         }
       }
     }
@@ -336,8 +409,48 @@ function "ConectaHR/validar_campos_documento" {
       }
     }
 
+    var $numero_digitos {
+      value = $numero|replace:".":""|replace:"-":""|replace:"/":""|replace:" ":""
+    }
+
+    var $sobra_numero {
+      value = $numero_digitos|replace:"0":""|replace:"1":""|replace:"2":""|replace:"3":""|replace:"4":""|replace:"5":""|replace:"6":""|replace:"7":""|replace:"8":""|replace:"9":""
+    }
+
     conditional {
-      if ($usa_emissao && $emissao != "" && $emissao > $hoje) {
+      if ($input.tipo == "titulo_eleitor" && $numero != "" && (($numero_digitos|strlen) != 12 || $sobra_numero != "")) {
+        var.update $faltas {
+          value = $faltas|push:"O numero do titulo de eleitor tem 12 digitos."
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "cartao_cnpj" && $numero != "" && (($numero_digitos|strlen) != 14 || $sobra_numero != "")) {
+        var.update $faltas {
+          value = $faltas|push:"O CNPJ tem 14 digitos."
+        }
+      }
+    }
+
+    conditional {
+      if ($tipo_certidao != "" && $input.tipo == "certidao_civil" && $tipo_certidao != "nascimento" && $tipo_certidao != "casamento") {
+        var.update $faltas {
+          value = $faltas|push:"Tipo de certidao invalido."
+        }
+      }
+    }
+
+    conditional {
+      if ($natureza != "" && $input.tipo == "contrato_social" && (",mei,ltda,slu,sa,outra,"|contains:("," ~ $natureza ~ ",")) == false) {
+        var.update $faltas {
+          value = $faltas|push:"Tipo de empresa invalido."
+        }
+      }
+    }
+
+    conditional {
+      if ($usa_emissao && $input.tipo != "termo_compromisso_estagio" && $emissao != "" && $emissao > $hoje) {
         var.update $faltas {
           value = $faltas|push:"A data de emissao nao pode ser futura."
         }
@@ -441,6 +554,46 @@ function "ConectaHR/validar_campos_documento" {
       if ($input.tipo == "documentacao_responsavel_legal") {
         var.update $dados_final {
           value = $dados_final|set:"responsavel_nome":($responsavel_nome|substr:0:100)|set:"responsavel_cpf":($responsavel_cpf|substr:0:14)|set:"vinculo":$vinculo
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "titulo_eleitor") {
+        var.update $dados_final {
+          value = $dados_final|set:"zona":($zona|substr:0:10)|set:"secao":($secao|substr:0:10)
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "certidao_civil") {
+        var.update $dados_final {
+          value = $dados_final|set:"tipo_certidao":$tipo_certidao
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "termo_compromisso_estagio") {
+        var.update $dados_final {
+          value = $dados_final|set:"instituicao":($instituicao|substr:0:100)|set:"apolice_seguro":($apolice|substr:0:100)
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "cartao_cnpj") {
+        var.update $dados_final {
+          value = $dados_final|set:"razao_social":($razao_social|substr:0:100)
+        }
+      }
+    }
+
+    conditional {
+      if ($input.tipo == "contrato_social") {
+        var.update $dados_final {
+          value = $dados_final|set:"natureza":$natureza
         }
       }
     }

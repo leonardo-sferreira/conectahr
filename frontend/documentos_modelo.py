@@ -148,6 +148,7 @@ RESULTADOS_ASO = {"apto": "Apto", "inapto": "Inapto"}
 NIVEIS_ESCOLARIDADE = {"fundamental": "Ensino fundamental", "medio": "Ensino médio", "tecnico": "Técnico", "superior": "Superior",
                        "pos_graduacao": "Pós-graduação", "mestrado": "Mestrado", "doutorado": "Doutorado"}
 VINCULOS = {"pai": "Pai", "mae": "Mãe", "tutor": "Tutor(a)", "curador": "Curador(a)", "outro": "Outro"}
+NATUREZAS_EMPRESA = {"mei": "MEI (CCMEI)", "ltda": "Ltda.", "slu": "Sociedade Limitada Unipessoal", "sa": "S.A.", "outra": "Outra"}
 _DIAS_COMPROVANTE_RESIDENCIA = 90
 
 
@@ -197,8 +198,19 @@ CAMPOS = {
     "certificado_reservista": [_numero("Número do certificado"), _emissao()],
     "documentacao_responsavel_legal": [_campo("responsavel_nome", "Nome do responsável"), _campo("responsavel_cpf", "CPF do responsável", "cpf"),
                                        _campo("vinculo", "Vínculo", "opcao", opcoes=VINCULOS)],
+    # Tipos da change documentos-obrigatorios-por-contrato.
+    "titulo_eleitor": [_numero("Número do título", ajuda="Os 12 dígitos do título."), _campo("zona", "Zona"), _campo("secao", "Seção"), _uf()],
+    "certidao_civil": [_campo("tipo_certidao", "Certidão de", "opcao", opcoes={"nascimento": "Nascimento", "casamento": "Casamento"}),
+                       _numero("Matrícula", obrigatorio=False, ajuda="Os 32 dígitos da matrícula, se a certidão tiver."), _emissao(obrigatorio=False)],
+    "termo_compromisso_estagio": [_campo("instituicao", "Instituição de ensino"), _campo("data_emissao", "Início do estágio", "periodo", destino="data_emissao"),
+                                  _campo("data_validade", "Fim do estágio", "validade", destino="data_validade"),
+                                  _campo("apolice_seguro", "Nº da apólice do seguro", ajuda="Seguro contra acidentes pessoais, obrigatório no estágio (Lei 11.788/2008).")],
+    "cartao_cnpj": [_numero("CNPJ", ajuda="Os 14 dígitos do CNPJ da sua empresa."), _campo("razao_social", "Razão social"), _emissao("Data da consulta", obrigatorio=False)],
+    "contrato_social": [_campo("natureza", "Tipo da empresa", "opcao", opcoes=NATUREZAS_EMPRESA), _emissao("Data do registro ou da última alteração")],
     "outro": [_campo("descricao", "Que documento é"), _numero("Número", obrigatorio=False), _emissao(obrigatorio=False), _validade()],
 }
+_DIGITOS_DO_NUMERO = {"cnh": (11, "O número de registro da CNH tem 11 dígitos."), "titulo_eleitor": (12, "O número do título de eleitor tem 12 dígitos."),
+                      "cartao_cnpj": (14, "O CNPJ tem 14 dígitos.")}
 
 
 def campos(tipo: str | None) -> list[dict]:
@@ -235,10 +247,11 @@ def validar_campos(tipo: str, valores: dict, hoje) -> str | None:
             return f"\"{c['rotulo']}\": CPF inválido. Confira os números."
         if c["tipo"] == "data" and valor > hoje:
             return f"\"{c['rotulo']}\" não pode ser uma data futura."
-    if tipo == "cnh":
-        numero = "".join(ch for ch in valores.get("numero_documento") or "" if ch not in ".- ")
-        if not (len(numero) == 11 and numero.isdigit()):
-            return "O número de registro da CNH tem 11 dígitos."
+    if tipo in _DIGITOS_DO_NUMERO and not _vazio(valores.get("numero_documento")):
+        tamanho, mensagem = _DIGITOS_DO_NUMERO[tipo]
+        numero = "".join(ch for ch in valores.get("numero_documento") or "" if ch not in ".-/ ")
+        if not (len(numero) == tamanho and numero.isdigit()):
+            return mensagem
     emissao, validade = valores.get("data_emissao"), valores.get("data_validade")
     if tipo == "comprovante_residencia" and emissao and (hoje - emissao).days > _DIAS_COMPROVANTE_RESIDENCIA:
         return "Envie um comprovante de residência dos últimos 90 dias."
@@ -273,7 +286,7 @@ def linhas_dados(documento: dict) -> list[tuple[str, str]]:
         valor = dados.get(c["chave"]) if c["destino"] == "dados" else documento.get(c["destino"])
         if _vazio(valor):
             continue
-        if c["tipo"] in ("data", "validade"):
+        if c["tipo"] in ("data", "validade", "periodo"):
             valor = data_br(valor) or str(valor)
         elif c["opcoes"]:
             valor = c["opcoes"].get(str(valor).lower(), c["opcoes"].get(str(valor), str(valor)))

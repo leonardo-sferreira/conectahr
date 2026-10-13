@@ -32,6 +32,11 @@ TIPOS_DOCUMENTO = {
     "documentacao_migratoria": "documentação migratória",
     "certificado_reservista": "certificado de reservista",
     "documentacao_responsavel_legal": "documentação do responsável legal",
+    "titulo_eleitor": "título de eleitor",
+    "certidao_civil": "certidão de nascimento ou casamento",
+    "termo_compromisso_estagio": "termo de compromisso de estágio",
+    "cartao_cnpj": "cartão CNPJ",
+    "contrato_social": "contrato social ou CCMEI",
     "outro": "outro documento",
 }
 

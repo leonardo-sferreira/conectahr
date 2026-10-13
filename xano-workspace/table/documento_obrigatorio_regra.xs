@@ -18,7 +18,7 @@ table documento_obrigatorio_regra {
     timestamp? updated_at?
 
     enum tipo_documento {
-      values = ["rg", "cpf", "cin", "cnh", "ctps", "aso_admissional", "laudo_deficiencia", "certificado_profissional", "comprovante_residencia", "comprovante_escolaridade", "registro_profissional", "documentacao_migratoria", "certificado_reservista", "documentacao_responsavel_legal", "outro"]
+      values = ["rg", "cpf", "cin", "cnh", "ctps", "aso_admissional", "laudo_deficiencia", "certificado_profissional", "comprovante_residencia", "comprovante_escolaridade", "registro_profissional", "documentacao_migratoria", "certificado_reservista", "documentacao_responsavel_legal", "titulo_eleitor", "certidao_civil", "termo_compromisso_estagio", "cartao_cnpj", "contrato_social", "outro"]
     }
 
     enum? tipo_contrato {

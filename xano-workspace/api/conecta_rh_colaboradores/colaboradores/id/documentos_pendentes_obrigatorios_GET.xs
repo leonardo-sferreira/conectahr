@@ -162,8 +162,31 @@ query "colaboradores/{id}/documentos_pendentes_obrigatorios" verb=GET {
               return = {type: "single"}
             } as $documento_existente
 
+            // RG e CIN sao a mesma identidade (a CIN substitui o RG): um aprovado cumpre a regra do outro
+            // (change documentos-obrigatorios-por-contrato, D3).
+            var $tipo_equivalente {
+              value = ($regra_item.tipo_documento == "rg" ? "cin" : ($regra_item.tipo_documento == "cin" ? "rg" : null))
+            }
+
+            var $documento_equivalente {
+              value = null
+            }
+
             conditional {
-              if ($documento_existente == null) {
+              if ($documento_existente == null && $tipo_equivalente != null) {
+                db.query documento {
+                  where = $db.documento.colaborador_id == $colaborador_alvo.id && $db.documento.tipo == $tipo_equivalente && $db.documento.status == "aprovado"
+                  return = {type: "single"}
+                } as $documento_outro_tipo
+
+                var.update $documento_equivalente {
+                  value = $documento_outro_tipo
+                }
+              }
+            }
+
+            conditional {
+              if ($documento_existente == null && $documento_equivalente == null) {
                 var.update $pendencias {
                   value = $pendencias|push:{
                     regra_id             : $regra_item.id

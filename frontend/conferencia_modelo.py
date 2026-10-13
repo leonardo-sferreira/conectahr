@@ -162,10 +162,14 @@ def linhas_regras(regras: list[dict], cargos: dict, departamentos: dict) -> list
         linhas.append({
             "documento": rotulo_tipo(r.get("tipo_documento")),
             "vale_para": " · ".join(partes) or "Todos",
-            "prazo": f"{prazo} dias" if prazo else "—",
+            "prazo": f"{prazo} dia{'s' if prazo != 1 else ''}" if prazo else "—",
             "guardar": _guardar_por(r),
             "obrigatorio": "Sim" if r.get("obrigatorio", True) else "Não",
+            "_ordem": (list(CONTRATOS).index(str(r.get("tipo_contrato") or "").upper()) if str(r.get("tipo_contrato") or "").upper() in CONTRATOS else 99,
+                       0 if r.get("obrigatorio", True) else 1, rotulo_tipo(r.get("tipo_documento")).casefold()),
         })
+    # Agrupado por contrato (a ordem de CONTRATOS; "Todos" primeiro), os obrigatórios antes dos opcionais.
+    linhas.sort(key=lambda l: l.pop("_ordem"))
     return linhas
 
 

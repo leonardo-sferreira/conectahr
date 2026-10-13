@@ -485,6 +485,15 @@ conferir(montar_campos("outro", {"descricao": "Carteira do conselho", "numero_do
 conferir(linhas_dados({"tipo": "cnh", "numero_documento": "12345678901", "estado_de_emissao": "SP", "data_validade": "2032-01-10", "dados": {"categoria": "AB"}})
          == [("Número de registro", "12345678901"), ("Categoria", "AB"), ("UF", "SP"), ("Validade", "10/01/2032")], "dados para o RH, na ordem do tipo e com data dd/mm/aaaa")
 conferir(sorted(TIPOS_ENVIO) == sorted(campos.__globals__["CAMPOS"]), "todo tipo que a pessoa envia tem os seus campos")
+conferir({"titulo_eleitor", "certidao_civil", "termo_compromisso_estagio", "cartao_cnpj", "contrato_social"} <= set(TIPOS_ENVIO),
+         "tipos novos da admissão (documentos-obrigatorios-por-contrato) podem ser enviados")
+conferir(validar_campos("titulo_eleitor", {"numero_documento": "1234 5678 901", "zona": "1", "secao": "2", "estado_de_emissao": "SP"}, hoje)
+         == "O número do título de eleitor tem 12 dígitos." and validar_campos("cartao_cnpj", {"numero_documento": "12.345.678/0001-95", "razao_social": "Exemplo Ltda"}, hoje) is None
+         and validar_campos("cartao_cnpj", {"numero_documento": "1234", "razao_social": "X"}, hoje) == "O CNPJ tem 14 dígitos.", "título com 12 dígitos e CNPJ com 14")
+conferir(validar_campos("termo_compromisso_estagio", {"instituicao": "Universidade Exemplo", "data_emissao": date(2026, 11, 3), "data_validade": date(2027, 11, 2),
+                                                      "apolice_seguro": "AP-1"}, hoje) is None
+         and validar_campos("termo_compromisso_estagio", {"instituicao": "U", "data_emissao": date(2026, 11, 3), "data_validade": date(2027, 11, 2)}, hoje)
+         == "Preencha \"Nº da apólice do seguro\".", "termo de estágio: início pode ser futuro; apólice do seguro obrigatória")
 
 at = app_logado("documentos", erro_preparar=ApiError("O envio de arquivos ainda nao foi configurado. Fale com o RH.", 500))
 at.button(key="btn_doc_novo").click()

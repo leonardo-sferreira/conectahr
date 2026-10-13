@@ -92,7 +92,7 @@ query catalogos verb=GET {
     }
 
     var $tipo_documento {
-      value = ["rg", "cpf", "cin", "cnh", "ctps", "aso_admissional", "laudo_deficiencia", "certificado_profissional", "comprovante_residencia", "comprovante_escolaridade", "registro_profissional", "documentacao_migratoria", "certificado_reservista", "documentacao_responsavel_legal", "outro"]
+      value = ["rg", "cpf", "cin", "cnh", "ctps", "aso_admissional", "laudo_deficiencia", "certificado_profissional", "comprovante_residencia", "comprovante_escolaridade", "registro_profissional", "documentacao_migratoria", "certificado_reservista", "documentacao_responsavel_legal", "titulo_eleitor", "certidao_civil", "termo_compromisso_estagio", "cartao_cnpj", "contrato_social", "outro"]
     }
 
     var $status_documento {
