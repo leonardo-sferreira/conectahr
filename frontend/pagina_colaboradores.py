@@ -31,6 +31,7 @@ from cadastro_modelo import (
     validar_admissao,
     validar_novo_usuario,
 )
+from cargos_modelo import cargos_do_departamento, rotulo_cargo
 from theme import alerta, render_hero, render_topbar
 
 CACHE = "cadastro_cache"
@@ -72,7 +73,7 @@ def concluir(aviso: str) -> None:
 @st.dialog("Admitir colaborador", width="medium", on_dismiss=fechar)
 def _modal_admitir(org: dict) -> None:
     deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or [] if d.get("ativo", True)}
-    cargos = {c.get("id"): c.get("nome") for c in org.get("cargos") or [] if c.get("ativo", True)}
+    niveis = {n.get("id"): n for n in org.get("niveis") or []}
     hoje = date.today()
     dados = {"nome": st.text_input("Nome completo", max_chars=100, key="adm_nome")}
     c1, c2 = st.columns(2)
@@ -84,7 +85,12 @@ def _modal_admitir(org: dict) -> None:
     dados["bairro"] = c2.text_input("Bairro", max_chars=100, key="adm_bairro")
     c1, c2 = st.columns(2)
     dados["departamento_id"] = c1.selectbox("Departamento", sorted(deps, key=deps.get), index=None, format_func=deps.get, placeholder="Escolha", key="adm_dep")
-    dados["cargo_id"] = c2.selectbox("Cargo", sorted(cargos, key=cargos.get), index=None, format_func=cargos.get, placeholder="Escolha", key="adm_cargo")
+    # Os cargos do departamento escolhido e os sem departamento (change cadastro-de-cargos, D3), com o nível do cargo.
+    cargos = {c.get("id"): rotulo_cargo(c, niveis) for c in cargos_do_departamento(org.get("cargos") or [], dados["departamento_id"])}
+    if st.session_state.get("adm_cargo") not in cargos:
+        st.session_state.adm_cargo = None
+    dados["cargo_id"] = c2.selectbox("Cargo", list(cargos), index=None, format_func=cargos.get, key="adm_cargo",
+                                     placeholder="Escolha" if dados["departamento_id"] else "Escolha o departamento antes")
     c1, c2 = st.columns(2)
     dados["tipo_contrato"] = c1.selectbox("Contrato", list(CONTRATOS), format_func=CONTRATOS.get, key="adm_contrato")
     dados["data_admissao"] = c2.date_input("Admissão", value=hoje, format="DD/MM/YYYY", key="adm_admissao")

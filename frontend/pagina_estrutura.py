@@ -5,7 +5,9 @@ Página "Estrutura da empresa" do RH e do Admin. Abas:
   "Importar feriados nacionais" (`feriados/importar`), que traz os nacionais da BrasilAPI.
 - "Níveis" (Figma 500:888; change organograma-hierarquia, D2 e D3): a hierarquia da empresa, com nome e ordem (1 é o
   topo); "Novo nível" e "Editar" (nome, ordem e situação), auditados no backend.
-- "Cargos" (Figma 500:1156): o nível de cada cargo e quantas pessoas o ocupam; "Mudar nível".
+- "Cargos" (Figma 500:1156 e modal 502:852; change cadastro-de-cargos): os cargos com senioridade, nível e
+  departamento; "Novo cargo" e "Editar" (nome, senioridade, departamento, nível, salário base e descrição), com o nome
+  que vai para a carteira montado na hora.
 
 Diferenças em relação ao Figma: sem a aba "Departamentos"; nos feriados, sem "Novo feriado", "Editar" e "Desativar"
 (o backend ainda não tem a edição nem a desativação, e o cadastro não guarda o tipo).
@@ -19,15 +21,19 @@ import streamlit as st
 from api_client import (
     ApiError,
     calendario,
+    criar_cargo,
     criar_nivel_hierarquico,
     definir_nivel_cargo,
+    editar_cargo,
     editar_nivel_hierarquico,
     importar_feriados,
+    listar_cargos,
     niveis_hierarquicos,
     organograma,
 )
+from cargos_modelo import SENIORIDADES, linhas_cargos, nome_base, titulo, validar_cargo
 from feriados_modelo import NOTA, anos_feriados, linhas_feriados, mensagem_importacao
-from organograma_modelo import SEM_NIVEL, linhas_cargos, linhas_niveis, validar_nivel
+from organograma_modelo import SEM_NIVEL, linhas_niveis, validar_nivel
 from theme import alerta, render_hero, render_topbar
 
 _PESOS = [0.8, 2.6, 1.3, 1.8]
@@ -39,7 +45,7 @@ def _fechar() -> None:
 
 
 def _invalidar_hierarquia() -> None:
-    for chave in ("estr_niveis", "estr_org", "org_cache"):
+    for chave in ("estr_niveis", "estr_org", "estr_cargos", "org_cache"):
         st.session_state.pop(chave, None)
 
 
@@ -136,29 +142,54 @@ def _modal_nivel(nivel: dict | None) -> None:
             st.rerun()
 
 
-@st.dialog("Nível do cargo", width="small", on_dismiss=_fechar)
-def _modal_cargo(cargo: dict, niveis: list[dict]) -> None:
-    st.html(f'<p class="crh-meta" style="margin:0">Cargo: <b>{html.escape(cargo["nome"])}</b></p>')
+@st.dialog("Cargo", width="medium", on_dismiss=_fechar)
+def _modal_cargo(cargo: dict | None, niveis: list[dict], deps: dict) -> None:
+    """Novo cargo ou edição (Figma 502:852). O nome que vai para a carteira é o nome-base com a senioridade."""
+    atual = cargo or {}
+    sen_opcoes = [None] + list(SENIORIDADES)
+    base = st.text_input("Nome do cargo", value=nome_base(atual.get("nome", ""), atual.get("senioridade")), max_chars=90,
+                         key="estr_cg_nome", placeholder="Ex.: Desenvolvedor Front-end")
+    c1, c2 = st.columns(2)
+    senioridade = c1.selectbox("Senioridade", sen_opcoes, index=sen_opcoes.index(atual.get("senioridade")) if atual.get("senioridade") in sen_opcoes else 0,
+                               format_func=lambda x: "Sem senioridade" if x is None else SENIORIDADES[x], key="estr_cg_sen")
+    dep_opcoes = [None] + sorted(deps, key=lambda d: deps[d] or "")
+    departamento = c2.selectbox("Departamento", dep_opcoes, index=dep_opcoes.index(atual.get("departamento_id")) if atual.get("departamento_id") in dep_opcoes else 0,
+                                format_func=lambda d: "Todos os departamentos" if d is None else deps[d], key="estr_cg_dep")
     ativos = [n for n in sorted(niveis, key=lambda n: int(n.get("ordem") or 0)) if n.get("ativo", True)]
-    opcoes = [None] + [n["id"] for n in ativos]
-    nomes = {n["id"]: f'{n.get("ordem")}. {n.get("nome")}' for n in ativos}
-    atual = cargo["nivel_id"] if cargo["nivel_id"] in opcoes else None
-    escolha = st.selectbox("Nível", opcoes, index=opcoes.index(atual), format_func=lambda i: SEM_NIVEL if i is None else nomes[i], key="estr_cg_nivel")
+    nv_opcoes = [None] + [n["id"] for n in ativos]
+    nomes_nv = {n["id"]: f'{n.get("ordem")}. {n.get("nome")}' for n in ativos}
+    c3, c4 = st.columns(2)
+    nivel = c3.selectbox("Nível", nv_opcoes, index=nv_opcoes.index(atual.get("nivel_id")) if atual.get("nivel_id") in nv_opcoes else 0,
+                         format_func=lambda i: SEM_NIVEL if i is None else nomes_nv[i], key="estr_cg_nivel")
+    salario = c4.number_input("Salário base (R$)", min_value=0.0, value=float(atual.get("salario") or 0), step=100.0, format="%.2f", key="estr_cg_salario")
+    descricao = st.text_area("Descrição (opcional)", value=atual.get("descricao", ""), max_chars=500, key="estr_cg_desc", height=70)
+    st.html(f'<div class="crh-campos crh-campos-direita"><p class="r">Na carteira</p><p class="v">{html.escape(titulo(base, senioridade) or "—")}</p></div>')
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="estr_cg_cancelar"):
             _fechar()
             st.rerun()
-        if st.button("Salvar", type="primary", key="estr_cg_salvar"):
+        if st.button("Salvar cargo", type="primary", key="estr_cg_salvar"):
+            erro_campo = validar_cargo(base, salario, senioridade)
+            if erro_campo:
+                alerta(slot, "erro", erro_campo)
+                return
+            nome = titulo(base, senioridade)
             try:
-                definir_nivel_cargo(st.session_state.token, cargo["id"], escolha)
+                if cargo:
+                    editar_cargo(st.session_state.token, cargo["id"], nome, descricao.strip(), salario, senioridade, departamento)
+                    if nivel != cargo.get("nivel_id"):
+                        definir_nivel_cargo(st.session_state.token, cargo["id"], nivel)
+                else:
+                    criar_cargo(st.session_state.token, nome, descricao.strip(), salario, senioridade, departamento, nivel)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
-            st.session_state.pop("estr_cg_nivel", None)
+            for chave in ("estr_cg_nome", "estr_cg_sen", "estr_cg_dep", "estr_cg_nivel", "estr_cg_salario", "estr_cg_desc"):
+                st.session_state.pop(chave, None)
             _invalidar_hierarquia()
             _fechar()
-            st.session_state.aviso_toast = f"Nível de {cargo['nome']} atualizado."
+            st.session_state.aviso_toast = f"Cargo {nome} salvo."
             st.rerun()
 
 
@@ -196,31 +227,52 @@ def _niveis(token: str) -> None:
             'Cada empresa cadastra a própria hierarquia.</p></div>')
 
 
+def _lista_cargos(token: str) -> list[dict] | None:
+    """`listar_cargos` (RH e Admin: todos os campos) guardado na sessão; None se não carregou (o erro já aparece)."""
+    if "estr_cargos" not in st.session_state:
+        try:
+            st.session_state.estr_cargos = listar_cargos(token).get("cargos") or []
+        except ApiError as erro:
+            alerta(st.empty(), "erro", erro.message)
+            return None
+    return st.session_state.estr_cargos
+
+
 def _cargos(token: str) -> None:
+    with st.container(horizontal=True, vertical_alignment="center", key="rh_barra"):
+        st.space("stretch")
+        if st.button("Novo cargo", type="primary", key="estr_novo_cargo"):
+            st.session_state.modal_estr = ("cargo", None)
+            st.rerun()
     dados = _hierarquia(token)
-    if dados is None:
+    cargos = _lista_cargos(token)
+    if dados is None or cargos is None:
         return
     niveis, org = dados
-    linhas = linhas_cargos(org.get("cargos") or [], niveis, org.get("colaboradores") or [])
-    pesos = [2.6, 1.4, 1, 1.2]
+    deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or []}
+    linhas = [l for l in linhas_cargos(cargos, niveis, deps, org.get("colaboradores") or []) if l["ativo"]]
+    pesos = [2.6, 1.1, 1.3, 1.6, 0.8]
     with st.container(key="rh_tabela"):
         with st.container(key="rh_cab"):
-            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Cargo", "Nível", "Pessoas", ""]):
+            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Cargo", "Senioridade", "Nível", "Departamento", ""]):
                 coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
         if not linhas:
             with st.container(key="rh_lin_vazio"):
-                st.html('<p class="crh-meta">Nenhum cargo ativo.</p>')
+                st.html('<p class="crh-meta">Nenhum cargo ativo. Use "Novo cargo".</p>')
         for l in linhas:
             with st.container(key=f"rh_lin_cg_{l['id']}"):
                 c = st.columns(pesos, vertical_alignment="center")
-                c[0].html(f'<p class="crh-doc-prazo">{html.escape(l["nome"])}</p>')
-                c[1].html(f'<span class="crh-selo neu">{html.escape(l["nivel"])}</span>')
-                c[2].html(f'<p class="crh-doc-prazo">{l["pessoas"]}</p>')
-                with c[3]:
-                    if st.button("Mudar nível", type="tertiary", key=f"estr_nivel_cg_{l['id']}"):
+                pessoas = f'{l["pessoas"]} pessoa{"s" if l["pessoas"] != 1 else ""}'
+                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["nome"])}</p><p class="d">{pessoas}</p></div>')
+                c[1].html(f'<span class="crh-selo neu">{html.escape(SENIORIDADES.get(l["senioridade"] or "", "—"))}</span>')
+                c[2].html(f'<p class="crh-doc-prazo">{html.escape(l["nivel"])}</p>')
+                c[3].html(f'<p class="crh-doc-prazo">{html.escape(l["departamento"])}</p>')
+                with c[4]:
+                    if st.button("Editar", type="tertiary", key=f"estr_editar_cg_{l['id']}"):
                         st.session_state.modal_estr = ("cargo", l["id"])
                         st.rerun()
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O nível do cargo ordena e rotula as pessoas no organograma.</p></div>')
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O nome do cargo é o que vai para a carteira, com a senioridade. '
+            'O nível ordena e rotula as pessoas no organograma.</p></div>')
 
 
 def pagina_estrutura() -> None:
@@ -257,8 +309,10 @@ def pagina_estrutura() -> None:
         _modal_nivel(nivel)
     elif tipo == "cargo":
         org = st.session_state.get("estr_org") or {}
-        cargo = next((l for l in linhas_cargos(org.get("cargos") or [], niveis, org.get("colaboradores") or []) if l["id"] == alvo), None)
-        if cargo is None:
+        deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or []}
+        linhas = linhas_cargos(st.session_state.get("estr_cargos") or [], niveis, deps, org.get("colaboradores") or [])
+        cargo = next((l for l in linhas if l["id"] == alvo), None)
+        if alvo is not None and cargo is None:
             _fechar()
             return
-        _modal_cargo(cargo, niveis)
+        _modal_cargo(cargo, niveis, deps)

@@ -10,6 +10,8 @@ query "cargos/{id}" verb=PATCH {
     text nome filters=trim|min:2|max:100
     text descricao filters=trim|max:500
     decimal salario_base filters=min:0
+    text? senioridade? filters=trim
+    int? departamento_id?
   }
 
   stack {
@@ -96,16 +98,56 @@ query "cargos/{id}" verb=PATCH {
     }
   
     // Atualiza somente os dados permitidos.
+    // Senioridade, departamento e nivel (change cadastro-de-cargos, D1, D3 e D4): opcionais e validados.
+    precondition ($input.senioridade == null || $input.senioridade == "" || $input.senioridade == "junior" || $input.senioridade == "pleno" || $input.senioridade == "senior" || $input.senioridade == "especialista") {
+      error_type = "inputerror"
+      error = "Senioridade invalida. Use junior, pleno, senior ou especialista."
+    }
+
+    var $senioridade_final {
+      value = ($input.senioridade == "" ? null : $input.senioridade)
+    }
+
+    conditional {
+      if ($input.departamento_id != null) {
+        db.get departamento {
+          field_name = "id"
+          field_value = $input.departamento_id
+        } as $departamento_escolhido
+
+        precondition ($departamento_escolhido != null && $departamento_escolhido.ativo) {
+          error_type = "inputerror"
+          error = "Escolha um departamento ativo."
+        }
+      }
+    }
+
+    // Atualiza somente os dados permitidos (o nivel tem o endpoint proprio, cargos/{id}/nivel).
     db.edit cargo {
       field_name = "id"
       field_value = $cargo_atual.id
       data = {
-        nome        : $input.nome
-        descricao   : $input.descricao
-        salario_base: $input.salario_base
-        updated_at  : "now"
+        nome           : $input.nome
+        descricao      : $input.descricao
+        salario_base   : $input.salario_base
+        senioridade    : $senioridade_final
+        departamento_id: $input.departamento_id
+        updated_at     : "now"
       }
     } as $cargo_atualizado
+
+    // Auditoria (sem o salario: dado de remuneracao nao vai inteiro para a auditoria).
+    db.add auditoria {
+      data = {
+        user_id       : $usuario_autenticado.id
+        acao          : "editar_cargo"
+        recurso       : "cargo"
+        registro_id   : $cargo_atual.id
+        valor_anterior: "nome=" ~ $cargo_atual.nome ~ "; senioridade=" ~ ($cargo_atual.senioridade|to_text) ~ "; departamento_id=" ~ ($cargo_atual.departamento_id|to_text)
+        valor_novo    : "nome=" ~ $input.nome ~ "; senioridade=" ~ ($senioridade_final|to_text) ~ "; departamento_id=" ~ ($input.departamento_id|to_text)
+        resultado     : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {

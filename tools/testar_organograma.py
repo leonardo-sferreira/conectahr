@@ -77,6 +77,8 @@ api_client.niveis_hierarquicos = lambda token: _falha_ou("niveis", {"niveis": NI
 api_client.criar_nivel_hierarquico = lambda token, nome, ordem: chamadas.append(("criar", nome, ordem)) or _falha_ou("criar", {"sucesso": True})
 api_client.editar_nivel_hierarquico = lambda token, nid, nome, ordem, ativo: chamadas.append(("editar", nid, nome, ordem, ativo)) or {"sucesso": True}
 api_client.definir_nivel_cargo = lambda token, cid, nid: chamadas.append(("cargo", cid, nid)) or {"sucesso": True}
+api_client.listar_cargos = lambda token: {"cargos": [dict(c, salario_base=5000, descricao="", ativo=True) for c in ORG["cargos"]]}
+api_client.editar_cargo = lambda token, cid, nome, desc, sal, sen, dep: chamadas.append(("editar_cargo", cid, nome, sen, dep)) or {"sucesso": True}
 api_client.calendario = lambda token: {"feriados": []}
 # Perfil (o cartão "Organograma" abre a tela): sem rede.
 api_client.meu_perfil_colaborador = lambda token: {"colaborador": {"id": 9, "nome": "Leonardo dos Santos", "cargo_id": 22, "departamento_id": 11},
@@ -140,8 +142,6 @@ conferir([x["nome"] for x in m.buscar(p, "analista")] == ["Carlos Souza", "Leona
          "busca por cargo ou nível; filtro por departamento")
 ln = m.linhas_niveis(NIVEIS, ORG["cargos"])
 conferir([(l["ordem"], l["nome"], l["cargos"]) for l in ln][:3] == [(1, "CEO", 1), (4, "Gerência", 2), (5, "Supervisão", 0)] and not ln[2]["ativo"], "níveis pela ordem, com quantos cargos usam")
-lc = m.linhas_cargos(ORG["cargos"], NIVEIS, ORG["colaboradores"])
-conferir(lc[0]["nome"] == "Diretora geral" and lc[-1]["nivel"] == m.SEM_NIVEL and next(l for l in lc if l["id"] == 22)["pessoas"] == 2, "cargos pelo nível, com as pessoas de cada um")
 conferir(m.validar_nivel("X", 1) and m.validar_nivel("Coordenação", 0) and m.validar_nivel("Coordenação", 3) is None, "nível: nome e ordem de 1 a 99")
 
 caso("Organograma (Figma 224:3593)")
@@ -218,15 +218,15 @@ at = app("ADMIN", "estrutura-da-empresa")
 at.button_group(key="estr_aba").set_value("Cargos")
 at = at.run()
 t = texto(at)
-conferir("Diretora geral" in t and m.SEM_NIVEL in t and "Mudar nível" in [b.label for b in at.button], "aba Cargos: nível e pessoas de cada cargo")
-at.button(key="estr_nivel_cg_25").click()
+conferir("Diretora geral" in t and m.SEM_NIVEL in t and "estr_editar_cg_25" in chaves(at), "aba Cargos: nível e pessoas de cada cargo")
+at.button(key="estr_editar_cg_25").click()
 at = at.run()
 conferir(at.selectbox(key="estr_cg_nivel").options[0] == m.SEM_NIVEL and "5. Supervisão" not in at.selectbox(key="estr_cg_nivel").options,
          "mudar nível: só os ativos, e 'Sem nível'")
 at.selectbox(key="estr_cg_nivel").set_value(3)
 at.button(key="estr_cg_salvar").click()
 at = at.run()
-conferir(("cargo", 25, 3) in chamadas, "salva o nível do cargo")
+conferir(("cargo", 25, 3) in chamadas and ("editar_cargo", 25, "Desenvolvedor", None, None) in chamadas, "editar o cargo salva o nível novo")
 at = app("COLABORADOR", "estrutura-da-empresa")
 conferir("Esta tela é só do RH e do Admin." in texto(at) and "estr_novo_nivel" not in chaves(at), "o Colaborador não mexe na hierarquia (o backend também recusa)")
 

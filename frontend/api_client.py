@@ -272,6 +272,25 @@ def editar_nivel_hierarquico(token: str, nivel_id: int, nome: str, ordem: int, a
     return _request("PATCH", f"niveis_hierarquicos/{int(nivel_id)}", token, GRUPO_CARGOS, {"nome": nome, "ordem": int(ordem), "ativo": bool(ativo)})
 
 
+def listar_cargos(token: str) -> dict:
+    """GET listar_cargos (RH e Admin) -> {cargos}: todos os campos, inclusive o salário base e os inativos."""
+    return _get("listar_cargos", token, GRUPO_CARGOS)
+
+
+def criar_cargo(token: str, nome: str, descricao: str, salario_base: float, senioridade: str | None, departamento_id: int | None,
+                nivel_id: int | None) -> dict:
+    """POST cargos (RH e Admin): o nome é o título completo, com a senioridade, como vai para a carteira."""
+    return _post("cargos", {"nome": nome, "descricao": descricao or "", "salario_base": float(salario_base), "ativo": True,
+                            "senioridade": senioridade, "departamento_id": departamento_id, "nivel_hierarquico_id": nivel_id}, token, GRUPO_CARGOS)
+
+
+def editar_cargo(token: str, cargo_id: int, nome: str, descricao: str, salario_base: float, senioridade: str | None,
+                 departamento_id: int | None) -> dict:
+    """PATCH cargos/{id} (RH e Admin): nome, descrição, salário, senioridade e departamento (o nível é em cargos/{id}/nivel)."""
+    return _request("PATCH", f"cargos/{int(cargo_id)}", token, GRUPO_CARGOS, {"nome": nome, "descricao": descricao or "", "salario_base": float(salario_base),
+                                                                               "senioridade": senioridade, "departamento_id": departamento_id})
+
+
 def definir_nivel_cargo(token: str, cargo_id: int, nivel_id: int | None) -> dict:
     """PATCH cargos/{id}/nivel (RH e Admin): só o nível do cargo; None tira o nível."""
     return _request("PATCH", f"cargos/{int(cargo_id)}/nivel", token, GRUPO_CARGOS, {"nivel_hierarquico_id": nivel_id})

@@ -10,6 +10,9 @@ query cargos verb=POST {
     text descricao filters=trim|max:500
     decimal salario_base filters=min:0
     bool ativo
+    text? senioridade? filters=trim
+    int? departamento_id?
+    int? nivel_hierarquico_id?
   }
 
   stack {
@@ -84,16 +87,70 @@ query cargos verb=POST {
       error = "Já existe um cargo cadastrado com este nome."
     }
   
+
+    // Senioridade, departamento e nivel (change cadastro-de-cargos, D1, D3 e D4): opcionais e validados.
+    precondition ($input.senioridade == null || $input.senioridade == "" || $input.senioridade == "junior" || $input.senioridade == "pleno" || $input.senioridade == "senior" || $input.senioridade == "especialista") {
+      error_type = "inputerror"
+      error = "Senioridade invalida. Use junior, pleno, senior ou especialista."
+    }
+
+    var $senioridade_final {
+      value = ($input.senioridade == "" ? null : $input.senioridade)
+    }
+
+    conditional {
+      if ($input.departamento_id != null) {
+        db.get departamento {
+          field_name = "id"
+          field_value = $input.departamento_id
+        } as $departamento_escolhido
+
+        precondition ($departamento_escolhido != null && $departamento_escolhido.ativo) {
+          error_type = "inputerror"
+          error = "Escolha um departamento ativo."
+        }
+      }
+    }
+
+    conditional {
+      if ($input.nivel_hierarquico_id != null) {
+        db.get nivel_hierarquico {
+          field_name = "id"
+          field_value = $input.nivel_hierarquico_id
+        } as $nivel_escolhido
+
+        precondition ($nivel_escolhido != null && $nivel_escolhido.ativo) {
+          error_type = "inputerror"
+          error = "Escolha um nivel ativo."
+        }
+      }
+    }
+
     // Cria o cargo.
     db.add cargo {
       data = {
-        nome        : $input.nome
-        descricao   : $input.descricao
-        salario_base: $input.salario_base
-        ativo       : $input.ativo
-        updated_at  : "now"
+        nome                : $input.nome
+        descricao           : $input.descricao
+        salario_base        : $input.salario_base
+        ativo               : $input.ativo
+        senioridade         : $senioridade_final
+        departamento_id     : $input.departamento_id
+        nivel_hierarquico_id: $input.nivel_hierarquico_id
+        updated_at          : "now"
       }
     } as $cargo_criado
+
+    // Auditoria (sem o salario: dado de remuneracao nao vai inteiro para a auditoria).
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "criar_cargo"
+        recurso    : "cargo"
+        registro_id: $cargo_criado.id
+        valor_novo : "nome=" ~ $input.nome ~ "; senioridade=" ~ ($senioridade_final|to_text) ~ "; departamento_id=" ~ ($input.departamento_id|to_text) ~ "; nivel_hierarquico_id=" ~ ($input.nivel_hierarquico_id|to_text)
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
