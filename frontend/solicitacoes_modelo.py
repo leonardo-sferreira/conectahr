@@ -21,8 +21,8 @@ TIPOS = {
     "documento_avulso": "Documento avulso",
     "outra": "Outro pedido",
 }
-ABAS = {"Em aberto": ("recebida", "em_analise"), "Atendidas": ("atendida",), "Indeferidas": ("indeferida",)}
-_SITUACAO = {"recebida": ("Recebida", "amb"), "em_analise": ("Em análise", "amb"), "atendida": ("Atendida", "ok"), "indeferida": ("Indeferida", "err")}
+ABAS = {"Em aberto": ("recebida", "em_analise"), "Atendidas": ("atendida",), "Recusadas": ("indeferida",)}
+_SITUACAO = {"recebida": ("Recebida", "amb"), "em_analise": ("Em análise", "amb"), "atendida": ("Atendida", "ok"), "indeferida": ("Recusada", "err")}
 PRAZO_DIAS = 15
 # Campo do pedido (Perfil) -> campo de `colaboradores/{id}` PATCH. Endereço o RH ajusta campo a campo.
 CAMPO_PARA_CADASTRO = {"Nome completo": "nome", "CPF": "cpf", "Data de nascimento": "data_nascimento", "Telefone": "telefone", "E-mail pessoal": "email_pessoal"}
@@ -147,12 +147,12 @@ def validar_dados_pessoais(dados: dict, hoje: date) -> str | None:
         return "Data de nascimento inválida. Use dd/mm/aaaa."
     if nasc >= hoje:
         return "A data de nascimento precisa ser anterior a hoje."
-    for campo, rotulo in (("telefone", "o telefone"), ("cep", "o CEP"), ("logradouro", "o logradouro"), ("numero", "o número"), ("bairro", "o bairro"), ("cidade", "a cidade")):
-        if not dados.get(campo, "").strip():
-            return f"Informe {rotulo}."
+    # Contato e endereço são opcionais (13/10/2026): um pedido de CPF ou de nome é aplicado mesmo com a ficha sem
+    # endereço; o backend mantém o que já está na ficha quando o campo vem vazio. Só se confere o que veio preenchido.
     if len(dados.get("cep", "").strip()) > 9:
         return "O CEP tem no máximo 9 caracteres."
-    if not re.fullmatch(r"[A-Za-z]{2}", dados.get("estado", "").strip()):
+    estado = dados.get("estado", "").strip()
+    if estado and not re.fullmatch(r"[A-Za-z]{2}", estado):
         return "Informe o estado com 2 letras (por exemplo, SP)."
     return None
 

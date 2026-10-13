@@ -34,7 +34,7 @@ _SITUACAO = {
     "recebida": ("Recebido", "neu"),
     "em_analise": ("Em análise", "amb"),
     "atendida": ("Concluído", "ok"),
-    "indeferida": ("Indeferido", "err"),
+    "indeferida": ("Recusado", "err"),
 }
 
 FORMATOS = {

@@ -79,7 +79,7 @@ query "beneficios/{id}" verb=PATCH {
       error = "Beneficio nao encontrado."
     }
 
-    precondition (["vale_refeicao", "vale_alimentacao", "vale_transporte", "plano_saude", "plano_odontologico", "seguro_vida", "auxilio_home_office", "auxilio_creche", "outro"]|contains:$input.tipo) {
+    precondition (",vale_refeicao,vale_alimentacao,vale_transporte,plano_saude,plano_odontologico,seguro_vida,auxilio_home_office,auxilio_creche,outro,"|contains:("," ~ $input.tipo ~ ",")) {
       error_type = "inputerror"
       error = "Tipo de beneficio invalido."
     }

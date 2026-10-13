@@ -164,6 +164,8 @@ conferir(m.aplicar_pedido(atuais, {"campo": "Data de nascimento", "novo": "12/04
 conferir(m.aplicar_pedido(atuais, {"campo": "Endereço", "novo": "Rua B"}) == atuais, "endereço: o RH ajusta campo a campo")
 conferir(m.validar_dados_pessoais(aplicado, HOJE) is None and "CPF inválido" in m.validar_dados_pessoais(dict(aplicado, cpf="123"), HOJE), "validação dos dados pessoais")
 conferir("2 letras" in m.validar_dados_pessoais(dict(aplicado, estado="São Paulo"), HOJE), "estado com 2 letras")
+sem_endereco = dict(aplicado, telefone="", cep="", logradouro="", numero="", complemento="", bairro="", cidade="", estado="")
+conferir(m.validar_dados_pessoais(sem_endereco, HOJE) is None, "ficha sem telefone nem endereço: o pedido de CPF passa (o backend mantém o que está na ficha)")
 
 # ---------------------------------------------------------------------------
 caso("Lista do RH")

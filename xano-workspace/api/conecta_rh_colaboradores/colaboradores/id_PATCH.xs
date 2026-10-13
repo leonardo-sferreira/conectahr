@@ -13,14 +13,16 @@ query "colaboradores/{id}" verb=PATCH {
     text cpf filters=trim|min:11|max:14
     email email_pessoal filters=trim|lower
     date data_nascimento
-    text telefone filters=trim|max:20
-    text cep filters=trim|max:9
-    text logradouro filters=trim|max:150
-    text numero filters=trim|max:20
-    text complemento filters=trim|max:100
-    text bairro filters=trim|max:100
-    text cidade filters=trim|max:100
-    text estado filters=trim|min:2|max:2
+    // Contato e endereco opcionais (13/10/2026): o RH aplica um pedido de CPF ou de nome mesmo que a ficha
+    // ainda nao tenha endereco. Vazio mantem o que ja esta na ficha.
+    text? telefone? filters=trim|max:20
+    text? cep? filters=trim|max:9
+    text? logradouro? filters=trim|max:150
+    text? numero? filters=trim|max:20
+    text? complemento? filters=trim|max:100
+    text? bairro? filters=trim|max:100
+    text? cidade? filters=trim|max:100
+    text? estado? filters=trim|max:2
   }
 
   stack {
@@ -126,9 +128,43 @@ query "colaboradores/{id}" verb=PATCH {
       error = "Este e-mail pessoal já pertence a outro colaborador."
     }
   
-    // Normaliza a sigla do estado.
+    // Contato e endereco: o valor enviado, ou o da ficha quando vem vazio.
+    var $telefone_final {
+      value = ($input.telefone != null && $input.telefone != "" ? $input.telefone : $colaborador_atual.telefone)
+    }
+
+    var $cep_final {
+      value = ($input.cep != null && $input.cep != "" ? $input.cep : $colaborador_atual.cep)
+    }
+
+    var $logradouro_final {
+      value = ($input.logradouro != null && $input.logradouro != "" ? $input.logradouro : $colaborador_atual.logradouro)
+    }
+
+    var $numero_final {
+      value = ($input.numero != null && $input.numero != "" ? $input.numero : $colaborador_atual.numero)
+    }
+
+    var $complemento_final {
+      value = ($input.complemento != null ? $input.complemento : $colaborador_atual.complemento)
+    }
+
+    var $bairro_final {
+      value = ($input.bairro != null && $input.bairro != "" ? $input.bairro : $colaborador_atual.bairro)
+    }
+
+    var $cidade_final {
+      value = ($input.cidade != null && $input.cidade != "" ? $input.cidade : $colaborador_atual.cidade)
+    }
+
+    // Normaliza a sigla do estado; quando vem, precisa ser uma UF (comparacao em texto: contains em lista nao funciona).
     var $estado_normalizado {
-      value = $input.estado|trim|to_upper
+      value = ($input.estado != null && $input.estado != "" ? ($input.estado|trim|to_upper) : $colaborador_atual.estado)
+    }
+
+    precondition ($estado_normalizado == null || $estado_normalizado == "" || (",AC,AL,AP,AM,BA,CE,DF,ES,GO,MA,MT,MS,MG,PA,PB,PR,PE,PI,RJ,RN,RS,RO,RR,SC,SP,SE,TO,"|contains:("," ~ $estado_normalizado ~ ","))) {
+      error_type = "inputerror"
+      error = "Estado invalido. Use a sigla da UF, como SP."
     }
   
     // Atualiza somente os dados pessoais permitidos.
@@ -140,13 +176,13 @@ query "colaboradores/{id}" verb=PATCH {
         cpf            : $resultado_cpf.cpf_normalizado
         email_pessoal  : $input.email_pessoal
         data_nascimento: $input.data_nascimento
-        telefone       : $input.telefone
-        cep            : $input.cep
-        logradouro     : $input.logradouro
-        numero         : $input.numero
-        complemento    : $input.complemento
-        bairro         : $input.bairro
-        cidade         : $input.cidade
+        telefone       : $telefone_final
+        cep            : $cep_final
+        logradouro     : $logradouro_final
+        numero         : $numero_final
+        complemento    : $complemento_final
+        bairro         : $bairro_final
+        cidade         : $cidade_final
         estado         : $estado_normalizado
         updated_at     : "now"
       }

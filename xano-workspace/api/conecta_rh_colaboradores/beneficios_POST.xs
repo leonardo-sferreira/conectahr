@@ -68,7 +68,7 @@ query beneficios verb=POST {
       error = "Somente RH ou Admin podem gerenciar beneficios."
     }
 
-    precondition (["vale_refeicao", "vale_alimentacao", "vale_transporte", "plano_saude", "plano_odontologico", "seguro_vida", "auxilio_home_office", "auxilio_creche", "outro"]|contains:$input.tipo) {
+    precondition (",vale_refeicao,vale_alimentacao,vale_transporte,plano_saude,plano_odontologico,seguro_vida,auxilio_home_office,auxilio_creche,outro,"|contains:("," ~ $input.tipo ~ ",")) {
       error_type = "inputerror"
       error = "Tipo de beneficio invalido."
     }
