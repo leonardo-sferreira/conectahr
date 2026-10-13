@@ -61,7 +61,7 @@ Para copiar o padrão, use um endpoint recente como modelo, por exemplo
 - `db.get` com `field_value` nulo falha: confira antes.
 - `now - <milissegundos>` falha com "Not numeric." (HTTP 500). Para somar ou subtrair tempo, use
   `now|add_secs_to_timestamp:-604800` (segundos, aceita negativo).
-- `contains` numa lista de ids montada com `push` (ou vinda de `json`) não reconhece o id. Monte um texto com
+- `contains` em lista **nunca** reconhece o item, nem em lista literal (`["a", "b"]|contains:"a"` dá falso; conferido em 13/10/2026), nem montada com `push` ou vinda de `json`. Monte um texto com
   vírgulas nas pontas e compare em texto: `("," ~ ($ids|join:",") ~ ",")|contains:("," ~ ($id|to_text) ~ ",")`.
 - Numa lista literal (`[{v: $x.campo}]`) as variáveis não são avaliadas: monte com `[]|push:{...}`.
 - O operador `%` falha com "Not numeric.": para o resto, use `$x - (($x / 60)|floor) * 60`.

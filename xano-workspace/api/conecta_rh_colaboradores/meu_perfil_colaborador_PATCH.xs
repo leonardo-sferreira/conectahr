@@ -117,7 +117,7 @@ query meu_perfil_colaborador verb=PATCH {
     foreach ($telefone_caracteres) {
       each as $caractere {
         conditional {
-          if (["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]|contains:$caractere) {
+          if ("0123456789"|contains:$caractere) {
             var.update $telefone_digitos {
               value = $telefone_digitos ~ $caractere
             }
@@ -142,7 +142,7 @@ query meu_perfil_colaborador verb=PATCH {
     foreach ($cep_caracteres) {
       each as $caractere {
         conditional {
-          if (["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]|contains:$caractere) {
+          if ("0123456789"|contains:$caractere) {
             var.update $cep_digitos {
               value = $cep_digitos ~ $caractere
             }
@@ -182,7 +182,7 @@ query meu_perfil_colaborador verb=PATCH {
       value = $input.estado|trim|to_upper
     }
 
-    precondition (["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"]|contains:$estado_normalizado) {
+    precondition (",AC,AL,AP,AM,BA,CE,DF,ES,GO,MA,MT,MS,MG,PA,PB,PR,PE,PI,RJ,RN,RS,RO,RR,SC,SP,SE,TO,"|contains:("," ~ $estado_normalizado ~ ",")) {
       error_type = "inputerror"
       error = "Estado (UF) invalido."
     }
