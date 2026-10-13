@@ -101,6 +101,9 @@ def _instalar_api_simulada():
     api_client.meus_comunicados = lambda token: {"comunicados": []}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.organograma = lambda token: ORGANOGRAMA
+    # "Pedir documento" carrega as pessoas de `colaboradores` ao abrir (desligado fica de fora).
+    api_client.colaboradores = lambda token: chamadas.append(("colaboradores",)) or _falha_ou("colaboradores", {"colaboradores": [
+        dict(c, status="Ativo") for c in ORGANOGRAMA["colaboradores"]] + [{"id": 99, "nome": "Pessoa Desligada", "departamento_id": 2, "status": "Desligado"}]})
     api_client.documentos_rh = lambda token: chamadas.append(("documentos",)) or _falha_ou("documentos", {"documentos": estado["documentos"]})
     api_client.pendencias_documento = lambda token: {"pendencias": estado["pendencias"]}
     api_client.documentos_obrigatorios = lambda token: _falha_ou("regras", {"regras": REGRAS})
@@ -294,6 +297,9 @@ at = at.run()
 at.button(key="rh_pedir_ok").click()
 at = at.run()
 conferir("Escolha o colaborador." in texto(at) and not any(c[0] == "pedir" for c in chamadas), "sem colaborador, não pede")
+conferir(("colaboradores",) in chamadas and "Juliana Prado — TI" in at.selectbox(key="rh_pedir_colab").options
+         and not any("Desligada" in o for o in at.selectbox(key="rh_pedir_colab").options),
+         "as pessoas vêm de `colaboradores` ao abrir o modal, sem os desligados")
 at.selectbox(key="rh_pedir_colab").set_value(11)
 at.selectbox(key="rh_pedir_tipo").set_value("certificado_reservista")
 at.text_input(key="rh_pedir_obs").set_value("Frente e verso.")
@@ -325,6 +331,44 @@ at.button_group(key="rh_aba").set_value("Obrigatórios por cargo")
 at = at.run()
 conferir("Erro inesperado" in texto(at), "erro ao carregar as regras fica na aba")
 
+caso("Pedir documento sem conseguir carregar as pessoas")
+at = app(erro_colaboradores=ApiError("Muitas requisicoes. Tente de novo em instantes.", 429))
+at.button(key="rh_btn_pedir").click()
+at = at.run()
+conferir("Não foi possível carregar as pessoas agora" in texto(at) and "rh_pedir_recarregar" in chaves(at) and "rh_pedir_ok" not in chaves(at),
+         "falha ao carregar as pessoas: aviso e 'Tentar de novo', em vez de uma lista vazia")
+
+caso("Aba 'Aceitos' (documentos aprovados e histórico)")
+from conferencia_modelo import linhas_aceitos  # noqa: E402
+
+DOCS_ACEITOS = [
+    {"id": 201, "colaborador_id": 7, "tipo": "rg", "nome_documento": "RG", "status": "aprovado", "updated_at": "2026-10-10T10:00:00Z", "numero_documento": "12.345.678-9",
+     "estado_de_emissao": "SP", "data_emissao": "2015-02-01", "dados": {"orgao_emissor": "SSP"}},
+    {"id": 202, "colaborador_id": 11, "tipo": "cnh", "nome_documento": "CNH", "status": "aprovado", "updated_at": "2026-10-12T10:00:00Z", "data_validade": "2020-01-01"},
+    {"id": 203, "colaborador_id": 11, "tipo": "rg", "nome_documento": "RG", "status": "substituido", "updated_at": "2026-01-05T10:00:00Z"},
+    {"id": 204, "colaborador_id": 12, "tipo": "cpf", "nome_documento": "CPF", "status": "rejeitado", "updated_at": "2026-10-11T10:00:00Z"},
+]
+mapa_t = {7: {"nome": "Ana Ribeiro", "detalhe": "RH"}, 11: {"nome": "Juliana Prado", "detalhe": "TI"}}
+ac = linhas_aceitos(DOCS_ACEITOS, mapa_t, date(2026, 10, 13))
+conferir([l["id"] for l in ac] == [202, 201] and ac[0]["situacao"] == ("Vencido", "err") and ac[1]["situacao"] == ("Válido", "ok"),
+         "aceitos: só os aprovados, do mais recente ao mais antigo; aprovado com a validade passada aparece como vencido")
+conferir([l["id"] for l in linhas_aceitos(DOCS_ACEITOS, mapa_t, date(2026, 10, 13), historico=True)] == [202, 201, 203]
+         and [l["id"] for l in linhas_aceitos(DOCS_ACEITOS, mapa_t, date(2026, 10, 13), pessoa=11, historico=True)] == [202, 203]
+         and [l["id"] for l in linhas_aceitos(DOCS_ACEITOS, mapa_t, date(2026, 10, 13), tipo="rg", historico=True)] == [201, 203],
+         "histórico inclui o substituído (o recusado nunca entra); filtros por pessoa e por tipo")
+conferir(("Órgão emissor", "SSP") in ac[1]["dados_informados"] and ac[1]["aceito_em"] == "10/10/2026" and ac[1]["validade"] == "Não vence", "linha com os dados preenchidos, a data do aceite e a validade")
+at = app(documentos=DOCS_ACEITOS)
+at.button_group(key="rh_aba").set_value("Aceitos")
+at = at.run()
+t = texto(at)
+conferir("Aceito em" in t and "Ana Ribeiro" in t and "Juliana Prado" in t and "Válido" in t and "Carlos Souza" not in t
+         and [e.label for e in at.expander].count("Ver dados e arquivo") == 2, "a aba mostra os aceitos, cada um com a seta de dados e arquivo")
+at.toggle(key="rh_aceitos_hist").set_value(True)
+at = at.run()
+conferir("Substituído" in texto(at) and [e.label for e in at.expander].count("Ver dados e arquivo") == 3, "'Mostrar o histórico' inclui o substituído")
+at.selectbox(key="rh_aceitos_pessoa").set_value(7)
+at = at.run()
+conferir([e.label for e in at.expander].count("Ver dados e arquivo") == 1 and "Juliana Prado" not in texto(at), "filtro por pessoa")
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:
     print("Falharam:")

@@ -23,6 +23,7 @@ from api_client import (
     abrir_arquivo_documento,
     aprovar_documento,
     arquivar_documento,
+    colaboradores,
     criar_regra_documento,
     documentos_obrigatorios,
     documentos_rh,
@@ -35,10 +36,13 @@ from api_client import (
 from conferencia_modelo import (
     CONTRATOS,
     EVENTOS_RETENCAO,
+    linhas_aceitos,
     linhas_para_conferir,
     linhas_pendencias,
     linhas_regras,
     pessoas,
+    pessoas_dos_documentos,
+    pessoas_para_pedido,
     resumo,
     tipos_presentes,
     validar_motivo,
@@ -48,7 +52,7 @@ from conferencia_modelo import (
 from documentos_modelo import TIPOS_ENVIO, rotulo_tipo
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
-_ABAS = ["Para conferir", "Pendências pedidas", "Obrigatórios por cargo"]
+_ABAS = ["Para conferir", "Aceitos", "Pendências pedidas", "Obrigatórios por cargo"]
 _CACHE = "conferencia_cache"
 _VALIDADE_CACHE_S = 20
 
@@ -168,8 +172,34 @@ def _modal_arquivar(linha: dict) -> None:
         _concluir("Documento arquivado.")
 
 
+def _pessoas_para_pedido(token: str, organograma_dados: dict) -> dict | str:
+    """As pessoas que podem receber um pedido, de `colaboradores` (RH e Admin), guardadas na sessão por 60 s. Carregadas
+    quando o modal abre, e não junto com a página, para a chamada não se perder no limite de requisições do Xano (antes
+    a lista vinha do organograma e, se ele falhasse, o modal mostrava "No results" sem explicar)."""
+    guardado = st.session_state.get("rh_pessoas_pedido")
+    if guardado and time.time() - guardado["em"] < 60:
+        return guardado["dados"]
+    try:
+        lista = colaboradores(token).get("colaboradores") or []
+    except ApiError as erro:
+        return erro.message
+    deps = {d.get("id"): d.get("nome") for d in (organograma_dados or {}).get("departamentos") or []}
+    mapa = pessoas_para_pedido(lista, deps)
+    st.session_state.rh_pessoas_pedido = {"em": time.time(), "dados": mapa}
+    return mapa
+
+
 @st.dialog("Pedir documento", width="small", on_dismiss=_fechar)
-def _modal_pedir(mapa_pessoas: dict) -> None:
+def _modal_pedir(token: str, organograma_dados: dict) -> None:
+    mapa_pessoas = _pessoas_para_pedido(token, organograma_dados)
+    if isinstance(mapa_pessoas, str):
+        alerta(st.empty(), "erro", f"Não foi possível carregar as pessoas agora: {mapa_pessoas}")
+        if st.button("Tentar de novo", key="rh_pedir_recarregar"):
+            st.rerun()
+        return
+    if not mapa_pessoas:
+        st.html('<p class="crh-meta">Nenhum colaborador ativo para receber o pedido.</p>')
+        return
     ids = sorted(mapa_pessoas, key=lambda i: mapa_pessoas[i]["nome"])
     colaborador = st.selectbox(
         "Colaborador", ids, index=None, placeholder="Escolha a pessoa",
@@ -367,6 +397,24 @@ def _detalhes(l: dict) -> None:
                 st.rerun()
 
 
+def _tabela_aceitos(linhas: list[dict]) -> None:
+    """Aba "Aceitos": os documentos aprovados (e, com o histórico, os vencidos e substituídos), com a seta de detalhes."""
+    pesos = [3, 2.3, 1.3, 1.3, 1.4]
+    with st.container(key="rh_tabela"):
+        _cabecalho(["Pessoa", "Documento", "Aceito em", "Validade", "Situação"], pesos)
+        if not linhas:
+            _vazio("Nenhum documento aceito com esses filtros.")
+        for i, l in enumerate(linhas):
+            with st.container(key=f"rh_lin_{i}"):
+                c = st.columns(pesos, vertical_alignment="center")
+                _celula_pessoa(c[0], l["pessoa"], l["detalhe"])
+                _celula_texto(c[1], l["documento"])
+                _celula_texto(c[2], l["aceito_em"])
+                _celula_texto(c[3], l["validade"])
+                _celula_selo(c[4], l["situacao"])
+                _detalhes(l)
+
+
 def _tabela_pendencias(linhas: list[dict]) -> None:
     pesos = [3, 2.6, 1.4, 1.4, 1.6]
     with st.container(key="rh_tabela"):
@@ -440,13 +488,19 @@ def pagina_conferencia_documentos() -> None:
         with st.container(key="cfg_abas", width="content"):
             aba = st.segmented_control("Aba", _ABAS, default=_ABAS[0], required=True, key="rh_aba", label_visibility="collapsed")
         st.space("stretch")
-        tipo = None
-        if aba == _ABAS[0]:
+        tipo = pessoa_filtro = None
+        historico = False
+        if aba == "Aceitos":
+            historico = st.toggle("Mostrar o histórico", key="rh_aceitos_hist", help="Inclui os documentos aceitos que depois venceram ou foram substituídos.")
+            nomes = pessoas_dos_documentos(dados["documentos"], mapa, ("aprovado", "vencido", "substituido") if historico else ("aprovado",))
+            pessoa_filtro = st.selectbox("Pessoa", [None] + list(nomes), format_func=lambda i: "Pessoa: Todas" if i is None else nomes[i],
+                                         key="rh_aceitos_pessoa", label_visibility="collapsed", width=220)
+        if aba in ("Para conferir", "Aceitos"):
             tipo = st.selectbox(
                 "Tipo", [None] + tipos_presentes(dados["documentos"]), format_func=lambda t: "Tipo: Todos" if t is None else rotulo_tipo(t),
                 key="rh_tipo", label_visibility="collapsed", width=200,
             )
-        if aba == _ABAS[2]:
+        if aba == "Obrigatórios por cargo":
             if st.button("Nova regra", key="rh_btn_regra"):
                 st.session_state.modal_rh = ("regra", None)
         else:
@@ -461,7 +515,10 @@ def pagina_conferencia_documentos() -> None:
         linhas = linhas_para_conferir(dados["documentos"], mapa, usuario.get("colaborador_id"), tipo)
         _tabela_conferir(linhas)
         _nota('"Vencido": documento aprovado com a validade já passada.')
-    elif aba == _ABAS[1]:
+    elif aba == "Aceitos":
+        _tabela_aceitos(linhas_aceitos(dados["documentos"], mapa, hoje, pessoa_filtro, tipo, historico))
+        _nota('"Aceito em": a data da aprovação. Abra a seta para ver os dados que a pessoa preencheu e o arquivo.')
+    elif aba == "Pendências pedidas":
         _tabela_pendencias(linhas_pendencias(dados["pendencias"], mapa, usuario.get("id"), hoje))
         _nota('"Atrasada": o prazo passou e o documento não chegou.')
     else:
@@ -488,7 +545,7 @@ def pagina_conferencia_documentos() -> None:
             return
         {"aprovar": _modal_aprovar, "recusar": _modal_recusar, "arquivar": _modal_arquivar}[acao](linha)
     elif acao == "pedir":
-        _modal_pedir(mapa)
+        _modal_pedir(token, dados["organograma"])
     elif acao == "vencidos":
         _modal_vencidos()
     elif acao == "regra":

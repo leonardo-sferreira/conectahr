@@ -104,6 +104,52 @@ def linhas_para_conferir(documentos: list[dict], mapa_pessoas: dict, meu_colabor
     return linhas
 
 
+def linhas_aceitos(documentos: list[dict], mapa_pessoas: dict, hoje: date, pessoa=None, tipo: str | None = None, historico: bool = False) -> list[dict]:
+    """Aba "Aceitos" (pedido do usuário em 13/10/2026): os documentos aprovados, do mais recente ao mais antigo. Com
+    `historico`, também os que foram aceitos e depois venceram ou foram substituídos por um novo. Cada linha traz o
+    que `_detalhes` usa (dados informados e arquivo)."""
+    status_aceitos = ("aprovado", "vencido", "substituido") if historico else ("aprovado",)
+    hoje_iso = hoje.isoformat()
+    linhas = []
+    for d in documentos:
+        status = d.get("status")
+        if status not in status_aceitos or (pessoa and d.get("colaborador_id") != pessoa) or (tipo and d.get("tipo") != tipo):
+            continue
+        validade = str(d.get("data_validade") or "")[:10]
+        if status == "substituido":
+            situacao = ("Substituído", "neu")
+        elif status == "vencido" or (validade and validade < hoje_iso):
+            situacao = ("Vencido", "err")
+        else:
+            situacao = ("Válido", "ok")
+        p = _pessoa(mapa_pessoas, d.get("colaborador_id"))
+        linhas.append({
+            "id": d.get("id"), "pessoa": p["nome"], "detalhe": p["detalhe"], "documento": d.get("nome_documento") or rotulo_tipo(d.get("tipo")),
+            "aceito_em": data_br(d.get("updated_at") or d.get("created_at")) or "—", "validade": data_br(d.get("data_validade")) or "Não vence",
+            "situacao": situacao, "arquivo": "bloqueado" if d.get("estado_verificacao") == "bloqueado" else "abrir",
+            "motivo_bloqueio": d.get("motivo_bloqueio"), "dados_informados": linhas_dados(d), "status": status,
+            "_ordem": str(d.get("updated_at") or d.get("created_at") or ""),
+        })
+    linhas.sort(key=lambda l: l["_ordem"], reverse=True)
+    for l in linhas:
+        l.pop("_ordem")
+    return linhas
+
+
+def pessoas_dos_documentos(documentos: list[dict], mapa_pessoas: dict, status: tuple[str, ...]) -> dict:
+    """{colaborador_id: nome} de quem tem documento nesses status, para o filtro "Pessoa"."""
+    ids = {d.get("colaborador_id") for d in documentos if d.get("status") in status and d.get("colaborador_id") is not None}
+    return dict(sorted(((i, _pessoa(mapa_pessoas, i)["nome"]) for i in ids), key=lambda par: par[1].casefold()))
+
+
+def pessoas_para_pedido(colaboradores: list[dict], departamentos: dict) -> dict:
+    """{colaborador_id: {'nome', 'detalhe'}} de quem pode receber um pedido de documento: todos menos os desligados."""
+    return {
+        c.get("id"): {"nome": c.get("nome") or "Colaborador", "detalhe": departamentos.get(c.get("departamento_id")) or "—"}
+        for c in colaboradores if str(c.get("status") or "").upper() != "DESLIGADO" and c.get("id") is not None
+    }
+
+
 def linhas_pendencias(pendencias: list[dict], mapa_pessoas: dict, meu_user_id, hoje: date) -> list[dict]:
     """Aba "Pendências pedidas" (Figma 418:1276). Cancelada não aparece; pendente com prazo vencido é
     "Atrasada". "Pedido por" é "Você" ou "RH": o nome de quem pediu exigiria a lista de usuários, que

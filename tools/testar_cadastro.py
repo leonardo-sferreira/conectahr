@@ -88,6 +88,9 @@ def _instalar():
     api_client.organograma = lambda token: ORGANOGRAMA
     api_client.colaboradores = lambda token: chamadas.append(("colaboradores",)) or _falha_ou("colaboradores", {"colaboradores": estado["colabs"]})
     api_client.usuarios = lambda token: chamadas.append(("usuarios",)) or _falha_ou("usuarios", {"usuarios": estado["usuarios"]})
+    # Documentos da ficha (pedido de 13/10/2026): todos, a ficha filtra pela pessoa.
+    api_client.documentos_rh = lambda token: chamadas.append(("documentos",)) or _falha_ou("documentos", {"documentos": estado.get("documentos", [])})
+    api_client.abrir_arquivo_documento = lambda token, did: chamadas.append(("arquivo", did)) or {"arquivo_url": f"https://armazenamento.exemplo/assinado/{did}"}
 
     def _admitir(token, dados):
         chamadas.append(("admitir", dados))
@@ -338,6 +341,45 @@ conferir("Erro inesperado" in texto(at) and not at.exception, "erro ao carregar 
 at = app("RH", colabs=[])
 conferir("Ninguém neste filtro." in texto(at), "vazio")
 
+caso("Ficha do colaborador: dados, documentos e PDF (pedido de 13/10/2026)")
+from datetime import datetime  # noqa: E402
+
+import ficha_colaborador as fc  # noqa: E402
+
+COLAB_FICHA = {"id": 7, "nome": "Ana Ribeiro", "cpf": "52998224725", "data_nascimento": "1990-05-04", "email_pessoal": "ana.pessoal@exemplo.com",
+               "telefone": "11987654321", "cep": "01001000", "logradouro": "Praça da Sé", "numero": "100", "complemento": "Sala 2", "bairro": "Sé",
+               "cidade": "São Paulo", "estado": "SP", "status": "Ativo", "salario": 5555.55, "banco": "Banco Exemplo", "agencia": "1234",
+               "conta": "123456", "digito": "7", "tipo_conta": "corrente", "departamento_id": 1, "cargo_id": 1, "data_admissao": "2024-01-02"}
+DOCS_FICHA = [
+    {"id": 301, "colaborador_id": 7, "tipo": "rg", "nome_documento": "RG", "status": "aprovado", "created_at": "2026-10-10T10:00:00Z", "numero_documento": "12.345.678-9",
+     "estado_de_emissao": "SP", "data_emissao": "2015-02-01", "dados": {"orgao_emissor": "SSP"}},
+    {"id": 302, "colaborador_id": 7, "tipo": "cpf", "nome_documento": "CPF", "status": "pendente_analise", "created_at": "2026-10-12T10:00:00Z", "numero_documento": "529.982.247-25"},
+    {"id": 303, "colaborador_id": 11, "tipo": "rg", "nome_documento": "RG", "status": "aprovado", "created_at": "2026-10-11T10:00:00Z"},
+]
+partes = dict(fc.secoes(COLAB_FICHA, {"departamentos": [], "cargos": [], "colaboradores": []}, [], []))
+conferir(list(partes) == ["Dados pessoais", "Endereço", "Vínculo", "Conta bancária"] and ("CPF", "529.982.247-25") in partes["Dados pessoais"]
+         and ("Telefone", "(11) 98765-4321") in partes["Dados pessoais"] and ("CEP", "01001-000") in partes["Endereço"], "seções com dados formatados")
+conferir(("Conta", "•••• 3456-7") in partes["Conta bancária"] and not any("5555" in v or "Salário" in r for s in partes.values() for r, v in s),
+         "conta bancária mascarada e sem salário (minimização)")
+docs_ficha = fc.documentos_da_pessoa(DOCS_FICHA, 7)
+conferir([d["id"] for d in docs_ficha] == [302, 301] and docs_ficha[1]["situacao"] == ("Aprovado", "ok") and ("Órgão emissor", "SSP") in docs_ficha[1]["dados_informados"],
+         "documentos só da pessoa, do mais recente, com a situação e os dados informados")
+pdf = fc.ficha_pdf("Ana Ribeiro", list(partes.items()), docs_ficha, "Rita RH", datetime(2026, 10, 13, 15, 30), comprimir=False)
+texto_pdf = pdf.decode("latin-1")
+conferir(pdf.startswith(b"%PDF") and "Ficha do colaborador" in texto_pdf and "529.982.247-25" in texto_pdf and "Documentos enviados" in texto_pdf
+         and "12.345.678-9" in texto_pdf and "**** 3456-7" in texto_pdf and "5555" not in texto_pdf and "Gerado por Rita RH em 13/10/2026 15:30" in texto_pdf,
+         "PDF com os dados, os documentos e o aviso de LGPD, sem salário e com a conta mascarada")
+conferir(fc.nome_arquivo_ficha("Ana Ribeiro") == "ficha-ana-ribeiro.pdf", "nome do arquivo do PDF")
+at = app("RH", documentos=DOCS_FICHA)
+at.button(key="col_ficha_7").click()
+at = at.run()
+t = texto(at)
+conferir("Dados pessoais" in t and "Conta bancária" in t and "Documentos enviados (2)" in t and [e.label for e in at.expander].count("Ver dados e arquivo") == 2
+         and any(b.label == "Baixar ficha em PDF" for b in at.get("download_button")), "a ficha mostra as seções, os documentos com a seta e o botão do PDF")
+at = app("RH", erro_documentos=ApiError("Muitas requisicoes. Tente de novo em instantes.", 429))
+at.button(key="col_ficha_7").click()
+at = at.run()
+conferir("Os documentos não carregaram agora" in texto(at) and not at.exception, "sem os documentos, a ficha aparece com o aviso")
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:
     print("Falharam:")
