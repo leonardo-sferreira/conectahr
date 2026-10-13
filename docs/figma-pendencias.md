@@ -12,6 +12,7 @@ do usuário (13/10/2026).
 |---|---|---|---|
 | Organograma | 224:3593 | Cartões em coluna: superior direto em cima, a pessoa em destaque no meio e a equipe embaixo, ligados por linhas; cada cartão só com nome, cargo e área; clicar sobe ou desce na hierarquia; "Ir ao topo" e "Minha posição"; sem "Ver detalhes" | Pedido do usuário com imagem de referência (13/10); PR #47 |
 | Documentos: modal "Enviar documento" | 309:1591 (escuro 313:1573) | Campo "Arquivo" (PDF, JPG ou PNG, até 10 MB; foto pelo celular) no lugar de "Link do arquivo" | Change `anexo-de-arquivos`, tarefa 1.1; PR #48 |
+| Documentos: modal "Enviar documento" (campos) | 309:1591 (escuro 313:1573) | Campos de cada tipo de documento: ao escolher o tipo, aparecem só os campos dele (ex.: RG com número, órgão emissor, UF e data de expedição; CPF só com o número); a conferência do RH mostra os dados informados | Change `campos-por-tipo-de-documento` |
 | Ponto: Mês (planilha) | 464:826 (escuro 468:1603) | Data completa (dd/mm/aaaa); resumo com horas positivas e horas negativas, sem o saldo único e sem o cartão de atestados; pedido de ajuste pela célula da marcação (Ent. 1, Saí. 2…), com "Corrigir horário" também para a marcação incluída (I); nenhum ajuste no dia de hoje | Change `ponto-rep-p-e-ferias-clt`, tarefas 9.6 a 9.8 (D15 a D18) |
 | Benefícios | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_beneficios.py` |
 | Folha de ponto (Gestor e RH) | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_folha_ponto.py` |

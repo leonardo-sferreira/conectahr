@@ -43,6 +43,9 @@ table documento {
     // Usada so para revisao manual do RH; nada e eliminado automaticamente.
     date? retencao_ate?
     text observacao? filters=trim|max:500
+    // Campos proprios do tipo (change campos-por-tipo-de-documento, D1): orgao emissor, categoria, CRM etc.,
+    // montados por ConectaHR/validar_campos_documento so com as chaves do tipo.
+    json? dados?
     enum status?=pendente_analise {
       values = ["pendente_analise", "aprovado", "rejeitado", "vencido", "substituido", "arquivado"]
     }
