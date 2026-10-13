@@ -69,7 +69,9 @@ Para copiar o padrão, use um endpoint recente como modelo, por exemplo
 - O teste estático (`tools/checar_endpoints.py`) não pega erro de execução: endpoint novo ou alterado precisa de
   uma chamada por HTTP com login (ex.: `tools/testar_rep_p_http.py`).
 - Variável de ambiente não definida vale `null`: trate o padrão (`$env.X != null ? ... : padrão`).
-- Upload de arquivo privado (`image`, `attachment`, `file`) não é suportado no plano atual.
+- Upload de arquivo privado (`image`, `attachment`, `file`) não é suportado no plano atual. Arquivo de documento
+  vai para o Supabase Storage: `documentos/envio_arquivo` gera o endereço de envio e `documentos/{id}/arquivo` assina
+  o link de abertura (change `anexo-de-arquivos`).
 - Cada `swagger = {active: false}` dos 10 grupos é obrigatório (o checker reprova o contrário).
 
 ## Fluxo de publicação

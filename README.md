@@ -45,7 +45,8 @@ telas do Figma ainda não construídas, acessibilidade, deploy e fontes locais.
   sessão, bloqueio após tentativas inválidas e alerta de acesso suspeito.
 - Cadastro e histórico profissional de colaboradores, cargos e departamentos; onboarding e organograma.
 - Ponto com correção sujeita a aprovação e banco de horas (controle interno experimental, ver abaixo).
-- Documentos por link de domínio aprovado, com aprovação, vencimento e prazo de retenção.
+- Documentos com o arquivo anexado (PDF ou foto, guardado em armazenamento privado), com aprovação,
+  vencimento e prazo de retenção.
 - Férias e ausências com verificação de conflito; o Gestor decide a própria equipe e há delegação por
   vigência.
 - Desligamento imediato ou com aviso prévio.
@@ -201,8 +202,8 @@ Em andamento: [`concluir-frontend-streamlit`](openspec/changes/concluir-frontend
 ## Limitações conhecidas
 
 - **Plano gratuito do Xano:** 10 requisições a cada 20 segundos, um workspace só, sem tarefas agendadas
-  (as rotinas são acionadas por RH/Admin) e **sem upload de arquivo privado** (documento entra por link
-  de domínio aprovado; o atestado não é guardado no sistema).
+  (as rotinas são acionadas por RH/Admin) e **sem upload de arquivo privado no Xano** (o arquivo do
+  documento fica no Supabase Storage, em bucket privado; o atestado não é guardado no sistema).
 - **Ponto eletrônico:** controle interno experimental, sem certificação (ver abaixo).
 - **LGPD:** bases legais e prazos de guarda são sugestões acadêmicas, sem assessoria jurídica. A instância
   do Xano fica nos EUA (inferido pelo IP), o que é uma transferência internacional a tratar.

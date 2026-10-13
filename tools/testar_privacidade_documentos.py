@@ -108,6 +108,9 @@ def _instalar_api_simulada():
         "arquivo", {"arquivo_url": f"https://x8ki-letl-twmt.n7.xano.io/arquivo/{doc_id}.pdf", "expira_em_segundos": 300}
     )
     api_client.enviar_documento = lambda token, dados: chamadas.append(("enviar", dados)) or _falha_ou("enviar", {"sucesso": True})
+    api_client.preparar_envio_arquivo = lambda token, cid, ext: chamadas.append(("preparar", cid, ext)) or _falha_ou("preparar", {
+        "upload_url": f"https://armazenamento.exemplo/upload/abc.{ext}?token=t", "arquivo_url": f"https://armazenamento.exemplo/object/documentos/abc.{ext}"})
+    api_client.subir_arquivo = lambda url, conteudo, tipo: chamadas.append(("subir", url, len(conteudo), tipo)) or _falha_ou("subir", None)
 
 
 _instalar_api_simulada()
@@ -358,37 +361,80 @@ conferir("Sua conta não tem cadastro de colaborador" in texto(at), "conta sem c
 at = app_logado("documentos", erro_documentos=ApiError("Colaborador desligado nao pode consultar documentos.", 403))
 conferir("Colaborador desligado nao pode consultar documentos." in texto(at), "bloqueado (desligado): mensagem do backend")
 
-caso("Enviar documento (Figma 309:1591)")
-from documentos_modelo import TIPOS_ENVIO, validar_envio  # noqa: E402
+caso("Enviar documento com o arquivo anexado (Figma 309:1591; change anexo-de-arquivos)")
+import streamlit  # noqa: E402
+
+from documentos_modelo import TAMANHO_MAXIMO, TIPOS_ENVIO, extensao, validar_envio  # noqa: E402
+
+
+class ArquivoFicticio:
+    """O AppTest não simula o envio de arquivo: o `st.file_uploader` do teste devolve este objeto."""
+
+    def __init__(self, nome: str, conteudo: bytes):
+        self.name, self.size, self._conteudo = nome, len(conteudo), conteudo
+
+    def getvalue(self) -> bytes:
+        return self._conteudo
+
+
+anexo: dict = {"arquivo": None, "rotulos": []}
+_file_uploader_original = streamlit.file_uploader
+
+
+def _file_uploader_teste(label, *args, **kwargs):
+    anexo["rotulos"].append((label, tuple(kwargs.get("type") or ())))
+    return anexo["arquivo"]
+
+
+streamlit.file_uploader = _file_uploader_teste
 
 at = app_logado("documentos")
 at.button(key="btn_doc_enviar_1").click()
 at = at.run()
 conferir(at.selectbox(key="env_tipo").value == "certificado_reservista", "'Enviar →' abre o modal já com o tipo da pendência")
-at.text_input(key="env_link").set_value("http://exemplo.com/a.pdf")
+conferir(("Arquivo", ("pdf", "jpg", "jpeg", "png")) in anexo["rotulos"] and all(t.key != "env_link" for t in at.text_input),
+         "o modal pede o arquivo (PDF, JPG ou PNG), sem campo de link")
 at.button(key="btn_env_enviar").click()
 at = at.run()
-conferir("precisa começar com https://" in texto(at) and not any(c[0] == "enviar" for c in chamadas), "link sem https: mensagem no modal, sem chamar a API")
-at.text_input(key="env_link").set_value("https://x8ki-letl-twmt.n7.xano.io/vault/reservista.pdf")
+conferir("Anexe o arquivo do documento." in texto(at) and not any(c[0] in ("preparar", "enviar") for c in chamadas), "sem arquivo: mensagem no modal, sem chamar a API")
+anexo["arquivo"] = ArquivoFicticio("Reservista.JPG", b"\xff\xd8 foto ficticia")
 at.text_input(key="env_numero").set_value("123456")
 at.button(key="btn_env_enviar").click()
 at = at.run()
 enviado = next((c[1] for c in chamadas if c[0] == "enviar"), {})
-conferir(enviado.get("tipo") == "certificado_reservista" and enviado.get("colaborador_id") == 9 and enviado.get("arquivo_url", "").startswith("https://"), "envia tipo, colaborador da sessão e link")
+ordem_chamadas = [c[0] for c in chamadas if c[0] in ("preparar", "subir", "enviar")]
+conferir(ordem_chamadas == ["preparar", "subir", "enviar"] and ("preparar", 9, "jpg") in chamadas
+         and ("subir", "https://armazenamento.exemplo/upload/abc.jpg?token=t", 16, "image/jpeg") in chamadas,
+         "pede o endereço de envio, manda a foto (image/jpeg) e só depois cadastra")
+conferir(enviado.get("tipo") == "certificado_reservista" and enviado.get("colaborador_id") == 9
+         and enviado.get("arquivo_url") == "https://armazenamento.exemplo/object/documentos/abc.jpg", "cadastra com o tipo, o colaborador da sessão e o endereço do arquivo")
 conferir("modal_documento" not in at.session_state, "o modal fecha depois do envio")
-at = app_logado("documentos", erro_enviar=ApiError("Link de arquivo nao aceito. Use um endereco https de um dominio aprovado.", 400))
+
+at = app_logado("documentos", erro_preparar=ApiError("O envio de arquivos ainda nao foi configurado. Fale com o RH.", 500))
 at.button(key="btn_doc_novo").click()
 at = at.run()
 at.selectbox(key="env_tipo").set_value("cnh")
-at.text_input(key="env_link").set_value("https://drive.example.com/cnh.pdf")
 at.button(key="btn_env_enviar").click()
 at = at.run()
-conferir("Link de arquivo nao aceito" in texto(at) and "modal_documento" in at.session_state, "domínio recusado pelo backend: mensagem no modal, que continua aberto")
+conferir("ainda nao foi configurado" in texto(at) and "modal_documento" in at.session_state and not any(c[0] in ("subir", "enviar") for c in chamadas),
+         "armazenamento sem configuração: mensagem no modal, nada é enviado nem cadastrado")
+at = app_logado("documentos", erro_subir=ApiError("Não foi possível enviar o arquivo. Confira se é PDF, JPG ou PNG de até 10 MB e tente de novo.", 400))
+at.button(key="btn_doc_novo").click()
+at = at.run()
+at.selectbox(key="env_tipo").set_value("cnh")
+at.button(key="btn_env_enviar").click()
+at = at.run()
+conferir("Não foi possível enviar o arquivo" in texto(at) and not any(c[0] == "enviar" for c in chamadas), "envio recusado pelo armazenamento: o documento não é cadastrado")
+anexo["arquivo"] = None
+streamlit.file_uploader = _file_uploader_original
+
 conferir("holerite" not in TIPOS_ENVIO and "informe_rendimentos" not in TIPOS_ENVIO, "holerite e informe ficam fora (só o RH envia)")
-conferir(validar_envio(None, "https://a/b.pdf") == "Escolha o tipo de documento.", "sem tipo")
-conferir(validar_envio("ctps", "") == "Informe o link do arquivo.", "sem link")
-conferir("https://" in (validar_envio("ctps", "http://a/b.pdf") or ""), "link sem https é recusado antes da API")
-conferir(validar_envio("ctps", "https://x8ki-letl-twmt.n7.xano.io/a.pdf", "123") is None, "link https passa para o backend conferir o domínio")
+conferir(validar_envio(None, "rg.pdf", 10) == "Escolha o tipo de documento.", "sem tipo")
+conferir(validar_envio("ctps", "contrato.zip", 10) == "Envie um arquivo PDF, JPG ou PNG.", "tipo de arquivo não aceito")
+conferir(validar_envio("ctps", "ctps.pdf", TAMANHO_MAXIMO + 1) == "O arquivo pode ter no máximo 10 MB.", "arquivo acima de 10 MB")
+conferir(validar_envio("ctps", "ctps.pdf", 0) == "O arquivo está vazio. Escolha outro.", "arquivo vazio")
+conferir(validar_envio("ctps", "CTPS frente.PNG", TAMANHO_MAXIMO, "123") is None and extensao("CTPS frente.PNG") == "png" and extensao("semponto") == "",
+         "PNG de até 10 MB passa; extensão em minúsculas")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

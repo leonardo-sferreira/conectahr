@@ -33,8 +33,9 @@ Quatro perfis, com escopo diferente:
 - **ConectaRH Vagas** (recrutamento e candidatos): proposta retirada deste repositório.
 - Integração real com eSocial, CTPS Digital e Sistema Mediador/MTE: o sistema só registra os
   dados e prazos.
-- Upload de arquivo privado (imagem e comprovante): não é suportado no plano atual do Xano; os
-  documentos entram por link de domínio aprovado.
+- Upload de arquivo privado **no Xano**: não é suportado no plano atual. Os arquivos anexados em
+  Documentos ficam no Supabase Storage (bucket privado; change `anexo-de-arquivos`); o comprovante de
+  ausência não tem arquivo.
 - Tarefas agendadas (Background Tasks): o plano do Xano não as inclui; as rotinas são
   acionadas manualmente por RH/Admin.
 - Parecer jurídico: bases legais e prazos de guarda são sugestões, "a confirmar com o jurídico".
@@ -49,6 +50,8 @@ no `design.md` da change.
 - **Frontend:** Streamlit, em `frontend/` (tema e componentes em `theme.py`, cliente de API em
   `api_client.py`).
 - **E-mail transacional:** Brevo (variável de ambiente `BREVO_API_KEY` no Xano).
+- **Arquivos de documentos:** Supabase Storage, bucket privado `documentos` (`SUPABASE_URL` e
+  `SUPABASE_SERVICE_KEY` só no ambiente do Xano; o Streamlit nunca tem a chave).
 - **Design:** Figma, arquivo `fph1M5tB4rA4gqfIysSmkn`.
 - **Planejamento:** OpenSpec, em `openspec/` (`specs/` consolida o comportamento; `changes/`
   traz o plano em andamento; `changes/archive/` o histórico).

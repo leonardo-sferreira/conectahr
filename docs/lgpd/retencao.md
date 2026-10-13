@@ -20,7 +20,7 @@
 | F01 | Conta de acesso (`user`) | Enquanto houver vínculo; depois, até o fim da guarda do colaborador | Do desligamento | Desativar e anonimizar nome e e-mail | Desativação em vigor; anonimização na tarefa 4.22 |
 | F02 | Auditoria (`auditoria`) | Prazo longo, igual ao da guarda trabalhista mais longa (ver F10) | Do evento | Mantida; já guarda dado mascarado | Em vigor (mascaramento, tarefa 4.9) |
 | F03 | Cadastro e identificação do colaborador | 5 anos | Do desligamento (prescrição trabalhista) | Anonimizar | Anonimização na tarefa 4.22 |
-| F04 | Documentos pessoais e obrigatórios | Por tipo de documento; em geral 5 anos | Do desligamento | Anonimizar o registro e eliminar o arquivo, quando houver | `documento.retencao_ate` preenchido pela regra do tipo (tarefa 3.27); listagem `documentos/retencao_vencida` |
+| F04 | Documentos pessoais e obrigatórios | Por tipo de documento; em geral 5 anos | Do desligamento | Anonimizar o registro e eliminar o arquivo, quando houver | `documento.retencao_ate` preenchido pela regra do tipo (tarefa 3.27); listagem `documentos/retencao_vencida`. O arquivo anexado fica no Supabase e é apagado à mão (ver pendências) |
 | F05 | Remuneração, pagamento e dados bancários | 5 anos (trabalhista); o FGTS e as obrigações fiscais podem exigir mais | Do desligamento | Anonimizar dados bancários; manter valores agregados | Anonimização na tarefa 4.22 |
 | F06 | Contrato, cargo e histórico profissional | 5 anos | Do desligamento | Anonimizar; manter o histórico sem identificar | Anonimização na tarefa 4.22 |
 | F07 | Controle de jornada (ponto e banco de horas) | 5 anos | Do desligamento | Anonimizar; manter o agregado | Anonimização na tarefa 4.22 |
@@ -46,5 +46,6 @@
 ## Pendências
 
 - Validar **todos** os prazos com o jurídico. Os números acima servem para o sistema ter um valor de partida, não como orientação jurídica.
-- Se um dia houver upload de arquivo (outro plano do Xano), definir o prazo de guarda do atestado e rever a linha F09.
+- Se um dia o atestado passar a ter arquivo, definir o prazo de guarda dele e rever a linha F09.
+- Arquivos anexados em Documentos (Supabase Storage, change `anexo-de-arquivos`): ao anonimizar ou eliminar um documento com `retencao_ate` vencida, o arquivo do bucket também precisa ser apagado. Hoje isso é manual, pelo painel do Supabase; a rotina automática fica para uma change própria. Arquivos enviados sem documento cadastrado (a pessoa fechou a tela no meio) também ficam no bucket até essa limpeza.
 - Implementar as linhas marcadas "A implementar" (F13, F16 e F19), que dependem da rotina de anonimização por categoria.
