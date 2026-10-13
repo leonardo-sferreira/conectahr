@@ -290,9 +290,9 @@ def _vazio(texto: str) -> None:
 
 
 def _tabela_conferir(linhas: list[dict]) -> None:
-    pesos = [3, 2.3, 1.3, 1.3, 1.1, 2]
+    pesos = [3, 2.3, 1.3, 1.3, 2]
     with st.container(key="rh_tabela"):
-        _cabecalho(["Pessoa", "Documento", "Enviado em", "Validade", "Arquivo", ""], pesos)
+        _cabecalho(["Pessoa", "Documento", "Enviado em", "Validade", ""], pesos)
         if not linhas:
             _vazio("Nada para conferir agora.")
         for i, l in enumerate(linhas):
@@ -307,12 +307,6 @@ def _tabela_conferir(linhas: list[dict]) -> None:
                     _celula_texto(c[2], l["enviado"])
                 _celula_texto(c[3], l["validade"])
                 with c[4]:
-                    if l["arquivo"] == "bloqueado":
-                        _celula_selo(c[4], ("Bloqueado", "err"))
-                    elif st.button("Abrir", type="tertiary", key=f"rh_abrir_{l['id']}"):
-                        _abrir_arquivo(l["id"])
-                        st.rerun()
-                with c[5]:
                     if l["proprio"]:
                         st.html('<p class="crh-meta">Seu: outro RH decide</p>')
                     elif l["acoes"]:
@@ -321,6 +315,56 @@ def _tabela_conferir(linhas: list[dict]) -> None:
                                 if st.button(acao.capitalize(), type="tertiary", key=f"rh_{acao}_{l['id']}"):
                                     st.session_state.modal_rh = (acao, l["id"])
                                     st.rerun()
+                _detalhes(l)
+
+
+# Detalhes do documento (pedido do usuário em 13/10/2026): a seta abre os dados que a pessoa preencheu e o arquivo.
+# Ao abrir, o link assinado já é pedido (auditado, vale 5 minutos), então "Abrir arquivo" vai direto ao arquivo.
+_VALIDADE_LINK_S = 280
+
+
+def _ao_abrir_detalhes(documento_id: int, bloqueado: bool) -> None:
+    if st.session_state.get(f"rh_det_{documento_id}") and not bloqueado and not _link_valido(documento_id):
+        _preparar_link(documento_id)
+
+
+def _link_valido(documento_id: int) -> str | None:
+    guardado = (st.session_state.get("rh_links") or {}).get(documento_id)
+    return guardado["url"] if guardado and time.time() - guardado["em"] < _VALIDADE_LINK_S else None
+
+
+def _preparar_link(documento_id: int) -> None:
+    links = st.session_state.setdefault("rh_links", {})
+    erros = st.session_state.setdefault("rh_links_erro", {})
+    try:
+        links[documento_id] = {"url": abrir_arquivo_documento(st.session_state.token, documento_id).get("arquivo_url"), "em": time.time()}
+        erros.pop(documento_id, None)
+    except ApiError as erro:
+        erros[documento_id] = erro.message
+
+
+def _detalhes(l: dict) -> None:
+    bloqueado = l["arquivo"] == "bloqueado"
+    with st.expander("Ver dados e arquivo", key=f"rh_det_{l['id']}", on_change=_ao_abrir_detalhes, args=(l["id"], bloqueado)):
+        dados = l.get("dados_informados") or []
+        if dados:
+            campos = "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in dados)
+            st.html(f'<p class="crh-meta" style="margin:0 0 4px">Confira com o arquivo o que a pessoa preencheu:</p><div class="crh-campos">{campos}</div>')
+        else:
+            st.html('<p class="crh-meta" style="margin:0">Nenhum dado preenchido (documento enviado antes dos campos por tipo).</p>')
+        if bloqueado:
+            motivo = l.get("motivo_bloqueio") or "O arquivo não passou na verificação."
+            st.html(f'<p class="crh-meta" style="margin:0">Arquivo bloqueado: {html.escape(motivo)}</p>')
+            return
+        if erro := (st.session_state.get("rh_links_erro") or {}).get(l["id"]):
+            alerta(st.empty(), "erro", erro)
+        with st.container(horizontal=True, vertical_alignment="center"):
+            if link := _link_valido(l["id"]):
+                st.link_button("Abrir arquivo", link, type="primary", key=f"rh_arq_{l['id']}")
+                st.html('<p class="crh-meta" style="margin:0">Abre numa nova aba. O link vale 5 minutos.</p>', width="content")
+            elif st.button("Preparar arquivo", key=f"rh_prep_{l['id']}"):
+                _preparar_link(l["id"])
+                st.rerun()
 
 
 def _tabela_pendencias(linhas: list[dict]) -> None:
@@ -353,16 +397,6 @@ def _tabela_regras(linhas: list[dict]) -> None:
                 _celula_texto(c[2], l["prazo"])
                 _celula_texto(c[3], l["guardar"])
                 _celula_texto(c[4], l["obrigatorio"])
-
-
-def _abrir_arquivo(documento_id: int) -> None:
-    try:
-        resposta = abrir_arquivo_documento(st.session_state.token, documento_id)
-        st.session_state.rh_link_aberto = resposta.get("arquivo_url")
-        st.session_state.pop("rh_link_erro", None)
-    except ApiError as erro:
-        st.session_state.rh_link_erro = erro.message
-        st.session_state.pop("rh_link_aberto", None)
 
 
 def _nota(texto: str) -> None:
@@ -421,13 +455,6 @@ def pagina_conferencia_documentos() -> None:
             if st.button("Processar vencidos", key="rh_btn_vencidos"):
                 st.session_state.pop("rh_vencidos_resultado", None)
                 st.session_state.modal_rh = ("vencidos", None)
-
-    if link := st.session_state.get("rh_link_aberto"):
-        with st.container(horizontal=True, vertical_alignment="center"):
-            st.html('<p class="crh-meta">Link do arquivo pronto (vale por 5 minutos).</p>', width="content")
-            st.link_button("Abrir arquivo", link)
-    if erro_link := st.session_state.pop("rh_link_erro", None):
-        alerta(st.empty(), "erro", erro_link)
 
     linhas = []
     if aba == _ABAS[0]:
