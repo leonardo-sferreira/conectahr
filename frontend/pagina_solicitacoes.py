@@ -2,10 +2,10 @@
 Página "Solicitações ao RH" do RH e do Admin (tarefa 47 da change concluir-frontend-streamlit; Figma 225:5299
 e 206:1072 — a conferir com o Figma, que estava fora do ar quando a tela foi feita; ver design.md).
 
-Abas Em aberto, Atendidas e Indeferidas, com filtros de tipo e departamento. "Analisar →" abre o pedido:
+Abas Em aberto, Atendidas e Recusadas, com filtros de tipo e departamento. "Analisar →" abre o pedido:
 - alteração cadastral: mostra o valor atual e o novo e já preenche o cadastro com o valor pedido; "Aplicar e
   atender" grava o cadastro (`colaboradores/{id}` PATCH, só o RH) e atende o pedido;
-- outros pedidos: atender (justificativa opcional) ou indeferir (justificativa obrigatória).
+- outros pedidos: atender (justificativa opcional) ou recusar (justificativa obrigatória).
 Endpoints: `solicitacoes`, `solicitacoes/{id}/atender|indeferir`, `colaboradores` e `organograma`.
 Ninguém decide o próprio pedido. Os pedidos LGPD ficam na tela "Pedidos LGPD".
 """
@@ -107,13 +107,13 @@ def _modal_analisar(linha: dict, colab: dict | None) -> None:
         campo = CAMPO_PARA_CADASTRO.get((alt or {}).get("campo")) or ("endereco" if (alt or {}).get("campo") == "Endereço" else None)
         atuais = dados_atuais(colab)
         dados = _formulario_cadastro(atuais, aplicar_pedido(atuais, alt), campo)
-    justificativa = st.text_area("Justificativa (o colaborador vê; obrigatória para indeferir)", max_chars=1000, key="sol_justificativa", height=70)
+    justificativa = st.text_area("Justificativa (o colaborador vê; obrigatória para recusar)", max_chars=1000, key="sol_justificativa", height=70)
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Voltar", key="sol_voltar"):
             _fechar()
             st.rerun()
-        indeferir = st.button("Indeferir", type="primary", key="sol_indeferir")
+        indeferir = st.button("Recusar", type="primary", key="sol_indeferir")
         rotulo = "Aplicar e atender" if aplicar else "Atender"
         atender = (aplicar or linha["tipo_chave"] != "alteracao_cadastral") and st.button(rotulo, type="primary", key="sol_atender")
     if indeferir:
@@ -126,7 +126,7 @@ def _modal_analisar(linha: dict, colab: dict | None) -> None:
         except ApiError as erro:
             alerta(slot, "erro", erro.message)
             return
-        _concluir(f"Pedido de {linha['pessoa']} indeferido. A pessoa vê a justificativa.")
+        _concluir(f"Pedido de {linha['pessoa']} recusado. A pessoa vê a justificativa.")
     if atender:
         if aplicar:
             erro_campo = validar_dados_pessoais(dados, date.today())

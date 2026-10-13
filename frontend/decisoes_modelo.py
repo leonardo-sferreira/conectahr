@@ -26,7 +26,7 @@ _TIPOS_SOLICITACAO = {
     "outra": "Solicitação ao RH",
     "privacidade_lgpd": "Pedido de privacidade",
 }
-_SOLICITACAO = {"recebida": ("Recebida", "amb"), "em_analise": ("Em análise", "amb"), "atendida": ("Atendida", "ok"), "indeferida": ("Indeferida", "err")}
+_SOLICITACAO = {"recebida": ("Recebida", "amb"), "em_analise": ("Em análise", "amb"), "atendida": ("Atendida", "ok"), "indeferida": ("Recusada", "err")}
 _FERIAS = {"Pendente": ("Pendente", "amb"), "Aprovada": ("Aprovada", "ok"), "Rejeitada": ("Rejeitada", "err")}
 _AUSENCIA = {"Pendente": ("Em análise", "amb"), "Aprovada": ("Aprovada", "ok"), "Registrado": ("Registrada", "ok"), "Rejeitada": ("Recusada", "err")}
 _CORRECAO = {"pendente": ("Em análise", "amb"), "aprovada": ("Aprovada", "ok"), "rejeitada": ("Recusada", "err")}
