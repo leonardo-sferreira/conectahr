@@ -24,4 +24,5 @@
 
 ## 5. Configuração (equipe)
 
-- [ ] 5.1 Projeto no Supabase em São Paulo, bucket privado `documentos` (10 MB; PDF, JPEG e PNG) e as variáveis no Xano (D7). Verificar: envio e abertura de um arquivo de teste fictício, registrados em `docs/evidencias/`.
+- [x] 5.1 Projeto no Supabase em São Paulo, bucket privado `documentos` (10 MB; PDF, JPEG e PNG) e as variáveis no Xano (D7). Verificar: envio e abertura de um arquivo de teste fictício, registrados em `docs/evidencias/`.
+  - **Feito (13/10/2026):** 8/8 em `docs/evidencias/anexo-de-arquivos.md`. A chave é a `service_role`: a `sb_secret_...` é recusada pelo Storage no cabeçalho `Authorization`. Os endpoints com login: não verificado (código por e-mail).

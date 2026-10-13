@@ -40,6 +40,7 @@ Como escrever:
 | `frontend-login-f01.md` | Fluxo de entrada do frontend (Figma F01): casos, estados de UI e prints lado a lado em `frontend-f01/` |
 | `frontend-onboarding.md` | Onboarding do primeiro acesso, "Meu onboarding" e o card do Início (tarefa 68) |
 | `frontend-ponto-rep-p.md` | Tela de ponto no REP-P: Hoje, Mês com o art. 84, comprovante em PDF, pedido de correção e folha da equipe, com prints |
+| `anexo-de-arquivos.md` | Anexo de arquivo em Documentos: envio ao bucket privado do Supabase, recusa sem assinatura e abertura pelo link de 5 minutos |
 
 ## Checklist antes de cada commit nesta pasta
 

@@ -10,7 +10,7 @@
 Tecnologia nova na stack, justificada aqui (AGENTS.md, seção 3). O Supabase Storage tem plano gratuito (1 GB), bucket privado, links assinados com validade e uma API HTTP simples, que o Xano chama com `api.request`, como já faz com o Brevo. Alternativas avaliadas: pagar o plano do Xano (tem custo mensal) e o Cloudflare R2 (configuração mais trabalhosa e cartão no cadastro). Serviços públicos de imagem e links de compartilhamento de nuvem continuam fora: documento pessoal não pode ficar em endereço público.
 
 ### D2. A chave fica só no Xano
-`SUPABASE_URL` e `SUPABASE_SERVICE_KEY` são variáveis de ambiente do Xano. O Streamlit nunca tem a chave: pede ao Xano um endereço de envio de uso único (`documentos/envio_arquivo` POST) e manda o arquivo para esse endereço. O Xano manda a chave nos cabeçalhos `apikey` e `Authorization: Bearer` (os dois com o mesmo valor, o que vale para a chave antiga `service_role` e para a nova `sb_secret_...`).
+`SUPABASE_URL` e `SUPABASE_SERVICE_KEY` são variáveis de ambiente do Xano. O Streamlit nunca tem a chave: pede ao Xano um endereço de envio de uso único (`documentos/envio_arquivo` POST) e manda o arquivo para esse endereço. O Xano manda a chave nos cabeçalhos `apikey` e `Authorization: Bearer`. A chave é a `service_role` (formato JWT): no teste de 13/10/2026, o Storage recusou a nova `sb_secret_...` no `Authorization` ("Invalid Compact JWS") e exige esse cabeçalho; a `anon` não grava no bucket ("row-level security").
 
 ### D3. Fluxo de envio
 1. A tela valida o tipo (PDF, JPG ou PNG) e o tamanho (até 10 MB).
@@ -28,7 +28,7 @@ O caminho é um UUID gerado pelo Xano, sem nome, CPF ou tipo do documento. O lin
 O bucket é configurado com limite de 10 MB e só `application/pdf`, `image/jpeg` e `image/png`, então o Supabase recusa o resto. A verificação de extensão de `verificar_arquivo_documento` continua valendo (o caminho termina com a extensão). O HEAD dessa verificação não tem a chave e não confirma o tamanho de arquivo privado; nesse caso a função já libera sem bloquear, e o limite fica com o bucket.
 
 ### D7. Configuração (feita pela equipe, fora do repositório)
-No Supabase: projeto na região São Paulo (`sa-east-1`), bucket privado `documentos` com limite de 10 MB e os três tipos acima. No Xano (Settings > Environment Variables): `SUPABASE_URL` (ex.: `https://<projeto>.supabase.co`), `SUPABASE_SERVICE_KEY` e o host do projeto em `ARQUIVOS_DOMINIOS_APROVADOS`. A chave não é colada em conversa, terminal nem arquivo do repositório.
+No Supabase: projeto na região São Paulo (`sa-east-1`), bucket privado `documentos` com limite de 10 MB e os três tipos acima. No Xano (Settings > Environment Variables): `SUPABASE_URL` (ex.: `https://<projeto>.supabase.co`), `SUPABASE_SERVICE_KEY` (a `service_role`, em Project Settings > API Keys > Legacy API Keys) e o host do projeto em `ARQUIVOS_DOMINIOS_APROVADOS`. A chave não é colada em conversa, terminal nem arquivo do repositório.
 
 ## Riscos
 
