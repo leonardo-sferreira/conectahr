@@ -68,6 +68,7 @@ GRUPO_PONTO = "4PXzu46t"
 GRUPO_AUSENCIAS = "x-LkEdmU"
 GRUPO_FERIAS = "AI-dSGch"
 GRUPO_USUARIOS = "GjsM93yp"
+GRUPO_CARGOS = "iy_CTE1P"
 
 
 _PAUSA_429_S = 3
@@ -251,8 +252,29 @@ def meu_perfil_colaborador(token: str) -> dict:
 
 
 def organograma(token: str) -> dict:
-    """GET organograma -> {departamentos, cargos, colaboradores} (campos não sensíveis, qualquer perfil)."""
+    """GET organograma -> {departamentos, cargos (com nivel_hierarquico_id), colaboradores (com superior_colaborador_id),
+    niveis} (campos não sensíveis, qualquer perfil)."""
     return _get("organograma", token, GRUPO_DEPARTAMENTOS)
+
+
+def niveis_hierarquicos(token: str) -> dict:
+    """GET niveis_hierarquicos -> {niveis: [{id, nome, ordem, ativo}]}; o RH e o Admin veem também os inativos."""
+    return _get("niveis_hierarquicos", token, GRUPO_CARGOS)
+
+
+def criar_nivel_hierarquico(token: str, nome: str, ordem: int) -> dict:
+    """POST niveis_hierarquicos (RH e Admin): um nível da hierarquia da empresa; ordem 1 é o topo."""
+    return _post("niveis_hierarquicos", {"nome": nome, "ordem": int(ordem)}, token, GRUPO_CARGOS)
+
+
+def editar_nivel_hierarquico(token: str, nivel_id: int, nome: str, ordem: int, ativo: bool) -> dict:
+    """PATCH niveis_hierarquicos/{id} (RH e Admin): nome, ordem e situação."""
+    return _request("PATCH", f"niveis_hierarquicos/{int(nivel_id)}", token, GRUPO_CARGOS, {"nome": nome, "ordem": int(ordem), "ativo": bool(ativo)})
+
+
+def definir_nivel_cargo(token: str, cargo_id: int, nivel_id: int | None) -> dict:
+    """PATCH cargos/{id}/nivel (RH e Admin): só o nível do cargo; None tira o nível."""
+    return _request("PATCH", f"cargos/{int(cargo_id)}/nivel", token, GRUPO_CARGOS, {"nivel_hierarquico_id": nivel_id})
 
 
 def onboarding(token: str, colaborador_id: int) -> dict:

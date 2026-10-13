@@ -12,6 +12,12 @@ table cargo {
     text descricao? filters=trim
     decimal salario_base?
     bool ativo?=true
+
+    // Nivel hierarquico do cargo (change organograma-hierarquia, D2): ordena e rotula as pessoas no
+    // organograma. Opcional; cargo sem nivel aparece depois dos que tem.
+    int? nivel_hierarquico_id? {
+      table = "nivel_hierarquico"
+    }
   }
 
   index = [

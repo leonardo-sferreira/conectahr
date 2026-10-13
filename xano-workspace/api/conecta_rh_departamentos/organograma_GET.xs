@@ -71,8 +71,16 @@ query organograma verb=GET {
     db.query cargo {
       where = $db.cargo.ativo == true
       return = {type: "list"}
-      output = ["id", "nome"]
+      output = ["id", "nome", "nivel_hierarquico_id"]
     } as $cargos
+
+    // Niveis ativos, para rotular e ordenar (change organograma-hierarquia, D2).
+    db.query nivel_hierarquico {
+      where = $db.nivel_hierarquico.ativo == true
+      sort = {nivel_hierarquico.ordem: "asc"}
+      return = {type: "list"}
+      output = ["id", "nome", "ordem"]
+    } as $niveis
 
     // Colaboradores nao desligados (quem esta de ferias ou afastado continua na
     // equipe), somente com os campos permitidos no organograma.
@@ -80,7 +88,7 @@ query organograma verb=GET {
       where = $db.colaborador.status != "Desligado"
       sort = {colaborador.nome: "asc"}
       return = {type: "list"}
-      output = ["id", "nome", "cargo_id", "departamento_id"]
+      output = ["id", "nome", "cargo_id", "departamento_id", "superior_colaborador_id"]
     } as $colaboradores
   }
 
@@ -89,6 +97,7 @@ query organograma verb=GET {
     departamentos: $departamentos
     cargos       : $cargos
     colaboradores: $colaboradores
+    niveis       : $niveis
   }
 
   guid = "conectahr-organograma-get-0001"
