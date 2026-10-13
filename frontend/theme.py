@@ -605,7 +605,7 @@ _APP_CSS = f"""
   [data-testid="stPopoverBody"] button[kind="tertiary"] {{ padding: 0 !important; min-height: 0 !important; background: transparent !important; }}
   /* Sino de notificações (Figma 197:77): o número de não lidas em âmbar; não lida com fundo marfim e ponto âmbar. */
   .st-key-crh_topbar .st-key-sino button {{ min-height: 40px; padding: 0 12px; }}
-  .st-key-crh_topbar .st-key-sino button p {{ color: {AMBAR_ESCURO} !important; font-weight: 700 !important; font-size: 13px !important; }}
+  .st-key-crh_topbar .st-key-sino button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600 !important; font-size: 13px !important; }}
   div[class*="st-key-notif_nl_"] {{ background: {MARFIM}; border-radius: 10px; padding: 10px 12px; }}
   div[class*="st-key-notif_ok_"] {{ padding: 10px 12px; border-top: 1px solid {BORDA}; }}
   .crh-notif {{ display: flex; gap: 10px; }}
@@ -780,7 +780,7 @@ _APP_CSS = f"""
                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
   .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO}; }}
   .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
-  .crh-cal-titulo {{ margin: 0; font: 700 17px 'Sora', sans-serif; color: {GRAFITE}; }}
+  .crh-cal-titulo {{ margin: 0; font: 600 17px 'Sora', sans-serif; color: {GRAFITE}; }}
   .crh-cal-legenda {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }}
   /* Ponto REP-P (Figma 463:825 e 464:826) */
   .crh-relogio {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.1; color: {GRAFITE}; font-variant-numeric: tabular-nums; }}
