@@ -603,6 +603,17 @@ _APP_CSS = f"""
     box-shadow: 0px 12px 32px -8px rgba(22,24,29,0.25); min-width: 300px;
   }}
   [data-testid="stPopoverBody"] button[kind="tertiary"] {{ padding: 0 !important; min-height: 0 !important; background: transparent !important; }}
+  /* Sino de notificações (Figma 197:77): o número de não lidas em âmbar; não lida com fundo marfim e ponto âmbar. */
+  .st-key-crh_topbar .st-key-sino button {{ min-height: 40px; padding: 0 12px; }}
+  .st-key-crh_topbar .st-key-sino button p {{ color: {AMBAR_ESCURO} !important; font-weight: 700 !important; font-size: 13px !important; }}
+  div[class*="st-key-notif_nl_"] {{ background: {MARFIM}; border-radius: 10px; padding: 10px 12px; }}
+  div[class*="st-key-notif_ok_"] {{ padding: 10px 12px; border-top: 1px solid {BORDA}; }}
+  .crh-notif {{ display: flex; gap: 10px; }}
+  .crh-notif .p {{ flex: none; width: 8px; height: 8px; border-radius: 50%; background: {AMBAR}; margin-top: 6px; }}
+  .crh-notif .p.lida {{ background: transparent; }}
+  .crh-notif .t {{ margin: 0; font: 600 14px 'Manrope', sans-serif; color: {GRAFITE}; }}
+  .crh-notif .m {{ margin: 2px 0 0; font: 400 13px 'Manrope', sans-serif; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-notif .q {{ margin: 4px 0 0; font: 400 12px 'Manrope', sans-serif; color: {GRAFITE_SECUNDARIO}; }}
   .crh-menu-conta {{ display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid {BORDA}; }}
   .crh-menu-conta .crh-avatar-g {{
     width: 40px; height: 40px; border-radius: 999px; background: {GRAFITE}; color: {AMBAR}; flex-shrink: 0;
@@ -982,6 +993,10 @@ _ESCURO_CSS = f"""
   .st-key-crh_topbar [data-testid="stPopover"] button {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-crh_topbar [data-testid="stPopover"] button p {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stPopoverBody"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  div[class*="st-key-notif_nl_"] {{ background: {ESC_NEUTRO}; }}
+  div[class*="st-key-notif_ok_"] {{ border-top-color: {ESC_BORDA}; }}
+  .crh-notif .t {{ color: {ESC_TEXTO}; }}
+  .crh-notif .m, .crh-notif .q {{ color: {ESC_TEXTO_2}; }}
   .crh-menu-conta {{ border-color: {ESC_BORDA}; }}
   .st-key-btn_menu_config button p, .crh-menu-tema {{ color: {ESC_TEXTO} !important; }}
   .st-key-menu_tema_linha {{ border-color: {ESC_BORDA}; }}
@@ -1147,6 +1162,15 @@ def iniciais(nome: str) -> str:
     return (partes[0][0] + (partes[-1][0] if len(partes) > 1 else "")).upper() if partes else ""
 
 
+_SINO = None
+
+
+def definir_sino(funcao) -> None:
+    """O app.py registra aqui o sino de notificações (`notificacoes.render_sino`), que fala com a API; o tema só o desenha."""
+    global _SINO
+    _SINO = funcao
+
+
 def render_topbar(nome: str) -> None:
     """Sino e chip do nome (Figma 62:38). O chip abre o menu da conta (Figma 198:158): perfil,
     "Configurações" e "Sair da conta". As ações só deixam um pedido em `st.session_state`
@@ -1154,8 +1178,11 @@ def render_topbar(nome: str) -> None:
     usuario = st.session_state.get("usuario") or {}
     perfil = _PERFIS.get(str(usuario.get("perfil", "")).upper(), str(usuario.get("perfil", "")).title())
     with st.container(horizontal=True, key="crh_topbar"):
-        sino = _BELL_ESCURO_DATA_URI if tema_atual() == "escuro" else _BELL_DATA_URI
-        st.html(f'<img src="{sino}" alt="Notificações" class="crh-bell" style="width:40px;height:40px" />', width="content")
+        if _SINO is not None:
+            _SINO()
+        else:
+            sino = _BELL_ESCURO_DATA_URI if tema_atual() == "escuro" else _BELL_DATA_URI
+            st.html(f'<img src="{sino}" alt="Notificações" class="crh-bell" style="width:40px;height:40px" />', width="content")
         with st.popover(nome, key="menu_conta"):
             st.html(
                 f"""

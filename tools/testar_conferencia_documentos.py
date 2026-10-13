@@ -33,6 +33,8 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 import api_client  # noqa: E402
 from api_client import ApiError  # noqa: E402
 
+api_client.minhas_notificacoes = lambda token: {"total_nao_lidas": 0, "notificacoes": []}  # sino do topo (sem rede)
+
 APP = RAIZ / "frontend" / "app.py"
 HOJE = date.today()
 ONTEM = (HOJE - timedelta(days=1)).isoformat()

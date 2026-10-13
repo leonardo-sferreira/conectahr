@@ -40,6 +40,8 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 import api_client  # noqa: E402
 from api_client import ApiError  # noqa: E402
 
+api_client.minhas_notificacoes = lambda token: {"total_nao_lidas": 0, "notificacoes": []}  # sino do topo (sem rede)
+
 # Instala a API simulada ANTES de importar as páginas: elas importam as funções pelo nome.
 
 APP = RAIZ / "frontend" / "app.py"
