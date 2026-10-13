@@ -245,6 +245,11 @@ query "ferias/{id}/rejeitar" verb=POST {
         resultado     : "sucesso"
       }
     } as $evento_auditoria
+
+    // Avisa quem pediu do retorno (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $solicitacao.colaborador_id, autor_user_id: $usuario_decisor.id, tipo: "pedido_decidido", titulo: "Férias recusadas", mensagem: "Seu pedido de férias de " ~ ($solicitacao.data_inicio|format_timestamp:"d/m/Y":"UTC") ~ " a " ~ ($solicitacao.data_fim|format_timestamp:"d/m/Y":"UTC") ~ " foi recusado.", recurso: "ferias", registro_id: $solicitacao.id}
+    } as $aviso_retorno
   }
 
   response = {

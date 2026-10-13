@@ -234,6 +234,11 @@ query "correcoes_ponto/{id}/rejeitar" verb=POST {
         resultado     : "sucesso"
       }
     } as $evento_auditoria
+
+    // Avisa quem pediu do retorno (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $correcao_atual.colaborador_id, autor_user_id: $usuario_autenticado.id, tipo: "pedido_decidido", titulo: "Correção de ponto recusada", mensagem: "Sua correção de ponto foi recusada. Motivo: " ~ $input.motivo_decisao, recurso: "correcao_ponto", registro_id: $correcao_atual.id}
+    } as $aviso_retorno
   }
 
   response = {

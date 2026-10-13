@@ -179,6 +179,11 @@ query "ponto/correcao" verb=POST {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Avisa quem decide o pedido (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar_decisores" {
+      input = {colaborador_id: $colaborador_autenticado.id, autor_user_id: $usuario_autenticado.id, quem: "superior", tipo: "pedido_novo", titulo: "Pedido de correção de ponto", mensagem: $colaborador_autenticado.nome ~ " pediu a correção do ponto de " ~ ($dia|to_timestamp|format_timestamp:"d/m/Y":"UTC") ~ ".", recurso: "correcao_ponto", registro_id: $correcao_criada.id}
+    } as $avisos_decisores
   }
 
   response = {

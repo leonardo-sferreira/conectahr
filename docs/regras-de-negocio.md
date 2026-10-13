@@ -741,6 +741,15 @@ RH/ADMIN, com filtro opcional de período (`data_inicio`/`data_fim`, padrão úl
 
 Mesmos dados do painel, formatados como texto CSV. Audita `exportar_indicadores_csv`. **Gap consciente:** exportação em PDF não implementada — XanoScript nesta plataforma não tem filtro/primitiva nativa de renderização de PDF; exigiria serviço externo via `api.request`, fora do escopo até aqui (`xano-workspace/api/conecta_rh_colaboradores/indicadores/exportar_csv_GET.xs`).
 
+### 15.2.1 Notificações internas (sino do topo, desde 12/10/2026)
+
+Entidade `notificacao_interna`: `destinatario_user_id`, `tipo`, `titulo`, `mensagem`, `recurso`, `registro_id`, `lida`, `lida_em`. `minhas_notificacoes` GET devolve as 50 mais recentes do próprio usuário, com `criada_em`, e o total de não lidas; `notificacoes/{id}/marcar_lida` e `notificacoes/marcar_todas_lidas` POST só mexem nas do próprio usuário. Ninguém recebe aviso de uma ação própria.
+
+- **Pedido novo → quem decide** (`tipo = pedido_novo`, `ConectaHR/notificar_decisores`): correção de ponto (`ponto/correcao`) e férias (`ferias/solicitacoes`) avisam o superior direto, ou o Gestor do departamento, ou, sem nenhum, as contas RH ativas; ausência (`ausencias` POST) avisa o superior e o RH, sem dizer o tipo (pode ser atestado); solicitação ao RH (`solicitacoes` POST), documento enviado pela própria pessoa (`documentos` POST) e pedido de desligamento avisam o RH.
+- **Retorno → quem pediu** (`tipo = pedido_decidido`, `ConectaHR/notificar`): correção de ponto aprovada ou recusada (com o motivo), férias recusadas, ausência aprovada ou recusada (com o motivo), documento aprovado ou recusado (com o motivo) e desligamento aprovado ou recusado (para quem abriu). Férias aprovadas, solicitação ao RH atendida ou indeferida, ajuste direto do ponto e benefícios já avisavam antes.
+- **Mudança que afeta a pessoa**: holerite ou informe lançado (`holerite_disponivel`), documento pedido pelo RH (`documento_pedido`), cadastro alterado pelo RH e superior direto definido (`cadastro_atualizado`).
+- A tela leva cada aviso à tela do assunto (`frontend/notificacoes_modelo.py`); a ausência nova leva o RH à tela Ausências e o gestor à Central de Pendências.
+
 ### 15.3 Preferências de notificação
 
 Entidade `preferencia_notificacao`: `user_id`, `tipo_evento` (enum fechado: `documento_vencendo`/`solicitacao_respondida`/`avaliacao_disponivel`/`ferias_aprovada`/`documento_pendente`), `canal_email` (bool, default true), `frequencia` (enum `imediato`/`resumo_diario`/`resumo_semanal`, default `imediato`); índice único `(user_id, tipo_evento)` (`xano-workspace/table/preferencia_notificacao.xs`).

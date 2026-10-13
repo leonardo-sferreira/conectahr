@@ -20,6 +20,27 @@ _DESTINO_TIPO = {
     "beneficio_atualizado": "ir_beneficios",
     "documento_vencendo": "ir_documentos",
     "avaliacao_disponivel": "ir_central",
+    # Parte 2 (12/10/2026): mudanças que afetam a pessoa.
+    "cadastro_atualizado": "ir_perfil",
+    "documento_pedido": "ir_documentos",
+    "holerite_disponivel": "ir_pagamento",
+}
+# Pedido novo, para quem decide: a tela onde a decisão acontece.
+_DESTINO_PEDIDO_NOVO = {
+    "correcao_ponto": "ir_central",
+    "ferias": "ir_central",
+    "ausencia": "ir_central",
+    "solicitacao_rh": "ir_solicitacoes",
+    "documento": "ir_conferencia",
+    "solicitacao_desligamento": "ir_central",
+}
+# Retorno do pedido, para quem pediu: a tela onde ela acompanha.
+_DESTINO_PEDIDO_DECIDIDO = {
+    "correcao_ponto": "ir_ponto",
+    "ferias": "ir_ferias",
+    "ausencia": "ir_central",
+    "documento": "ir_documentos",
+    "solicitacao_desligamento": "ir_central",
 }
 _DESTINO_RECURSO = {
     "ferias": "ir_ferias",
@@ -34,9 +55,17 @@ _DESTINO_RECURSO = {
 }
 
 
-def destino(n: dict) -> str:
-    """A marca da tela do assunto (`ir_ferias`, `ir_ponto`...); sem correspondência, o Início."""
-    return _DESTINO_TIPO.get(n.get("tipo")) or _DESTINO_RECURSO.get(n.get("recurso")) or "ir_inicio"
+def destino(n: dict, perfil: str | None = None) -> str:
+    """A marca da tela do assunto (`ir_ferias`, `ir_ponto`...); sem correspondência, o Início. Num pedido novo, a tela
+    de quem decide; a ausência leva o RH e o Admin à tela Ausências, e o gestor à Central de Pendências."""
+    tipo, recurso = n.get("tipo"), n.get("recurso")
+    if tipo == "pedido_novo":
+        if recurso == "ausencia" and str(perfil or "").upper() in ("RH", "ADMIN"):
+            return "ir_ausencias"
+        return _DESTINO_PEDIDO_NOVO.get(recurso, "ir_central")
+    if tipo == "pedido_decidido":
+        return _DESTINO_PEDIDO_DECIDIDO.get(recurso, "ir_central")
+    return _DESTINO_TIPO.get(tipo) or _DESTINO_RECURSO.get(recurso) or "ir_inicio"
 
 
 def quando(valor, agora: datetime | None = None) -> str:

@@ -333,6 +333,11 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
       field_value = $conta_colaborador.id
       output = ["id", "nome", "email", "perfil", "ativo"]
     } as $conta_atualizada
+
+    // Avisa quem pediu do retorno (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {destinatario_user_id: $solicitacao.solicitante_user_id, autor_user_id: $usuario_rh.id, tipo: "pedido_decidido", titulo: "Desligamento aprovado", mensagem: "O pedido de desligamento que você abriu foi aprovado pelo RH.", recurso: "solicitacao_desligamento", registro_id: $solicitacao.id}
+    } as $aviso_retorno
   }
 
   response = {

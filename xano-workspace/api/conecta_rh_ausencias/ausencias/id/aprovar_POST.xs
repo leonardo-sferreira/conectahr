@@ -256,6 +256,11 @@ query "ausencias/{id}/aprovar" verb=POST {
         resultado     : "sucesso"
       }
     } as $evento_auditoria
+
+    // Avisa quem pediu do retorno (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $ausencia_atual.colaborador_id, autor_user_id: $usuario_autenticado.id, tipo: "pedido_decidido", titulo: "Ausência aprovada", mensagem: "Sua ausência de " ~ ($ausencia_atual.data_inicio|format_timestamp:"d/m/Y":"UTC") ~ " a " ~ ($ausencia_atual.data_fim|format_timestamp:"d/m/Y":"UTC") ~ " foi aprovada.", recurso: "ausencia", registro_id: $ausencia_atual.id}
+    } as $aviso_retorno
   }
 
   response = {

@@ -431,6 +431,11 @@ query "correcoes_ponto/{id}/aprovar" verb=POST {
         } as $evento_auditoria
       }
     }
+
+    // Avisa quem pediu do retorno (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $correcao_atual.colaborador_id, autor_user_id: $usuario_autenticado.id, tipo: "pedido_decidido", titulo: "Correção de ponto aprovada", mensagem: "Sua correção do ponto de " ~ ($registro_alvo.data|format_timestamp:"d/m/Y":"UTC") ~ " foi aprovada.", recurso: "correcao_ponto", registro_id: $correcao_atual.id}
+    } as $aviso_retorno
   }
 
   response = {

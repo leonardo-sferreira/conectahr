@@ -153,6 +153,11 @@ query "colaboradores/{id}/superior" verb=PATCH {
         resultado     : "sucesso"
       }
     } as $evento_auditoria
+
+    // Aviso (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $colaborador_alvo.id, autor_user_id: $usuario_rh.id, tipo: "cadastro_atualizado", titulo: "Seu superior direto mudou", mensagem: "O RH definiu quem é o seu superior direto. Confira em Perfil.", recurso: "colaborador", registro_id: $colaborador_alvo.id}
+    } as $aviso_superior
   }
 
   response = {

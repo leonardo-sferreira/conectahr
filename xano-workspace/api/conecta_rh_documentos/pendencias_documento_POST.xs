@@ -162,6 +162,11 @@ query "pendencias_documento" verb=POST {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Aviso (parte 2 das notificacoes, 12/10/2026).
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $colaborador_alvo.id, autor_user_id: $usuario_autenticado.id, tipo: "documento_pedido", titulo: "Documento solicitado pelo RH", mensagem: "O RH pediu um documento até " ~ ($pendencia_criada.prazo|format_timestamp:"d/m/Y":"UTC") ~ ". Envie pela tela Documentos.", recurso: "pendencia_documento", registro_id: $pendencia_criada.id}
+    } as $aviso_pendencia
   }
 
   response = {
