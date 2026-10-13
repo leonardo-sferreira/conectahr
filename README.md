@@ -213,6 +213,9 @@ possível testar aparece como "não verificado", com o motivo.
 
 ## Como rodar
 
+> **Primeira vez no projeto?** Siga o [guia de primeiros passos](docs/primeiros-passos.md): instalar as ferramentas,
+> baixar o repositório, rodar o sistema, rodar os testes e abrir o primeiro Pull Request.
+
 ### Frontend (Streamlit)
 
 ```bash
@@ -322,6 +325,8 @@ A spec principal está em [`openspec/specs/conectahr/spec.md`](openspec/specs/co
 ---
 
 ## Como contribuir
+
+O passo a passo completo, do zero ao primeiro PR, está em [`docs/primeiros-passos.md`](docs/primeiros-passos.md).
 
 - `master` reflete sempre o estado estável; nunca há push direto nele.
 - Uma branch por tarefa (`feature/<tarefa-do-tasks.md>`), integrada por Pull Request com o pipeline verde
