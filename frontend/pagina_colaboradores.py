@@ -6,15 +6,19 @@ Lista com busca e filtros, a ficha da pessoa e o caminho de cadastro de um novo 
 "Admitir colaborador" (só o RH; `colaboradores` POST) e, em seguida, "Criar acesso" (`usuarios` POST),
 que manda a senha temporária por e-mail. O modal "Criar acesso / Novo usuário" (246:1245) também é usado
 na tela Usuários e perfis. Endpoints: `colaboradores`, `organograma` e `usuarios`.
+
+Ficha (pedido do usuário em 13/10/2026): dados pessoais, endereço, vínculo e conta bancária (mascarada; sem salário),
+os documentos enviados pela pessoa (`documentos`, com a seta "Ver dados e arquivo" da Conferência) e "Baixar ficha em
+PDF" (`ficha_colaborador.ficha_pdf`).
 """
 
 import html
 import time
-from datetime import date
+from datetime import date, datetime
 
 import streamlit as st
 
-from api_client import ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, organograma, trocar_perfil, usuarios
+from api_client import ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, documentos_rh, organograma, trocar_perfil, usuarios
 from cadastro_modelo import (
     CONTRATOS,
     NIVEIS,
@@ -22,7 +26,6 @@ from cadastro_modelo import (
     SITUACOES_COLAB,
     candidatos_superior,
     corpo_admissao,
-    ficha,
     fichas_sem_conta,
     linhas_colaboradores,
     perfil,
@@ -32,6 +35,8 @@ from cadastro_modelo import (
     validar_novo_usuario,
 )
 from cargos_modelo import cargos_do_departamento, rotulo_cargo
+from ficha_colaborador import documentos_da_pessoa, ficha_pdf, nome_arquivo_ficha, secoes
+from pagina_conferencia_documentos import _detalhes as detalhes_documento
 from theme import alerta, render_hero, render_topbar
 
 CACHE = "cadastro_cache"
@@ -225,11 +230,42 @@ def _modal_superior(colab: dict, colabs: list[dict], deps: dict) -> None:
             concluir(f"Superior direto de {colab.get('nome')} atualizado.")
 
 
+def _documentos_rh(token: str) -> list[dict] | str:
+    """Todos os documentos (`documentos`, RH e Admin), guardados por 60 s; carregados só quando uma ficha é aberta."""
+    guardado = st.session_state.get("col_docs_cache")
+    if guardado and time.time() - guardado["em"] < 60:
+        return guardado["dados"]
+    try:
+        docs = documentos_rh(token).get("documentos") or []
+    except ApiError as erro:
+        return erro.message
+    st.session_state.col_docs_cache = {"em": time.time(), "dados": docs}
+    return docs
+
+
+def _bloco(titulo: str, campos: list[tuple[str, str]]) -> None:
+    linhas = "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in campos)
+    st.html(f'<p class="crh-bloco-titulo" style="margin:0 0 4px">{html.escape(titulo)}</p><div class="crh-campos crh-campos-direita">{linhas}</div>')
+
+
 def _ficha(colab: dict, dados: dict) -> None:
+    """Ficha da pessoa (pedido do usuário em 13/10/2026): dados cadastrais, documentos enviados (com a seta de dados e
+    arquivo da Conferência) e o PDF da ficha. Sem salário; conta bancária mascarada."""
+    token = st.session_state.token
+    partes = secoes(colab, dados["organograma"], dados["usuarios"], dados["colaboradores"])
+    docs = _documentos_rh(token)
+    linhas_docs = documentos_da_pessoa(docs, colab.get("id")) if isinstance(docs, list) else []
     with st.container(key="col_ficha_card"):
-        st.html(f'<p class="crh-cfg-titulo">Ficha — {html.escape(colab.get("nome") or "")}</p>')
-        campos = "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in ficha(colab, dados["organograma"], dados["usuarios"], dados["colaboradores"]))
-        st.html(f'<div class="crh-campos crh-campos-direita">{campos}</div>')
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.html(f'<p class="crh-cfg-titulo">Ficha — {html.escape(colab.get("nome") or "")}</p>', width="stretch")
+            agora = datetime.now()
+            st.download_button("Baixar ficha em PDF", ficha_pdf(colab.get("nome") or "", partes, linhas_docs, st.session_state.usuario.get("nome") or "RH", agora),
+                               file_name=nome_arquivo_ficha(colab.get("nome")), mime="application/pdf", key="col_ficha_pdf",
+                               help="A ficha com os dados e os documentos enviados. Tem dados pessoais: guarde só o necessário.")
+        for linha in (partes[:2], partes[2:]):
+            for coluna, (titulo, campos) in zip(st.columns(2), linha):
+                with coluna:
+                    _bloco(titulo, campos)
         with st.container(horizontal=True, vertical_alignment="center", gap="small"):
             st.space("stretch")
             if st.button("Definir superior", key="col_definir_superior"):
@@ -239,6 +275,18 @@ def _ficha(colab: dict, dados: dict) -> None:
                 if st.button("Criar acesso", type="primary", key="col_criar_acesso"):
                     st.session_state.modal_cadastro = ("acesso", colab.get("id"))
                     st.rerun()
+
+        st.html(f'<p class="crh-bloco-titulo" style="margin:12px 0 4px">Documentos enviados ({len(linhas_docs)})</p>')
+        if isinstance(docs, str):
+            alerta(st.empty(), "erro", f"Os documentos não carregaram agora: {docs}")
+        elif not linhas_docs:
+            st.html('<p class="crh-meta">Esta pessoa ainda não enviou documentos.</p>')
+        for l in linhas_docs:
+            with st.container(horizontal=True, vertical_alignment="center", key=f"col_doc_{l['id']}"):
+                st.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["documento"])}</p>'
+                        f'<p class="d">Enviado em {html.escape(l["enviado"])} · validade {html.escape(l["validade"])}</p></div>', width="stretch")
+                st.html(f'<span class="crh-selo {l["situacao"][1]}">{html.escape(l["situacao"][0])}</span>', width="content")
+            detalhes_documento(l)
 
 
 def pagina_colaboradores() -> None:
