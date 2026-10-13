@@ -545,9 +545,10 @@ def minha_situacao_ferias(token: str) -> dict:
     return _get("minha_situacao_ferias", token, GRUPO_FERIAS)
 
 
-def solicitar_ferias(token: str, data_inicio: str, data_fim: str, quantidade_dias: int, observacao: str | None) -> dict:
-    """POST ferias/solicitacoes -> {solicitacao}. Quem decide é o gestor ou o RH."""
-    corpo = {"data_inicio": data_inicio, "data_fim": data_fim, "quantidade_dias": int(quantidade_dias)}
+def solicitar_ferias(token: str, data_inicio: str, data_fim: str, quantidade_dias: int, observacao: str | None, dias_abono: int = 0) -> dict:
+    """POST ferias/solicitacoes -> {solicitacao, saldo_restante}. `dias_abono`: dias vendidos junto (até 10 na CLT, uma vez
+    por período aquisitivo). Quem decide é o gestor ou o RH."""
+    corpo = {"data_inicio": data_inicio, "data_fim": data_fim, "quantidade_dias": int(quantidade_dias), "dias_abono": int(dias_abono or 0)}
     if observacao:
         corpo["observacao"] = observacao
     return _post("ferias/solicitacoes", corpo, token, GRUPO_FERIAS)

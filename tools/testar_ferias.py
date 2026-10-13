@@ -58,9 +58,11 @@ FERIADOS = [{"data": "2026-12-25", "nome": "Natal", "tipo": "feriado", "abrangen
 
 
 def situacao(**extra):
-    base = {"tipo_contrato": "CLT", "data_admissao": "2026-01-01", "permite_solicitacao": True, "limite_dias_por_pedido": 23,
-            "periodos_usados": 2, "maximo_periodos": 3, "permite_fracionamento": True, "minimo_dias_proximo": 5,
-            "antecedencia_minima_dias": 30, "periodo_aquisitivo_meses": 12, "tem_pendente": True}
+    base = {"tipo_contrato": "CLT", "data_admissao": "2025-01-01", "permite_solicitacao": True, "anos_completos": 1, "proporcional": True,
+            "janela_inicio": "2026-01-01", "janela_fim": "2027-01-01", "direito": 30, "saldo": 20, "dias_vendidos": 0, "periodos_usados": 1,
+            "maximo_periodos": 3, "permite_fracionamento": True, "tem_periodo_14": False, "minimo_principal": 14, "minimo_outros": 5,
+            "minimo_dias_proximo": 14, "maximo_abono": 10, "pode_vender": True, "antecedencia_minima_dias": 45, "periodo_aquisitivo_meses": 12,
+            "tem_pendente": True}
     base.update(extra)
     return base
 
@@ -86,7 +88,7 @@ def _instalar():
     api_client.cancelar_ferias = lambda token, fid: chamadas.append(("cancelar", fid)) or _falha_ou("cancelar", {"sucesso": True})
     api_client.calendario = lambda token: chamadas.append(("calendario",)) or _falha_ou("calendario", {"feriados": estado.get("feriados", FERIADOS)})
     api_client.importar_feriados = lambda token, ano: chamadas.append(("importar", ano)) or _falha_ou("importar", {"ano": ano, "importados": 14, "ja_existiam": 0})
-    api_client.solicitar_ferias = lambda token, i, f, d, obs: chamadas.append(("solicitar", i, f, d, obs)) or _falha_ou("solicitar", {"sucesso": True})
+    api_client.solicitar_ferias = lambda token, i, f, d, obs, abono=0: chamadas.append(("solicitar", i, f, d, obs, abono)) or _falha_ou("solicitar", {"sucesso": True})
 
 
 _instalar()
@@ -144,25 +146,54 @@ conferir(h[71]["titulo"] == "Férias — 10/01/2027 a 20/01/2027" and h[71]["det
 conferir(h[70]["detalhe"] == "Aprovada em 20/06/2026 · 15 dias" and h[68]["detalhe"] == "Concluída em 10/12/2025 · 10 dias", "aprovada e concluída com a data certa")
 conferir(not any(l["cancelavel"] for i, l in h.items() if i != 71), "só o pendente pode ser cancelado")
 conferir(m.proximo_aquisitivo("2026-01-01", 12, date(2026, 10, 10)) == date(2027, 1, 1) and m.proximo_aquisitivo("2024-03-15", 12, date(2026, 10, 10)) == date(2027, 3, 15), "próximo período aquisitivo")
+
+
+def terca(minimo_dias: int) -> date:
+    """A primeira terça-feira a partir de hoje + `minimo_dias` (fora da sexta e do sábado e longe dos feriados do teste)."""
+    d = HOJE + timedelta(days=minimo_dias)
+    while d.weekday() != 1 or d.month == 12:
+        d += timedelta(days=1)
+    return d
+
+
 r = m.resumo(situacao(), date(2026, 10, 10))
-conferir(r["limite"] == "Até 23 dias" and r["fracionamento"] == "2 de 3 usados" and "CLT, até 3 períodos" in r["fracionamento_rotulo"], "cartões com o que o backend calcula")
+conferir(r["saldo"] == "20 dias" and r["fracionamento"] == "1 de 3 usados" and r["vendidos"] == "0 de 10", "cartões: saldo, períodos e dias vendidos (tarefas 6.2 e 6.3)")
+conferir(any("tire as férias até 31/12/2026" in n for n in r["notas"]) and any("pelo menos 14 dias" in n for n in r["notas"]), "notas: até quando tirar e o período de 14")
 conferir(not r["pode_pedir"] and "pedido pendente" in r["motivo_bloqueio"], "com pedido pendente, não dá para pedir outro")
 conferir("não tem solicitação de férias" in m.resumo(situacao(permite_solicitacao=False, tem_pendente=False), HOJE)["motivo_bloqueio"], "contrato sem férias (PJ, temporário): aviso")
 conferir("3 períodos" in m.resumo(situacao(periodos_usados=3, tem_pendente=False), HOJE)["motivo_bloqueio"], "todos os períodos usados: aviso")
-s = situacao(tem_pendente=False)
-inicio = HOJE + timedelta(days=40)
-conferir(m.validar_pedido(s, inicio, inicio + timedelta(days=30), HOJE) == "Um pedido pode ter no máximo 30 dias.", "mais de 30 dias: recusado")
-conferir("limite para este pedido é de 23 dias" in m.validar_pedido(s, inicio, inicio + timedelta(days=24), HOJE), "acima do limite proporcional: recusado")
-conferir("pelo menos 5 dias" in m.validar_pedido(s, inicio, inicio + timedelta(days=2), HOJE), "abaixo do mínimo do período: recusado")
-conferir("30 dias de antecedência" in m.validar_pedido(s, HOJE + timedelta(days=10), HOJE + timedelta(days=20), HOJE), "sem a antecedência mínima: recusado")
-conferir(m.validar_pedido(s, inicio, inicio + timedelta(days=14), HOJE) is None, "pedido dentro das regras passa")
-conferir("até 3 períodos" in m.regras_do_pedido(s) and "5 dias ou mais" in m.regras_do_pedido(s) and "pendente por vez" in m.regras_do_pedido(s), "texto de apoio com os números do contrato")
+conferir("todo o saldo" in m.resumo(situacao(saldo=0, tem_pendente=False), HOJE)["motivo_bloqueio"], "sem saldo: aviso")
+conferir("12 meses" in m.resumo(situacao(anos_completos=0, proporcional=False, tem_pendente=False), HOJE)["motivo_bloqueio"], "antes de 12 meses sem proporcional: aviso")
+conferir(m.resumo(situacao(maximo_abono=0, pode_vender=False), HOJE)["vendidos"] == "Não se aplica", "contrato sem venda: 'Não se aplica'")
+
+s = situacao(tem_pendente=False, saldo=30, periodos_usados=0)
+ini = terca(50)
+conferir(m.validar_pedido(s, ini, ini + timedelta(days=29), HOJE) is None, "30 dias de uma vez passa")
+conferir("45 dias de antecedência" in m.validar_pedido(s, terca(10), terca(10) + timedelta(days=13), HOJE), "spec: pedido com menos de 45 dias é recusado")
+conferir("pelo menos 5 dias" in m.validar_pedido(s, ini, ini + timedelta(days=3), HOJE), "spec: período de 4 dias é recusado")
+conferir(m.validar_pedido(s, ini, ini + timedelta(days=4), HOJE, abono=10) is None, "spec: vende 10 e pede 5, restam 15")
+conferir("Sobrariam 3 dias" in m.validar_pedido(s, ini, ini + timedelta(days=26), HOJE), "spec: pedir 27 com saldo 30 deixaria 3 dias")
+conferir("no máximo 10 dias" in m.validar_pedido(s, ini, ini + timedelta(days=13), HOJE, abono=11), "spec: vender 11 é recusado")
+sexta = ini + timedelta(days=3)
+conferir("dois dias antes" in m.validar_pedido(s, sexta, sexta + timedelta(days=13), HOJE), "começar na sexta (antes do domingo) é recusado")
+vespera = date(2026, 12, 23)
+conferir("dois dias antes" in m.validar_pedido(dict(s, antecedencia_minima_dias=0), vespera, vespera + timedelta(days=13), date(2026, 10, 1), feriados=FERIADOS),
+         "spec: começar dois dias antes do Natal é recusado")
+conferir("14 dias" in m.validar_pedido(situacao(tem_pendente=False, saldo=15, periodos_usados=1), ini, ini + timedelta(days=4), HOJE), "sem período de 14 e o resto não comporta: recusado")
+conferir("já foi feita" in m.validar_pedido(situacao(tem_pendente=False, dias_vendidos=5), ini, ini + timedelta(days=13), HOJE, abono=5), "segunda venda no mesmo período: recusada")
+conferir("último período" in m.validar_pedido(situacao(tem_pendente=False, saldo=10, periodos_usados=2, tem_periodo_14=True), ini, ini + timedelta(days=4), HOJE),
+         "terceiro período deixando sobra: recusado")
+regras = m.regras_do_pedido(s)
+conferir("45 dias de antecedência" in regras and "até 3 períodos" in regras and "14 dias ou mais" in regras and "vender até 10 dias" in regras, "texto de apoio com os números do contrato")
+linhas_pedido = dict(m.resumo_do_pedido(s, ini, ini + timedelta(days=4), 10))
+conferir(linhas_pedido["Dias de férias"] == "5 dias" and linhas_pedido["Dias vendidos"] == "10 dias" and linhas_pedido["Saldo agora"] == "30 dias"
+         and linhas_pedido["Saldo depois"] == "15 dias", "quadro do pedido: dias, vendidos, saldo agora e depois")
 
 # ---------------------------------------------------------------------------
-caso("Tela 'Férias' (Figma 40:22)")
+caso("Tela 'Férias' (Figma 40:22 e seção 22)")
 at = app()
 t = texto(at)
-conferir("Até 23 dias" in t and "2 de 3 usados" in t and "Próximo período aquisitivo completo em" in t, "cartões e a nota do período aquisitivo")
+conferir("Saldo de férias" in t and "20 dias" in t and "1 de 3 usados" in t and "Dias vendidos" in t and "0 de 10" in t, "cartões de saldo, períodos e dias vendidos")
 conferir("Férias — 10/01/2027 a 20/01/2027" in t and "Rejeitada" in t and "Concluída" in t, "histórico com as situações")
 conferir("fe_cancelar_71" in chaves(at) and not {"fe_cancelar_70", "fe_cancelar_69", "fe_cancelar_68"} & chaves(at), "'Cancelar' só no pedido pendente")
 conferir(at.button(key="fe_solicitar").disabled and "pedido pendente" in t, "com pedido pendente, 'Solicitar férias' fica desligado e a tela explica")
@@ -174,38 +205,44 @@ at.button(key="fe_cancelar_71").click()
 at = at.run()
 conferir("Somente solicitacoes pendentes" in texto(at) and not at.exception, "recusa do backend ao cancelar vira alerta")
 
-caso("Solicitar férias (Figma 221:230)")
-at = app(ferias=ferias_padrao(pendente=False), situacao=situacao(tem_pendente=False, periodos_usados=1))
+caso("Solicitar férias com venda de dias (Figma 221:230 e 466:1171)")
+at = app(ferias=ferias_padrao(pendente=False), situacao=situacao(tem_pendente=False, saldo=30, periodos_usados=0))
 conferir(not at.button(key="fe_solicitar").disabled, "sem pendente, 'Solicitar férias' fica ligado")
 at.button(key="fe_solicitar").click()
 at = at.run()
-inicio = HOJE + timedelta(days=10)
-at.date_input(key="fe_inicio").set_value(inicio)
-at.date_input(key="fe_fim").set_value(inicio + timedelta(days=14))
-at = at.run()
-conferir("15 dias" in texto(at) and "2º de 3 permitidos" in texto(at), "quadro com os dias pedidos e qual período é")
+conferir(at.number_input(key="fe_abono").max == 10, "campo de vender dias, até 10")
+at.date_input(key="fe_inicio").set_value(terca(10))
+at.date_input(key="fe_fim").set_value(terca(10) + timedelta(days=13))
 at.button(key="fe_enviar").click()
 at = at.run()
-conferir("30 dias de antecedência" in texto(at) and not any(c[0] == "solicitar" for c in chamadas), "sem antecedência: mensagem no modal, sem chamar a API")
-inicio = HOJE + timedelta(days=40)
-at.date_input(key="fe_inicio").set_value(inicio)
-at.date_input(key="fe_fim").set_value(inicio + timedelta(days=14))
+conferir("45 dias de antecedência" in texto(at) and not any(c[0] == "solicitar" for c in chamadas), "sem antecedência: mensagem no modal, sem chamar a API")
+ini = terca(50)
+at.date_input(key="fe_inicio").set_value(ini)
+at.date_input(key="fe_fim").set_value(ini + timedelta(days=4))
+at.number_input(key="fe_abono").set_value(10)
+at = at.run()
+conferir("Saldo depois" in texto(at) and "15 dias" in texto(at) and "1º de 3 permitidos" in texto(at), "quadro mostra o saldo que sobra (30 - 5 - 10 = 15)")
 at.text_input(key="fe_obs").set_value("Viagem em família já marcada.")
 at.button(key="fe_enviar").click()
 at = at.run()
-conferir(("solicitar", inicio.isoformat(), (inicio + timedelta(days=14)).isoformat(), 15, "Viagem em família já marcada.") in chamadas, "envia início, fim, 15 dias e a observação")
+conferir(("solicitar", ini.isoformat(), (ini + timedelta(days=4)).isoformat(), 5, "Viagem em família já marcada.", 10) in chamadas, "envia início, fim, 5 dias, a observação e os 10 dias vendidos")
 conferir("modal_ferias" not in at.session_state, "o modal fecha")
-at = app(ferias=ferias_padrao(pendente=False), situacao=situacao(tem_pendente=False), erro_solicitar=ApiError("Solicitacao de ferias nao habilitada para o tipo de contrato deste colaborador.", 403))
+at = app(ferias=ferias_padrao(pendente=False), situacao=situacao(tem_pendente=False, maximo_abono=0, pode_vender=False, saldo=30, periodos_usados=0))
 at.button(key="fe_solicitar").click()
 at = at.run()
-at.date_input(key="fe_inicio").set_value(HOJE + timedelta(days=40))
-at.date_input(key="fe_fim").set_value(HOJE + timedelta(days=50))
+conferir(not at.get("number_input"), "contrato sem venda: o modal não oferece vender dias")
+at = app(ferias=ferias_padrao(pendente=False), situacao=situacao(tem_pendente=False, saldo=30, periodos_usados=0),
+         erro_solicitar=ApiError("Solicitacao de ferias nao habilitada para o tipo de contrato deste colaborador.", 403))
+at.button(key="fe_solicitar").click()
+at = at.run()
+at.date_input(key="fe_inicio").set_value(terca(50))
+at.date_input(key="fe_fim").set_value(terca(50) + timedelta(days=29))
 at.button(key="fe_enviar").click()
 at = at.run()
 conferir("nao habilitada" in texto(at) and "modal_ferias" in at.session_state, "recusa do backend no modal, que continua aberto")
 
 caso("Estados: vazio, sem colaborador, erro e situação indisponível")
-at = app(ferias=[], situacao=situacao(tem_pendente=False, periodos_usados=0))
+at = app(ferias=[], situacao=situacao(tem_pendente=False, periodos_usados=0, saldo=30))
 conferir("Você ainda não pediu férias." in texto(at) and not at.button(key="fe_solicitar").disabled, "vazio: sem pedidos")
 at = app(erro_ferias=ApiError("Nao existe um colaborador vinculado a conta autenticada.", 404))
 conferir("não há férias para pedir" in texto(at) and not at.exception, "conta sem colaborador: mensagem")
