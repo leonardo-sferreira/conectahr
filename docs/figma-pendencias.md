@@ -1,0 +1,37 @@
+# Figma × Streamlit: o que falta alinhar
+
+**Situação em 13/10/2026.** O protótipo do Figma (`fph1M5tB4rA4gqfIysSmkn`) é a referência visual do projeto
+(AGENTS.md, seção 6). Algumas mudanças foram pedidas e construídas no Streamlit enquanto o MCP do Figma estava
+fora do ar, ou depois de o Figma ter sido desenhado. Nesses casos, **a tela do Streamlit é a versão mais
+recente** e o Figma precisa ser atualizado a partir dela. A atualização do Figma ficou para depois, por decisão
+do usuário (13/10/2026).
+
+## Telas em que o Streamlit está à frente do Figma
+
+| Tela | Nó no Figma | O que o Streamlit já tem e o Figma não | Origem |
+|---|---|---|---|
+| Organograma | 224:3593 | Cartões em coluna: superior direto em cima, a pessoa em destaque no meio e a equipe embaixo, ligados por linhas; cada cartão só com nome, cargo e área; clicar sobe ou desce na hierarquia; "Ir ao topo" e "Minha posição"; sem "Ver detalhes" | Pedido do usuário com imagem de referência (13/10); PR #47 |
+| Documentos: modal "Enviar documento" | 309:1591 (escuro 313:1573) | Campo "Arquivo" (PDF, JPG ou PNG, até 10 MB; foto pelo celular) no lugar de "Link do arquivo" | Change `anexo-de-arquivos`, tarefa 1.1; PR #48 |
+| Ponto: Mês (planilha) | 464:826 (escuro 468:1603) | Data completa (dd/mm/aaaa); resumo com horas positivas e horas negativas, sem o saldo único e sem o cartão de atestados; pedido de ajuste pela célula da marcação (Ent. 1, Saí. 2…), com "Corrigir horário" também para a marcação incluída (I); nenhum ajuste no dia de hoje | Change `ponto-rep-p-e-ferias-clt`, tarefas 9.6 a 9.8 (D15 a D18) |
+| Benefícios | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_beneficios.py` |
+| Folha de ponto (Gestor e RH) | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_folha_ponto.py` |
+| Solicitações ao RH | 225:5299 e 206:1072 | Construída sem conferência, com o Figma fora do ar | `pagina_solicitacoes.py` |
+
+## Diferenças conhecidas e aceitas (o backend não tem o dado)
+
+| Tela | Diferença |
+|---|---|
+| Comunicados e FAQ (217:154, 245:594) | Sem as abas de categoria do comunicado (RH, TI, Benefícios): o comunicado não tem categoria no backend |
+| Férias (40:22) | O primeiro cartão mostra "Até N dias" por pedido, e não "Dias disponíveis": o saldo de férias ainda não existe no backend (tarefas 6.1 a 6.4 da change `ponto-rep-p-e-ferias-clt`) |
+| Ponto: cabeçalho | O horário contratual mostra a jornada da regra do contrato (horas por dia e por semana), e não um horário de entrada e saída |
+
+## Modo escuro
+
+A página "Protótipo — Dark" ainda não tem todas as seções (tarefas 63 e 75 da change
+`concluir-frontend-streamlit`). No Streamlit, o tema escuro já vale para todas as telas.
+
+## Telas desenhadas no Figma e ainda não construídas no Streamlit
+
+Trajetória (avaliação, metas e PDI), Auditoria, Regras (instrumentos normativos e overrides), Rotina diária e
+Retenção e anonimização, Reconhecimentos, Pesquisa de clima, Indicadores, Desligamento, Delegações e Minha
+equipe. Os endpoints existem no backend; as tarefas estão na change `concluir-frontend-streamlit`.
