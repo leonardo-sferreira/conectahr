@@ -220,6 +220,21 @@ def meus_comunicados(token: str) -> dict:
     return _get("meus_comunicados", token, GRUPO_COLABORADORES)
 
 
+def minhas_notificacoes(token: str) -> dict:
+    """GET minhas_notificacoes -> {total_nao_lidas, notificacoes}: as 50 mais recentes do próprio usuário, com `criada_em`."""
+    return _get("minhas_notificacoes", token, GRUPO_COLABORADORES)
+
+
+def marcar_notificacao_lida(token: str, notificacao_id: int) -> dict:
+    """POST notificacoes/{id}/marcar_lida: só o destinatário marca."""
+    return _post(f"notificacoes/{int(notificacao_id)}/marcar_lida", {}, token, GRUPO_COLABORADORES)
+
+
+def marcar_todas_notificacoes_lidas(token: str) -> dict:
+    """POST notificacoes/marcar_todas_lidas -> {marcadas}: as não lidas do próprio usuário."""
+    return _post("notificacoes/marcar_todas_lidas", {}, token, GRUPO_COLABORADORES)
+
+
 def artigos_faq(token: str) -> dict:
     """GET artigos_faq -> {artigos}: os artigos ativos da FAQ, para qualquer perfil."""
     return _get("artigos_faq", token, GRUPO_COLABORADORES)

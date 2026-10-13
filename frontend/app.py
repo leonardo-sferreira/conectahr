@@ -24,6 +24,7 @@ real continua sendo do backend.
 import streamlit as st
 
 from api_client import ApiError, auth_me, folha_pessoas, logout
+from notificacoes import render_sino
 from pagina_ausencias import pagina_ausencias
 from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
 from pagina_beneficios import pagina_beneficios
@@ -46,7 +47,7 @@ from pagina_ponto import pagina_ponto
 from pagina_solicitacoes import pagina_solicitacoes
 from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
-from theme import inject_base_styles, render_nav_ativo, render_sidebar_logo
+from theme import definir_sino, inject_base_styles, render_nav_ativo, render_sidebar_logo
 
 # (rótulo, restrito a RH/ADMIN) na ordem do Figma.
 _MENU = [
@@ -94,6 +95,9 @@ _MENU_ADMIN = [
     "Indicadores gerais",
     "Integrações e e-mails",
 ]
+
+# O sino do topo fala com a API; o tema só o desenha (render_topbar).
+definir_sino(render_sino)
 
 logado = bool(st.session_state.get("token"))
 em_onboarding = logado and bool(st.session_state.get("onboarding_pendente"))
@@ -187,6 +191,11 @@ _ATALHOS = {
     "ir_central": PG_CENTRAL,
     "ir_solicitacoes": PG_SOLICITACOES,
     "ir_faq": PG_FAQ,
+    # Destinos do sino de notificações (notificacoes_modelo.destino).
+    "ir_ferias": PG_FERIAS,
+    "ir_ponto": PG_PONTO,
+    "ir_folha": PG_FOLHA,
+    "ir_beneficios": PG_BENEFICIOS,
 }
 for marca, destino in _ATALHOS.items():
     if st.session_state.pop(marca, False):

@@ -34,6 +34,8 @@ import api_client  # noqa: E402
 import decisoes_modelo as m  # noqa: E402
 from api_client import ApiError  # noqa: E402
 
+api_client.minhas_notificacoes = lambda token: {"total_nao_lidas": 0, "notificacoes": []}  # sino do topo (sem rede)
+
 APP = RAIZ / "frontend" / "app.py"
 HOJE = date.today()
 chamadas: list[tuple] = []

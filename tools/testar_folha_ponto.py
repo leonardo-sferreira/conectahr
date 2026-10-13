@@ -30,6 +30,8 @@ import cadastro_modelo as cm  # noqa: E402
 import folha_modelo as fm  # noqa: E402
 from api_client import ApiError  # noqa: E402
 
+api_client.minhas_notificacoes = lambda token: {"total_nao_lidas": 0, "notificacoes": []}  # sino do topo (sem rede)
+
 APP = RAIZ / "frontend" / "app.py"
 BR = timezone(timedelta(hours=-3))
 HOJE = datetime.now(BR).date()
