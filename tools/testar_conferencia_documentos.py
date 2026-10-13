@@ -58,7 +58,8 @@ ORGANOGRAMA = {
 def documentos_padrao():
     return [
         {"id": 101, "colaborador_id": 7, "tipo": "cnh", "nome_documento": "CNH", "status": "pendente_analise", "estado_verificacao": "liberado", "created_at": "2026-09-28T10:00:00Z", "data_validade": "2031-03-15"},
-        {"id": 102, "colaborador_id": 11, "tipo": "aso_admissional", "nome_documento": "ASO admissional", "status": "pendente_analise", "estado_verificacao": "liberado", "created_at": "2026-09-30T10:00:00Z"},
+        {"id": 102, "colaborador_id": 11, "tipo": "aso_admissional", "nome_documento": "ASO admissional", "status": "pendente_analise", "estado_verificacao": "liberado", "created_at": "2026-09-30T10:00:00Z",
+         "data_emissao": "2026-09-28", "dados": {"resultado": "apto", "crm": "123456/SP"}},
         {"id": 103, "colaborador_id": 12, "tipo": "comprovante_residencia", "nome_documento": "Comprovante de residência", "status": "pendente_analise", "estado_verificacao": "bloqueado", "motivo_bloqueio": "Extensao nao permitida: .exe.", "created_at": "2026-10-01T10:00:00Z"},
         {"id": 104, "colaborador_id": 13, "tipo": "cnh", "nome_documento": "CNH", "status": "vencido", "data_validade": "2026-09-20", "created_at": "2021-09-20T10:00:00Z"},
         {"id": 105, "colaborador_id": 13, "tipo": "rg", "nome_documento": "RG", "status": "aprovado", "data_validade": ONTEM, "updated_at": HOJE.isoformat() + "T08:00:00Z"},
@@ -230,6 +231,8 @@ caso("Aprovar")
 at.button(key="rh_aprovar_102").click()
 at = at.run()
 conferir("Juliana Prado" in texto(at) and at.text_area(key="rh_aprovar_obs") is not None, "modal com o resumo e a observação opcional")
+conferir("Data do exame 28/09/2026" in texto(at) and "Resultado Apto" in texto(at) and "CRM do médico 123456/SP" in texto(at),
+         "o RH vê os dados que a pessoa informou, para conferir com o arquivo (campos-por-tipo-de-documento)")
 at.text_area(key="rh_aprovar_obs").set_value("Conferido.")
 at.button(key="rh_aprovar_ok").click()
 at = at.run()

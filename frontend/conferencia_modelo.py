@@ -13,7 +13,7 @@ decide o que cada linha oferece, para não mostrar um botão que o backend recus
 
 from datetime import date
 
-from documentos_modelo import rotulo_tipo
+from documentos_modelo import linhas_dados, rotulo_tipo
 from onboarding_modelo import data_br
 
 ARQUIVAVEIS = ("rejeitado", "vencido", "substituido")
@@ -95,6 +95,7 @@ def linhas_para_conferir(documentos: list[dict], mapa_pessoas: dict, meu_colabor
             "validade": data_br(d.get("data_validade")) or "—",
             "arquivo": "bloqueado" if bloqueado else "abrir",
             "motivo_bloqueio": d.get("motivo_bloqueio"),
+            "dados_informados": linhas_dados(d),
             "acoes": acoes,
             "proprio": proprio and status == "pendente_analise",
             "status": status,

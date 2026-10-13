@@ -19,6 +19,7 @@ query documentos verb=POST {
     text? arquivo_url? filters=trim|min:10|max:2000
     text? observacao? filters=trim|max:1000
     int? documento_substituido_id?
+    json? dados?
   }
 
   stack {
@@ -156,6 +157,48 @@ query documentos verb=POST {
       value = ($emitido_pelo_rh ? null : $input.data_validade)
     }
 
+    // Campos do tipo (change campos-por-tipo-de-documento, D1 a D4): cada tipo tem os seus obrigatorios e so
+    // as colunas e as chaves de `dados` que usa. Holerite e informe do RH ficam como antes.
+    var $campos_tipo {
+      value = {erro: null, numero_documento: $input.numero_documento, estado_de_emissao: ($input.estado_de_emissao != null ? $input.estado_de_emissao : ""), data_emissao: $input.data_emissao, data_validade: $data_validade_final, dados: null, cpf_a_conferir: null, cpf_da_ficha: false}
+    }
+
+    conditional {
+      if ($emitido_pelo_rh == false) {
+        function.run "ConectaHR/validar_campos_documento" {
+          input = {tipo: $input.tipo, numero_documento: $input.numero_documento, estado_de_emissao: $input.estado_de_emissao, data_emissao: $input.data_emissao, data_validade: $input.data_validade, dados: $input.dados}
+        } as $validacao_campos
+
+        var.update $campos_tipo {
+          value = $validacao_campos
+        }
+      }
+    }
+
+    precondition ($campos_tipo.erro == null) {
+      error_type = "inputerror"
+      error = $campos_tipo.erro
+    }
+
+    // CPF do documento (D3): digitos verificadores; no tipo CPF e na CIN, igual ao da ficha.
+    conditional {
+      if ($campos_tipo.cpf_a_conferir != null) {
+        function.run "ConectaHR/validar_cpf" {
+          input = {cpf: $campos_tipo.cpf_a_conferir}
+        } as $cpf_documento
+
+        precondition ($cpf_documento.valido) {
+          error_type = "inputerror"
+          error = "CPF invalido. Confira os numeros informados."
+        }
+
+        precondition ($campos_tipo.cpf_da_ficha == false || $cpf_documento.cpf_normalizado == $colaborador_destino.cpf) {
+          error_type = "inputerror"
+          error = "O CPF informado nao confere com o do cadastro. Se o cadastro estiver errado, peca a correcao ao RH."
+        }
+      }
+    }
+
     // Exige pelo menos uma imagem ou um link externo.
     // Link de arquivo controlado (LGPD): so https e so de dominio aprovado. Links
     // publicos de compartilhamento (drive, nuvem) nao entram. Lista aprovada = a
@@ -247,7 +290,7 @@ query documentos verb=POST {
     // plataforma) — sem isso, omitir estado_de_emissao quebra o insert
     // com "SQL Error: 23502, NOT NULL VIOLATION".
     var $estado_de_emissao_final {
-      value = ($input.estado_de_emissao != null ? $input.estado_de_emissao : "")
+      value = ($campos_tipo.estado_de_emissao != null ? $campos_tipo.estado_de_emissao : "")
     }
 
     conditional {
@@ -328,10 +371,11 @@ query documentos verb=POST {
             colaborador_id           : $colaborador_destino.id
             tipo                     : $input.tipo
             nome_documento           : $input.nome_documento
-            numero_documento         : $input.numero_documento
+            numero_documento         : $campos_tipo.numero_documento
             estado_de_emissao        : $estado_de_emissao_final
-            data_emissao             : $input.data_emissao
-            data_validade            : $data_validade_final
+            data_emissao             : $campos_tipo.data_emissao
+            data_validade            : $campos_tipo.data_validade
+            dados                    : $campos_tipo.dados
             retencao_ate             : $retencao_ate_final
             status                   : $status_inicial
             imagem_frente            : $imagem_frente_final

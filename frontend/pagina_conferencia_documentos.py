@@ -102,7 +102,8 @@ def _concluir(aviso: str) -> None:
 
 
 def _resumo_documento(linha: dict, terceira: tuple[str, str]) -> None:
-    linhas = [("Pessoa", linha["pessoa"]), ("Documento", linha["documento"]), terceira]
+    # Os dados que a pessoa informou, para conferir com o arquivo (change campos-por-tipo-de-documento).
+    linhas = [("Pessoa", linha["pessoa"]), ("Documento", linha["documento"]), *linha.get("dados_informados", []), terceira]
     campos = "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in linhas)
     st.html(f'<div class="crh-campos crh-campos-direita">{campos}</div>')
 

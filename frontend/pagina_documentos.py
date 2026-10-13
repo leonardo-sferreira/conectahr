@@ -13,17 +13,21 @@ não tem opção de excluir: o backend recusa a exclusão física e só o RH arq
 Anexo (change anexo-de-arquivos): o modal recebe o arquivo (PDF, JPG ou PNG, até 10 MB). O plano do Xano
 não recebe arquivo, então a tela pede a `documentos/envio_arquivo` um endereço de envio de uso único, manda o
 arquivo para o armazenamento privado (Supabase) e cadastra o documento com o `arquivo_url` devolvido.
+
+Campos por tipo (change campos-por-tipo-de-documento): ao escolher o tipo, o modal mostra só os campos dele
+(`documentos_modelo.CAMPOS`), validados na tela e de novo no backend.
 """
 
 import html
 import time
+from datetime import date
 
 import streamlit as st
 
 from api_client import (ApiError, abrir_arquivo_documento, enviar_documento, meus_documentos, minhas_pendencias_documento,
                         preparar_envio_arquivo, subir_arquivo)
-from documentos_modelo import (TIPOS_ARQUIVO, TIPOS_ENVIO, extensao, linhas_pendentes, lista_documentos, rotulo_tipo,
-                               tem_pendencia_aberta, validar_envio)
+from documentos_modelo import (TIPOS_ARQUIVO, TIPOS_ENVIO, campos, extensao, linhas_pendentes, lista_documentos, montar_campos,
+                               rotulo_tipo, tem_pendencia_aberta, validar_envio)
 from onboarding_dados import invalidar_cache as invalidar_onboarding
 from theme import alerta, render_hero, render_lista_documentos, render_topbar
 
@@ -56,17 +60,39 @@ def _fechar_modal() -> None:
     st.session_state.pop("modal_documento", None)
 
 
+def _campos_do_tipo(tipo: str | None) -> dict:
+    """Os campos do tipo escolhido (`documentos_modelo.CAMPOS`), dois por linha; devolve chave -> valor. A chave do
+    widget leva o tipo, então trocar o tipo começa os campos do zero."""
+    valores = {}
+    lista = campos(tipo)
+    for inicio in range(0, len(lista), 2):
+        for coluna, campo in zip(st.columns(2), lista[inicio:inicio + 2]):
+            with coluna:
+                valores[campo["chave"]] = _widget(tipo, campo)
+    return valores
+
+
+def _widget(tipo: str, campo: dict):
+    rotulo = campo["rotulo"] + ("" if campo["obrigatorio"] else " (opcional)")
+    chave = f"env_c_{tipo}_{campo['chave']}"
+    if campo["tipo"] in ("data", "validade"):
+        hoje = date.today()
+        maximo = date(hoje.year + 30, 12, 31) if campo["tipo"] == "validade" else hoje
+        return st.date_input(rotulo, value=None, min_value=date(1940, 1, 1), max_value=maximo, format="DD/MM/YYYY", key=chave, help=campo["ajuda"])
+    if campo["tipo"] == "opcao":
+        opcoes = campo["opcoes"]
+        return st.selectbox(rotulo, list(opcoes), index=None, format_func=lambda v: opcoes[v], placeholder="Escolha", key=chave, help=campo["ajuda"])
+    return st.text_input(rotulo, max_chars=14 if campo["tipo"] == "cpf" else 100, key=chave, help=campo["ajuda"],
+                         placeholder="000.000.000-00" if campo["tipo"] == "cpf" else None)
+
+
 @st.dialog("Enviar documento", width="small", on_dismiss=_fechar_modal)
 def _modal_enviar() -> None:
     # O tipo inicial (vindo de "Enviar →") já está em st.session_state.env_tipo (_abrir_modal).
     tipo = st.selectbox(
         "Tipo de documento", TIPOS_ENVIO, index=None, format_func=rotulo_tipo, placeholder="Escolha o tipo", key="env_tipo"
     )
-    col_num, col_data = st.columns(2)
-    with col_num:
-        numero = st.text_input("Número", max_chars=100, key="env_numero")
-    with col_data:
-        emissao = st.date_input("Data de emissão", value=None, format="DD/MM/YYYY", key="env_emissao")
+    valores = _campos_do_tipo(tipo)
     arquivo = st.file_uploader(
         "Arquivo",
         type=list(TIPOS_ARQUIVO),
@@ -79,7 +105,7 @@ def _modal_enviar() -> None:
             _fechar_modal()
             st.rerun()
         if st.button("Enviar para o RH", type="primary", key="btn_env_enviar"):
-            erro_campo = validar_envio(tipo, arquivo.name if arquivo else None, arquivo.size if arquivo else None, numero)
+            erro_campo = validar_envio(tipo, arquivo.name if arquivo else None, arquivo.size if arquivo else None, valores, date.today())
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
@@ -92,21 +118,14 @@ def _modal_enviar() -> None:
                     subir_arquivo(envio["upload_url"], arquivo.getvalue(), TIPOS_ARQUIVO[ext])
                     enviar_documento(
                         token,
-                        {
-                            "colaborador_id": colaborador_id,
-                            "tipo": tipo,
-                            "nome_documento": rotulo_tipo(tipo),
-                            "numero_documento": numero.strip(),
-                            "data_emissao": emissao.isoformat() if emissao else None,
-                            "arquivo_url": envio["arquivo_url"],
-                        },
+                        {"colaborador_id": colaborador_id, "tipo": tipo, **montar_campos(tipo, valores), "arquivo_url": envio["arquivo_url"]},
                     )
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
             _invalidar()
             _fechar_modal()
-            for chave in ("env_tipo", "env_numero", "env_emissao", "env_arquivo"):
+            for chave in [k for k in st.session_state if str(k).startswith("env_")]:
                 st.session_state.pop(chave, None)
             st.session_state.aviso_toast = "Documento enviado. O RH vai conferir."
             st.rerun()

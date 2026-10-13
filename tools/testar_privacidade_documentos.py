@@ -388,17 +388,31 @@ def _file_uploader_teste(label, *args, **kwargs):
 
 streamlit.file_uploader = _file_uploader_teste
 
+from datetime import date  # noqa: E402
+
+from documentos_modelo import campos, linhas_dados, montar_campos, validar_campos  # noqa: E402
+
+
+def rotulos_campos(at: AppTest) -> list[str]:
+    return [w.label for w in list(at.text_input) + list(at.date_input) + list(at.selectbox) if str(w.key).startswith("env_c_")]
+
+
 at = app_logado("documentos")
 at.button(key="btn_doc_enviar_1").click()
 at = at.run()
 conferir(at.selectbox(key="env_tipo").value == "certificado_reservista", "'Enviar →' abre o modal já com o tipo da pendência")
 conferir(("Arquivo", ("pdf", "jpg", "jpeg", "png")) in anexo["rotulos"] and all(t.key != "env_link" for t in at.text_input),
          "o modal pede o arquivo (PDF, JPG ou PNG), sem campo de link")
+conferir(rotulos_campos(at) == ["Número do certificado", "Data de emissão"], "reservista: só número do certificado e data de emissão")
+at.button(key="btn_env_enviar").click()
+at = at.run()
+conferir("Preencha \"Número do certificado\"." in texto(at) and not any(c[0] in ("preparar", "enviar") for c in chamadas), "campo obrigatório do tipo em branco: aviso, sem chamar a API")
+at.text_input(key="env_c_certificado_reservista_numero_documento").set_value("123456")
+at.date_input(key="env_c_certificado_reservista_data_emissao").set_value(date(2020, 5, 4))
 at.button(key="btn_env_enviar").click()
 at = at.run()
 conferir("Anexe o arquivo do documento." in texto(at) and not any(c[0] in ("preparar", "enviar") for c in chamadas), "sem arquivo: mensagem no modal, sem chamar a API")
 anexo["arquivo"] = ArquivoFicticio("Reservista.JPG", b"\xff\xd8 foto ficticia")
-at.text_input(key="env_numero").set_value("123456")
 at.button(key="btn_env_enviar").click()
 at = at.run()
 enviado = next((c[1] for c in chamadas if c[0] == "enviar"), {})
@@ -408,12 +422,76 @@ conferir(ordem_chamadas == ["preparar", "subir", "enviar"] and ("preparar", 9, "
          "pede o endereço de envio, manda a foto (image/jpeg) e só depois cadastra")
 conferir(enviado.get("tipo") == "certificado_reservista" and enviado.get("colaborador_id") == 9
          and enviado.get("arquivo_url") == "https://armazenamento.exemplo/object/documentos/abc.jpg", "cadastra com o tipo, o colaborador da sessão e o endereço do arquivo")
-conferir("modal_documento" not in at.session_state, "o modal fecha depois do envio")
+conferir(enviado.get("numero_documento") == "123456" and enviado.get("data_emissao") == "2020-05-04" and "dados" not in enviado
+         and enviado.get("nome_documento") == "Certificado de reservista", "reservista: número e emissão nas colunas, sem dados extras")
+conferir("modal_documento" not in at.session_state and not any(str(k).startswith("env_") for k in at.session_state), "o modal fecha e limpa os campos depois do envio")
+
+caso("Campos por tipo de documento (change campos-por-tipo-de-documento)")
+at = app_logado("documentos")
+at.button(key="btn_doc_novo").click()
+at = at.run()
+at.selectbox(key="env_tipo").set_value("rg")
+at = at.run()
+conferir(rotulos_campos(at) == ["Número do RG", "Órgão emissor", "Data de expedição", "UF"], "RG: número, órgão emissor, UF e data de expedição")
+at.text_input(key="env_c_rg_numero_documento").set_value("12.345.678-9")
+at.text_input(key="env_c_rg_orgao_emissor").set_value("ssp")
+at.selectbox(key="env_c_rg_estado_de_emissao").set_value("SP")
+at.date_input(key="env_c_rg_data_emissao").set_value(date(2015, 2, 1))
+at.button(key="btn_env_enviar").click()
+at = at.run()
+enviado = next((c[1] for c in chamadas if c[0] == "enviar"), {})
+conferir(enviado.get("numero_documento") == "12.345.678-9" and enviado.get("estado_de_emissao") == "SP" and enviado.get("data_emissao") == "2015-02-01"
+         and enviado.get("dados") == {"orgao_emissor": "ssp"}, "RG: colunas comuns e o órgão emissor em dados")
+at = app_logado("documentos")
+at.button(key="btn_doc_novo").click()
+at = at.run()
+at.selectbox(key="env_tipo").set_value("cpf")
+at = at.run()
+conferir(rotulos_campos(at) == ["Número do CPF"], "CPF: só o número, sem data")
+at.text_input(key="env_c_cpf_numero_documento").set_value("111.111.111-11")
+at.button(key="btn_env_enviar").click()
+at = at.run()
+conferir("CPF inválido" in texto(at) and not any(c[0] == "enviar" for c in chamadas), "CPF com dígitos errados: aviso antes da API")
+at.selectbox(key="env_tipo").set_value("cnh")
+at = at.run()
+conferir(sorted(rotulos_campos(at)) == ["Categoria", "Data de emissão", "Número de registro", "UF", "Validade"]
+         and at.selectbox(key="env_c_cnh_categoria").options[:3] == ["A", "B", "AB"],
+         "trocar o tipo troca os campos: CNH com registro, categoria e validade")
+at = app_logado("documentos", erro_enviar=ApiError("O CPF informado nao confere com o do cadastro. Se o cadastro estiver errado, peca a correcao ao RH.", 400))
+at.button(key="btn_doc_novo").click()
+at = at.run()
+at.selectbox(key="env_tipo").set_value("cpf")
+at = at.run()
+at.text_input(key="env_c_cpf_numero_documento").set_value("529.982.247-25")
+at.button(key="btn_env_enviar").click()
+at = at.run()
+conferir("nao confere com o do cadastro" in texto(at) and "modal_documento" in at.session_state, "CPF diferente da ficha: a recusa do backend aparece no modal")
+
+hoje = date(2026, 10, 13)
+conferir(validar_campos("cnh", {"numero_documento": "123.456.789-01", "categoria": "B", "estado_de_emissao": "SP", "data_emissao": date(2022, 1, 10)}, hoje)
+         == "Preencha \"Validade\".", "CNH sem validade")
+conferir(validar_campos("cnh", {"numero_documento": "1234567890", "categoria": "B", "estado_de_emissao": "SP", "data_emissao": date(2022, 1, 10),
+                                "data_validade": date(2032, 1, 10)}, hoje) == "O número de registro da CNH tem 11 dígitos.", "CNH com 10 dígitos")
+conferir(validar_campos("comprovante_residencia", {"data_emissao": date(2026, 6, 1)}, hoje) == "Envie um comprovante de residência dos últimos 90 dias."
+         and validar_campos("comprovante_residencia", {"data_emissao": date(2026, 9, 1)}, hoje) is None, "comprovante de residência só dos últimos 90 dias")
+conferir(validar_campos("certificado_reservista", {"numero_documento": "1", "data_emissao": date(2027, 1, 1)}, hoje) == "\"Data de emissão\" não pode ser uma data futura.",
+         "data de emissão futura")
+conferir(validar_campos("documentacao_migratoria", {"numero_documento": "V1", "data_emissao": date(2024, 1, 1), "data_validade": date(2023, 1, 1)}, hoje)
+         == "A validade não pode ser anterior à data de emissão.", "validade antes da emissão")
+conferir(validar_campos("documentacao_responsavel_legal", {"responsavel_nome": "Maria Exemplo", "responsavel_cpf": "529.982.247-25", "vinculo": "mae"}, hoje) is None
+         and validar_campos("laudo_deficiencia", {"data_emissao": date(2026, 1, 1)}, hoje) == "Preencha \"CRM do médico\".", "responsável legal e laudo (com CRM)")
+conferir(all(c["chave"] not in ("cid", "diagnostico") for t in ("laudo_deficiencia", "aso_admissional") for c in campos(t)), "laudo e ASO sem CID nem diagnóstico (minimização)")
+conferir(montar_campos("outro", {"descricao": "Carteira do conselho", "numero_documento": " "})["nome_documento"] == "Carteira do conselho", "outro: o nome é o que a pessoa escreveu")
+conferir(linhas_dados({"tipo": "cnh", "numero_documento": "12345678901", "estado_de_emissao": "SP", "data_validade": "2032-01-10", "dados": {"categoria": "AB"}})
+         == [("Número de registro", "12345678901"), ("Categoria", "AB"), ("UF", "SP"), ("Validade", "10/01/2032")], "dados para o RH, na ordem do tipo e com data dd/mm/aaaa")
+conferir(sorted(TIPOS_ENVIO) == sorted(campos.__globals__["CAMPOS"]), "todo tipo que a pessoa envia tem os seus campos")
 
 at = app_logado("documentos", erro_preparar=ApiError("O envio de arquivos ainda nao foi configurado. Fale com o RH.", 500))
 at.button(key="btn_doc_novo").click()
 at = at.run()
-at.selectbox(key="env_tipo").set_value("cnh")
+at.selectbox(key="env_tipo").set_value("cpf")
+at = at.run()
+at.text_input(key="env_c_cpf_numero_documento").set_value("529.982.247-25")
 at.button(key="btn_env_enviar").click()
 at = at.run()
 conferir("ainda nao foi configurado" in texto(at) and "modal_documento" in at.session_state and not any(c[0] in ("subir", "enviar") for c in chamadas),
@@ -421,7 +499,9 @@ conferir("ainda nao foi configurado" in texto(at) and "modal_documento" in at.se
 at = app_logado("documentos", erro_subir=ApiError("Não foi possível enviar o arquivo. Confira se é PDF, JPG ou PNG de até 10 MB e tente de novo.", 400))
 at.button(key="btn_doc_novo").click()
 at = at.run()
-at.selectbox(key="env_tipo").set_value("cnh")
+at.selectbox(key="env_tipo").set_value("cpf")
+at = at.run()
+at.text_input(key="env_c_cpf_numero_documento").set_value("529.982.247-25")
 at.button(key="btn_env_enviar").click()
 at = at.run()
 conferir("Não foi possível enviar o arquivo" in texto(at) and not any(c[0] == "enviar" for c in chamadas), "envio recusado pelo armazenamento: o documento não é cadastrado")
@@ -433,8 +513,8 @@ conferir(validar_envio(None, "rg.pdf", 10) == "Escolha o tipo de documento.", "s
 conferir(validar_envio("ctps", "contrato.zip", 10) == "Envie um arquivo PDF, JPG ou PNG.", "tipo de arquivo não aceito")
 conferir(validar_envio("ctps", "ctps.pdf", TAMANHO_MAXIMO + 1) == "O arquivo pode ter no máximo 10 MB.", "arquivo acima de 10 MB")
 conferir(validar_envio("ctps", "ctps.pdf", 0) == "O arquivo está vazio. Escolha outro.", "arquivo vazio")
-conferir(validar_envio("ctps", "CTPS frente.PNG", TAMANHO_MAXIMO, "123") is None and extensao("CTPS frente.PNG") == "png" and extensao("semponto") == "",
-         "PNG de até 10 MB passa; extensão em minúsculas")
+conferir(validar_envio("ctps", "CTPS frente.PNG", TAMANHO_MAXIMO, {"numero_documento": "123"}, hoje) is None and extensao("CTPS frente.PNG") == "png"
+         and extensao("semponto") == "", "PNG de até 10 MB passa; extensão em minúsculas")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:
