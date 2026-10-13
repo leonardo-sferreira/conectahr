@@ -764,6 +764,32 @@ def status_beneficio(token: str, beneficio_id: int, ativo: bool) -> dict:
     return _request("PATCH", f"beneficios/{int(beneficio_id)}/status", token, GRUPO_COLABORADORES, {"ativo": bool(ativo)})
 
 
+def editar_beneficio(token: str, beneficio_id: int, nome: str, tipo: str, operadora: str | None, descricao: str | None, links: list[dict]) -> dict:
+    """PATCH beneficios/{id} (RH e Admin): dados e links da apresentação; avisa quem tem o benefício."""
+    corpo = {"nome": nome, "tipo": tipo, "operadora": operadora, "descricao": descricao, "links": links}
+    return _request("PATCH", f"beneficios/{int(beneficio_id)}", token, GRUPO_COLABORADORES, corpo)
+
+
+def preparar_material_beneficio(token: str, beneficio_id: int, extensao: str) -> dict:
+    """POST beneficios/{id}/arquivos/envio -> {upload_url, caminho}: endereço de envio de uso único (RH e Admin)."""
+    return _post(f"beneficios/{int(beneficio_id)}/arquivos/envio", {"extensao": extensao}, token, GRUPO_COLABORADORES)
+
+
+def registrar_material_beneficio(token: str, beneficio_id: int, nome: str, caminho: str) -> dict:
+    """POST beneficios/{id}/arquivos: registra o material já enviado (RH e Admin)."""
+    return _post(f"beneficios/{int(beneficio_id)}/arquivos", {"nome": nome, "caminho": caminho}, token, GRUPO_COLABORADORES)
+
+
+def remover_material_beneficio(token: str, material_id: int) -> dict:
+    """POST beneficio_arquivos/{id}/remover: desativa o material, sem apagar (RH e Admin)."""
+    return _post(f"beneficio_arquivos/{int(material_id)}/remover", {}, token, GRUPO_COLABORADORES)
+
+
+def abrir_material_beneficio(token: str, material_id: int) -> dict:
+    """GET beneficio_arquivos/{id}/abrir -> {arquivo_url} que vale 5 minutos; auditado. Quem tem o benefício, RH e Admin."""
+    return _get(f"beneficio_arquivos/{int(material_id)}/abrir", token, GRUPO_COLABORADORES)
+
+
 def beneficios_da_pessoa(token: str, colaborador_id: int) -> dict:
     """GET colaboradores/{id}/beneficios -> {beneficios} (RH e Admin)."""
     return _get(f"colaboradores/{int(colaborador_id)}/beneficios", token, GRUPO_COLABORADORES)

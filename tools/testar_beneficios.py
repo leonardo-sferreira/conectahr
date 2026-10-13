@@ -1,6 +1,7 @@
 """Testes de "Benefícios" (tarefa 82 da change concluir-frontend-streamlit), sem navegador e sem rede.
 
-Confere: o colaborador vê só os seus (ativos, histórico e totais); o RH cadastra o catálogo, ativa e desativa,
+Confere: o colaborador vê só os seus ativos, como itens que abrem com a descrição, os links e os materiais, sem valores
+(change apresentacao-de-beneficios); o RH edita a apresentação (descrição, links e materiais), o RH cadastra o catálogo, ativa e desativa,
 vincula um benefício à pessoa (com valor, desconto e vigência) e encerra sem apagar; validações antes de enviar,
 recusa do backend, estados vazio e de erro, e o item no menu.
 
@@ -51,11 +52,14 @@ def caso(titulo: str) -> None:
 
 
 MEUS = [
-    {"id": 1, "nome": "Plano de saúde Unimed", "tipo": "plano_saude", "operadora": "Unimed", "valor_empresa": 450.0, "desconto_colaborador": 50.0, "data_inicio": "2026-01-01", "ativo": True},
-    {"id": 2, "nome": "Vale-refeição", "tipo": "vale_refeicao", "operadora": "Alelo", "valor_empresa": 800.0, "desconto_colaborador": 0, "data_inicio": "2026-01-01", "ativo": True},
+    {"id": 1, "beneficio_id": 10, "nome": "Plano de saúde Unimed", "tipo": "plano_saude", "operadora": "Unimed", "valor_empresa": 450.0, "desconto_colaborador": 50.0,
+     "data_inicio": "2026-01-01", "ativo": True, "descricao": "Cobre consultas, exames e internação.\nCarteirinha no aplicativo da operadora.",
+     "links": [{"titulo": "Rede credenciada", "url": "https://www.exemplo.com.br/rede"}], "arquivos": [{"id": 70, "nome": "Guia do plano"}]},
+    {"id": 2, "beneficio_id": 12, "nome": "Vale-refeição", "tipo": "vale_refeicao", "operadora": "Alelo", "valor_empresa": 800.0, "desconto_colaborador": 0, "data_inicio": "2026-01-01", "ativo": True},
     {"id": 3, "nome": "Vale-transporte", "tipo": "vale_transporte", "valor_empresa": 200.0, "desconto_colaborador": 12.0, "data_inicio": "2025-01-01", "data_fim": "2025-12-31", "ativo": False},
 ]
-CATALOGO = [{"id": 10, "nome": "Plano de saúde Unimed", "tipo": "plano_saude", "operadora": "Unimed", "ativo": True},
+CATALOGO = [{"id": 10, "nome": "Plano de saúde Unimed", "tipo": "plano_saude", "operadora": "Unimed", "ativo": True, "descricao": "Cobre consultas.",
+             "links": [{"titulo": "Rede credenciada", "url": "https://www.exemplo.com.br/rede"}], "arquivos": [{"id": 70, "nome": "Guia do plano"}]},
             {"id": 11, "nome": "Seguro de vida", "tipo": "seguro_vida", "ativo": False}]
 
 caso("Regras de apresentação (beneficios_modelo.py)")
@@ -95,6 +99,13 @@ api_client.cadastrar_beneficio = lambda token, n, t, o, d: chamadas.append(("cad
 api_client.status_beneficio = lambda token, bid, ativo: chamadas.append(("status", bid, ativo)) or {"sucesso": True}
 api_client.vincular_beneficio = lambda token, cid, dados: chamadas.append(("vincular", cid, dados)) or _falha_ou("vincular", {"sucesso": True})
 api_client.encerrar_beneficio = lambda token, vid, fim, obs=None: chamadas.append(("encerrar", vid, fim, obs)) or {"sucesso": True}
+api_client.abrir_material_beneficio = lambda token, mid: chamadas.append(("abrir", mid)) or _falha_ou("abrir", {"arquivo_url": f"https://armazenamento.exemplo/assinado/{mid}"})
+api_client.editar_beneficio = lambda token, bid, n, t, o, d, links: chamadas.append(("editar", bid, n, t, o, d, links)) or _falha_ou("editar", {"sucesso": True})
+api_client.preparar_material_beneficio = lambda token, bid, ext: chamadas.append(("preparar", bid, ext)) or {"upload_url": "https://armazenamento.exemplo/upload?token=t",
+                                                                                                          "caminho": f"beneficios/abc.{ext}"}
+api_client.subir_arquivo = lambda url, conteudo, tipo: chamadas.append(("subir", url, len(conteudo), tipo))
+api_client.registrar_material_beneficio = lambda token, bid, nome, caminho: chamadas.append(("registrar", bid, nome, caminho)) or {"sucesso": True}
+api_client.remover_material_beneficio = lambda token, mid: chamadas.append(("remover", mid)) or {"sucesso": True}
 
 USUARIOS = {"COLABORADOR": {"id": 1, "nome": "Leonardo dos Santos", "perfil": "COLABORADOR", "colaborador_id": 9},
             "RH": {"id": 2, "nome": "Ana Ribeiro", "perfil": "RH", "colaborador_id": 7}}
@@ -122,11 +133,24 @@ def app(perfil="COLABORADOR", **extra) -> AppTest:
     return at.run()
 
 
-caso("Colaborador: meus benefícios")
+caso("Colaborador: apresentação dos benefícios (change apresentacao-de-beneficios)")
 at = app()
 t = texto(at)
-conferir("Plano de saúde Unimed" in t and "Empresa paga R$ 450,00 · Desconto R$ 50,00" in t and "Histórico" in t and "Vale-transporte" in t, "ativos com valores e o histórico")
-conferir("R$ 1.250,00" in t and ("catalogo",) not in chamadas and "ben_aba" not in [b.key for b in at.button_group], "totais; o colaborador não vê catálogo nem abas do RH")
+conferir("Benefícios ativos" in t and "A empresa paga" not in t and "Desconto" not in t and "Encerrados" not in t, "só o indicador de benefícios ativos")
+conferir([e.label for e in at.expander] == ["Plano de saúde Unimed · Plano de saúde", "Vale-refeição · Vale-refeição"], "um item por benefício ativo, com nome e tipo (formato da FAQ)")
+conferir("Vale-transporte" not in t and "Histórico" not in t and "R$" not in t, "sem encerrados, sem histórico e sem valores")
+conferir("Cobre consultas, exames e internação." in t and "Operadora: Unimed" in t and "Guia do plano" in t, "aberto: operadora, descrição e materiais")
+conferir(any(b.label == "Rede credenciada" and b.proto.url == "https://www.exemplo.com.br/rede" for b in at.get("link_button")), "links úteis como botões que abrem o site")
+conferir("O RH ainda não cadastrou a apresentação" in texto(app(meus=[dict(MEUS[1], operadora=None)])), "benefício sem apresentação avisa")
+at.button(key="ben_mat_70").click()
+at = at.run()
+conferir(("abrir", 70) in chamadas and any(b.label == "Abrir arquivo" and b.proto.url.endswith("/assinado/70") for b in at.get("link_button")),
+         "material: pede o link assinado (auditado) e mostra \"Abrir arquivo\"")
+at = app(erro_abrir=ApiError("Este material e de um beneficio que voce nao tem.", 403))
+at.button(key="ben_mat_70").click()
+at = at.run()
+conferir("voce nao tem" in texto(at) and not at.exception, "material recusado pelo backend vira alerta")
+conferir(("catalogo",) not in chamadas and "ben_aba" not in [b.key for b in at.button_group], "o colaborador não vê catálogo nem abas do RH")
 conferir("nav_Benefícios" not in chaves(at), "item Benefícios ativo no menu")
 at = app(meus=[])
 conferir("ainda não tem benefício ativo" in texto(at), "vazio")
@@ -135,6 +159,16 @@ conferir("não está ligada a um cadastro" in texto(at), "conta sem ficha")
 at = app(erro_meus=ApiError("Erro inesperado. Tente novamente.", 500))
 conferir("Erro inesperado" in texto(at) and not at.exception, "erro vira alerta")
 
+caso("Regras da apresentação")
+itens = m.apresentacao(MEUS + [dict(MEUS[0], id=99)], HOJE)
+conferir([i["beneficio_id"] for i in itens] == [10, 12], "só os vigentes, sem repetir o mesmo benefício")
+links, erro = m.ler_links("Site | https://www.exemplo.com.br\n\nApp | https://app.exemplo.com.br")
+conferir(erro is None and links == [{"titulo": "Site", "url": "https://www.exemplo.com.br"}, {"titulo": "App", "url": "https://app.exemplo.com.br"}], "links: um por linha, linha em branco ignorada")
+conferir("https://" in (m.ler_links("Site | http://exemplo.com")[1] or "") and "Título" in (m.ler_links("só texto")[1] or "")
+         and "10" in (m.ler_links("\n".join(f"L{i:02d} | https://exemplo.com.br/{i}" for i in range(11)))[1] or ""), "links: só https, com título, até 10")
+conferir(m.links_texto(CATALOGO[0]["links"]) == "Rede credenciada | https://www.exemplo.com.br/rede", "links de volta para o campo de edição")
+conferir(m.validar_material("", "a.pdf", 10) and m.validar_material("Guia", "a.zip", 10) == "Envie um arquivo PDF, JPG ou PNG."
+         and m.validar_material("Guia", "a.pdf", 11 * 1024 * 1024) and m.validar_material("Guia do plano", "guia.pdf", 1000) is None, "material: nome, tipo e tamanho")
 caso("RH: catálogo")
 at = app("RH")
 at.button_group(key="ben_aba").set_value("Catálogo")
@@ -158,6 +192,61 @@ at.text_input(key="ben_operadora").set_value("Gympass")
 at.button(key="ben_novo_ok").click()
 at = at.run()
 conferir(("cadastrar", "Gympass", "outro", "Gympass", None) in chamadas, "cadastra no catálogo")
+
+caso("RH: editar a apresentação do benefício")
+import streamlit  # noqa: E402
+
+
+class ArquivoFicticio:
+    def __init__(self, nome: str, conteudo: bytes):
+        self.name, self.size, self._conteudo = nome, len(conteudo), conteudo
+
+    def getvalue(self) -> bytes:
+        return self._conteudo
+
+
+anexo = {"arquivo": None}
+_file_uploader_original = streamlit.file_uploader
+streamlit.file_uploader = lambda label, *a, **k: anexo["arquivo"]
+at = app("RH")
+at.button_group(key="ben_aba").set_value("Catálogo")
+at = at.run()
+at.button(key="ben_editar_10").click()
+at = at.run()
+conferir(at.text_input(key="ben_ed_nome").value == "Plano de saúde Unimed" and at.text_area(key="ben_ed_descricao").value == "Cobre consultas."
+         and at.text_area(key="ben_ed_links").value == "Rede credenciada | https://www.exemplo.com.br/rede" and "Guia do plano" in texto(at),
+         "Editar abre com os dados, os links e os materiais atuais")
+at.text_area(key="ben_ed_links").set_value("Rede credenciada | http://inseguro.com")
+at.button(key="ben_ed_ok").click()
+at = at.run()
+conferir("https://" in texto(at) and not any(c[0] == "editar" for c in chamadas), "link sem https: aviso, sem chamar a API")
+at.text_area(key="ben_ed_links").set_value("Rede credenciada | https://www.exemplo.com.br/rede\nAplicativo | https://app.exemplo.com.br")
+at.text_area(key="ben_ed_descricao").set_value("Cobre consultas e exames.")
+at.button(key="ben_ed_ok").click()
+at = at.run()
+conferir(("editar", 10, "Plano de saúde Unimed", "plano_saude", "Unimed", "Cobre consultas e exames.",
+          [{"titulo": "Rede credenciada", "url": "https://www.exemplo.com.br/rede"}, {"titulo": "Aplicativo", "url": "https://app.exemplo.com.br"}]) in chamadas
+         and "modal_beneficio" not in at.session_state, "salva descrição e links e fecha o modal")
+at = app("RH")
+at.button_group(key="ben_aba").set_value("Catálogo")
+at = at.run()
+at.button(key="ben_editar_10").click()
+at = at.run()
+at.button(key="ben_ed_rm_70").click()
+at = at.run()
+conferir(("remover", 70) in chamadas and "modal_beneficio" in at.session_state, "remover material sem fechar o modal")
+at.button(key="ben_ed_mat_ok").click()
+at = at.run()
+conferir("Dê um nome ao material" in texto(at) and not any(c[0] == "preparar" for c in chamadas), "anexar sem nome: aviso")
+at.text_input(key="ben_ed_mat_nome").set_value("Tabela de coparticipação")
+anexo["arquivo"] = ArquivoFicticio("tabela.PDF", b"%PDF-1.4 ficticio")
+at.button(key="ben_ed_mat_ok").click()
+at = at.run()
+ordem = [c[0] for c in chamadas if c[0] in ("preparar", "subir", "registrar")]
+conferir(ordem == ["preparar", "subir", "registrar"] and ("preparar", 10, "pdf") in chamadas and ("registrar", 10, "Tabela de coparticipação", "beneficios/abc.pdf") in chamadas
+         and any(c[0] == "subir" and c[3] == "application/pdf" for c in chamadas), "anexar: pede o endereço, envia o PDF e registra o material")
+anexo["arquivo"] = None
+streamlit.file_uploader = _file_uploader_original
 
 caso("RH: por colaborador")
 at = app("RH")

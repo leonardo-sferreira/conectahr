@@ -9,7 +9,8 @@ query "beneficios/{id}" verb=PATCH {
     text nome filters=trim|min:2|max:100
     text tipo filters=trim
     text? operadora? filters=trim|max:100
-    text? descricao? filters=trim|max:500
+    text? descricao? filters=trim|max:2000
+    json? links?
   }
 
   stack {
@@ -93,10 +94,60 @@ query "beneficios/{id}" verb=PATCH {
       error = "Ja existe um beneficio com este nome."
     }
 
+    // Links da apresentacao (change apresentacao-de-beneficios, D3): ate 10, titulo de 2 a 80 e endereco https.
+    // Sem `links` no pedido, os atuais continuam.
+    var $links_final {
+      value = ($input.links != null ? [] : $beneficio.links)
+    }
+
+    var $link_invalido {
+      value = null
+    }
+
+    conditional {
+      if ($input.links != null) {
+        precondition (($input.links|count) <= 10) {
+          error_type = "inputerror"
+          error = "Cadastre no maximo 10 links por beneficio."
+        }
+
+        foreach ($input.links) {
+          each as $link_item {
+            var $link_titulo {
+              value = (($link_item|get:"titulo") != null ? (($link_item|get:"titulo")|to_text|trim) : "")
+            }
+
+            var $link_url {
+              value = (($link_item|get:"url") != null ? (($link_item|get:"url")|to_text|trim) : "")
+            }
+
+            conditional {
+              if (($link_titulo|strlen) < 2 || ($link_titulo|strlen) > 80 || ($link_url|starts_with:"https://") == false || ($link_url|strlen) > 500 || ($link_url|strlen) < 12) {
+                var.update $link_invalido {
+                  value = ($link_titulo != "" ? $link_titulo : $link_url)
+                }
+              }
+
+              else {
+                var.update $links_final {
+                  value = $links_final|push:{titulo: $link_titulo, url: $link_url}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    precondition ($link_invalido == null) {
+      error_type = "inputerror"
+      error = "Link invalido: cada link precisa de um titulo (2 a 80 caracteres) e de um endereco que comece com https://."
+    }
+
     db.edit beneficio {
       field_name = "id"
       field_value = $beneficio.id
-      data = {nome: $input.nome, tipo: $input.tipo, operadora: $input.operadora, descricao: $input.descricao, updated_at: "now"}
+      data = {nome: $input.nome, tipo: $input.tipo, operadora: $input.operadora, descricao: $input.descricao, links: $links_final, updated_at: "now"}
     } as $beneficio_atualizado
 
     db.query colaborador_beneficio {
@@ -150,7 +201,7 @@ query "beneficios/{id}" verb=PATCH {
         acao        : "editar_beneficio"
         recurso     : "beneficio"
         registro_id : $beneficio.id
-        valor_antigo: $beneficio.nome
+        valor_anterior: $beneficio.nome
         valor_novo  : $input.nome
         resultado   : "sucesso"
       }

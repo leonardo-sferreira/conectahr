@@ -4,6 +4,9 @@ Streamlit. A conferir com o Figma, que estava fora do ar quando a tela foi feita
 
 O RH cadastra o catálogo (nome, tipo, operadora) e vincula cada benefício à pessoa, com o valor pago pela empresa,
 o desconto do colaborador e a vigência. Encerrar não apaga: o histórico continua. O colaborador vê os seus.
+
+Apresentação (change apresentacao-de-beneficios): o colaborador vê os benefícios ativos como itens que abrem, com a
+descrição, os links e os materiais que o RH cadastrou, sem valores.
 """
 
 from datetime import date
@@ -50,6 +53,70 @@ def linhas(vinculos: list[dict], hoje: date) -> dict:
         "ativos": ativos, "encerrados": encerrados,
         "total_empresa": moeda(sum(l["_empresa"] for l in ativos)), "total_desconto": moeda(sum(l["_desconto"] for l in ativos)),
     }
+
+
+# ---------------------------------------------------------------------------
+# Apresentação dos benefícios (change apresentacao-de-beneficios, D3 a D5)
+# ---------------------------------------------------------------------------
+MAX_LINKS = 10
+
+
+def apresentacao(vinculos: list[dict], hoje: date) -> list[dict]:
+    """Os benefícios vigentes da pessoa para a tela de apresentação, sem valores: nome, tipo, operadora, descrição,
+    links e materiais (id e nome). Um benefício aparece uma vez, mesmo com dois vínculos vigentes."""
+    vistos, itens = set(), []
+    for v in vinculos:
+        chave = v.get("beneficio_id") or v.get("id")
+        if not _vigente(v, hoje) or chave in vistos:
+            continue
+        vistos.add(chave)
+        itens.append({
+            "beneficio_id": chave, "nome": v.get("nome") or "Benefício", "tipo": TIPOS.get(v.get("tipo"), "Outro"),
+            "operadora": v.get("operadora") or "", "descricao": v.get("descricao") or "",
+            "links": [l for l in (v.get("links") or []) if l.get("url")], "arquivos": v.get("arquivos") or [],
+        })
+    return sorted(itens, key=lambda i: i["nome"].casefold())
+
+
+def links_texto(links: list[dict] | None) -> str:
+    """Links para o campo de edição: um por linha, "Título | https://endereço"."""
+    return "\n".join(f"{l.get('titulo', '')} | {l.get('url', '')}" for l in links or [])
+
+
+def ler_links(texto: str) -> tuple[list[dict], str | None]:
+    """Lê o campo de links (um por linha, "Título | https://endereço"); devolve (links, erro). Linha em branco é ignorada."""
+    links = []
+    for numero, linha in enumerate((texto or "").splitlines(), start=1):
+        if not linha.strip():
+            continue
+        if "|" not in linha:
+            return [], f"Linha {numero} dos links: use \"Título | https://endereço\"."
+        titulo, url = (parte.strip() for parte in linha.split("|", 1))
+        if not 2 <= len(titulo) <= 80:
+            return [], f"Linha {numero} dos links: o título precisa ter de 2 a 80 caracteres."
+        if not url.lower().startswith("https://") or len(url) < 12 or len(url) > 500:
+            return [], f"Linha {numero} dos links: o endereço precisa começar com https://."
+        links.append({"titulo": titulo, "url": url})
+    if len(links) > MAX_LINKS:
+        return [], f"Cadastre no máximo {MAX_LINKS} links."
+    return links, None
+
+
+def validar_material(nome: str, nome_arquivo: str | None, tamanho: int | None) -> str | None:
+    """Material de leitura do benefício: nome que o colaborador vê e o arquivo (mesmas regras dos documentos)."""
+    from documentos_modelo import TAMANHO_MAXIMO, TIPOS_ARQUIVO, extensao
+
+    if not 2 <= len((nome or "").strip()) <= 100:
+        return "Dê um nome ao material, como \"Guia do plano\"."
+    if not nome_arquivo:
+        return "Anexe o arquivo do material."
+    if extensao(nome_arquivo) not in TIPOS_ARQUIVO:
+        return "Envie um arquivo PDF, JPG ou PNG."
+    if not tamanho:
+        return "O arquivo está vazio. Escolha outro."
+    if tamanho > TAMANHO_MAXIMO:
+        return "O arquivo pode ter no máximo 10 MB."
+    return None
 
 
 def validar_beneficio(nome: str, tipo: str | None) -> str | None:
