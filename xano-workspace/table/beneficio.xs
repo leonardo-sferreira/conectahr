@@ -17,7 +17,9 @@ table beneficio {
     }
 
     text? operadora filters=trim|max:100
-    text? descricao filters=trim|max:500
+    text? descricao filters=trim|max:2000
+    // Links publicos da operadora (change apresentacao-de-beneficios, D3): lista de {titulo, url}, ate 10, so https.
+    json? links?
     decimal valor_empresa_padrao?=0 filters=min:0
     decimal desconto_padrao?=0 filters=min:0
     bool ativo?=true

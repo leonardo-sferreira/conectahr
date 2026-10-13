@@ -1,9 +1,13 @@
 """
 Página "Benefícios" (tarefa 82 da change concluir-frontend-streamlit). A conferir com o Figma, que estava fora do ar.
 
-- Todos: "Meus benefícios" — os ativos (com o valor pago pela empresa e o desconto) e o histórico (`meus_beneficios`).
+- Todos: "Meus benefícios" — o número de ativos e, para cada um, um item que abre (formato da FAQ) com a operadora, a
+  descrição, os links e os materiais (`meus_beneficios`, `beneficio_arquivos/{id}/abrir`); sem valores nem histórico
+  (change apresentacao-de-beneficios, pedido do usuário em 13/10/2026).
 - RH e Admin, também:
-  - "Catálogo": cadastrar benefício (`beneficios` POST) e ativar ou desativar (`beneficios/{id}/status`);
+  - "Catálogo": cadastrar benefício (`beneficios` POST), editar a apresentação (`beneficios/{id}` PATCH, com links;
+    materiais em `beneficios/{id}/arquivos` e `beneficio_arquivos/{id}/remover`, no Supabase) e ativar ou desativar
+    (`beneficios/{id}/status`);
   - "Por colaborador": os benefícios da pessoa (`colaboradores/{id}/beneficios`), vincular um do catálogo e encerrar
     (`colaborador_beneficios/{id}/encerrar`), sem apagar.
 """
@@ -16,17 +20,25 @@ import streamlit as st
 
 from api_client import (
     ApiError,
+    abrir_material_beneficio,
     beneficios_catalogo,
     beneficios_da_pessoa,
     cadastrar_beneficio,
     colaboradores,
+    editar_beneficio,
     encerrar_beneficio,
     meus_beneficios,
     organograma,
+    preparar_material_beneficio,
+    registrar_material_beneficio,
+    remover_material_beneficio,
     status_beneficio,
+    subir_arquivo,
     vincular_beneficio,
 )
-from beneficios_modelo import TIPOS, linhas, moeda, validar_beneficio, validar_vinculo
+from beneficios_modelo import (MAX_LINKS, TIPOS, apresentacao, ler_links, linhas, links_texto, moeda, validar_beneficio, validar_material,
+                               validar_vinculo)
+from documentos_modelo import TIPOS_ARQUIVO, extensao
 from cadastro_modelo import perfil
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
@@ -80,21 +92,44 @@ def _meus(token: str) -> None:
         else:
             alerta(st.empty(), "erro", erro.message)
         return
-    visao = linhas(dados, date.today())
-    render_indicadores([
-        ("Benefícios ativos", str(len(visao["ativos"])), "verde"),
-        ("A empresa paga por mês", visao["total_empresa"], ""),
-        ("Desconto no seu pagamento", visao["total_desconto"], "ambar"),
-        ("Encerrados", str(len(visao["encerrados"])), ""),
-    ])
-    st.html('<p class="crh-bloco-titulo">Ativos</p>')
-    if visao["ativos"]:
-        _cartoes(visao["ativos"])
-    else:
+    itens = apresentacao(dados, date.today())
+    render_indicadores([("Benefícios ativos", str(len(itens)), "verde")])
+    if not itens:
         st.html('<p class="crh-meta">Você ainda não tem benefício ativo. Dúvidas: fale com o RH.</p>')
-    if visao["encerrados"]:
-        st.html('<p class="crh-bloco-titulo">Histórico</p>')
-        _cartoes(visao["encerrados"], encerrados=True)
+    for b in itens:
+        _apresentacao(token, b)
+    if erro_material := st.session_state.pop("ben_mat_erro", None):
+        alerta(st.empty(), "erro", erro_material)
+
+
+def _apresentacao(token: str, b: dict) -> None:
+    """Um benefício como item que abre (formato da FAQ): operadora, descrição, links e materiais."""
+    with st.expander(f"{b['nome']} · {b['tipo']}"):
+        if b["operadora"]:
+            st.html(f'<p class="crh-meta" style="margin:0">Operadora: {html.escape(b["operadora"])}</p>')
+        if b["descricao"]:
+            st.html(f'<p class="crh-cfg-texto" style="white-space:pre-wrap;margin:0">{html.escape(b["descricao"])}</p>')
+        if b["links"]:
+            st.html('<p class="crh-cfg-titulo" style="margin:8px 0 0">Links úteis</p>')
+            with st.container(horizontal=True, gap="small"):
+                for i, link in enumerate(b["links"]):
+                    st.link_button(link["titulo"], link["url"], key=f"ben_link_{b['beneficio_id']}_{i}")
+        if b["arquivos"]:
+            st.html('<p class="crh-cfg-titulo" style="margin:8px 0 0">Materiais</p>')
+            for m in b["arquivos"]:
+                with st.container(horizontal=True, vertical_alignment="center"):
+                    st.html(f'<p class="crh-cfg-texto" style="margin:0">{html.escape(m.get("nome") or "Material")}</p>', width="stretch")
+                    aberto = st.session_state.get("ben_mat_aberto")
+                    if aberto and aberto[0] == m["id"]:
+                        st.link_button("Abrir arquivo", aberto[1], type="primary", key=f"ben_mat_link_{m['id']}")
+                    elif st.button("Abrir", type="tertiary", key=f"ben_mat_{m['id']}"):
+                        try:
+                            st.session_state.ben_mat_aberto = (m["id"], abrir_material_beneficio(token, m["id"]).get("arquivo_url"))
+                        except ApiError as erro:
+                            st.session_state.ben_mat_erro = erro.message
+                        st.rerun()
+        if not (b["operadora"] or b["descricao"] or b["links"] or b["arquivos"]):
+            st.html('<p class="crh-meta" style="margin:0">O RH ainda não cadastrou a apresentação deste benefício.</p>')
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +159,86 @@ def _modal_novo() -> None:
             for chave in ("ben_nome", "ben_tipo", "ben_operadora", "ben_descricao"):
                 st.session_state.pop(chave, None)
             _concluir(f"Benefício {nome.strip()} cadastrado.")
+
+
+def _abrir_edicao(b: dict) -> None:
+    """Abre "Editar benefício" com os dados atuais nos campos."""
+    st.session_state.modal_beneficio = ("editar", b["id"])
+    st.session_state.ben_ed_nome = b.get("nome") or ""
+    st.session_state.ben_ed_tipo = b.get("tipo") if b.get("tipo") in TIPOS else "outro"
+    st.session_state.ben_ed_operadora = b.get("operadora") or ""
+    st.session_state.ben_ed_descricao = b.get("descricao") or ""
+    st.session_state.ben_ed_links = links_texto(b.get("links"))
+
+
+@st.dialog("Editar benefício", width="medium", on_dismiss=_fechar)
+def _modal_editar(b: dict) -> None:
+    """Dados e apresentação do benefício (change apresentacao-de-beneficios, D5). Salvar avisa quem tem o benefício;
+    anexar e remover material são ações à parte."""
+    c1, c2 = st.columns(2)
+    nome = c1.text_input("Nome", max_chars=100, key="ben_ed_nome")
+    tipo = c2.selectbox("Tipo", list(TIPOS), format_func=TIPOS.get, key="ben_ed_tipo")
+    operadora = st.text_input("Operadora ou fornecedor (opcional)", max_chars=100, key="ben_ed_operadora")
+    descricao = st.text_area("O que é o benefício", max_chars=2000, key="ben_ed_descricao", height=120,
+                             help="Texto que o colaborador lê ao abrir o benefício: o que cobre, como usar, a quem procurar.")
+    links_txt = st.text_area("Links úteis (opcional)", key="ben_ed_links", height=80, placeholder="Site da operadora | https://www.exemplo.com.br",
+                             help=f"Um por linha, no formato Título | https://endereço. Até {MAX_LINKS}.")
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="ben_ed_cancelar"):
+            _fechar()
+            st.rerun()
+        if st.button("Salvar", type="primary", key="ben_ed_ok"):
+            links, erro_links = ler_links(links_txt)
+            erro_campo = validar_beneficio(nome, tipo) or erro_links
+            if erro_campo:
+                alerta(slot, "erro", erro_campo)
+                return
+            try:
+                editar_beneficio(st.session_state.token, b["id"], nome.strip(), tipo, operadora.strip() or None, descricao.strip() or None, links)
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            _concluir(f"Benefício {nome.strip()} atualizado. Quem tem o benefício recebe o aviso.")
+
+    st.html('<p class="crh-cfg-titulo" style="margin:12px 0 0">Materiais</p>')
+    for m in b.get("arquivos") or []:
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.html(f'<p class="crh-cfg-texto" style="margin:0">{html.escape(m.get("nome") or "Material")}</p>', width="stretch")
+            if st.button("Remover", type="tertiary", key=f"ben_ed_rm_{m['id']}"):
+                try:
+                    remover_material_beneficio(st.session_state.token, m["id"])
+                except ApiError as erro:
+                    alerta(slot, "erro", erro.message)
+                    return
+                st.session_state.pop("beneficios_cache", None)
+                st.rerun()
+    if not b.get("arquivos"):
+        st.html('<p class="crh-meta" style="margin:0">Nenhum material. Anexe guias, tabelas ou regulamentos para o colaborador ler.</p>')
+    c3, c4 = st.columns([1, 1.4])
+    nome_material = c3.text_input("Nome do material", max_chars=100, placeholder="Ex.: Guia do plano", key="ben_ed_mat_nome")
+    with c4:
+        arquivo = st.file_uploader("Arquivo", type=list(TIPOS_ARQUIVO), key="ben_ed_mat_arquivo", help="PDF, JPG ou PNG, até 10 MB.")
+    slot_material = st.empty()
+    if st.button("Anexar material", key="ben_ed_mat_ok"):
+        erro_campo = validar_material(nome_material, arquivo.name if arquivo else None, arquivo.size if arquivo else None)
+        if erro_campo:
+            alerta(slot_material, "erro", erro_campo)
+            return
+        ext = extensao(arquivo.name)
+        try:
+            with st.spinner("Enviando o material..."):
+                envio = preparar_material_beneficio(st.session_state.token, b["id"], ext)
+                subir_arquivo(envio["upload_url"], arquivo.getvalue(), TIPOS_ARQUIVO[ext])
+                registrar_material_beneficio(st.session_state.token, b["id"], nome_material.strip(), envio["caminho"])
+        except ApiError as erro:
+            alerta(slot_material, "erro", erro.message)
+            return
+        for chave in ("ben_ed_mat_nome", "ben_ed_mat_arquivo"):
+            st.session_state.pop(chave, None)
+        st.session_state.pop("beneficios_cache", None)
+        st.toast(f"Material {nome_material.strip()} anexado.")
+        st.rerun()
 
 
 @st.dialog("Vincular benefício", width="small", on_dismiss=_fechar)
@@ -193,10 +308,10 @@ def _catalogo(token: str) -> None:
         if st.button("Novo benefício", type="primary", key="ben_novo"):
             st.session_state.modal_beneficio = ("novo", None)
             st.rerun()
-    pesos = [3, 2, 2.2, 1.2, 1.4]
+    pesos = [3, 2, 2.2, 1.2, 1, 1.4]
     with st.container(key="rh_tabela"):
         with st.container(key="rh_cab"):
-            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Benefício", "Tipo", "Operadora", "Situação", ""]):
+            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Benefício", "Tipo", "Operadora", "Situação", "", ""]):
                 coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
         if not catalogo:
             with st.container(key="rh_lin_vazio"):
@@ -210,6 +325,10 @@ def _catalogo(token: str) -> None:
                 ativo = b.get("ativo", True)
                 c[3].html(f'<span class="crh-selo {"ok" if ativo else "neu"}">{"Ativo" if ativo else "Desativado"}</span>', width="content")
                 with c[4]:
+                    if st.button("Editar", type="tertiary", key=f"ben_editar_{b['id']}"):
+                        _abrir_edicao(b)
+                        st.rerun()
+                with c[5]:
                     if st.button("Desativar" if ativo else "Reativar", type="tertiary", key=f"ben_status_{b['id']}"):
                         try:
                             status_beneficio(token, b["id"], not ativo)
@@ -219,6 +338,13 @@ def _catalogo(token: str) -> None:
                         _concluir(f"{b.get('nome')} {'desativado' if ativo else 'reativado'}.")
     if erro := st.session_state.pop("ben_erro", None):
         alerta(st.empty(), "erro", erro)
+    modal = st.session_state.get("modal_beneficio")
+    if modal and modal[0] == "editar":
+        b = next((x for x in catalogo if x.get("id") == modal[1]), None)
+        if b is None:
+            _fechar()
+        else:
+            _modal_editar(b)
 
 
 def _por_colaborador(token: str) -> None:
@@ -283,7 +409,7 @@ def pagina_beneficios() -> None:
     if aviso := st.session_state.pop("aviso_toast", None):
         st.toast(aviso)
     rh = perfil(usuario.get("perfil")) in ("RH", "ADMIN")
-    render_hero("Benefícios", "Os benefícios da empresa: valores, descontos e vigência" if rh else "Seus benefícios, o que a empresa paga e o que é descontado")
+    render_hero("Benefícios", "Os benefícios da empresa: valores, descontos e vigência" if rh else "Seus benefícios e como usar cada um")
     if not rh:
         _meus(token)
         return

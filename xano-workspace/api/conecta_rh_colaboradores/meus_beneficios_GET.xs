@@ -87,8 +87,17 @@ query meus_beneficios verb=GET {
           return = {type: "list"}
         } as $faq_do_beneficio
 
+        // Materiais do beneficio (change apresentacao-de-beneficios): so o id e o nome; o arquivo abre em
+        // beneficio_arquivos/{id}/abrir, que audita.
+        db.query beneficio_arquivo {
+          where = $db.beneficio_arquivo.beneficio_id == $v.beneficio_id && $db.beneficio_arquivo.ativo == true
+          sort = {beneficio_arquivo.id: "asc"}
+          output = ["id", "nome"]
+          return = {type: "list"}
+        } as $materiais_do_beneficio
+
         var.update $itens {
-          value = $itens|push:{id: $v.id, beneficio_id: $v.beneficio_id, nome: ($b != null ? $b.nome : "Beneficio"), tipo: ($b != null ? $b.tipo : "outro"), operadora: ($b != null ? $b.operadora : null), descricao: ($b != null ? $b.descricao : null), faq: $faq_do_beneficio, valor_empresa: $v.valor_empresa, desconto_colaborador: $v.desconto_colaborador, data_inicio: $v.data_inicio, data_fim: $v.data_fim, observacao: $v.observacao, ativo: $v.ativo}
+          value = $itens|push:{id: $v.id, beneficio_id: $v.beneficio_id, nome: ($b != null ? $b.nome : "Beneficio"), tipo: ($b != null ? $b.tipo : "outro"), operadora: ($b != null ? $b.operadora : null), descricao: ($b != null ? $b.descricao : null), links: ($b != null ? $b.links : null), arquivos: $materiais_do_beneficio, faq: $faq_do_beneficio, valor_empresa: $v.valor_empresa, desconto_colaborador: $v.desconto_colaborador, data_inicio: $v.data_inicio, data_fim: $v.data_fim, observacao: $v.observacao, ativo: $v.ativo}
         }
       }
     }

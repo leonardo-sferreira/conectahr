@@ -14,7 +14,7 @@ do usuário (13/10/2026).
 | Documentos: modal "Enviar documento" | 309:1591 (escuro 313:1573) | Campo "Arquivo" (PDF, JPG ou PNG, até 10 MB; foto pelo celular) no lugar de "Link do arquivo" | Change `anexo-de-arquivos`, tarefa 1.1; PR #48 |
 | Documentos: modal "Enviar documento" (campos) | 309:1591 (escuro 313:1573) | Campos de cada tipo de documento: ao escolher o tipo, aparecem só os campos dele (ex.: RG com número, órgão emissor, UF e data de expedição; CPF só com o número); a conferência do RH mostra os dados informados | Change `campos-por-tipo-de-documento` |
 | Ponto: Mês (planilha) | 464:826 (escuro 468:1603) | Data completa (dd/mm/aaaa); resumo com horas positivas e horas negativas, sem o saldo único e sem o cartão de atestados; pedido de ajuste pela célula da marcação (Ent. 1, Saí. 2…), com "Corrigir horário" também para a marcação incluída (I); nenhum ajuste no dia de hoje | Change `ponto-rep-p-e-ferias-clt`, tarefas 9.6 a 9.8 (D15 a D18) |
-| Benefícios | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_beneficios.py` |
+| Benefícios | — | Construída sem conferência, com o Figma fora do ar. Desde 13/10/2026: o colaborador vê só "Benefícios ativos" e um item por benefício (formato da FAQ) com descrição, links e materiais; o RH tem "Editar" no Catálogo com links e materiais | `pagina_beneficios.py`; change `apresentacao-de-beneficios` |
 | Folha de ponto (Gestor e RH) | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_folha_ponto.py` |
 | Solicitações ao RH | 225:5299 e 206:1072 | Construída sem conferência, com o Figma fora do ar | `pagina_solicitacoes.py` |
 

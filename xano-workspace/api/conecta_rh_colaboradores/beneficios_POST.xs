@@ -7,7 +7,7 @@ query beneficios verb=POST {
     text nome filters=trim|min:2|max:100
     text tipo filters=trim
     text? operadora? filters=trim|max:100
-    text? descricao? filters=trim|max:500
+    text? descricao? filters=trim|max:2000
     decimal? valor_empresa_padrao? filters=min:0
     decimal? desconto_padrao? filters=min:0
   }

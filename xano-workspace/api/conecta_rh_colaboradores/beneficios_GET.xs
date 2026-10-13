@@ -117,8 +117,15 @@ query beneficios verb=GET {
           }
         }
 
+        db.query beneficio_arquivo {
+          where = $db.beneficio_arquivo.beneficio_id == $b.id && $db.beneficio_arquivo.ativo == true
+          sort = {beneficio_arquivo.id: "asc"}
+          output = ["id", "nome"]
+          return = {type: "list"}
+        } as $materiais_b
+
         var.update $itens {
-          value = $itens|push:{id: $b.id, nome: $b.nome, tipo: $b.tipo, operadora: $b.operadora, descricao: $b.descricao, ativo: $b.ativo, valor_empresa_padrao: $b.valor_empresa_padrao, desconto_padrao: $b.desconto_padrao, faq: $faq_do_beneficio, qtd_vigentes: $qtd_vigentes, qtd_personalizados: $qtd_personalizados}
+          value = $itens|push:{id: $b.id, nome: $b.nome, tipo: $b.tipo, operadora: $b.operadora, descricao: $b.descricao, links: $b.links, arquivos: $materiais_b, ativo: $b.ativo, valor_empresa_padrao: $b.valor_empresa_padrao, desconto_padrao: $b.desconto_padrao, faq: $faq_do_beneficio, qtd_vigentes: $qtd_vigentes, qtd_personalizados: $qtd_personalizados}
         }
       }
     }
