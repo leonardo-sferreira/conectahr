@@ -2,14 +2,15 @@
 Regras de apresentação de Férias (Figma 40:22 e modal 221:230; fluxo F07; tarefas 22 a 25 da change
 concluir-frontend-streamlit). Funções puras, sem Streamlit.
 
-Dados: `minhas_ferias` (histórico) e `minha_situacao_ferias` (os números que o pedido confere). O
-backend não tem saldo de férias (não desconta os dias já tirados; tarefa 74), então a tela mostra o
-limite de dias por pedido, e não "dias disponíveis". As regras do pedido (antecedência, limite,
-fracionamento, mínimo, um pendente por vez) são do backend; a tela só avisa antes de enviar.
+Dados: `minhas_ferias` (histórico) e `minha_situacao_ferias` (saldo do período aquisitivo, períodos pedidos, dias
+vendidos e o mínimo do próximo período; change ponto-rep-p-e-ferias-clt, tarefas 6.2 e 6.3). As regras do pedido
+são as de `ConectaHR/validar_pedido_ferias` no backend (antecedência, saldo, venda de até 10 dias uma vez, até 3
+períodos, mínimo de 5, um período de 14, restante utilizável e início fora dos dois dias antes de feriado ou do
+domingo); a tela repete a conferência só para avisar antes de enviar.
 """
 
 import calendar
-from datetime import date
+from datetime import date, timedelta
 
 from onboarding_modelo import data_br
 
@@ -85,79 +86,125 @@ def proximo_aquisitivo(data_admissao, meses: int | None, hoje: date) -> date | N
     return fim
 
 
+def _plural(n: int, palavra: str = "dia") -> str:
+    return f"{n} {palavra}{'s' if n != 1 else ''}"
+
+
 def resumo(situacao: dict, hoje: date) -> dict:
-    """Os dois cartões e a nota (Figma 40:22), com o que o backend calcula de fato."""
-    limite = situacao.get("limite_dias_por_pedido")
+    """Os cartões (saldo, períodos e dias vendidos), as notas e se dá para pedir agora."""
+    saldo = situacao.get("saldo")
     usados = situacao.get("periodos_usados") or 0
     maximo = situacao.get("maximo_periodos")
+    vendidos = situacao.get("dias_vendidos") or 0
+    maximo_abono = situacao.get("maximo_abono") or 0
     contrato = CONTRATOS.get(str(situacao.get("tipo_contrato") or "").upper(), situacao.get("tipo_contrato") or "")
-    proximo = proximo_aquisitivo(situacao.get("data_admissao"), situacao.get("periodo_aquisitivo_meses"), hoje)
+    janela_inicio, janela_fim = _dia_iso(situacao.get("janela_inicio")), _dia_iso(situacao.get("janela_fim"))
+    notas = []
+    if janela_fim and situacao.get("anos_completos", 0) >= 1:
+        notas.append(f"Saldo do período aquisitivo que terminou em {data_br(janela_inicio.isoformat())}: tire as férias até "
+                     f"{(janela_fim - timedelta(days=1)).strftime('%d/%m/%Y')}.")
+    elif janela_fim and situacao.get("proporcional"):
+        notas.append(f"Você completa 12 meses em {janela_fim.strftime('%d/%m/%Y')}. Até lá, o saldo é proporcional ao tempo de casa.")
+    if situacao.get("minimo_principal") and not situacao.get("tem_periodo_14") and saldo:
+        notas.append(f"Um dos períodos precisa ter pelo menos {situacao['minimo_principal']} dias.")
+    bloqueio = ""
+    if situacao.get("permite_solicitacao") is False:
+        bloqueio = "Seu tipo de contrato não tem solicitação de férias."
+    elif situacao.get("tem_pendente"):
+        bloqueio = "Você já tem um pedido pendente. Cancele-o ou espere a decisão para pedir outro."
+    elif maximo is not None and usados >= maximo:
+        bloqueio = f"Você já usou os {maximo} períodos permitidos neste período aquisitivo."
+    elif situacao.get("anos_completos", 0) < 1 and not situacao.get("proporcional"):
+        bloqueio = "Você ainda não completou 12 meses de trabalho para pedir férias."
+    elif saldo is not None and saldo <= 0:
+        bloqueio = "Você já usou todo o saldo deste período aquisitivo."
     return {
-        "limite": f"Até {limite} dias" if limite is not None else "—",
-        "fracionamento_rotulo": f"Fracionamento ({contrato}, até {maximo} períodos)" if maximo else f"Fracionamento ({contrato})" if contrato else "Fracionamento",
+        "saldo": _plural(saldo) if saldo is not None else "—",
+        "fracionamento_rotulo": f"Períodos ({contrato})" if contrato else "Períodos",
         "fracionamento": f"{usados} de {maximo} usados" if maximo else f"{usados} usado{'s' if usados != 1 else ''}",
-        "nota": f"Próximo período aquisitivo completo em {proximo.strftime('%d/%m/%Y')}" if proximo else "",
-        "pode_pedir": bool(situacao.get("permite_solicitacao", True)) and not situacao.get("tem_pendente") and (maximo is None or usados < maximo),
-        "motivo_bloqueio": (
-            "Seu tipo de contrato não tem solicitação de férias."
-            if situacao.get("permite_solicitacao") is False
-            else "Você já tem um pedido pendente. Cancele-o ou espere a decisão para pedir outro."
-            if situacao.get("tem_pendente")
-            else f"Você já usou os {maximo} períodos permitidos."
-            if maximo is not None and usados >= maximo
-            else ""
-        ),
+        "vendidos": (f"{vendidos} de {maximo_abono}" if maximo_abono else "Não se aplica"),
+        "notas": notas,
+        "pode_pedir": not bloqueio,
+        "motivo_bloqueio": bloqueio,
     }
 
 
-def resumo_do_pedido(situacao: dict, inicio: date | None, fim: date | None) -> list[tuple[str, str]]:
-    """Linhas do quadro do modal (Figma 221:230): dias pedidos, limite por pedido e qual período é."""
+def resumo_do_pedido(situacao: dict, inicio: date | None, fim: date | None, abono: int = 0) -> list[tuple[str, str]]:
+    """Linhas do quadro do modal: dias pedidos, vendidos, saldo agora e o que sobra, e qual período é."""
     dias = dias_do_periodo(inicio, fim)
     usados = situacao.get("periodos_usados") or 0
     maximo = situacao.get("maximo_periodos")
-    limite = situacao.get("limite_dias_por_pedido")
-    return [
-        ("Dias pedidos", f"{dias} dia{'s' if dias != 1 else ''}" if dias else "—"),
-        ("Limite por pedido", f"{limite} dias" if limite is not None else "—"),
-        ("Período", f"{_ordinal(usados + 1)} de {maximo} permitidos" if maximo else _ordinal(usados + 1)),
-    ]
+    saldo = situacao.get("saldo")
+    linhas = [("Dias de férias", _plural(dias) if dias else "—")]
+    if situacao.get("maximo_abono"):
+        linhas.append(("Dias vendidos", _plural(abono or 0)))
+    if saldo is not None:
+        linhas.append(("Saldo agora", _plural(saldo)))
+        linhas.append(("Saldo depois", _plural(saldo - dias - (abono or 0)) if dias else "—"))
+    linhas.append(("Período", f"{_ordinal(usados + 1)} de {maximo} permitidos" if maximo else _ordinal(usados + 1)))
+    return linhas
 
 
-def validar_pedido(situacao: dict, inicio: date | None, fim: date | None, hoje: date, observacao: str = "") -> str | None:
-    """A mesma conferência do backend, para avisar antes de enviar (o backend confere de novo)."""
+def validar_pedido(situacao: dict, inicio: date | None, fim: date | None, hoje: date, observacao: str = "", abono: int = 0,
+                   feriados: list[dict] | None = None) -> str | None:
+    """As regras de `ConectaHR/validar_pedido_ferias`, na mesma ordem, para avisar antes de enviar."""
     if not inicio or not fim:
         return "Informe o início e o fim."
     if fim < inicio:
         return "O fim deve ser igual ou depois do início."
     dias = dias_do_periodo(inicio, fim)
-    if dias > 30:
-        return "Um pedido pode ter no máximo 30 dias."
-    limite = situacao.get("limite_dias_por_pedido")
-    if limite is not None and dias > limite:
-        return f"O limite para este pedido é de {limite} dias (proporcional ao seu tempo de casa)."
-    minimo = situacao.get("minimo_dias_proximo")
-    if minimo and dias < minimo:
-        return f"Este período precisa ter pelo menos {minimo} dias."
+    abono = abono or 0
     antecedencia = situacao.get("antecedencia_minima_dias")
     if antecedencia and (inicio - hoje).days < antecedencia:
-        return f"Peça com pelo menos {antecedencia} dias de antecedência."
+        return f"Férias precisam ser pedidas com pelo menos {antecedencia} dias de antecedência."
+    maximo_abono = situacao.get("maximo_abono") or 0
+    if abono > maximo_abono:
+        return f"É possível vender no máximo {maximo_abono} dias." if maximo_abono else "Seu contrato não permite vender dias de férias."
+    if abono and (situacao.get("dias_vendidos") or 0) > 0:
+        return "A venda de dias já foi feita neste período aquisitivo."
+    minimo_outros = situacao.get("minimo_outros") or 1
+    if dias < minimo_outros:
+        return f"Cada período de férias precisa ter pelo menos {minimo_outros} dias."
+    saldo = situacao.get("saldo")
+    if saldo is not None:
+        if dias + abono > saldo:
+            return f"Saldo insuficiente: restam {_plural(saldo)} neste período aquisitivo."
+        restante = saldo - dias - abono
+        usados = situacao.get("periodos_usados") or 0
+        maximo = situacao.get("maximo_periodos") or 1
+        if 0 < restante < minimo_outros:
+            return f"Sobrariam {_plural(restante)}, menos do que um período permite ({minimo_outros}). Peça todo o saldo ou deixe pelo menos {minimo_outros} dias."
+        if restante > 0 and usados + 1 >= maximo:
+            return f"Sobrariam {_plural(restante)}, mas este já seria o último período permitido. Peça todo o saldo."
+        principal = situacao.get("minimo_principal")
+        if principal and not situacao.get("tem_periodo_14") and dias < principal and restante < principal:
+            return f"Um dos períodos precisa ter pelo menos {principal} dias, e o saldo que sobraria não comporta. Aumente este período."
+    if inicio.weekday() in (4, 5) or _feriado_logo_depois(inicio, feriados or []):
+        return "As férias não podem começar nos dois dias antes de um feriado ou do descanso semanal (sexta e sábado). Escolha outro dia de início."
     if len(observacao or "") > 500:
         return "A observação pode ter no máximo 500 caracteres."
     return None
 
 
+def _feriado_logo_depois(inicio: date, feriados: list[dict]) -> bool:
+    proximos = {inicio + timedelta(days=1), inicio + timedelta(days=2)}
+    return any(_dia_iso(f.get("data")) in proximos and f.get("ativo", True) and f.get("tipo", "feriado") != "ponto_facultativo" for f in feriados)
+
+
 def regras_do_pedido(situacao: dict) -> str:
     """O texto de apoio do modal, com os números da regra do contrato."""
     partes = []
-    if situacao.get("maximo_periodos"):
-        partes.append(f"Você pode dividir em até {situacao['maximo_periodos']} períodos")
-    if situacao.get("minimo_dias_proximo"):
-        partes.append(f"este precisa ter {situacao['minimo_dias_proximo']} dias ou mais")
-    texto = ", e ".join(partes)
-    texto = (texto + ". ") if texto else ""
     if situacao.get("antecedencia_minima_dias"):
-        texto += f"Peça com {situacao['antecedencia_minima_dias']} dias de antecedência. "
-    return texto + "Só uma solicitação pode ficar pendente por vez."
+        partes.append(f"Peça com {situacao['antecedencia_minima_dias']} dias de antecedência")
+    if (situacao.get("maximo_periodos") or 1) > 1:
+        partes.append(f"divida em até {situacao['maximo_periodos']} períodos de pelo menos {situacao.get('minimo_outros') or 1} dias")
+    if situacao.get("minimo_principal") and not situacao.get("tem_periodo_14"):
+        partes.append(f"um deles com {situacao['minimo_principal']} dias ou mais")
+    texto = (", ".join(partes) + ". ") if partes else ""
+    if situacao.get("pode_vender"):
+        texto += f"Você pode vender até {situacao.get('maximo_abono')} dias, uma vez por período aquisitivo. "
+    texto += "As férias não começam na sexta, no sábado nem nos dois dias antes de feriado. Só uma solicitação pode ficar pendente por vez."
+    return texto
 
 
 # ---------------------------------------------------------------------------

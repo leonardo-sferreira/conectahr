@@ -24,7 +24,7 @@ do usuário (13/10/2026).
 | Tela | Diferença |
 |---|---|
 | Comunicados e FAQ (217:154, 245:594) | Sem as abas de categoria do comunicado (RH, TI, Benefícios): o comunicado não tem categoria no backend |
-| Férias (40:22) | O primeiro cartão mostra "Até N dias" por pedido, e não "Dias disponíveis": o saldo de férias ainda não existe no backend (tarefas 6.1 a 6.4 da change `ponto-rep-p-e-ferias-clt`) |
+| Férias (40:22) | Resolvido em 13/10/2026: os cartões mostram saldo, períodos e dias vendidos, e o pedido tem "Vender dias". Falta conferir com a seção 22 do Figma (466:833 e 466:1171) |
 | Ponto: cabeçalho | O horário contratual mostra a jornada da regra do contrato (horas por dia e por semana), e não um horário de entrada e saída |
 
 ## Modo escuro

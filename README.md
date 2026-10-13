@@ -67,7 +67,7 @@ instrumento coletivo ou exceção individual, sempre com o histórico de qual re
   espelho mensal em formato de planilha (art. 84 da Portaria 671/2021), saldo diário com tolerância de
   10 minutos, horas positivas e negativas, aviso de descanso entre jornadas (11h) e pedido de ajuste
   pela célula da marcação: incluir, corrigir o horário ou desconsiderar, sempre com motivo.
-- **Férias** com calendário do mês (feriados nacionais pela BrasilAPI, facultativos e férias da equipe).
+- **Férias pela CLT:** saldo do período aquisitivo, até 3 períodos (um de 14 dias), venda de até 10 dias e as\n  regras da CLT conferidas antes de enviar, com calendário do mês (feriados nacionais pela BrasilAPI).
 - **Documentos:** anexar o arquivo (PDF ou foto do celular, até 10 MB) preenchendo só os campos de cada tipo
   (RG com órgão emissor e UF, CNH com categoria e validade, CPF só o número…), validados e conferidos pelo RH.
 - **Pagamento:** holerites e informes de rendimentos, só para o dono.
@@ -144,7 +144,7 @@ O mapa completo, com o arquivo de cada regra, está em [`docs/regras-de-negocio.
 |---|---|
 | **Acesso** | Ninguém decide um pedido em que é o próprio colaborador; o Gestor só vê o próprio departamento ou quem tem a ele como superior direto; sessão revogável por dispositivo |
 | **Ponto (REP-P)** | NSR sequencial e hash SHA-256 encadeado; o dia é o dia civil de Brasília; jornada aberta vira INCOMPLETO na virada, sem marcação automática; saldo com tolerância de 10 min (CLT art. 58 §1º); descanso de 11h avisado, nunca bloqueado (art. 74); o dia de hoje só é ajustável a partir de amanhã |
-| **Férias e ausências** | Antecedência, limite proporcional ao tempo de casa e conferência de conflito na equipe; feriados e facultativos no calendário |
+| **Férias e ausências** | Saldo do período aquisitivo; antecedência de 45 dias; até 3 períodos, um de 14 dias e os outros de 5; venda de até 10 dias uma vez por período; sobra sempre utilizável; início fora da sexta, do sábado e dos dois dias antes de feriado (CLT, art. 134); conferência de conflito na equipe |
 | **Documentos** | Campos próprios de cada tipo, validados no backend (CPF igual ao da ficha, CNH com 11 dígitos, comprovante de residência dos últimos 90 dias); só PDF, JPG e PNG de até 10 MB; arquivo em bucket privado com nome aleatório; abertura só pelo dono, RH ou Admin, sempre auditada; prazo de retenção por tipo de documento |
 | **Cargos** | Nome do cargo é o título da carteira com a senioridade ("Analista de Contas a Pagar Pleno"); único; na admissão, só os cargos do departamento escolhido |
 | **Notificações** | Pedido novo avisa quem decide; decisão avisa quem pediu; mudança que afeta a pessoa avisa a pessoa |
@@ -306,7 +306,6 @@ A spec principal está em [`openspec/specs/conectahr/spec.md`](openspec/specs/co
 ## Roadmap
 
 - **Ponto:** geração do AFD e do AEJ e a tela do RH para o REP-P.
-- **Férias:** saldo do período aquisitivo, venda de até 10 dias e fracionamento em até 3 períodos.
 - **Cargos, etapa 2:** o nível do cargo substitui o L1–L5 da pessoa e o Plano de carreira passa a ser por cargo.
 - **Telas que já têm backend:** Trajetória (avaliações, metas e PDI), Auditoria, Regras, Rotina diária e
   Retenção, Reconhecimentos, Pesquisa de clima, Indicadores, Desligamento e Delegações.

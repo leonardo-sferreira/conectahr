@@ -2,17 +2,15 @@
 Página "Férias" (Figma 40:22; modal 221:230; fluxo F07; tarefas 22 a 25 da change
 concluir-frontend-streamlit).
 
-- Dois cartões: o limite de dias por pedido e o fracionamento (períodos usados de quantos o contrato
-  permite), vindos de `minha_situacao_ferias`, com a data do próximo período aquisitivo.
-- "Solicitar férias" (`ferias/solicitacoes`): início, fim, observação para o gestor; o quadro mostra os
-  dias pedidos, o limite e qual período é. A tela avisa antes de enviar, e o backend confere de novo.
+- Três cartões (change ponto-rep-p-e-ferias-clt, tarefas 6.2 e 6.3): o saldo do período aquisitivo, os períodos
+  usados de quantos o contrato permite e os dias vendidos, vindos de `minha_situacao_ferias`, com até quando tirar.
+- "Solicitar férias" (`ferias/solicitacoes`): início, fim, os dias a vender (até 10, uma vez por período aquisitivo)
+  e a observação para o gestor; o quadro mostra os dias, o saldo agora e o que sobra. A tela avisa antes de enviar
+  com as mesmas regras do backend, que confere de novo.
 - Histórico (`minhas_ferias`), com "Cancelar" no pedido pendente (`ferias/{id}/cancelar`).
 
 Tudo é do próprio colaborador. Quem decide é o gestor ou o RH, em outra tela; ninguém decide o próprio
 pedido (regra do backend).
-
-Diferenças em relação ao Figma: o primeiro cartão mostra "Até N dias" por pedido, e não "Dias
-disponíveis", porque o backend não tem saldo de férias (tarefa 74).
 
 "Ver calendário" abre o calendário do mês (Figma 466:833; change ponto-rep-p-e-ferias-clt, tarefa 7.3): feriados
 e pontos facultativos (`calendario`, com os nacionais importados da BrasilAPI pelo RH) e as suas férias aprovadas
@@ -77,12 +75,16 @@ def _modal_solicitar(situacao: dict) -> None:
     c1, c2 = st.columns(2)
     inicio = c1.date_input("Início", value=None, min_value=hoje, format="DD/MM/YYYY", key="fe_inicio")
     fim = c2.date_input("Fim", value=None, min_value=hoje, format="DD/MM/YYYY", key="fe_fim")
-    linhas = resumo_do_pedido(situacao, inicio, fim)
+    linhas = resumo_do_pedido(situacao, inicio, fim, int(st.session_state.get("fe_abono") or 0))
     st.html(
         '<div class="crh-campos crh-campos-direita">'
         + "".join(f'<p class="r">{html.escape(r)}</p><p class="v">{html.escape(v)}</p>' for r, v in linhas)
         + "</div>"
     )
+    abono = 0
+    if situacao.get("pode_vender"):
+        abono = st.number_input("Vender dias (opcional)", min_value=0, max_value=int(situacao.get("maximo_abono") or 10), value=0, step=1, key="fe_abono",
+                                help="Abono pecuniário: você recebe em dinheiro os dias vendidos, que saem do saldo. Uma vez por período aquisitivo.")
     observacao = st.text_input("Observação para o gestor (opcional)", max_chars=500, key="fe_obs")
     st.html(f'<div class="crh-incluso"><p class="n" style="margin:0">{html.escape(regras_do_pedido(situacao))}</p></div>')
     slot = st.empty()
@@ -91,18 +93,18 @@ def _modal_solicitar(situacao: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Enviar para o gestor", type="primary", key="fe_enviar"):
-            erro_campo = validar_pedido(situacao, inicio, fim, hoje, observacao)
+            erro_campo = validar_pedido(situacao, inicio, fim, hoje, observacao, int(abono), _feriados(st.session_state.token)[0])
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
             try:
-                solicitar_ferias(st.session_state.token, inicio.isoformat(), fim.isoformat(), dias_do_periodo(inicio, fim), observacao.strip() or None)
+                solicitar_ferias(st.session_state.token, inicio.isoformat(), fim.isoformat(), dias_do_periodo(inicio, fim), observacao.strip() or None, int(abono))
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
             _invalidar()
             _fechar()
-            for chave in ("fe_inicio", "fe_fim", "fe_obs"):
+            for chave in ("fe_inicio", "fe_fim", "fe_obs", "fe_abono"):
                 st.session_state.pop(chave, None)
             st.session_state.aviso_toast = "Pedido de férias enviado. Seu gestor ou o RH decide."
             st.rerun()
@@ -195,9 +197,10 @@ def pagina_ferias() -> None:
     with st.container(horizontal=True, vertical_alignment="center", key="ferias_topo"):
         if numeros:
             st.html(
-                f'<div class="crh-painel crh-stat"><p class="crh-stat-rotulo">Dias por pedido</p><p class="crh-stat-valor">{html.escape(numeros["limite"])}</p></div>'
+                f'<div class="crh-painel crh-stat"><p class="crh-stat-rotulo">Saldo de férias</p><p class="crh-stat-valor">{html.escape(numeros["saldo"])}</p></div>'
                 f'<div class="crh-painel crh-stat"><p class="crh-stat-rotulo">{html.escape(numeros["fracionamento_rotulo"])}</p>'
-                f'<p class="crh-stat-valor">{html.escape(numeros["fracionamento"])}</p></div>',
+                f'<p class="crh-stat-valor">{html.escape(numeros["fracionamento"])}</p></div>'
+                f'<div class="crh-painel crh-stat"><p class="crh-stat-rotulo">Dias vendidos</p><p class="crh-stat-valor">{html.escape(numeros["vendidos"])}</p></div>',
                 width="stretch",
             )
         else:
@@ -211,8 +214,8 @@ def pagina_ferias() -> None:
         if st.button("Solicitar férias", type="primary", key="fe_solicitar", disabled=not (numeros and numeros["pode_pedir"])):
             st.session_state.modal_ferias = True
             st.rerun()
-    if numeros and numeros["nota"]:
-        st.html(f'<p class="crh-meta">{html.escape(numeros["nota"])}</p>')
+    for nota in (numeros or {}).get("notas") or []:
+        st.html(f'<p class="crh-meta" style="margin:0">{html.escape(nota)}</p>')
     if numeros and numeros["motivo_bloqueio"]:
         st.html(f'<p class="crh-nota-ambar">{html.escape(numeros["motivo_bloqueio"])}</p>')
 

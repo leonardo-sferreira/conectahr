@@ -54,10 +54,14 @@
 
 ## 6. Férias pela CLT
 
-- [ ] 6.1 Atualizar a matriz `regra_contrato` da CLT (antecedência 45, mínimo 5, principal 14, até 3 períodos, abono até 10) e mudar `ferias/solicitacoes` para: saldo do período aquisitivo, algum período de 14 dias (não o primeiro), saldo restante utilizável, abono de até 10 uma vez por período e início fora dos dois dias antes de feriado ou do repouso semanal. Verificar: `tools/testar_ferias.py` cobre os cenários da spec por HTTP ou com a regra isolada, e um caso de cada regra é recusado com a mensagem certa.
-- [ ] 6.2 Ampliar `minha_situacao_ferias` com saldo, períodos pedidos, dias vendidos, se já há período de 14 e o mínimo do próximo. Verificar: por HTTP, depois de vender 10 dias e pedir 5, a resposta mostra saldo 15 e mínimo do próximo 14.
-- [ ] 6.3 Refazer `pagina_ferias.py` e `ferias_modelo.py` com venda de dias, saldo e as mensagens antecipadas das regras. Verificar: `tools/testar_ferias.py` passando e prints com o Figma da seção 22.
-- [ ] 6.4 Atualizar `docs/regras-de-negocio.md` (férias) e fechar a tarefa 74 da `concluir-frontend-streamlit` (saldo) com referência a esta change. Verificar: a seção de férias descreve as cinco regras e a tarefa 74 está marcada.
+- [x] 6.1 Atualizar a matriz `regra_contrato` da CLT (antecedência 45, mínimo 5, principal 14, até 3 períodos, abono até 10) e mudar `ferias/solicitacoes` para: saldo do período aquisitivo, algum período de 14 dias (não o primeiro), saldo restante utilizável, abono de até 10 uma vez por período e início fora dos dois dias antes de feriado ou do repouso semanal. Verificar: `tools/testar_ferias.py` cobre os cenários da spec por HTTP ou com a regra isolada, e um caso de cada regra é recusado com a mensagem certa.
+  - **Feito (13/10/2026):** regras em `ConectaHR/validar_pedido_ferias` (chamada por `ferias/solicitacoes`) e a situação em `ConectaHR/situacao_ferias`; matriz CLT ajustada por `ConectaHR/ajustar_regras_ferias_clt` (45, 5, 10). 20 cenários rodados no Xano em `docs/evidencias/ferias-clt.md`, incluindo os seis da spec. Por HTTP com login: não verificado (código por e-mail).
+- [x] 6.2 Ampliar `minha_situacao_ferias` com saldo, períodos pedidos, dias vendidos, se já há período de 14 e o mínimo do próximo. Verificar: por HTTP, depois de vender 10 dias e pedir 5, a resposta mostra saldo 15 e mínimo do próximo 14.
+  - **Feito (13/10/2026):** `minha_situacao_ferias` usa `situacao_ferias` na data mais cedo possível (hoje + antecedência) e devolve saldo, períodos, dias vendidos, período de 14, mínimo do próximo e se dá para vender; os campos antigos continuam. Por HTTP: não verificado.
+- [x] 6.3 Refazer `pagina_ferias.py` e `ferias_modelo.py` com venda de dias, saldo e as mensagens antecipadas das regras. Verificar: `tools/testar_ferias.py` passando e prints com o Figma da seção 22.
+  - **Feito (13/10/2026):** cartões de saldo, períodos e dias vendidos, "Vender dias" no pedido e as mesmas regras do backend antes de enviar. `tools/testar_ferias.py` 64/64. Prints com o Figma: pendentes (Figma desconectado; decisão do usuário de deixar o Figma para depois).
+- [x] 6.4 Atualizar `docs/regras-de-negocio.md` (férias) e fechar a tarefa 74 da `concluir-frontend-streamlit` (saldo) com referência a esta change. Verificar: a seção de férias descreve as cinco regras e a tarefa 74 está marcada.
+  - **Feito (13/10/2026):** `docs/regras-de-negocio.md` (5.2) e a tarefa 74 da `concluir-frontend-streamlit` marcada.
 
 ## 7. Feriados e calendário
 

@@ -79,67 +79,24 @@ query minha_situacao_ferias verb=GET {
       error = "Colaborador desligado nao pode consultar ferias."
     }
 
-    // Mesma regra da matriz que ferias/solicitacoes usa.
+    // Saldo e periodos (change ponto-rep-p-e-ferias-clt, tarefa 6.2): a mesma conta de ferias/solicitacoes, na data
+    // mais cedo em que a pessoa poderia comecar (hoje + antecedencia da matriz).
     db.query regra_contrato {
       where = $db.regra_contrato.tipo_contrato == $colaborador_autenticado.tipo_contrato && $db.regra_contrato.ativo == true
       return = {type: "single"}
     } as $regra_aplicavel
 
-    var $permite_solicitacao {
-      value = ($regra_aplicavel == null || $regra_aplicavel.permite_solicitacao_ferias != false)
+    var $antecedencia_dias {
+      value = ((($regra_aplicavel != null) && ($regra_aplicavel.antecedencia_ferias != null)) ? $regra_aplicavel.antecedencia_ferias : 0)
     }
 
-    // Limite de dias por pedido: proporcional ao tempo de casa, nunca acima do
-    // limite integral da matriz (mesma conta de ferias/solicitacoes).
-    var $tempo_casa_dias {
-      value = null
+    var $primeiro_inicio_possivel {
+      value = now|add_secs_to_timestamp:($antecedencia_dias * 86400)|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
-    conditional {
-      if ($colaborador_autenticado.data_admissao != null) {
-        var $data_admissao_ts_situacao {
-          value = ($colaborador_autenticado.data_admissao|to_timestamp)
-        }
-
-        var $agora_situacao {
-          value = now
-        }
-
-        var.update $tempo_casa_dias {
-          value = ((($agora_situacao - $data_admissao_ts_situacao) / 86400000)|to_int)
-        }
-      }
-    }
-
-    var $limite_dias_proporcional {
-      value = ($regra_aplicavel != null ? $regra_aplicavel.dias_ferias_recesso : null)
-    }
-
-    conditional {
-      if ($regra_aplicavel != null && $regra_aplicavel.proporcional == true && $regra_aplicavel.periodo_aquisitivo_meses != null && $regra_aplicavel.dias_ferias_recesso != null && $tempo_casa_dias != null) {
-        var.update $limite_dias_proporcional {
-          value = ((($regra_aplicavel.dias_ferias_recesso * $tempo_casa_dias) / ($regra_aplicavel.periodo_aquisitivo_meses * 30))|to_int)
-        }
-      }
-    }
-
-    var $limite_dias_por_pedido {
-      value = ($limite_dias_proporcional != null && $regra_aplicavel != null && $regra_aplicavel.dias_ferias_recesso != null && $limite_dias_proporcional > $regra_aplicavel.dias_ferias_recesso ? $regra_aplicavel.dias_ferias_recesso : $limite_dias_proporcional)
-    }
-
-    // Periodos ja usados (pendentes e aprovados), como ferias/solicitacoes conta.
-    db.query ferias {
-      where = $db.ferias.colaborador_id == $colaborador_autenticado.id && ($db.ferias.status == "Aprovada" || $db.ferias.status == "Pendente")
-      return = {type: "list"}
-    } as $ferias_existentes
-
-    var $periodos_usados {
-      value = ($ferias_existentes|count)
-    }
-
-    var $minimo_dias_proximo {
-      value = ($periodos_usados == 0 ? ($regra_aplicavel != null ? $regra_aplicavel.minimo_periodo_principal : null) : ($regra_aplicavel != null ? $regra_aplicavel.minimo_outros_periodos : null))
-    }
+    function.run "ConectaHR/situacao_ferias" {
+      input = {colaborador_id: $colaborador_autenticado.id, data_referencia: $primeiro_inicio_possivel}
+    } as $situacao
 
     db.query ferias {
       where = $db.ferias.colaborador_id == $colaborador_autenticado.id && $db.ferias.status == "Pendente"
@@ -148,19 +105,34 @@ query minha_situacao_ferias verb=GET {
   }
 
   response = {
-    sucesso                 : true
-    tipo_contrato           : $colaborador_autenticado.tipo_contrato
-    data_admissao           : $colaborador_autenticado.data_admissao
-    permite_solicitacao     : $permite_solicitacao
-    limite_dias_por_pedido  : $limite_dias_por_pedido
-    periodos_usados         : $periodos_usados
-    maximo_periodos         : ($regra_aplicavel != null ? $regra_aplicavel.maximo_periodos : null)
-    permite_fracionamento   : ($regra_aplicavel != null ? $regra_aplicavel.permite_fracionamento : null)
-    minimo_dias_proximo     : $minimo_dias_proximo
-    antecedencia_minima_dias: ($regra_aplicavel != null ? $regra_aplicavel.antecedencia_ferias : null)
-    periodo_aquisitivo_meses: ($regra_aplicavel != null ? $regra_aplicavel.periodo_aquisitivo_meses : null)
-    tem_pendente            : ($pendente_existente != null)
+    sucesso                  : true
+    tipo_contrato            : $colaborador_autenticado.tipo_contrato
+    data_admissao            : $colaborador_autenticado.data_admissao
+    permite_solicitacao      : $situacao.permite_solicitacao
+    primeiro_inicio_possivel : $primeiro_inicio_possivel
+    antecedencia_minima_dias : $situacao.antecedencia_minima
+    anos_completos           : $situacao.anos_completos
+    proporcional             : $situacao.proporcional
+    janela_inicio            : $situacao.janela_inicio
+    janela_fim               : $situacao.janela_fim
+    direito                  : $situacao.direito
+    saldo                    : $situacao.saldo
+    dias_usados              : $situacao.dias_usados
+    dias_vendidos            : $situacao.dias_vendidos
+    periodos                 : $situacao.periodos
+    periodos_usados          : $situacao.periodos_usados
+    maximo_periodos          : $situacao.maximo_periodos
+    periodos_restantes       : $situacao.periodos_restantes
+    permite_fracionamento    : $situacao.permite_fracionamento
+    tem_periodo_14           : $situacao.tem_periodo_14
+    minimo_principal         : $situacao.minimo_principal
+    minimo_outros            : $situacao.minimo_outros
+    minimo_dias_proximo      : $situacao.minimo_proximo
+    maximo_abono             : $situacao.maximo_abono
+    pode_vender              : $situacao.pode_vender
+    limite_dias_por_pedido   : $situacao.saldo
+    periodo_aquisitivo_meses : ($regra_aplicavel != null ? $regra_aplicavel.periodo_aquisitivo_meses : null)
+    tem_pendente             : ($pendente_existente != null)
   }
-
   guid = "conectahr-minha-situacao-ferias-get-0001"
 }
