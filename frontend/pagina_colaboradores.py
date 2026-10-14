@@ -21,6 +21,7 @@ import streamlit as st
 from api_client import ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, documentos_rh, organograma, trocar_perfil, usuarios
 from cadastro_modelo import (
     CONTRATOS,
+    JORNADA_SEMANAL,
     NIVEIS,
     PERFIS,
     SITUACOES_COLAB,
@@ -76,6 +77,12 @@ def concluir(aviso: str) -> None:
 # Modais
 # ---------------------------------------------------------------------------
 @st.dialog("Admitir colaborador", width="medium", on_dismiss=fechar)
+def _jornada_do_contrato() -> None:
+    """Ao trocar o contrato na admissão, sugere a carga horária da matriz; PJ e Outro mantêm o que está no campo."""
+    if (jornada := JORNADA_SEMANAL.get(st.session_state.get("adm_contrato"))) is not None:
+        st.session_state.adm_carga = jornada
+
+
 def _modal_admitir(org: dict) -> None:
     deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or [] if d.get("ativo", True)}
     niveis = {n.get("id"): n for n in org.get("niveis") or []}
@@ -97,14 +104,15 @@ def _modal_admitir(org: dict) -> None:
     dados["cargo_id"] = c2.selectbox("Cargo", list(cargos), index=None, format_func=cargos.get, key="adm_cargo",
                                      placeholder="Escolha" if dados["departamento_id"] else "Escolha o departamento antes")
     c1, c2 = st.columns(2)
-    dados["tipo_contrato"] = c1.selectbox("Contrato", list(CONTRATOS), format_func=CONTRATOS.get, key="adm_contrato")
+    dados["tipo_contrato"] = c1.selectbox("Contrato", list(CONTRATOS), format_func=CONTRATOS.get, key="adm_contrato", on_change=_jornada_do_contrato)
     dados["data_admissao"] = c2.date_input("Admissão", value=hoje, format="DD/MM/YYYY", key="adm_admissao")
     c1, c2 = st.columns(2)
     dados["logradouro"] = c1.text_input("Logradouro", max_chars=150, key="adm_logradouro")
     dados["numero"] = c2.text_input("Número", max_chars=20, key="adm_numero")
     c1, c2 = st.columns(2)
     dados["nivel"] = c1.selectbox("Nível", list(NIVEIS), format_func=NIVEIS.get, key="adm_nivel")
-    dados["carga_horaria_semanal"] = c2.number_input("Carga horária semanal", min_value=1.0, max_value=60.0, value=44.0, step=1.0, key="adm_carga")
+    dados["carga_horaria_semanal"] = c2.number_input("Carga horária semanal", min_value=1.0, max_value=60.0, value=JORNADA_SEMANAL["CLT"], step=1.0, key="adm_carga",
+                                                 help="Vem do contrato (CLT 44h, estágio e aprendiz 30h); PJ não tem jornada definida. Dá para ajustar.")
     dados["salario"] = st.number_input("Salário (R$)", min_value=0.0, value=None, step=100.0, format="%.2f", key="adm_salario")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
@@ -125,7 +133,9 @@ def _modal_admitir(org: dict) -> None:
                 st.session_state.pop(chave, None)
             novo_id = (resposta.get("colaborador") or {}).get("id")
             st.session_state.pop(CACHE, None)
-            st.session_state.aviso_toast = f"{dados['nome'].strip()} admitido(a). Agora crie o acesso."
+            pedidos = resposta.get("pendencias_documento_criadas") or 0
+            docs = f" {pedidos} documento{'s' if pedidos != 1 else ''} obrigatório{'s' if pedidos != 1 else ''} pedido{'s' if pedidos != 1 else ''}." if pedidos else ""
+            st.session_state.aviso_toast = f"{dados['nome'].strip()} admitido(a).{docs} Agora crie o acesso."
             st.session_state.modal_cadastro = ("acesso", novo_id) if novo_id else None
             st.rerun()
 
