@@ -33,6 +33,9 @@ from api_client import (
     salvar_dados_bancarios,
     solicitar_alteracao_cadastral,
 )
+from cep import CepErro
+from cep import consultar as consultar_cep
+from cep import formatar as formatar_cep
 from perfil_modelo import (
     BANCOS,
     CAMPOS_ALTERACAO,
@@ -78,6 +81,8 @@ def _invalidar() -> None:
 
 def _fechar() -> None:
     st.session_state.pop("modal_perfil", None)
+    for chave in _CHAVES_CONTATO:  # o próximo "Editar" abre com os dados salvos, não com o que ficou digitado
+        st.session_state.pop(chave, None)
 
 
 def _campos(pares: list[tuple[str, str]]) -> str:
@@ -131,26 +136,54 @@ def _modal_bancarios(atual: dict) -> None:
 
 
 _CHAVES_CONTATO = ("pf_ct_telefone", "pf_ct_email", "pf_ct_cep", "pf_ct_logradouro", "pf_ct_numero", "pf_ct_complemento",
-                   "pf_ct_bairro", "pf_ct_cidade", "pf_ct_estado")
+                   "pf_ct_bairro", "pf_ct_cidade", "pf_ct_estado", "pf_ct_cep_msg")
+
+
+def _buscar_cep() -> None:
+    """Ao informar o CEP, preenche logradouro, bairro, cidade e UF (`cep.consultar`: BrasilAPI e, se falhar, ViaCEP).
+    Só troca o campo que a busca trouxe; número e complemento ficam com a pessoa. Sem CEP achado, avisa e deixa digitar."""
+    try:
+        achado = consultar_cep(st.session_state.get("pf_ct_cep"))
+    except CepErro as erro:
+        st.session_state.pf_ct_cep_msg = ("atencao", str(erro))
+        return
+    st.session_state.pf_ct_cep = formatar_cep(st.session_state.get("pf_ct_cep"))
+    for campo in ("logradouro", "bairro", "cidade"):
+        if achado[campo]:
+            st.session_state[f"pf_ct_{campo}"] = achado[campo]
+    if achado["estado"]:
+        st.session_state.pf_ct_estado = achado["estado"]
+    falta = "o número" if achado["logradouro"] else "a rua, o bairro e o número"
+    st.session_state.pf_ct_cep_msg = ("sucesso", f"Endereço encontrado pelo CEP. Confira e informe {falta}.")
 
 
 @st.dialog("Editar contato e endereço", width="medium", on_dismiss=_fechar)
 def _modal_contato(atual: dict) -> None:
+    # Valores atuais vão para a sessão uma vez; os campos não recebem `value=`, porque a busca do CEP também escreve
+    # neles pela sessão (os dois juntos fazem o Streamlit mostrar um aviso na tela).
+    uf = (atual.get("estado") or "").upper()
+    for chave, valor in (("pf_ct_telefone", atual.get("telefone")), ("pf_ct_email", atual.get("email_pessoal")), ("pf_ct_cep", atual.get("cep")),
+                         ("pf_ct_logradouro", atual.get("logradouro")), ("pf_ct_numero", atual.get("numero")), ("pf_ct_complemento", atual.get("complemento")),
+                         ("pf_ct_bairro", atual.get("bairro")), ("pf_ct_cidade", atual.get("cidade"))):
+        st.session_state.setdefault(chave, valor or "")
+    st.session_state.setdefault("pf_ct_estado", uf if uf in UFS else None)
     d = {}
     c1, c2 = st.columns([1, 1.6])
-    d["telefone"] = c1.text_input("Telefone", value=atual.get("telefone") or "", max_chars=20, placeholder="(11) 96666-5555", key="pf_ct_telefone")
-    d["email_pessoal"] = c2.text_input("E-mail pessoal", value=atual.get("email_pessoal") or "", max_chars=255, key="pf_ct_email")
+    d["telefone"] = c1.text_input("Telefone", max_chars=20, placeholder="(11) 96666-5555", key="pf_ct_telefone")
+    d["email_pessoal"] = c2.text_input("E-mail pessoal", max_chars=255, key="pf_ct_email")
     c1, c2 = st.columns([1, 2.6])
-    d["cep"] = c1.text_input("CEP", value=atual.get("cep") or "", max_chars=9, placeholder="01001-000", key="pf_ct_cep")
-    d["logradouro"] = c2.text_input("Logradouro", value=atual.get("logradouro") or "", max_chars=150, key="pf_ct_logradouro")
+    d["cep"] = c1.text_input("CEP", max_chars=9, placeholder="01001-000", key="pf_ct_cep", on_change=_buscar_cep,
+                             help="Digite o CEP e aperte Enter: o endereço é preenchido sozinho.")
+    d["logradouro"] = c2.text_input("Logradouro", max_chars=150, key="pf_ct_logradouro")
     c1, c2 = st.columns([1, 2.6])
-    d["numero"] = c1.text_input("Número", value=atual.get("numero") or "", max_chars=20, key="pf_ct_numero")
-    d["complemento"] = c2.text_input("Complemento (opcional)", value=atual.get("complemento") or "", max_chars=100, key="pf_ct_complemento")
-    d["bairro"] = st.text_input("Bairro", value=atual.get("bairro") or "", max_chars=100, key="pf_ct_bairro")
+    d["numero"] = c1.text_input("Número", max_chars=20, key="pf_ct_numero")
+    d["complemento"] = c2.text_input("Complemento (opcional)", max_chars=100, key="pf_ct_complemento")
+    if msg := st.session_state.get("pf_ct_cep_msg"):
+        alerta(st.empty(), msg[0], msg[1])
+    d["bairro"] = st.text_input("Bairro", max_chars=100, key="pf_ct_bairro")
     c1, c2 = st.columns([2.6, 1])
-    d["cidade"] = c1.text_input("Cidade", value=atual.get("cidade") or "", max_chars=100, key="pf_ct_cidade")
-    uf = (atual.get("estado") or "").upper()
-    d["estado"] = c2.selectbox("Estado (UF)", UFS, index=UFS.index(uf) if uf in UFS else None, placeholder="UF", key="pf_ct_estado")
+    d["cidade"] = c1.text_input("Cidade", max_chars=100, key="pf_ct_cidade")
+    d["estado"] = c2.selectbox("Estado (UF)", UFS, placeholder="UF", key="pf_ct_estado")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pf_contato_cancelar"):
