@@ -3,7 +3,8 @@
 Roda o app com o AppTest do Streamlit e uma API simulada (dados fictícios). Confere:
 
   Colaborador ........ só os próprios holerites e informes aprovados, por ano, com "Baixar" (documentos/{id}/arquivo)
-  RH e Admin ......... quem já tem e quem falta na competência, filtro de departamento, "Lançar" e "Substituir"
+  RH e Admin ......... quem já tem e quem falta na competência, filtro de departamento, "Lançar" e "Substituir",
+                       com o arquivo anexado (sobe para o armazenamento privado) ou um link
   Documentos ......... holerite e informe não aparecem na tela Documentos
   Estados ............ vazio, sem colaborador, erro ao carregar e recusa do backend ao lançar
 
@@ -25,6 +26,7 @@ logging.getLogger("streamlit").setLevel(logging.ERROR)
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "frontend"))
 
+import streamlit  # noqa: E402
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 import api_client  # noqa: E402
@@ -85,7 +87,23 @@ def _instalar():
     api_client.documentos_rh = lambda token: chamadas.append(("rh",)) or _falha_ou("rh", {"documentos": estado["documentos"]})
     api_client.abrir_arquivo_documento = lambda token, doc_id: chamadas.append(("arquivo", doc_id)) or _falha_ou("arquivo", {"arquivo_url": f"https://arquivos.exemplo.com/{doc_id}.pdf"})
     api_client.enviar_documento = lambda token, dados: chamadas.append(("enviar", dados)) or _falha_ou("enviar", {"sucesso": True})
+    api_client.preparar_envio_arquivo = lambda token, cid, ext: chamadas.append(("preparar", cid, ext)) or _falha_ou("preparar", {
+        "upload_url": f"https://armazenamento.exemplo.com/upload/{cid}.{ext}", "arquivo_url": f"https://armazenamento.exemplo.com/object/documentos/{cid}.{ext}"})
+    api_client.subir_arquivo = lambda url, conteudo, tipo: chamadas.append(("subir", url, len(conteudo), tipo)) or _falha_ou("subir", None)
 
+
+class ArquivoFicticio:
+    """O AppTest não simula o envio de arquivo: o `st.file_uploader` do teste devolve este objeto."""
+
+    def __init__(self, nome: str, conteudo: bytes):
+        self.name, self.size, self._conteudo = nome, len(conteudo), conteudo
+
+    def getvalue(self) -> bytes:
+        return self._conteudo
+
+
+anexo: dict = {"arquivo": None}
+streamlit.file_uploader = lambda label, *a, **k: anexo["arquivo"]
 
 _instalar()
 falhas: list[str] = []
@@ -121,6 +139,7 @@ def abrir(at: AppTest, url_path: str) -> AppTest:
 
 
 def app(perfil: str = "COLABORADOR", **extra) -> AppTest:
+    anexo["arquivo"] = None
     chamadas.clear()
     estado.clear()
     estado.update(documentos=documentos_padrao())
@@ -158,6 +177,13 @@ conferir("https://" in m.validar_lancamento(9, HOJE, "http://x", HOJE), "link se
 conferir("futura" in m.validar_lancamento(9, date(HOJE.year + 1, 1, 1), "https://x", HOJE), "emissão futura: recusada")
 conferir(m.validar_lancamento(9, HOJE, "https://x.pdf", HOJE) is None, "lançamento completo passa")
 conferir("5 caracteres" in m.validar_substituicao("https://x", "ok"), "substituir sem motivo: recusado")
+conferir(m.validar_lancamento(9, HOJE, "", HOJE, m.ANEXAR) == "Anexe o arquivo.", "anexar sem arquivo: recusado")
+conferir(m.validar_lancamento(9, HOJE, "", HOJE, m.ANEXAR, "holerite.docx", 900) == "Envie um arquivo PDF, JPG ou PNG.", "anexo .docx: recusado")
+conferir("10 MB" in m.validar_lancamento(9, HOJE, "", HOJE, m.ANEXAR, "holerite.pdf", 11 * 1024 * 1024), "anexo acima de 10 MB: recusado")
+conferir("vazio" in m.validar_lancamento(9, HOJE, "", HOJE, m.ANEXAR, "holerite.pdf", 0), "anexo vazio: recusado")
+conferir(m.validar_lancamento(9, HOJE, "", HOJE, m.ANEXAR, "Holerite.PDF", 900) is None, "anexo PDF passa, sem link")
+conferir(m.validar_substituicao("", "Valor corrigido.", m.ANEXAR) == "Anexe o arquivo corrigido.", "substituir sem anexo: recusado")
+conferir(m.validar_substituicao("", "Valor corrigido.", m.ANEXAR, "novo.pdf", 900) is None, "substituir com anexo e motivo passa")
 
 # ---------------------------------------------------------------------------
 caso("Colaborador (Figma 70:46)")
@@ -210,6 +236,9 @@ at = app("RH")
 at.button(key="pg_lan_11").click()
 at = at.run()
 conferir(at.selectbox(key="pg_l_colab").value == 11, "'Lançar →' já abre com a pessoa escolhida")
+conferir(at.button_group(key="pg_l_origem").value == m.ANEXAR and not [t for t in at.text_input if t.key == "pg_l_link"], "o modal abre em 'Anexar arquivo', sem campo de link")
+at.button_group(key="pg_l_origem").set_value(m.COLAR_LINK)
+at = at.run()
 at.text_input(key="pg_l_link").set_value("http://arquivos.exemplo.com/h.pdf")
 at.button(key="pg_l_ok").click()
 at = at.run()
@@ -230,6 +259,8 @@ conferir("pg_sub_9" in chaves(at) and "pg_lan_7" in chaves(at), "aba Informes: q
 at.button(key="pg_btn_lancar").click()
 at = at.run()
 at.selectbox(key="pg_l_colab").set_value(7)
+at.button_group(key="pg_l_origem").set_value(m.COLAR_LINK)
+at = at.run()
 at.text_input(key="pg_l_link").set_value("https://arquivos.exemplo.com/i.pdf")
 at.button(key="pg_l_ok").click()
 at = at.run()
@@ -239,6 +270,8 @@ conferir(len(e) == 1 and e[0]["tipo"] == "informe_rendimentos" and e[0]["nome_do
 caso("RH: substituir (Figma 237:441)")
 at = app("RH")
 at.button(key="pg_sub_9").click()
+at = at.run()
+at.button_group(key="pg_s_origem").set_value(m.COLAR_LINK)
 at = at.run()
 at.text_input(key="pg_s_link").set_value("https://arquivos.exemplo.com/novo.pdf")
 at.button(key="pg_s_ok").click()
@@ -250,9 +283,58 @@ at = at.run()
 e = enviados()
 conferir(len(e) == 1 and e[0]["documento_substituido_id"] == 201 and e[0]["observacao"] == "Valor do adicional corrigido." and e[0]["colaborador_id"] == 9, "envia o substituído e o motivo")
 
+caso("RH: lançar e substituir com o arquivo anexado")
+at = app("RH")
+at.button(key="pg_lan_11").click()
+at = at.run()
+at.button(key="pg_l_ok").click()
+at = at.run()
+conferir("Anexe o arquivo." in texto(at) and not enviados() and not any(c[0] == "preparar" for c in chamadas), "sem anexo: mensagem, sem subir nada")
+anexo["arquivo"] = ArquivoFicticio("holerite.docx", b"x" * 900)
+at.button(key="pg_l_ok").click()
+at = at.run()
+conferir("PDF, JPG ou PNG" in texto(at) and not enviados(), "anexo .docx: mensagem, sem subir nada")
+anexo["arquivo"] = ArquivoFicticio("Holerite Juliana.PDF", b"%PDF-1.4" + b"x" * 900)
+at.button(key="pg_l_ok").click()
+at = at.run()
+e = enviados()
+conferir(("preparar", 11, "pdf") in chamadas and ("subir", "https://armazenamento.exemplo.com/upload/11.pdf", 908, "application/pdf") in chamadas,
+         "pede o endereço de envio para a pessoa e sobe o PDF")
+conferir(len(e) == 1 and e[0]["arquivo_url"] == "https://armazenamento.exemplo.com/object/documentos/11.pdf" and e[0]["tipo"] == "holerite",
+         "o documento grava o endereço do arquivo no armazenamento")
+conferir("modal_pagamento" not in at.session_state and "pg_l_origem" not in at.session_state, "o modal fecha e limpa a escolha")
+at = app("RH")
+at.button(key="pg_sub_9").click()
+at = at.run()
+anexo["arquivo"] = ArquivoFicticio("corrigido.pdf", b"%PDF" + b"y" * 50)
+at.text_area(key="pg_s_motivo").set_value("Valor do adicional corrigido.")
+at.button(key="pg_s_ok").click()
+at = at.run()
+e = enviados()
+conferir(("preparar", 9, "pdf") in chamadas and len(e) == 1 and e[0]["documento_substituido_id"] == 201
+         and e[0]["arquivo_url"] == "https://armazenamento.exemplo.com/object/documentos/9.pdf", "substituir sobe o arquivo corrigido e marca o anterior")
+at = app("RH", erro_subir=ApiError("Não foi possível enviar o arquivo. Confira se é PDF, JPG ou PNG de até 10 MB e tente de novo.", 400))
+at.button(key="pg_lan_11").click()
+at = at.run()
+anexo["arquivo"] = ArquivoFicticio("h.pdf", b"%PDF" + b"x" * 10)
+at.button(key="pg_l_ok").click()
+at = at.run()
+conferir("Não foi possível enviar o arquivo" in texto(at) and not enviados() and "modal_pagamento" in at.session_state,
+         "falha ao subir: mensagem no modal e nenhum documento gravado")
+at = app("RH", erro_preparar=ApiError("O envio de arquivos ainda nao foi configurado. Fale com o RH.", 500))
+at.button(key="pg_btn_lancar").click()
+at = at.run()
+at.selectbox(key="pg_l_colab").set_value(7)
+anexo["arquivo"] = ArquivoFicticio("i.pdf", b"%PDF" + b"x" * 10)
+at.button(key="pg_l_ok").click()
+at = at.run()
+conferir("ainda nao foi configurado" in texto(at) and not enviados(), "armazenamento sem configuração: mensagem do backend")
+
 caso("Erros: recusa do backend e falha ao carregar")
 at = app("RH", erro_enviar=ApiError("Somente RH ou Admin podem enviar holerite.", 403))
 at.button(key="pg_lan_11").click()
+at = at.run()
+at.button_group(key="pg_l_origem").set_value(m.COLAR_LINK)
 at = at.run()
 at.text_input(key="pg_l_link").set_value("https://arquivos.exemplo.com/h.pdf")
 at.button(key="pg_l_ok").click()

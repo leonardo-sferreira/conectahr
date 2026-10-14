@@ -8,8 +8,9 @@ Página "Pagamento" (tarefas 29 e 30 da change concluir-frontend-streamlit).
   (237:441). Lançar é `documentos` (POST) com tipo holerite ou informe_rendimentos, que só RH e Admin
   podem; substituir é o mesmo POST com `documento_substituido_id`, e o anterior fica "substituído".
 
-Diferença em relação ao Figma: o arquivo entra por link (https de um domínio aprovado), e não por upload,
-porque o plano do Xano não recebe arquivo (a mesma decisão da tela Documentos).
+O arquivo é anexado (PDF, JPG ou PNG de até 10 MB) e sobe direto para o armazenamento privado, pelo mesmo
+caminho da tela Documentos (`documentos/envio_arquivo` gera o endereço de envio; change anexo-de-arquivos). Quem
+já tem o PDF publicado pode escolher "Colar link" (https de um domínio aprovado).
 """
 
 import html
@@ -18,9 +19,13 @@ from datetime import date
 
 import streamlit as st
 
-from api_client import ApiError, abrir_arquivo_documento, documentos_rh, enviar_documento, meus_documentos, organograma
+from api_client import (ApiError, abrir_arquivo_documento, documentos_rh, enviar_documento, meus_documentos, organograma,
+                        preparar_envio_arquivo, subir_arquivo)
+from documentos_modelo import TIPOS_ARQUIVO, extensao
 from pagamento_modelo import (
+    ANEXAR,
     MESES,
+    ORIGENS_ARQUIVO,
     anos_recentes,
     competencias_recentes,
     do_colaborador,
@@ -128,6 +133,27 @@ def _carregar_rh(token: str) -> dict:
     return dados
 
 
+def _origem_arquivo(prefixo: str, rotulo_link: str) -> tuple[str, str, object]:
+    """"Anexar arquivo" (padrão) ou "Colar link": (origem, link, arquivo anexado)."""
+    origem = st.segmented_control("Arquivo", ORIGENS_ARQUIVO, default=ANEXAR, required=True, key=f"{prefixo}_origem")
+    if origem == ANEXAR:
+        arquivo = st.file_uploader("Arquivo", type=list(TIPOS_ARQUIVO), key=f"{prefixo}_arquivo", label_visibility="collapsed",
+                                   help="PDF (ou JPG e PNG), até 10 MB, um arquivo por colaborador.")
+        return origem, "", arquivo
+    link = st.text_input(rotulo_link, placeholder="https://", max_chars=2000, key=f"{prefixo}_link", help="PDF, um arquivo por colaborador. Informe o link https.")
+    return origem, link, None
+
+
+def _endereco_do_arquivo(colaborador_id: int, origem: str, link: str, arquivo) -> str:
+    """O `arquivo_url` do documento: sobe o anexo para o armazenamento privado ou devolve o link colado."""
+    if origem != ANEXAR:
+        return link.strip()
+    ext = extensao(arquivo.name)
+    envio = preparar_envio_arquivo(st.session_state.token, colaborador_id, ext)
+    subir_arquivo(envio["upload_url"], arquivo.getvalue(), TIPOS_ARQUIVO[ext])
+    return envio["arquivo_url"]
+
+
 @st.dialog("Lançar documento", width="small", on_dismiss=_fechar)
 def _modal_lancar(tipo: str, competencia, org: dict, colaborador_id) -> None:
     rotulo = "holerite" if tipo == "holerite" else "informe de rendimentos"
@@ -145,28 +171,29 @@ def _modal_lancar(tipo: str, competencia, org: dict, colaborador_id) -> None:
         comp = c1.selectbox("Ano-calendário", opcoes, index=opcoes.index(competencia) if competencia in opcoes else 0, key="pg_l_comp")
     emissao = c2.date_input("Data de emissão", value=date.today(), max_value=date.today(), format="DD/MM/YYYY", key="pg_l_emissao")
     st.text_input("Nome do documento", value=nome_documento(tipo, comp), disabled=True, key=f"pg_l_nome_{comp}")
-    link = st.text_input("Link do arquivo", placeholder="https://", max_chars=2000, key="pg_l_link", help="PDF, um arquivo por colaborador. Informe o link https.")
+    origem, link, arquivo = _origem_arquivo("pg_l", "Link do arquivo")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="pg_l_cancelar"):
             _fechar()
             st.rerun()
         if st.button(f"Lançar {'holerite' if tipo == 'holerite' else 'informe'}", type="primary", key="pg_l_ok"):
-            erro_campo = validar_lancamento(colab, emissao, link, date.today())
+            erro_campo = validar_lancamento(colab, emissao, link, date.today(), origem, arquivo.name if arquivo else None, arquivo.size if arquivo else None)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
             try:
-                enviar_documento(st.session_state.token, {
-                    "colaborador_id": colab, "tipo": tipo, "nome_documento": nome_documento(tipo, comp),
-                    "data_emissao": emissao.isoformat(), "arquivo_url": link.strip(),
-                })
+                with st.spinner("Enviando o arquivo..."):
+                    enviar_documento(st.session_state.token, {
+                        "colaborador_id": colab, "tipo": tipo, "nome_documento": nome_documento(tipo, comp),
+                        "data_emissao": emissao.isoformat(), "arquivo_url": _endereco_do_arquivo(colab, origem, link, arquivo),
+                    })
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
             _invalidar()
             _fechar()
-            for chave in ("pg_l_colab", "pg_l_comp", "pg_l_emissao", "pg_l_link"):
+            for chave in ("pg_l_colab", "pg_l_comp", "pg_l_emissao", "pg_l_link", "pg_l_origem", "pg_l_arquivo"):
                 st.session_state.pop(chave, None)
             st.session_state.aviso_toast = f"{nome_documento(tipo, comp)} lançado para {pessoas[colab].split(' — ')[0]}."
             st.rerun()
@@ -181,7 +208,7 @@ def _modal_substituir(linha: dict) -> None:
         f'<p class="r">Documento atual</p><p class="v">{html.escape(doc.get("nome_documento") or "—")}</p>'
         f'<p class="r">Lançado em</p><p class="v">{html.escape(linha["lancado_em"])}</p></div>'
     )
-    link = st.text_input("Link do arquivo corrigido", placeholder="https://", max_chars=2000, key="pg_s_link")
+    origem, link, arquivo = _origem_arquivo("pg_s", "Link do arquivo corrigido")
     motivo = st.text_area("Motivo da correção", max_chars=1000, key="pg_s_motivo", height=80)
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
@@ -189,22 +216,23 @@ def _modal_substituir(linha: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Substituir", type="primary", key="pg_s_ok"):
-            erro_campo = validar_substituicao(link, motivo)
+            erro_campo = validar_substituicao(link, motivo, origem, arquivo.name if arquivo else None, arquivo.size if arquivo else None)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
             try:
-                enviar_documento(st.session_state.token, {
-                    "colaborador_id": linha["colaborador_id"], "tipo": doc.get("tipo"), "nome_documento": doc.get("nome_documento"),
-                    "data_emissao": date.today().isoformat(), "arquivo_url": link.strip(),
-                    "documento_substituido_id": doc.get("id"), "observacao": motivo.strip(),
-                })
+                with st.spinner("Enviando o arquivo..."):
+                    enviar_documento(st.session_state.token, {
+                        "colaborador_id": linha["colaborador_id"], "tipo": doc.get("tipo"), "nome_documento": doc.get("nome_documento"),
+                        "data_emissao": date.today().isoformat(), "arquivo_url": _endereco_do_arquivo(linha["colaborador_id"], origem, link, arquivo),
+                        "documento_substituido_id": doc.get("id"), "observacao": motivo.strip(),
+                    })
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return
             _invalidar()
             _fechar()
-            for chave in ("pg_s_link", "pg_s_motivo"):
+            for chave in ("pg_s_link", "pg_s_motivo", "pg_s_origem", "pg_s_arquivo"):
                 st.session_state.pop(chave, None)
             st.session_state.aviso_toast = f"Documento de {linha['nome']} substituído."
             st.rerun()

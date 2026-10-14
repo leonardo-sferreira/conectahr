@@ -12,10 +12,14 @@ não seguir esse padrão, usa a data de emissão (holerite: mês anterior; infor
 import re
 from datetime import date
 
+from documentos_modelo import TAMANHO_MAXIMO, TIPOS_ARQUIVO, extensao
 from onboarding_modelo import data_br
 
 MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
 TIPOS_PAGAMENTO = ("holerite", "informe_rendimentos")
+# De onde vem o arquivo: anexado (sobe para o armazenamento privado, como na tela Documentos) ou um link https.
+ANEXAR, COLAR_LINK = "Anexar arquivo", "Colar link"
+ORIGENS_ARQUIVO = [ANEXAR, COLAR_LINK]
 _RE_HOLERITE = re.compile(r"(" + "|".join(MESES) + r")/(\d{4})", re.I)
 _RE_ANO = re.compile(r"(\d{4})")
 
@@ -128,27 +132,40 @@ def linhas_rh(org: dict, documentos: list[dict], tipo: str, competencia, departa
     return {"linhas": linhas, "ativos": len(linhas), "lancados": lancados, "faltando": len(linhas) - lancados}
 
 
-def validar_lancamento(colaborador_id, data_emissao: date | None, link: str, hoje: date) -> str | None:
+def validar_origem(origem: str, link: str, nome_arquivo: str | None = None, tamanho: int | None = None, corrigido: bool = False) -> str | None:
+    """O arquivo anexado (PDF, JPG ou PNG de até 10 MB) ou o link https, conforme a origem escolhida."""
+    if origem == ANEXAR:
+        if not nome_arquivo:
+            return f"Anexe o arquivo{' corrigido' if corrigido else ''}."
+        if extensao(nome_arquivo) not in TIPOS_ARQUIVO:
+            return "Envie um arquivo PDF, JPG ou PNG."
+        if not tamanho:
+            return "O arquivo está vazio. Escolha outro."
+        if tamanho > TAMANHO_MAXIMO:
+            return "O arquivo pode ter no máximo 10 MB."
+        return None
+    link = (link or "").strip()
+    if not link:
+        return f"Informe o link do arquivo{' corrigido' if corrigido else ''}."
+    if not link.lower().startswith("https://"):
+        return "O link do arquivo precisa começar com https://."
+    return None
+
+
+def validar_lancamento(colaborador_id, data_emissao: date | None, link: str, hoje: date, origem: str = COLAR_LINK,
+                       nome_arquivo: str | None = None, tamanho: int | None = None) -> str | None:
     if not colaborador_id:
         return "Escolha o colaborador."
     if not data_emissao:
         return "Informe a data de emissão."
     if data_emissao > hoje:
         return "A data de emissão não pode ser futura."
-    link = (link or "").strip()
-    if not link:
-        return "Informe o link do arquivo."
-    if not link.lower().startswith("https://"):
-        return "O link do arquivo precisa começar com https://."
-    return None
+    return validar_origem(origem, link, nome_arquivo, tamanho)
 
 
-def validar_substituicao(link: str, motivo: str) -> str | None:
-    link = (link or "").strip()
-    if not link:
-        return "Informe o link do arquivo corrigido."
-    if not link.lower().startswith("https://"):
-        return "O link do arquivo precisa começar com https://."
+def validar_substituicao(link: str, motivo: str, origem: str = COLAR_LINK, nome_arquivo: str | None = None, tamanho: int | None = None) -> str | None:
+    if erro := validar_origem(origem, link, nome_arquivo, tamanho, corrigido=True):
+        return erro
     if len((motivo or "").strip()) < 5:
         return "Explique o motivo da correção em pelo menos 5 caracteres."
     return None
