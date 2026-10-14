@@ -57,6 +57,15 @@ FERIADOS = [{"data": "2026-12-25", "nome": "Natal", "tipo": "feriado", "abrangen
             {"data": "2026-11-20", "nome": "Desativado", "tipo": "feriado", "abrangencia": "nacional", "ativo": False}]
 
 
+EQUIPE = [
+    {"id": 81, "colaborador_id": 11, "nome": "Juliana Prado", "data_inicio": "2026-11-30", "data_fim": "2026-12-16", "quantidade_dias": 17, "status": "Aprovada", "e_voce": False},
+    {"id": 82, "colaborador_id": 12, "nome": "Carlos Eduardo Lima", "data_inicio": "2026-12-14", "data_fim": "2026-12-23", "quantidade_dias": 10, "status": "Pendente", "e_voce": False},
+    {"id": 83, "colaborador_id": 13, "nome": "Marta", "data_inicio": "2026-12-15", "data_fim": "2026-12-15", "quantidade_dias": 1, "status": "Concluida", "e_voce": False},
+    {"id": 84, "colaborador_id": 9, "nome": "Leonardo dos Santos", "data_inicio": "2026-12-15", "data_fim": "2026-12-19", "quantidade_dias": 5, "status": "Aprovada", "e_voce": True},
+    {"id": 85, "colaborador_id": 14, "nome": "Rita Souza", "data_inicio": "2026-12-01", "data_fim": "2026-12-05", "quantidade_dias": 5, "status": "Rejeitada", "e_voce": False},
+]
+
+
 def situacao(**extra):
     base = {"tipo_contrato": "CLT", "data_admissao": "2025-01-01", "permite_solicitacao": True, "anos_completos": 1, "proporcional": True,
             "janela_inicio": "2026-01-01", "janela_fim": "2027-01-01", "direito": 30, "saldo": 20, "dias_vendidos": 0, "periodos_usados": 1,
@@ -88,6 +97,8 @@ def _instalar():
     api_client.cancelar_ferias = lambda token, fid: chamadas.append(("cancelar", fid)) or _falha_ou("cancelar", {"sucesso": True})
     api_client.calendario = lambda token: chamadas.append(("calendario",)) or _falha_ou("calendario", {"feriados": estado.get("feriados", FERIADOS)})
     api_client.importar_feriados = lambda token, ano: chamadas.append(("importar", ano)) or _falha_ou("importar", {"ano": ano, "importados": 14, "ja_existiam": 0})
+    api_client.ferias_equipe = lambda token, desde, ate: chamadas.append(("equipe", desde, ate)) or _falha_ou("equipe", {
+        "ve_todos": False, "pessoas": 4, "ferias": estado.get("equipe", EQUIPE)})
     api_client.solicitar_ferias = lambda token, i, f, d, obs, abono=0: chamadas.append(("solicitar", i, f, d, obs, abono)) or _falha_ou("solicitar", {"sucesso": True})
 
 
@@ -334,6 +345,65 @@ at = at.run()
 conferir("BrasilAPI agora" in texto(at), "falha da BrasilAPI vira alerta")
 at = estrutura("COLABORADOR")
 conferir("Esta tela é só do RH e do Admin." in texto(at) and "estr_importar" not in chaves(at), "colaborador não importa (o backend também recusa)")
+
+caso("Férias da equipe: calendário do gestor")
+import ferias_modelo as fm  # noqa: E402
+
+conferir(fm.nome_curto("Carlos Eduardo Lima") == "Carlos L." and fm.nome_curto("Marta") == "Marta" and fm.nome_curto("") == "—", "nome curto na célula")
+sem = fm.calendario_equipe(2026, 12, EQUIPE, FERIADOS, date(2026, 12, 10), 2)
+dias = {d["dia"]: d for semana in sem for d in semana if d}
+conferir(dias[1]["quantos"] == 1 and dias[1]["pessoas"][0][:2] == ("Juliana P.", "ok") and not dias[1]["lotado"], "1/12: só a Juliana (a rejeitada da Rita não aparece)")
+conferir(dias[14]["quantos"] == 2 and dias[14]["lotado"] and ("Carlos L.", "amb", "Carlos Eduardo Lima") in dias[14]["pessoas"], "14/12: duas pessoas, o pedido em análise conta e o dia passa do limite")
+conferir(dias[15]["quantos"] == 4 and len(dias[15]["pessoas"]) == 3 and dias[15]["mais"] == 1, "15/12: quatro pessoas, três nomes e '+1'")
+conferir(dias[25]["marcas"] and dias[25]["quantos"] == 0, "o feriado continua marcado no dia")
+conferir(fm.pico_equipe(sem) == (4, [date(2026, 12, 15)]), "pico: 4 pessoas em 15/12")
+conferir(not any(d and d["lotado"] for semana in fm.calendario_equipe(2026, 12, EQUIPE, [], date(2026, 12, 10), 5) for d in semana), "limite 5: nenhum dia lotado")
+aviso = fm.aviso_equipe(sem, 2)
+conferir(aviso is not None and "Em 6 dias deste mês, 2 ou mais pessoas" in aviso and "Pico: 4 pessoas em 15/12" in aviso, "alerta com quantos dias passam do limite e o pico")
+conferir(fm.aviso_equipe(fm.calendario_equipe(2026, 12, EQUIPE, [], date(2026, 12, 10), 5), 5) is None, "sem dia acima do limite, sem alerta")
+lista = fm.lista_equipe_mes(2026, 12, EQUIPE)
+conferir([l["nome"] for l in lista] == ["Juliana Prado", "Carlos Eduardo Lima", "Leonardo dos Santos (você)", "Marta"], "lista do mês pela data de início, com '(você)'")
+conferir(lista[0]["periodo"] == "30/11/2026 a 16/12/2026" and lista[0]["detalhe"] == "17 dias" and lista[1]["badge"] == "Em análise", "período, dias e situação")
+conferir(fm.lista_equipe_mes(2027, 1, EQUIPE) == [], "mês sem férias: lista vazia")
+
+
+def gestor(perfil: str = "GESTOR", **extra) -> AppTest:
+    at = app(**extra)
+    at.session_state["usuario"] = dict(at.session_state["usuario"], perfil=perfil)
+    at.session_state["fe_eq_mes"] = (2026, 12)
+    return abrir(at, "ferias")
+
+
+at = app()
+conferir("fe_visao" not in [b.key for b in at.button_group] and not any(c[0] == "equipe" for c in chamadas), "colaborador sem equipe não vê a aba nem chama ferias_equipe")
+at = gestor()
+conferir(at.button_group(key="fe_visao").value == "Minhas férias" and not any(c[0] == "equipe" for c in chamadas), "gestor abre em 'Minhas férias', sem carregar a equipe")
+at.button_group(key="fe_visao").set_value("Férias da equipe")
+at = at.run()
+t = texto(at)
+conferir(("equipe", "2026-12-01", "2026-12-31") in chamadas and not at.exception, "'Férias da equipe' pede o mês inteiro ao backend")
+conferir("Dezembro de 2026" in t and "Juliana P." in t and "Carlos L." in t and "+1" in t, "calendário com o nome de quem sai em cada dia")
+conferir("Pico: 4 pessoas em 15/12" in t and "4 em 15/12" in t, "indicador e alerta do pico")
+conferir("30/11/2026 a 16/12/2026" in t and "Em análise" in t and "Rita" not in t, "lista do mês, sem a rejeitada")
+conferir(len(re.findall(r'<td class="[^"]*lotado', " ".join(str(e.value) for e in at.get("html")))) == 6, "os 6 dias acima do limite ganham a borda de alerta")
+at.number_input(key="fe_eq_limite").set_value(5)
+at = at.run()
+conferir("Pico: 4 pessoas" not in texto(at) and not re.search(r'<td class="[^"]*lotado', " ".join(str(e.value) for e in at.get("html"))), "limite 5: sem alerta e sem borda")
+at.button(key="fe_eq_seguinte").click()
+at = at.run()
+conferir(("equipe", "2027-01-01", "2027-01-31") in chamadas and "Janeiro de 2027" in texto(at), "› carrega o mês seguinte")
+at = gestor("RH", equipe=[])
+at.button_group(key="fe_visao").set_value("Férias da equipe")
+at = at.run()
+conferir("Ninguém da equipe tem férias neste mês." in texto(at) and not at.exception, "RH também vê; mês vazio tem mensagem")
+at = gestor("ADMIN", erro_equipe=ApiError("Sessao encerrada ou expirada. Faca login novamente.", 403))
+at.button_group(key="fe_visao").set_value("Férias da equipe")
+at = at.run()
+conferir("Sessao encerrada" in texto(at) and not at.exception, "erro do backend vira alerta")
+at = gestor("RH", erro_ferias=ApiError("Nao existe um colaborador vinculado a conta autenticada.", 404))
+at.button_group(key="fe_visao").set_value("Férias da equipe")
+at = at.run()
+conferir("Juliana P." in texto(at), "RH sem cadastro de colaborador ainda vê a equipe")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

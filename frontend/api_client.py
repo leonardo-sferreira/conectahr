@@ -554,6 +554,12 @@ def solicitar_ferias(token: str, data_inicio: str, data_fim: str, quantidade_dia
     return _post("ferias/solicitacoes", corpo, token, GRUPO_FERIAS)
 
 
+def ferias_equipe(token: str, desde: str, ate: str) -> dict:
+    """GET ferias_equipe -> {ve_todos, pessoas, ferias}: férias aprovadas, concluídas e em análise que tocam o período
+    (aaaa-mm-dd), com o nome de cada pessoa. RH e Admin veem todos; os demais, a si mesmos e quem está abaixo deles."""
+    return _get(f"ferias_equipe?desde={desde}&ate={ate}", token, GRUPO_FERIAS)
+
+
 def cancelar_ferias(token: str, ferias_id: int) -> dict:
     """POST ferias/{id}/cancelar: só a própria pessoa e só pedido pendente (o backend confere)."""
     return _post(f"ferias/{int(ferias_id)}/cancelar", {}, token, GRUPO_FERIAS)
