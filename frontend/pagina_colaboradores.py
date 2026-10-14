@@ -76,13 +76,13 @@ def concluir(aviso: str) -> None:
 # ---------------------------------------------------------------------------
 # Modais
 # ---------------------------------------------------------------------------
-@st.dialog("Admitir colaborador", width="medium", on_dismiss=fechar)
 def _jornada_do_contrato() -> None:
     """Ao trocar o contrato na admissão, sugere a carga horária da matriz; PJ e Outro mantêm o que está no campo."""
     if (jornada := JORNADA_SEMANAL.get(st.session_state.get("adm_contrato"))) is not None:
         st.session_state.adm_carga = jornada
 
 
+@st.dialog("Admitir colaborador", width="medium", on_dismiss=fechar)
 def _modal_admitir(org: dict) -> None:
     deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or [] if d.get("ativo", True)}
     niveis = {n.get("id"): n for n in org.get("niveis") or []}
