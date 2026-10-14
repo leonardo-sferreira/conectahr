@@ -886,6 +886,12 @@ _APP_CSS = f"""
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea {{ -webkit-text-fill-color: {GRAFITE}; }}
   [data-testid="stDialog"] input::placeholder, [data-testid="stDialog"] textarea::placeholder {{ color: {GRAFITE_SECUNDARIO}; -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; opacity: 0.8; }}
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {GRAFITE} !important; background: transparent !important; }}
+  /* Calendário do seletor de data (13/10/2026): abre com o fundo escuro do Streamlit, e o mês, o ano (que são caixas de
+     seleção) e as setas ‹ › herdavam o grafite da regra acima, sumindo no tema claro. Ficam claros, em qualquer tela. */
+  [data-baseweb="calendar"] [data-baseweb="select"] div, [data-testid="stDialog"] [data-baseweb="calendar"] [data-baseweb="select"] div,
+  [data-baseweb="calendar"] [role="heading"], [data-baseweb="calendar"] button {{ color: #ECEAE4 !important; -webkit-text-fill-color: #ECEAE4 !important; }}
+  [data-baseweb="calendar"] svg, [data-testid="stDialog"] [data-baseweb="calendar"] svg {{ fill: #ECEAE4 !important; color: #ECEAE4 !important; }}
+  [data-baseweb="calendar"] button:disabled, [data-baseweb="calendar"] button[aria-disabled="true"] {{ opacity: .35; }}
   [data-testid="stDialog"] button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.6rem 1.1rem; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {GRAFITE} !important; font-family: 'Manrope', sans-serif; font-weight: 600; }}
   [data-testid="stDialog"] button[kind="primary"] {{ padding: 0.6rem 1.2rem; width: auto; }}

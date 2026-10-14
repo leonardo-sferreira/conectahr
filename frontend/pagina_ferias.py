@@ -33,6 +33,7 @@ from ferias_modelo import (
     dias_do_periodo,
     historico,
     mes_vizinho,
+    primeiro_inicio,
     regras_do_pedido,
     resumo,
     resumo_do_pedido,
@@ -73,8 +74,11 @@ def _fechar() -> None:
 def _modal_solicitar(situacao: dict) -> None:
     hoje = date.today()
     c1, c2 = st.columns(2)
-    inicio = c1.date_input("Início", value=None, min_value=hoje, format="DD/MM/YYYY", key="fe_inicio")
-    fim = c2.date_input("Fim", value=None, min_value=hoje, format="DD/MM/YYYY", key="fe_fim")
+    # O calendário abre no primeiro dia permitido (hoje + antecedência, de `minha_situacao_ferias`); o fim, a partir do início.
+    primeiro = primeiro_inicio(situacao, hoje)
+    inicio = c1.date_input("Início", value=None, min_value=primeiro, max_value=date(hoje.year + 2, 12, 31), format="DD/MM/YYYY", key="fe_inicio",
+                           help=f"A partir de {primeiro.strftime('%d/%m/%Y')}: férias são pedidas com antecedência.")
+    fim = c2.date_input("Fim", value=None, min_value=inicio or primeiro, max_value=date(hoje.year + 2, 12, 31), format="DD/MM/YYYY", key="fe_fim")
     linhas = resumo_do_pedido(situacao, inicio, fim, int(st.session_state.get("fe_abono") or 0))
     st.html(
         '<div class="crh-campos crh-campos-direita">'

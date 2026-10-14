@@ -312,7 +312,8 @@ conferir(list(df.columns)[-1] == "Ajuste" and str(df.iloc[IDX_SEM]["Ajuste"]) ==
 caso("Tela: pedir a inclusão num dia sem marcação (Figma 465:856)")
 at = pedir(at, IDX_SEM)
 conferir("Falta injustificada" in texto(at), "o pedido mostra a situação do dia")
-conferir(at.selectbox(key="pt_ped_celula").options == ["Ent. 1 · vazia"], "sem marcação no dia: só a célula Ent. 1, vazia")
+conferir(at.selectbox(key="pt_ped_celula").options == ["Ent. 1 · vazia", "Saí. 1 · vazia", "Ent. 2 · vazia", "Saí. 2 · vazia"],
+         "sem marcação no dia: as células ficam livres, de Ent. 1 a Saí. 2 (pedido de 13/10/2026)")
 at.button(key="pt_ped_enviar").click()
 at = at.run()
 conferir("Escolha a célula da planilha." in texto(at) and not chamadas, "sem a célula: não envia")
@@ -331,7 +332,7 @@ conferir(("pedido", D_SEM.isoformat(), "inclusao", "Esqueci de marcar a entrada.
 
 caso("Tela: escolher a célula da planilha (pedido do usuário, 12/10/2026)")
 at = pedir(app(), IDX_REG)
-conferir(at.selectbox(key="pt_ped_celula").options == ["Ent. 1 · 08:00", "Saí. 1 · 12:00", "Ent. 2 · 13:00", "Saí. 2 · 17:30 · em análise", "Ent. 3 · vazia"],
+conferir(at.selectbox(key="pt_ped_celula").options == ["Ent. 1 · 08:00", "Saí. 1 · 12:00", "Ent. 2 · 13:00", "Saí. 2 · 17:30 · em análise", "Ent. 3 · vazia", "Saí. 3 · vazia"],
          "as células como na planilha, com o horário; a que tem pedido em análise avisa")
 at.selectbox(key="pt_ped_celula").set_value(3)
 at = at.run()
@@ -389,7 +390,7 @@ conferir(("pedido", D_REG.isoformat(), "inclusao", "Saída para o banco antes do
 
 caso("Tela: corrigir uma marcação incluída por correção (dia só com 18:00 (I))")
 at = pedir(app(), IDX_INC)
-conferir(at.selectbox(key="pt_ped_celula").options == ["Ent. 1 · 18:00 (I)", "Saí. 1 · vazia"], "a incluída aparece como célula, marcada com (I)")
+conferir(at.selectbox(key="pt_ped_celula").options == ["Ent. 1 · 18:00 (I)", "Saí. 1 · vazia", "Ent. 2 · vazia", "Saí. 2 · vazia"], "a incluída aparece como célula, marcada com (I)")
 at.selectbox(key="pt_ped_celula").set_value(0)
 at = at.run()
 at.radio(key="pt_ped_tipo").set_value("alteracao")
@@ -408,6 +409,19 @@ at.text_area(key="pt_ped_motivo").set_value("Saída no almoço.")
 at.button(key="pt_ped_enviar").click()
 at = at.run()
 conferir("Para ficar em Saí. 1, o horário precisa ser depois de 18:00." in texto(at), "célula vazia depois da última: o horário precisa ser depois dela")
+at = pedir(app(), IDX_INC)
+at.selectbox(key="pt_ped_celula").set_value(3)  # Saí. 2, vazia, com só a Ent. 1 preenchida
+at = at.run()
+at.time_input(key="pt_ped_hora").set_value(time(12, 0))
+at.text_area(key="pt_ped_motivo").set_value("Esqueci de marcar a saída.")
+at.button(key="pt_ped_enviar").click()
+at = at.run()
+conferir("Para ficar em Saí. 2, o horário precisa ser depois de 18:00." in texto(at) and not any(c[0] == "pedido" and c[2] == "inclusao" for c in chamadas),
+         "célula vazia mais à frente: o horário só precisa ser depois da última marcação")
+at.time_input(key="pt_ped_hora").set_value(time(19, 0))
+at.button(key="pt_ped_enviar").click()
+at = at.run()
+conferir(any(c[0] == "pedido" and c[2] == "inclusao" and c[5] == ms(D_INC, 19) for c in chamadas), "escolher a Saí. 2 vazia e informar 19:00 envia a inclusão")
 conferir(m.alvo_da_chave("t77") == {"marcacao_id": None, "tratamento_id": 77} and m.alvo_da_chave("m500") == {"marcacao_id": 500, "tratamento_id": None}
          and m.alvo_da_chave(None) is None and m.alvo_da_chave("x1") is None, "chave da lista: original (m) ou incluída (t)")
 

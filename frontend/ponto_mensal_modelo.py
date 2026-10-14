@@ -418,9 +418,10 @@ def nome_celula(indice: int) -> str:
 
 
 def celulas_do_dia(linha: dict) -> list[dict]:
-    """As células do dia que o pedido pode escolher (pedido do usuário, 12/10/2026): as preenchidas, na ordem da planilha,
-    e a primeira vazia. Cada uma: {'indice', 'nome', 'batida' (ou None), 'editavel', 'texto'}; `editavel` diz se dá para
-    corrigir o horário ou desconsiderar (a marcação não tem pedido em análise)."""
+    """As células do dia que o pedido pode escolher (pedidos do usuário, 12 e 13/10/2026): as preenchidas, na ordem da
+    planilha, e as vazias livres (no mínimo até "Saí. 2" e sempre duas além da última marcação, em pares de entrada e
+    saída). Cada uma: {'indice', 'nome', 'batida' (ou None), 'editavel', 'texto'}; `editavel` diz se dá para corrigir o
+    horário ou desconsiderar (a marcação não tem pedido em análise)."""
     editaveis = {id(b) for b in desconsideraveis(linha)}
     celulas = []
     for i, b in enumerate(linha["batidas"]):
@@ -428,7 +429,10 @@ def celulas_do_dia(linha: dict) -> list[dict]:
         celulas.append({"indice": i, "nome": nome_celula(i), "batida": b, "editavel": id(b) in editaveis,
                         "texto": f"{nome_celula(i)} · {hora_txt}" + ("" if id(b) in editaveis else " · em análise")})
     n = len(linha["batidas"])
-    celulas.append({"indice": n, "nome": nome_celula(n), "batida": None, "editavel": False, "texto": f"{nome_celula(n)} · vazia"})
+    ultima = max(4, n + 2)
+    ultima += ultima % 2  # termina numa saída
+    for i in range(n, ultima):
+        celulas.append({"indice": i, "nome": nome_celula(i), "batida": None, "editavel": False, "texto": f"{nome_celula(i)} · vazia"})
     return celulas
 
 
@@ -459,8 +463,11 @@ def erro_posicao(linha: dict, indice: int, tipo: str, horario) -> str | None:
         return None
     t = horario.hour * 60 + horario.minute
     tempos = [_minutos(b["hora"]) for b in linha["batidas"]]
-    anterior = tempos[indice - 1] if indice > 0 else None
-    seguinte = tempos[indice + 1] if tipo == "alteracao" and indice + 1 < len(tempos) else tempos[indice] if tipo == "inclusao" and indice < len(tempos) else None
+    # Célula vazia mais à frente (ex.: "Saí. 2" num dia só com a entrada): basta ser depois da última marcação. Como a
+    # planilha ordena pelo horário, a marcação aparece logo depois das que já existem.
+    indice_real = min(indice, len(tempos)) if tipo == "inclusao" else indice
+    anterior = tempos[indice_real - 1] if indice_real > 0 else None
+    seguinte = tempos[indice + 1] if tipo == "alteracao" and indice + 1 < len(tempos) else tempos[indice_real] if tipo == "inclusao" and indice_real < len(tempos) else None
     if (anterior is None or t > anterior) and (seguinte is None or t < seguinte):
         return None
     fmt = lambda m: f"{m // 60:02d}:{m % 60:02d}"  # noqa: E731
