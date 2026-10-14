@@ -214,11 +214,18 @@ query colaboradores verb=POST {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Documentos obrigatorios do contrato, cargo e idade viram pendencias ja na admissao (pedido do usuario em
+    // 13/10/2026); aparecem na tela Documentos quando a pessoa recebe o acesso.
+    function.run "ConectaHR/gerar_pendencias_obrigatorias" {
+      input = {colaborador_id: $colaborador_criado.id, autor_user_id: $usuario_rh.id}
+    } as $pendencias_admissao
   }
 
   response = {
     sucesso      : true
     mensagem     : "Colaborador pre-cadastrado com sucesso. Agora o RH pode criar sua conta de acesso."
+    pendencias_documento_criadas: $pendencias_admissao.total_criadas
     colaborador  : $colaborador_criado
     cargo        : $cargo
     departamento : $departamento

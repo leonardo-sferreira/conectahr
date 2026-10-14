@@ -17,6 +17,10 @@ from onboarding_modelo import data_br
 
 PERFIS = {"COLABORADOR": "Colaborador", "GESTOR": "Gestor", "RH": "RH", "ADMIN": "Admin"}
 CONTRATOS = {"CLT": "CLT", "PJ": "PJ", "ESTAGIO": "Estágio", "APRENDIZ": "Aprendiz", "TEMPORARIO": "Temporário", "OUTRO": "Outro"}
+# Carga horária semanal de cada contrato na matriz regra_contrato (ConectaHR/semear_regras_contrato): sugerida na
+# admissão quando o RH troca o contrato (pedido do usuário em 13/10/2026). PJ e Outro não têm jornada: o campo fica como está.
+# Estágio: até 30h (Lei 11.788/2008, art. 10); aprendiz: até 6h por dia (CLT, art. 432).
+JORNADA_SEMANAL = {"CLT": 44.0, "TEMPORARIO": 44.0, "ESTAGIO": 30.0, "APRENDIZ": 30.0}
 NIVEIS = {"l1": "L1", "l2": "L2", "l3": "L3", "l4": "L4", "l5": "L5"}
 SITUACOES_COLAB = {"ativos": "Situação: Ativos", "todos": "Situação: Todos", "desligados": "Situação: Desligados"}
 SITUACOES_USUARIO = {"todos": "Situação: Todos", "ativo": "Situação: Ativos", "inativo": "Situação: Inativos", "sem_ficha": "Situação: Sem ficha", "senha": "Situação: Senha temporária"}
