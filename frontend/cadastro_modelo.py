@@ -278,3 +278,70 @@ def validar_novo_usuario(colaborador_id, email: str) -> str | None:
     if not _RE_EMAIL.match((email or "").strip()):
         return "Informe um e-mail de acesso válido."
     return None
+
+
+# ---------------------------------------------------------------------------
+# Pedido de alteração de acesso (change pedido-de-acesso): o RH escolhe o perfil e justifica; o Admin aprova ou
+# recusa. O Admin também troca direto (`usuarios/{id}/perfil`).
+# ---------------------------------------------------------------------------
+_SITUACAO_PEDIDO_ACESSO = {"pendente": ("Pendente", "amb"), "aprovada": ("Aprovado", "ok"), "recusada": ("Recusado", "err")}
+
+
+def _data_hora(valor) -> str:
+    try:
+        return datetime.fromisoformat(str(valor).replace("Z", "+00:00")).strftime("%d/%m/%Y")
+    except ValueError:
+        return "—"
+
+
+def linhas_pedidos_acesso(pedidos: list[dict]) -> list[dict]:
+    """{'id', 'usuario_id', 'nome', 'email', 'de', 'para', 'justificativa', 'pedido_por', 'quando', 'situacao', 'decisao',
+    'pendente', 'mudou'}. Pendentes primeiro; `mudou` avisa que o perfil da conta já não é o do momento do pedido."""
+    linhas = []
+    for p in pedidos:
+        status = str(p.get("status") or "pendente").lower()
+        de, para = perfil(p.get("perfil_atual")), perfil(p.get("perfil_solicitado"))
+        decisao = ""
+        if status != "pendente":
+            quem = p.get("decidido_por_nome") or "Admin"
+            decisao = f"{'Aprovado' if status == 'aprovada' else 'Recusado'} por {quem} em {_data_hora(p.get('data_decisao'))}"
+            if status == "recusada" and p.get("motivo_decisao"):
+                decisao += f". Motivo: {p['motivo_decisao']}"
+        linhas.append({
+            "id": p.get("id"), "usuario_id": p.get("usuario_id"), "nome": p.get("nome") or "Conta removida", "email": p.get("email") or "",
+            "de": PERFIS.get(de, de.capitalize() or "—"), "para": PERFIS.get(para, para.capitalize() or "—"),
+            "justificativa": p.get("justificativa") or "", "pedido_por": p.get("solicitante_nome") or "RH",
+            "quando": _data_hora(p.get("created_at")), "situacao": _SITUACAO_PEDIDO_ACESSO.get(status, (status.capitalize(), "neu")),
+            "decisao": decisao, "pendente": status == "pendente",
+            "mudou": status == "pendente" and bool(p.get("perfil_hoje")) and perfil(p.get("perfil_hoje")) != de,
+        })
+    linhas.sort(key=lambda l: not l["pendente"])
+    return linhas
+
+
+def pedidos_da_conta(pedidos: list[dict], usuario_id) -> list[dict]:
+    """As linhas de uma conta, a pendente (se houver) primeiro."""
+    return [l for l in linhas_pedidos_acesso(pedidos) if usuario_id and l["usuario_id"] == usuario_id]
+
+
+def conta_do_colaborador(colab: dict, usuarios_lista: list[dict]) -> dict | None:
+    return next((u for u in usuarios_lista if colab.get("user_id") and u.get("id") == colab.get("user_id")), None)
+
+
+def validar_pedido_acesso(perfil_atual: str, perfil_novo: str | None, justificativa: str) -> str | None:
+    if not perfil_novo:
+        return "Escolha o tipo de acesso."
+    if perfil(perfil_novo) == perfil(perfil_atual):
+        return "A conta já tem esse tipo de acesso."
+    texto = (justificativa or "").strip()
+    if len(texto) < 10:
+        return "Explique ao Admin o motivo do pedido em pelo menos 10 caracteres."
+    if len(texto) > 1000:
+        return "A justificativa pode ter no máximo 1000 caracteres."
+    return None
+
+
+def validar_recusa_acesso(motivo: str) -> str | None:
+    if len((motivo or "").strip()) < 5:
+        return "Explique o motivo da recusa em pelo menos 5 caracteres."
+    return None

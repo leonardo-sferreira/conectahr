@@ -70,7 +70,7 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `historico_gestor_departamento` | F06 | `user` | F01 |
 | `historico_profissional` | F06 | `instrumento_normativo` | F18 |
 | `meta_avaliacao` | F12 | `meta_checkin` | F12 |
-| `notificacao_interna` | F16 | | |
+| `notificacao_interna` | F16 | `solicitacao_acesso` | F01 |
 
 ## Pendências conhecidas
 

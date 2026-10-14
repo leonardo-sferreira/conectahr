@@ -69,6 +69,18 @@ def usuarios():
     ]
 
 
+def pedidos():
+    """Pedidos de alteração de acesso (change pedido-de-acesso): um pendente do Leonardo e um recusado da Paula."""
+    return [
+        {"id": 51, "created_at": "2026-10-13T12:00:00Z", "usuario_id": 1, "colaborador_id": 9, "nome": "Leonardo dos Santos", "email": "leonardo@empresa.com",
+         "perfil_hoje": "Colaborador", "perfil_atual": "Colaborador", "perfil_solicitado": "Gestor", "justificativa": "Assume a coordenação do time de TI.",
+         "status": "pendente", "solicitante_user_id": 2, "solicitante_nome": "Ana Ribeiro"},
+        {"id": 50, "created_at": "2026-10-10T12:00:00Z", "usuario_id": 4, "nome": "Paula Mendes", "email": "paula.mendes@empresa.com", "perfil_hoje": "RH",
+         "perfil_atual": "RH", "perfil_solicitado": "Admin", "justificativa": "Precisa configurar as regras.", "status": "recusada", "solicitante_user_id": 2,
+         "solicitante_nome": "Ana Ribeiro", "decidido_por_nome": "Marina Costa", "data_decisao": "2026-10-11T15:00:00Z", "motivo_decisao": "Admin só para a TI."},
+    ]
+
+
 def _falha_ou(chave, resposta):
     erro = estado.get("erro_" + chave)
     if erro:
@@ -106,6 +118,10 @@ def _instalar():
         return {"sucesso": True, "usuario": {"id": 30, "email": email}, "email_enviado": estado.get("email_enviado", True)}
     api_client.criar_usuario = _criar
     api_client.trocar_perfil = lambda token, uid, p: chamadas.append(("perfil", uid, p)) or _falha_ou("perfil", {"sucesso": True})
+    api_client.solicitacoes_acesso = lambda token: chamadas.append(("pedidos",)) or _falha_ou("pedidos", {"solicitacoes": estado.get("pedidos", pedidos())})
+    api_client.pedir_acesso = lambda token, uid, p, j: chamadas.append(("pedir", uid, p, j)) or _falha_ou("pedir", {"sucesso": True})
+    api_client.aprovar_pedido_acesso = lambda token, pid: chamadas.append(("aprovar_acesso", pid)) or _falha_ou("aprovar_acesso", {"sucesso": True})
+    api_client.recusar_pedido_acesso = lambda token, pid, motivo: chamadas.append(("recusar_acesso", pid, motivo)) or _falha_ou("recusar_acesso", {"sucesso": True})
     api_client.alterar_status_usuario = lambda token, uid, ativo: chamadas.append(("status", uid, ativo)) or _falha_ou("status", {"sucesso": True})
     api_client.vincular_colaborador = lambda token, uid, cid: chamadas.append(("vincular", uid, cid)) or _falha_ou("vincular", {"sucesso": True})
 
@@ -251,7 +267,7 @@ adm = next((c[1] for c in chamadas if c[0] == "admitir"), {})
 conferir(any("7 documentos obrigatórios pedidos" in str(e.value) for e in at.get("toast")) or "7 documentos obrigatórios pedidos" in str(at.session_state["aviso_toast"] if "aviso_toast" in at.session_state else ""), "o aviso da admissão diz quantos documentos obrigatórios foram pedidos")
 conferir(adm.get("cpf") == "39053344705" and adm.get("departamento_id") == 2 and adm.get("salario") == 3500.0 and adm.get("nivel") == "l1", "admitir envia o cadastro completo")
 conferir(at.session_state["modal_cadastro"] == ("acesso", 20) and at.selectbox(key="acesso_colab").value == 20, "depois de admitir, abre 'Criar acesso' com a pessoa escolhida")
-conferir("acesso_perfil" not in [r.key for r in at.radio], "RH não escolhe perfil: a conta nasce Colaborador")
+conferir(at.radio(key="acesso_perfil").value == "COLABORADOR", "'Criar acesso' traz o tipo de acesso escolhido na admissão (Colaborador)")
 at.text_input(key="acesso_email").set_value("juliana.prado@empresa.com")
 at.button(key="acesso_ok").click()
 at = at.run()
@@ -278,6 +294,104 @@ at.text_input(key="acesso_email").set_value("paula.mendes2@empresa.com")
 at.button(key="acesso_ok").click()
 at = at.run()
 conferir(any(c[0] == "criar" for c in chamadas) and "Esqueci minha senha" in str(at.session_state["aviso_toast"] if "aviso_toast" in at.session_state else [x.value for x in at.toast]), "e-mail não enviado: orienta 'Esqueci minha senha'")
+
+caso("Tipo de acesso: Admin troca direto; RH pede ao Admin (change pedido-de-acesso)")
+lp = m.linhas_pedidos_acesso(pedidos())
+conferir([l["id"] for l in lp] == [51, 50] and lp[0]["de"] == "Colaborador" and lp[0]["para"] == "Gestor" and lp[0]["pendente"] and not lp[0]["mudou"], "pendente primeiro, com de → para")
+conferir(lp[1]["situacao"] == ("Recusado", "err") and lp[1]["decisao"] == "Recusado por Marina Costa em 11/10/2026. Motivo: Admin só para a TI.", "recusado com quem decidiu e o motivo")
+conferir(m.linhas_pedidos_acesso([dict(pedidos()[0], perfil_hoje="RH")])[0]["mudou"], "avisa quando o perfil da conta mudou depois do pedido")
+conferir(m.validar_pedido_acesso("COLABORADOR", None, "") == "Escolha o tipo de acesso." and m.validar_pedido_acesso("GESTOR", "GESTOR", "x" * 20) == "A conta já tem esse tipo de acesso."
+         and "10 caracteres" in m.validar_pedido_acesso("COLABORADOR", "GESTOR", "curto") and m.validar_pedido_acesso("COLABORADOR", "GESTOR", "Assume a coordenação.") is None, "validação do pedido")
+conferir(m.validar_recusa_acesso("não") is not None and m.validar_recusa_acesso("Fora da política.") is None, "recusa exige motivo")
+# Admissão escolhe o tipo de acesso; o RH com Gestor manda o pedido junto com a conta.
+at = app("RH")
+at.button(key="col_admitir").click()
+at = at.run()
+preencher_admissao(at)
+at.radio(key="adm_acesso").set_value("GESTOR")
+at.button(key="adm_ok").click()
+at = at.run()
+conferir(at.radio(key="acesso_perfil").value == "GESTOR" and at.text_area(key="acesso_justificativa") is not None, "admissão com Gestor: 'Criar acesso' já vem com Gestor e pede a justificativa")
+at.text_input(key="acesso_email").set_value("juliana.prado@empresa.com")
+at.button(key="acesso_ok").click()
+at = at.run()
+conferir("10 caracteres" in texto(at) and not any(c[0] == "criar" for c in chamadas), "sem justificativa: mensagem, sem criar a conta")
+at.text_area(key="acesso_justificativa").set_value("Vai coordenar o time de suporte.")
+at.button(key="acesso_ok").click()
+at = at.run()
+conferir(any(c[0] == "criar" for c in chamadas) and ("pedir", 30, "GESTOR", "Vai coordenar o time de suporte.") in chamadas and not any(c[0] == "perfil" for c in chamadas),
+         "RH: cria a conta como Colaborador e manda o pedido de Gestor ao Admin, sem trocar o perfil")
+conferir("foi para o Admin" in str(at.session_state["aviso_toast"] if "aviso_toast" in at.session_state else [x.value for x in at.toast]), "o aviso diz que o pedido foi para o Admin")
+# Ficha: RH pede; com pedido pendente, o botão fica desligado.
+at = app("RH", pedidos=[])
+at.button(key="col_ficha_9").click()
+at = at.run()
+conferir("Tipo de acesso: Colaborador" in texto(at) and "col_pedir_acesso" in chaves(at) and "col_alterar_acesso" not in chaves(at), "RH vê o acesso da conta e 'Solicitar alteração de acesso'")
+at.button(key="col_pedir_acesso").click()
+at = at.run()
+conferir("COLABORADOR" not in at.radio(key="ac_novo").options and "Colaborador" not in at.radio(key="ac_novo").options, "o modal não oferece o perfil que a conta já tem")
+at.radio(key="ac_novo").set_value("GESTOR")
+at.button(key="ac_ok").click()
+at = at.run()
+conferir("10 caracteres" in texto(at) and not any(c[0] == "pedir" for c in chamadas), "pedido sem justificativa: mensagem, sem chamar a API")
+at.text_area(key="ac_justificativa").set_value("Assume a coordenação do time de TI.")
+at.button(key="ac_ok").click()
+at = at.run()
+conferir(("pedir", 1, "GESTOR", "Assume a coordenação do time de TI.") in chamadas and "modal_cadastro" not in at.session_state, "envia o pedido ao Admin e fecha")
+at = app("RH")
+at.button(key="col_ficha_9").click()
+at = at.run()
+conferir("pedido pendente para Gestor (13/10/2026)" in texto(at) and at.button(key="col_pedir_acesso").disabled, "com pedido pendente, a ficha mostra e o botão fica desligado")
+at = app("RH", erro_pedir=ApiError("Ja existe um pedido de alteracao de acesso pendente para esta conta.", 400), pedidos=[])
+at.button(key="col_ficha_9").click()
+at = at.run()
+at.button(key="col_pedir_acesso").click()
+at = at.run()
+at.radio(key="ac_novo").set_value("RH")
+at.text_area(key="ac_justificativa").set_value("Vai apoiar o RH na admissão.")
+at.button(key="ac_ok").click()
+at = at.run()
+conferir("pedido de alteracao de acesso pendente" in texto(at) and "modal_cadastro" in at.session_state, "recusa do backend no modal, que continua aberto")
+at = app("RH")
+at.button(key="col_ficha_7").click()
+at = at.run()
+conferir("col_pedir_acesso" not in chaves(at), "ninguém pede para a própria conta")
+# Admin: troca direto pela ficha.
+at = app("ADMIN")
+at.button(key="col_ficha_9").click()
+at = at.run()
+conferir("col_alterar_acesso" in chaves(at) and "col_pedir_acesso" not in chaves(at), "Admin tem 'Alterar acesso' na ficha")
+at.button(key="col_alterar_acesso").click()
+at = at.run()
+conferir("Pedido pendente do RH: Colaborador → Gestor" in texto(at) and "ac_justificativa" not in [t.key for t in at.text_area], "o Admin vê o pedido pendente e não precisa justificar")
+at.radio(key="ac_novo").set_value("RH")
+at.button(key="ac_ok").click()
+at = at.run()
+conferir(("perfil", 1, "RH") in chamadas and not any(c[0] == "pedir" for c in chamadas), "Admin troca o perfil na hora")
+# Admin: aprova ou recusa em Usuários e perfis.
+at = app("ADMIN", "usuarios-e-perfis")
+t = texto(at)
+conferir("Pedidos de alteração de acesso (1)" in t and "Leonardo dos Santos: Colaborador → Gestor" in t and "Assume a coordenação" in t, "Usuários e perfis lista o pedido pendente com a justificativa")
+conferir({"usr_ped_ap_51", "usr_ped_rec_51"} <= chaves(at) and "Histórico de pedidos (1)" in [e.label for e in at.expander], "Aprovar, Recusar e o histórico")
+at.button(key="usr_ped_ap_51").click()
+at = at.run()
+at.button(key="usr_ap_ok").click()
+at = at.run()
+conferir(("aprovar_acesso", 51) in chamadas and "modal_cadastro" not in at.session_state, "aprova depois de confirmar")
+at = app("ADMIN", "usuarios-e-perfis")
+at.button(key="usr_ped_rec_51").click()
+at = at.run()
+at.button(key="usr_rec_ok").click()
+at = at.run()
+conferir("5 caracteres" in texto(at) and not any(c[0] == "recusar_acesso" for c in chamadas), "recusar sem motivo: mensagem")
+at.text_area(key="usr_rec_motivo").set_value("Gestor só depois da promoção.")
+at.button(key="usr_rec_ok").click()
+at = at.run()
+conferir(("recusar_acesso", 51, "Gestor só depois da promoção.") in chamadas, "recusa com o motivo")
+at = app("ADMIN", "usuarios-e-perfis", pedidos=[dict(pedidos()[0], usuario_id=3, nome="Marina Costa")])
+conferir("usr_ped_ap_51" not in chaves(at) and "outro Admin decide" in texto(at), "pedido sobre a própria conta: outro Admin decide")
+at = app("ADMIN", "usuarios-e-perfis", erro_pedidos=ApiError("Erro inesperado.", 500))
+conferir("Os pedidos de acesso não carregaram agora" in texto(at) and "usr_vinc_4" in chaves(at), "sem os pedidos, a tela de usuários continua")
 
 caso("Usuários e perfis (Figma 246:612)")
 at = app("ADMIN", "usuarios-e-perfis")

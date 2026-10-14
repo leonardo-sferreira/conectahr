@@ -13,9 +13,10 @@ import html
 
 import streamlit as st
 
-from api_client import ApiError, alterar_status_usuario, trocar_perfil, vincular_colaborador
-from cadastro_modelo import PERFIS, SITUACOES_USUARIO, fichas_sem_conta, linhas_usuarios, perfil, resumo_usuarios
-from pagina_colaboradores import carregar, concluir, fechar, modal_criar_acesso
+from api_client import ApiError, alterar_status_usuario, aprovar_pedido_acesso, recusar_pedido_acesso, trocar_perfil, vincular_colaborador
+from cadastro_modelo import (PERFIS, SITUACOES_USUARIO, fichas_sem_conta, linhas_pedidos_acesso, linhas_usuarios, perfil, resumo_usuarios,
+                             validar_recusa_acesso)
+from pagina_colaboradores import carregar, concluir, fechar, modal_criar_acesso, pedidos_acesso
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
 
@@ -88,6 +89,69 @@ def _modal_desativar(linha: dict) -> None:
             alerta(slot, "erro", erro.message)
             return
         concluir(f"Conta de {linha['nome']} desativada.")
+
+
+@st.dialog("Aprovar pedido de acesso", width="small", on_dismiss=fechar)
+def _modal_aprovar_acesso(linha: dict) -> None:
+    _campos([("Conta", f"{linha['nome']} · {linha['email']}"), ("De → para", f"{linha['de']} → {linha['para']}"),
+             ("Pedido por", f"{linha['pedido_por']} em {linha['quando']}"), ("Justificativa", linha["justificativa"])])
+    if linha["mudou"]:
+        st.html('<p class="crh-nota-ambar">O perfil da conta mudou depois do pedido. Aprovar troca para o perfil pedido mesmo assim.</p>')
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O perfil é trocado na hora e vale no próximo login. O RH e a pessoa são avisados.</p></div>')
+    slot = st.empty()
+    if _botoes("Aprovar e trocar o perfil", "usr_ap_ok"):
+        try:
+            aprovar_pedido_acesso(st.session_state.token, linha["id"])
+        except ApiError as erro:
+            alerta(slot, "erro", erro.message)
+            return
+        concluir(f"Acesso de {linha['nome']} alterado para {linha['para']}.")
+
+
+@st.dialog("Recusar pedido de acesso", width="small", on_dismiss=fechar)
+def _modal_recusar_acesso(linha: dict) -> None:
+    _campos([("Conta", linha["nome"]), ("Pedido", f"{linha['de']} → {linha['para']}"), ("Justificativa", linha["justificativa"])])
+    motivo = st.text_area("Motivo da recusa", max_chars=1000, height=80, key="usr_rec_motivo", help="Vai para o RH que pediu.")
+    slot = st.empty()
+    if _botoes("Recusar", "usr_rec_ok"):
+        if erro_campo := validar_recusa_acesso(motivo):
+            alerta(slot, "erro", erro_campo)
+            return
+        try:
+            recusar_pedido_acesso(st.session_state.token, linha["id"], motivo.strip())
+        except ApiError as erro:
+            alerta(slot, "erro", erro.message)
+            return
+        st.session_state.pop("usr_rec_motivo", None)
+        concluir(f"Pedido de acesso de {linha['nome']} recusado.")
+
+
+def _pedidos(linhas: list[dict], meu_id) -> None:
+    """Pedidos de alteração de acesso do RH (change pedido-de-acesso): os pendentes com Aprovar e Recusar; o resto no histórico."""
+    pendentes = [l for l in linhas if l["pendente"]]
+    st.html(f'<p class="crh-bloco-titulo">Pedidos de alteração de acesso ({len(pendentes)})</p>')
+    if not pendentes:
+        st.html('<p class="crh-meta">Nenhum pedido pendente do RH.</p>')
+    for l in pendentes:
+        with st.container(horizontal=True, vertical_alignment="center", key=f"usr_ped_{l['id']}"):
+            st.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["nome"])}: {html.escape(l["de"])} → {html.escape(l["para"])}</p>'
+                    f'<p class="d">{html.escape(l["pedido_por"])} em {html.escape(l["quando"])} · {html.escape(l["justificativa"])}</p></div>', width="stretch")
+            if l["usuario_id"] == meu_id:
+                st.html('<p class="crh-meta">Sua conta: outro Admin decide</p>', width="content")
+                continue
+            if st.button("Aprovar", type="tertiary", key=f"usr_ped_ap_{l['id']}"):
+                st.session_state.modal_cadastro = ("aprovar_acesso", l["id"])
+                st.rerun()
+            if st.button("Recusar", type="tertiary", key=f"usr_ped_rec_{l['id']}"):
+                st.session_state.modal_cadastro = ("recusar_acesso", l["id"])
+                st.rerun()
+    decididos = [l for l in linhas if not l["pendente"]]
+    if decididos:
+        with st.expander(f"Histórico de pedidos ({len(decididos)})", key="usr_ped_hist"):
+            for l in decididos:
+                st.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["nome"])}: {html.escape(l["de"])} → {html.escape(l["para"])} '
+                        f'<span class="crh-selo {l["situacao"][1]}">{html.escape(l["situacao"][0])}</span></p>'
+                        f'<p class="d">Pedido por {html.escape(l["pedido_por"])} em {html.escape(l["quando"])} · {html.escape(l["decisao"])}</p></div>')
 
 
 def _tabela(linhas: list[dict], token: str) -> None:
@@ -170,6 +234,12 @@ def pagina_usuarios() -> None:
 
     if erro_acao := st.session_state.pop("usr_erro", None):
         alerta(st.empty(), "erro", erro_acao)
+    pedidos = pedidos_acesso(token)
+    linhas_pedidos = linhas_pedidos_acesso(pedidos) if isinstance(pedidos, list) else []
+    if isinstance(pedidos, str):
+        alerta(st.empty(), "atencao", f"Os pedidos de acesso não carregaram agora: {pedidos}")
+    else:
+        _pedidos(linhas_pedidos, usuario.get("id"))
     linhas = linhas_usuarios(lista, colabs, usuario.get("id"), meu_perfil, busca, filtro, situacao)
     _tabela(linhas, token)
     st.html('<p class="crh-meta">Toda troca de perfil, desativação e vínculo fica na auditoria. Ninguém troca o próprio perfil nem vincula a própria conta. Conta sem ficha não marca ponto nem pede férias: use "Vincular ficha".</p>')
@@ -180,6 +250,15 @@ def pagina_usuarios() -> None:
     acao, alvo = modal
     if acao == "acesso":
         modal_criar_acesso(colabs, deps, alvo)
+        return
+    if acao in ("aprovar_acesso", "recusar_acesso"):
+        pedido = next((l for l in linhas_pedidos if l["id"] == alvo and l["pendente"] and l["usuario_id"] != usuario.get("id")), None)
+        if pedido is None:
+            fechar()
+        elif acao == "aprovar_acesso":
+            _modal_aprovar_acesso(pedido)
+        else:
+            _modal_recusar_acesso(pedido)
         return
     linha = next((l for l in linhas_usuarios(lista, colabs, usuario.get("id"), meu_perfil) if l["id"] == alvo), None)
     if linha is None:
