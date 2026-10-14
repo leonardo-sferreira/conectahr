@@ -103,7 +103,30 @@ def _instalar():
         return {"sucesso": True}
 
     api_client.salvar_contato_endereco = _salvar_contato
+
     api_client.solicitar_alteracao_cadastral = lambda token, descricao: chamadas.append(("alteracao", descricao)) or _falha_ou("alteracao", {"sucesso": True})
+
+
+
+# Busca de CEP (pedido de 13/10/2026) sem rede: a página importa `cep.consultar` ao carregar, então a troca vem antes.
+import cep  # noqa: E402
+
+CEPS = {"20040002": {"logradouro": "Avenida Rio Branco", "bairro": "Centro", "cidade": "Rio de Janeiro", "estado": "RJ"},
+        "01001000": {"logradouro": "Praça da Sé", "bairro": "Sé", "cidade": "São Paulo", "estado": "SP"},
+        "78890000": {"logradouro": "", "bairro": "", "cidade": "Sorriso", "estado": "MT"}}
+
+
+def _consultar_cep_teste(valor):
+    chamadas.append(("cep", cep.digitos(valor)))
+    d = cep.digitos(valor)
+    if len(d) != 8:
+        raise cep.CepErro("O CEP tem 8 números.")
+    if d not in CEPS:
+        raise cep.CepErro("CEP não encontrado. Confira os números ou preencha o endereço.")
+    return dict(CEPS[d])
+
+
+cep.consultar = _consultar_cep_teste
 
 
 _instalar()
@@ -200,7 +223,13 @@ at.button(key="pf_contato_salvar").click()
 at = at.run()
 conferir("Telefone com DDD" in texto(at) and "CEP com 8 números" in texto(at) and not any(c[0] == "contato" for c in chamadas), "dados inválidos: mensagem no modal, sem chamar a API")
 at.text_input(key="pf_ct_telefone").set_value("(21) 98888-7777")
-at.text_input(key="pf_ct_cep").set_value("20040-002")
+at.text_input(key="pf_ct_numero").set_value("100")
+at.text_input(key="pf_ct_cep").set_value("20040002")
+at = at.run()
+conferir(("cep", "20040002") in chamadas and at.text_input(key="pf_ct_logradouro").value == "Avenida Rio Branco" and at.text_input(key="pf_ct_bairro").value == "Centro"
+         and at.text_input(key="pf_ct_cidade").value == "Rio de Janeiro" and at.selectbox(key="pf_ct_estado").value == "RJ" and at.text_input(key="pf_ct_cep").value == "20040-002",
+         "CEP preenche logradouro, bairro, cidade e UF, e formata o CEP")
+conferir(at.text_input(key="pf_ct_numero").value == "100" and "Endereço encontrado pelo CEP" in texto(at), "número digitado continua; aviso para conferir")
 at.text_input(key="pf_ct_logradouro").set_value("Av. Rio Branco ")
 at.text_input(key="pf_ct_numero").set_value("100")
 at.text_input(key="pf_ct_cidade").set_value("Rio de Janeiro")
@@ -212,6 +241,16 @@ conferir(enviado.get("telefone") == "(21) 98888-7777" and enviado.get("logradour
 conferir(set(enviado) == {"telefone", "email_pessoal", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"}, "envia só contato e endereço (nada de nome, CPF ou id)")
 conferir("modal_perfil" not in at.session_state and "(21) 98888-7777" in texto(at) and "Av. Rio Branco, 100 — Centro, Rio de Janeiro/RJ" in texto(at), "o modal fecha e o cartão mostra o contato novo")
 conferir(not any(c[0] == "alteracao" for c in chamadas), "sem pedido ao RH")
+at = app()
+at.button(key="pf_btn_contato").click()
+at = at.run()
+at.text_input(key="pf_ct_cep").set_value("00000-000")
+at = at.run()
+conferir("CEP não encontrado" in texto(at) and not at.exception, "CEP inexistente: aviso, e o endereço continua editável")
+at.text_input(key="pf_ct_cep").set_value("78890-000")
+at = at.run()
+conferir(at.text_input(key="pf_ct_cidade").value == "Sorriso" and at.selectbox(key="pf_ct_estado").value == "MT" and "a rua, o bairro e o número" in texto(at),
+         "CEP geral de cidade: preenche cidade e UF e pede a rua e o bairro")
 at = app(erro_contato=ApiError("Este e-mail pessoal já pertence a outro colaborador.", 400))
 at.button(key="pf_btn_contato").click()
 at = at.run()
