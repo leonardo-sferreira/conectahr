@@ -144,6 +144,7 @@ api_client.aprovar_correcao_ponto = lambda token, cid: chamadas.append(("aprovar
 api_client.rejeitar_correcao_ponto = lambda token, cid, mot: chamadas.append(("rejeitar", cid, mot)) or _falha_ou("decidir", {"sucesso": True})
 api_client.colaboradores = lambda token: {"colaboradores": [dict(c, departamento_id=2, cargo_id=2) for c in colabs]}
 api_client.usuarios = lambda token: {"usuarios": []}
+api_client.documentos_rh = lambda token: {"documentos": []}  # ficha do colaborador (13/10/2026)
 api_client.definir_superior = lambda token, cid, sup: chamadas.append(("superior", cid, sup)) or _falha_ou("superior", {"sucesso": True})
 
 USUARIOS = {
@@ -223,7 +224,8 @@ at = at.run()
 conferir(("rejeitar", 77, "Não confere com a portaria.") in chamadas, "recusar com motivo")
 ultimo = UTEIS[-1]
 at = ajustar_dia(at, ultimo)
-conferir(at.selectbox(key="fp_aj_celula").options == ["Ent. 1 · vazia"], "dia sem marcação: só a célula Ent. 1, para incluir")
+conferir(at.selectbox(key="fp_aj_celula").options == ["Ent. 1 · vazia", "Saí. 1 · vazia", "Ent. 2 · vazia", "Saí. 2 · vazia"],
+         "dia sem marcação: as células ficam livres, de Ent. 1 a Saí. 2, para incluir")
 at.selectbox(key="fp_aj_celula").set_value(0)
 at = at.run()
 at.time_input(key="fp_aj_hora").set_value(time(8, 0))

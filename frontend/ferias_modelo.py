@@ -129,6 +129,14 @@ def resumo(situacao: dict, hoje: date) -> dict:
     }
 
 
+def primeiro_inicio(situacao: dict, hoje: date) -> date:
+    """O primeiro dia em que as férias podem começar: `primeiro_inicio_possivel` do backend (hoje + antecedência) ou,
+    sem ele, hoje + a antecedência informada. O calendário do pedido abre nesse mês."""
+    if dia := _dia_iso(situacao.get("primeiro_inicio_possivel")):
+        return max(dia, hoje)
+    return hoje + timedelta(days=int(situacao.get("antecedencia_minima_dias") or 0))
+
+
 def resumo_do_pedido(situacao: dict, inicio: date | None, fim: date | None, abono: int = 0) -> list[tuple[str, str]]:
     """Linhas do quadro do modal: dias pedidos, vendidos, saldo agora e o que sobra, e qual período é."""
     dias = dias_do_periodo(inicio, fim)
