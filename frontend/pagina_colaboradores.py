@@ -10,6 +10,11 @@ na tela Usuários e perfis. Endpoints: `colaboradores`, `organograma` e `usuario
 Ficha (pedido do usuário em 13/10/2026): dados pessoais, endereço, vínculo e conta bancária (mascarada; sem salário),
 os documentos enviados pela pessoa (`documentos`, com a seta "Ver dados e arquivo" da Conferência) e "Baixar ficha em
 PDF" (`ficha_colaborador.ficha_pdf`).
+
+Tipo de acesso (change pedido-de-acesso): a admissão já escolhe o perfil, que "Criar acesso" traz marcado. O Admin
+cria com o perfil e troca direto pela ficha ("Alterar acesso"); o RH, quando escolhe um perfil diferente de
+Colaborador, manda um pedido com justificativa ao Admin (`solicitacoes_acesso`), que aprova ou recusa em Usuários e
+perfis. A ficha mostra o perfil da conta e o pedido pendente.
 """
 
 import html
@@ -18,7 +23,8 @@ from datetime import date, datetime
 
 import streamlit as st
 
-from api_client import ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, documentos_rh, organograma, trocar_perfil, usuarios
+from api_client import (ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, documentos_rh, organograma, pedir_acesso,
+                        solicitacoes_acesso, trocar_perfil, usuarios)
 from cadastro_modelo import (
     CONTRATOS,
     JORNADA_SEMANAL,
@@ -26,14 +32,17 @@ from cadastro_modelo import (
     PERFIS,
     SITUACOES_COLAB,
     candidatos_superior,
+    conta_do_colaborador,
     corpo_admissao,
     fichas_sem_conta,
     linhas_colaboradores,
+    pedidos_da_conta,
     perfil,
     resumo_colaboradores,
     senha_temporaria,
     validar_admissao,
     validar_novo_usuario,
+    validar_pedido_acesso,
 )
 from cargos_modelo import cargos_do_departamento, rotulo_cargo
 from ficha_colaborador import documentos_da_pessoa, ficha_pdf, nome_arquivo_ficha, secoes
@@ -42,6 +51,21 @@ from theme import alerta, render_hero, render_topbar
 
 CACHE = "cadastro_cache"
 _VALIDADE_CACHE_S = 20
+_CACHE_PEDIDOS = "pedidos_acesso_cache"
+_AJUDA_PEDIDO = "Só o Admin libera outro tipo de acesso. Diga por que a pessoa precisa dele (ex.: assume a coordenação da equipe)."
+
+
+def pedidos_acesso(token: str) -> list[dict] | str:
+    """Os pedidos de alteração de acesso (`solicitacoes_acesso`), guardados por 20 s; a mensagem do erro, se falhar."""
+    guardado = st.session_state.get(_CACHE_PEDIDOS)
+    if guardado and time.time() - guardado["em"] < _VALIDADE_CACHE_S:
+        return guardado["dados"]
+    try:
+        dados = solicitacoes_acesso(token).get("solicitacoes") or []
+    except ApiError as erro:
+        return erro.message
+    st.session_state[_CACHE_PEDIDOS] = {"em": time.time(), "dados": dados}
+    return dados
 
 
 def carregar(token: str) -> dict:
@@ -68,6 +92,7 @@ def fechar() -> None:
 
 def concluir(aviso: str) -> None:
     st.session_state.pop(CACHE, None)
+    st.session_state.pop(_CACHE_PEDIDOS, None)
     fechar()
     st.session_state.aviso_toast = aviso
     st.rerun()
@@ -114,6 +139,8 @@ def _modal_admitir(org: dict) -> None:
     dados["carga_horaria_semanal"] = c2.number_input("Carga horária semanal", min_value=1.0, max_value=60.0, value=JORNADA_SEMANAL["CLT"], step=1.0, key="adm_carga",
                                                  help="Vem do contrato (CLT 44h, estágio e aprendiz 30h); PJ não tem jornada definida. Dá para ajustar.")
     dados["salario"] = st.number_input("Salário (R$)", min_value=0.0, value=None, step=100.0, format="%.2f", key="adm_salario")
+    acesso = st.radio("Tipo de acesso", list(PERFIS), format_func=PERFIS.get, horizontal=True, key="adm_acesso",
+                      help="A conta é criada no passo seguinte (Criar acesso). Outro tipo além de Colaborador vai como pedido ao Admin.")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="adm_cancelar"):
@@ -137,14 +164,16 @@ def _modal_admitir(org: dict) -> None:
             docs = f" {pedidos} documento{'s' if pedidos != 1 else ''} obrigatório{'s' if pedidos != 1 else ''} pedido{'s' if pedidos != 1 else ''}." if pedidos else ""
             st.session_state.aviso_toast = f"{dados['nome'].strip()} admitido(a).{docs} Agora crie o acesso."
             st.session_state.modal_cadastro = ("acesso", novo_id) if novo_id else None
+            st.session_state.acesso_perfil = acesso
             st.rerun()
 
 
 @st.dialog("Criar acesso", width="small", on_dismiss=fechar)
 def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> None:
-    """Figma 246:1245 ("Novo usuário"). A conta nasce Colaborador; só o Admin escolhe outro perfil, que o
-    backend aplica em seguida (`usuarios/{id}/perfil`). A senha temporária é sorteada aqui e vai só por
-    e-mail: quem cria a conta não a vê."""
+    """Figma 246:1245 ("Novo usuário"). A conta nasce Colaborador. O Admin escolhe outro perfil, que o backend aplica em
+    seguida (`usuarios/{id}/perfil`); o RH também escolhe, e o perfil diferente de Colaborador vira um pedido com
+    justificativa ao Admin (`solicitacoes_acesso`). A senha temporária é sorteada aqui e vai só por e-mail: quem cria a
+    conta não a vê."""
     sem_conta = {c.get("id"): c for c in fichas_sem_conta(colabs)}
     # Filtro de departamento: só os departamentos que têm ficha sem conta; aberto pela ficha, já vem com o dela.
     deps_com_ficha = sorted({c.get("departamento_id") for c in sem_conta.values() if c.get("departamento_id")}, key=lambda d: deps.get(d) or "")
@@ -157,9 +186,12 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
                          placeholder="Escolha a pessoa (só fichas sem conta)" if ids else "Nenhuma ficha sem conta neste departamento", key="acesso_colab")
     email = st.text_input("E-mail de acesso", max_chars=120, placeholder="nome@empresa.com", key="acesso_email")
     admin = perfil(st.session_state.usuario.get("perfil")) == "ADMIN"
-    escolhido = "COLABORADOR"
-    if admin:
-        escolhido = st.radio("Perfil", list(PERFIS), format_func=PERFIS.get, key="acesso_perfil")
+    escolhido = st.radio("Tipo de acesso", list(PERFIS), format_func=PERFIS.get, horizontal=True, key="acesso_perfil")
+    justificativa = ""
+    if not admin and escolhido != "COLABORADOR":
+        st.html('<div class="crh-incluso"><p class="n" style="margin:0">A conta nasce Colaborador, e o pedido de '
+                f'{html.escape(PERFIS[escolhido])} vai para o Admin aprovar.</p></div>')
+        justificativa = st.text_area("Justificativa para o Admin", max_chars=1000, height=80, key="acesso_justificativa", help=_AJUDA_PEDIDO)
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="acesso_cancelar"):
@@ -167,6 +199,8 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
             st.rerun()
         if st.button("Criar usuário", type="primary", key="acesso_ok"):
             erro_campo = validar_novo_usuario(colab, email)
+            if not erro_campo and not admin and escolhido != "COLABORADOR":
+                erro_campo = validar_pedido_acesso("COLABORADOR", escolhido, justificativa)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
@@ -177,19 +211,70 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
                 return
             nome = sem_conta[colab].get("nome")
             aviso = f"Acesso de {nome} criado."
-            if escolhido != "COLABORADOR":
+            novo_usuario = (resposta.get("usuario") or {}).get("id")
+            if escolhido != "COLABORADOR" and admin:
                 try:
-                    trocar_perfil(st.session_state.token, (resposta.get("usuario") or {}).get("id"), escolhido)
+                    trocar_perfil(st.session_state.token, novo_usuario, escolhido)
                     aviso += f" Perfil: {PERFIS[escolhido]}."
                 except ApiError as erro:
                     aviso += f" O perfil continuou Colaborador: {erro.message}"
+            elif escolhido != "COLABORADOR":
+                try:
+                    pedir_acesso(st.session_state.token, novo_usuario, escolhido, justificativa.strip())
+                    aviso += f" O pedido de acesso {PERFIS[escolhido]} foi para o Admin."
+                except ApiError as erro:
+                    aviso += f" O pedido de acesso {PERFIS[escolhido]} não foi enviado ({erro.message}); peça pela ficha."
             if resposta.get("email_enviado") is False:
                 aviso += ' O e-mail com a senha não saiu: peça à pessoa para usar "Esqueci minha senha" na tela Entrar.'
             else:
                 aviso += " A senha temporária foi por e-mail."
-            for chave in ("acesso_dep", "acesso_colab", "acesso_email", "acesso_perfil"):
+            for chave in ("acesso_dep", "acesso_colab", "acesso_email", "acesso_perfil", "acesso_justificativa"):
                 st.session_state.pop(chave, None)
             concluir(aviso)
+
+
+@st.dialog("Tipo de acesso", width="small", on_dismiss=fechar)
+def _modal_acesso(colab: dict, conta: dict, pendente: dict | None) -> None:
+    """Admin: troca o perfil na hora. RH: pede ao Admin, com justificativa (change pedido-de-acesso)."""
+    admin = perfil(st.session_state.usuario.get("perfil")) == "ADMIN"
+    atual = perfil(conta.get("perfil"))
+    st.html('<div class="crh-campos crh-campos-direita">'
+            f'<p class="r">Pessoa</p><p class="v">{html.escape(colab.get("nome") or "")}</p>'
+            f'<p class="r">Acesso atual</p><p class="v">{html.escape(PERFIS.get(atual, atual.capitalize() or "—"))}</p></div>')
+    if pendente:
+        st.html(f'<p class="crh-nota-ambar">Pedido pendente do RH: {html.escape(pendente["de"])} → {html.escape(pendente["para"])}, '
+                f'enviado por {html.escape(pendente["pedido_por"])} em {html.escape(pendente["quando"])}.'
+                + (" Ele continua pendente: decida em Usuários e perfis." if admin else "") + "</p>")
+    opcoes = [p for p in PERFIS if p != atual]
+    novo = st.radio("Novo tipo de acesso", opcoes, format_func=PERFIS.get, key="ac_novo")
+    justificativa = ""
+    if not admin:
+        justificativa = st.text_area("Justificativa para o Admin", max_chars=1000, height=90, key="ac_justificativa", help=_AJUDA_PEDIDO)
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">'
+            + ("A troca vale no próximo login da pessoa e fica na auditoria." if admin else "O Admin recebe o pedido, aprova ou recusa; você é avisado no sino.")
+            + "</p></div>")
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="ac_cancelar"):
+            fechar()
+            st.rerun()
+        if st.button("Alterar acesso" if admin else "Enviar pedido ao Admin", type="primary", key="ac_ok"):
+            erro_campo = None if admin else validar_pedido_acesso(atual, novo, justificativa)
+            if erro_campo:
+                alerta(slot, "erro", erro_campo)
+                return
+            try:
+                if admin:
+                    trocar_perfil(st.session_state.token, conta.get("id"), novo)
+                else:
+                    pedir_acesso(st.session_state.token, conta.get("id"), novo, justificativa.strip())
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            for chave in ("ac_novo", "ac_justificativa"):
+                st.session_state.pop(chave, None)
+            nome = colab.get("nome") or ""
+            concluir(f"Acesso de {nome} alterado para {PERFIS[novo]}." if admin else f"Pedido de acesso {PERFIS[novo]} para {nome} enviado ao Admin.")
 
 
 # ---------------------------------------------------------------------------
@@ -276,8 +361,32 @@ def _ficha(colab: dict, dados: dict) -> None:
             for coluna, (titulo, campos) in zip(st.columns(2), linha):
                 with coluna:
                     _bloco(titulo, campos)
+        conta = conta_do_colaborador(colab, dados["usuarios"])
+        admin = perfil(st.session_state.usuario.get("perfil")) == "ADMIN"
+        pendente = None
+        if conta:
+            pedidos = pedidos_acesso(token)
+            da_conta = pedidos_da_conta(pedidos, conta.get("id")) if isinstance(pedidos, list) else []
+            pendente = next((p for p in da_conta if p["pendente"]), None)
+            atual = perfil(conta.get("perfil"))
+            texto = f"Tipo de acesso: {PERFIS.get(atual, atual.capitalize() or '—')}"
+            if pendente:
+                texto += f" · pedido pendente para {pendente['para']} ({pendente['quando']})"
+            elif da_conta:
+                texto += f" · último pedido: {da_conta[0]['para']}, {da_conta[0]['situacao'][0].lower()}"
+            st.html(f'<p class="crh-meta" style="margin:8px 0 0">{html.escape(texto)}</p>')
+            if isinstance(pedidos, str):
+                st.html(f'<p class="crh-meta">Os pedidos de acesso não carregaram agora: {html.escape(pedidos)}</p>')
         with st.container(horizontal=True, vertical_alignment="center", gap="small"):
             st.space("stretch")
+            if conta and conta.get("id") != st.session_state.usuario.get("id"):
+                if admin and st.button("Alterar acesso", key="col_alterar_acesso"):
+                    st.session_state.modal_cadastro = ("tipo_acesso", colab.get("id"))
+                    st.rerun()
+                if not admin and st.button("Solicitar alteração de acesso", key="col_pedir_acesso", disabled=pendente is not None,
+                                           help="Já há um pedido pendente para esta conta." if pendente else None):
+                    st.session_state.modal_cadastro = ("tipo_acesso", colab.get("id"))
+                    st.rerun()
             if st.button("Definir superior", key="col_definir_superior"):
                 st.session_state.modal_cadastro = ("superior", colab.get("id"))
                 st.rerun()
@@ -348,6 +457,15 @@ def pagina_colaboradores() -> None:
         _modal_admitir(org)
     elif acao == "acesso":
         modal_criar_acesso(colabs, deps, alvo)
+    elif acao == "tipo_acesso":
+        alvo_colab = next((c for c in colabs if c.get("id") == alvo), None)
+        conta = conta_do_colaborador(alvo_colab, dados["usuarios"]) if alvo_colab else None
+        if conta is None:
+            fechar()
+        else:
+            pedidos = pedidos_acesso(token)
+            pendente = next((p for p in pedidos_da_conta(pedidos, conta.get("id")) if p["pendente"]), None) if isinstance(pedidos, list) else None
+            _modal_acesso(alvo_colab, conta, pendente)
     elif acao == "superior":
         alvo_colab = next((c for c in colabs if c.get("id") == alvo), None)
         if alvo_colab is None:

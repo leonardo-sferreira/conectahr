@@ -662,6 +662,27 @@ def trocar_perfil(token: str, usuario_id: int, perfil: str) -> dict:
     return _request("PATCH", f"usuarios/{int(usuario_id)}/perfil", token, GRUPO_USUARIOS, {"perfil": perfil})
 
 
+def solicitacoes_acesso(token: str) -> dict:
+    """GET solicitacoes_acesso -> {solicitacoes}: pedidos de alteração de acesso (RH e Admin), mais recentes primeiro,
+    com o nome da conta, quem pediu, o perfil pedido, a justificativa e a decisão (change pedido-de-acesso)."""
+    return _get("solicitacoes_acesso", token, GRUPO_USUARIOS)
+
+
+def pedir_acesso(token: str, usuario_id: int, perfil: str, justificativa: str) -> dict:
+    """POST solicitacoes_acesso: o RH pede ao Admin outro perfil para uma conta (um pedido pendente por conta)."""
+    return _post("solicitacoes_acesso", {"usuario_id": int(usuario_id), "perfil": perfil, "justificativa": justificativa}, token, GRUPO_USUARIOS)
+
+
+def aprovar_pedido_acesso(token: str, pedido_id: int) -> dict:
+    """POST solicitacoes_acesso/{id}/aprovar (só Admin): troca o perfil da conta na hora."""
+    return _post(f"solicitacoes_acesso/{int(pedido_id)}/aprovar", {}, token, GRUPO_USUARIOS)
+
+
+def recusar_pedido_acesso(token: str, pedido_id: int, motivo: str) -> dict:
+    """POST solicitacoes_acesso/{id}/recusar (só Admin), com o motivo (5 a 1000 caracteres) que vai para o RH."""
+    return _post(f"solicitacoes_acesso/{int(pedido_id)}/recusar", {"motivo": motivo}, token, GRUPO_USUARIOS)
+
+
 def alterar_status_usuario(token: str, usuario_id: int, ativo: bool) -> dict:
     """PATCH usuarios/{id}/status: ativa ou desativa sem apagar o histórico."""
     return _request("PATCH", f"usuarios/{int(usuario_id)}/status", token, GRUPO_USUARIOS, {"ativo": bool(ativo)})
