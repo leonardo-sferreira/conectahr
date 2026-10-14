@@ -16,6 +16,10 @@ pedido (regra do backend).
 e pontos facultativos (`calendario`, com os nacionais importados da BrasilAPI pelo RH) e as suas férias aprovadas
 ou em análise. Diferença em relação ao Figma: o calendário fica abaixo dos cartões, e o pedido continua no modal;
 a legenda troca "Período escolhido" por "Pedido em análise".
+
+"Férias da equipe" (Gestor, RH, Admin e quem é superior direto de alguém): o calendário do mês com o nome de quem
+está de férias em cada dia, aprovadas ou em análise (`ferias_equipe`, no escopo da folha de ponto), a lista do mês e
+um alerta quando muitas pessoas saem ao mesmo tempo (o limite é escolhido na tela). Não há Figma desta visão.
 """
 
 import html
@@ -24,15 +28,22 @@ from datetime import date
 
 import streamlit as st
 
-from api_client import ApiError, calendario, cancelar_ferias, minha_situacao_ferias, minhas_ferias, solicitar_ferias
+from api_client import ApiError, calendario, cancelar_ferias, ferias_equipe, minha_situacao_ferias, minhas_ferias, solicitar_ferias
 from ferias_modelo import (
     LEGENDA_CALENDARIO,
+    LEGENDA_EQUIPE,
+    LIMITE_EQUIPE_PADRAO,
     NOTA_CALENDARIO,
     SEMANA_CALENDARIO,
+    aviso_equipe,
+    calendario_equipe,
     calendario_mes,
     dias_do_periodo,
     historico,
+    limites_do_mes,
+    lista_equipe_mes,
     mes_vizinho,
+    pico_equipe,
     primeiro_inicio,
     regras_do_pedido,
     resumo,
@@ -40,10 +51,12 @@ from ferias_modelo import (
     validar_pedido,
 )
 from pagamento_modelo import MESES
-from theme import alerta, render_hero, render_topbar
+from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _CACHE = "ferias_cache"
 _VALIDADE_CACHE_S = 20
+_CACHE_EQUIPE = "ferias_equipe_cache"
+_VISOES = ["Minhas férias", "Férias da equipe"]
 
 
 def _carregar(token: str) -> dict:
@@ -64,6 +77,7 @@ def _carregar(token: str) -> dict:
 
 def _invalidar() -> None:
     st.session_state.pop(_CACHE, None)
+    st.session_state.pop(_CACHE_EQUIPE, None)
 
 
 def _fechar() -> None:
@@ -162,6 +176,98 @@ def _calendario(token: str, ferias: list[dict]) -> None:
                 + f'</div><p class="crh-meta" style="margin-top:8px">{html.escape(NOTA_CALENDARIO)}</p>')
 
 
+def _ve_equipe() -> bool:
+    perfil = str(st.session_state.usuario.get("perfil", "")).upper()
+    return perfil in ("GESTOR", "RH", "ADMIN") or bool(st.session_state.get("tem_equipe"))
+
+
+def _ferias_da_equipe(token: str, ano: int, mes: int) -> dict:
+    """`ferias_equipe` do mês, guardado por 20 s para cada mês visto."""
+    cache = st.session_state.setdefault(_CACHE_EQUIPE, {})
+    if (guardado := cache.get((ano, mes))) and time.time() - guardado["em"] < _VALIDADE_CACHE_S:
+        return guardado["dados"]
+    primeiro, ultimo = limites_do_mes(ano, mes)
+    dados = ferias_equipe(token, primeiro.isoformat(), ultimo.isoformat())
+    cache[(ano, mes)] = {"em": time.time(), "dados": dados}
+    return dados
+
+
+def _html_calendario_equipe(semanas: list[list[dict | None]]) -> str:
+    cab = "".join(f"<th>{d}</th>" for d in SEMANA_CALENDARIO)
+    linhas = []
+    for semana in semanas:
+        celulas = []
+        for dia in semana:
+            if dia is None:
+                celulas.append('<td class="fora"></td>')
+                continue
+            classes = " ".join(c for c, ok in (("fds", dia["fds"]), ("hoje", dia["hoje"]), ("lotado", dia["lotado"])) if ok)
+            marcas = "".join(f'<span class="tag {tipo}" title="{html.escape(nome)}">{html.escape(texto)}</span>' for texto, tipo, nome in dia["marcas"])
+            pessoas = "".join(f'<span class="tag pessoa {tom}" title="{html.escape(nome)}">{html.escape(curto)}</span>' for curto, tom, nome in dia["pessoas"])
+            if dia["mais"]:
+                pessoas += f'<span class="tag pessoa mais">+{dia["mais"]}</span>'
+            celulas.append(f'<td class="{classes}"><span class="n">{dia["dia"]}</span>{marcas}{pessoas}</td>')
+        linhas.append(f"<tr>{''.join(celulas)}</tr>")
+    return f'<div class="crh-cal crh-cal-equipe"><table><thead><tr>{cab}</tr></thead><tbody>{"".join(linhas)}</tbody></table></div>'
+
+
+def _visao_equipe(token: str) -> None:
+    """Calendário de férias de quem está abaixo da pessoa (ou de todos, para RH e Admin)."""
+    hoje = date.today()
+    ano, mes = st.session_state.get("fe_eq_mes") or (hoje.year, hoje.month)
+    with st.container(horizontal=True, vertical_alignment="center", key="ferias_equipe_topo"):
+        if st.button("‹", key="fe_eq_anterior", help="Mês anterior"):
+            st.session_state.fe_eq_mes = mes_vizinho(ano, mes, -1)
+            st.rerun()
+        st.html(f'<p class="crh-cal-titulo">{MESES[mes - 1]} de {ano}</p>', width="content")
+        if st.button("›", key="fe_eq_seguinte", help="Mês seguinte"):
+            st.session_state.fe_eq_mes = mes_vizinho(ano, mes, 1)
+            st.rerun()
+        st.space("stretch")
+        limite = st.number_input("Alertar a partir de", min_value=2, max_value=50, value=LIMITE_EQUIPE_PADRAO, step=1, key="fe_eq_limite", width=190,
+                                 help="Quantas pessoas de férias no mesmo dia já pedem atenção. O dia aparece com borda vermelha.")
+    with st.spinner("Carregando as férias da equipe..."):
+        try:
+            dados, erro = _ferias_da_equipe(token, ano, mes), None
+        except ApiError as falha:
+            dados, erro = None, falha
+    if erro is not None:
+        alerta(st.empty(), "erro", erro.message)
+        return
+    ferias = dados.get("ferias") or []
+    feriados, erro_feriados = _feriados(token)
+    semanas = calendario_equipe(ano, mes, ferias, feriados, hoje, int(limite))
+    linhas = lista_equipe_mes(ano, mes, ferias)
+    maior, dias_pico = pico_equipe(semanas)
+    render_indicadores([
+        ("Pessoas que você acompanha" if not dados.get("ve_todos") else "Colaboradores", str(dados.get("pessoas") or 0), ""),
+        ("Com férias neste mês", str(len({l["nome"] for l in linhas})), "verde"),
+        ("Pico no mesmo dia", f"{maior} em {dias_pico[0].strftime('%d/%m')}" if maior else "0", "ambar" if maior >= int(limite) else ""),
+    ])
+    if aviso := aviso_equipe(semanas, int(limite)):
+        alerta(st.empty(), "atencao", aviso)
+    if erro_feriados:
+        alerta(st.empty(), "atencao", f"Os feriados não carregaram agora: {erro_feriados}")
+    with st.container(key="ferias_calendario_equipe"):
+        st.html(_html_calendario_equipe(semanas))
+        st.html('<div class="crh-cal-legenda">' + "".join(f'<span class="crh-selo {tom}">{html.escape(t)}</span>' for t, tom in LEGENDA_EQUIPE)
+                + '</div><p class="crh-meta" style="margin-top:8px">Pedidos em análise contam no dia: são os que você ainda vai decidir. '
+                  'Rejeitados e cancelados não aparecem.</p>')
+    st.html('<p class="crh-bloco-titulo">Férias neste mês</p>')
+    if not linhas:
+        st.html('<p class="crh-meta">Ninguém da equipe tem férias neste mês.</p>')
+        return
+    with st.container(key="ferias_equipe_lista"):
+        for i, l in enumerate(linhas):
+            with st.container(horizontal=True, vertical_alignment="center", key=f"ferias_eq_lin_{i}"):
+                st.html(
+                    f'<div class="crh-fe-item"><span class="p {l["tipo"]}"></span><div><p class="t">{html.escape(l["nome"])}</p>'
+                    f'<p class="d">{html.escape(l["periodo"])} · {html.escape(l["detalhe"])}</p></div></div>',
+                    width="stretch",
+                )
+                st.html(f'<span class="crh-selo {l["tipo"]}">{html.escape(l["badge"])}</span>', width="content")
+
+
 def _cancelar(ferias_id: int) -> None:
     try:
         cancelar_ferias(st.session_state.token, ferias_id)
@@ -178,6 +284,12 @@ def pagina_ferias() -> None:
     if aviso := st.session_state.pop("aviso_toast", None):
         st.toast(aviso)
     render_hero("Férias", "Solicite e acompanhe seus períodos de descanso")
+    if _ve_equipe():
+        with st.container(key="cfg_abas"):
+            visao = st.segmented_control("Visão", _VISOES, default=_VISOES[0], required=True, key="fe_visao", label_visibility="collapsed")
+        if visao == _VISOES[1]:
+            _visao_equipe(token)
+            return
 
     with st.spinner("Carregando suas férias..."):
         try:

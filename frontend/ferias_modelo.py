@@ -264,3 +264,91 @@ def mes_vizinho(ano: int, mes: int, passo: int) -> tuple[int, int]:
     """O mês anterior (-1) ou o seguinte (+1)."""
     indice = ano * 12 + (mes - 1) + passo
     return indice // 12, indice % 12 + 1
+
+
+# ---------------------------------------------------------------------------
+# Férias da equipe (calendário do gestor): quem sai em cada dia, para não liberar muita gente junto.
+# Dados de `ferias_equipe` (só nome, período, dias e situação), no escopo da hierarquia da folha de ponto.
+# ---------------------------------------------------------------------------
+LIMITE_EQUIPE_PADRAO = 2
+_SITUACAO_EQUIPE = {"Aprovada": ("Aprovada", "ok"), "Concluida": ("Concluída", "ok"), "Pendente": ("Em análise", "amb")}
+LEGENDA_EQUIPE = [("Férias aprovadas", "ok"), ("Pedido em análise", "amb"), ("Acima do limite no dia", "err")]
+_NOMES_POR_DIA = 3
+
+
+def nome_curto(nome: str) -> str:
+    """"Ana Beatriz Ribeiro" -> "Ana R.": cabe na célula do calendário."""
+    partes = (nome or "").split()
+    if not partes:
+        return "—"
+    return partes[0] if len(partes) == 1 else f"{partes[0]} {partes[-1][0]}."
+
+
+def limites_do_mes(ano: int, mes: int) -> tuple[date, date]:
+    return date(ano, mes, 1), date(ano, mes, calendar.monthrange(ano, mes)[1])
+
+
+def _periodos_equipe(ferias: list[dict]) -> list[tuple[date, date, dict]]:
+    periodos = []
+    for f in ferias:
+        inicio, fim = _dia_iso(f.get("data_inicio")), _dia_iso(f.get("data_fim"))
+        if inicio and fim and f.get("status") in _SITUACAO_EQUIPE:
+            periodos.append((inicio, fim, f))
+    return sorted(periodos, key=lambda p: (p[0], p[2].get("nome") or ""))
+
+
+def calendario_equipe(ano: int, mes: int, ferias: list[dict], feriados: list[dict], hoje: date, limite: int = LIMITE_EQUIPE_PADRAO) -> list[list[dict | None]]:
+    """As semanas do mês com quem está de férias em cada dia. Cada dia: {'dia', 'data', 'fds', 'hoje', 'marcas' (feriados),
+    'pessoas' [(nome curto, 'ok' ou 'amb', nome completo)] (até 3), 'mais' (quantos não couberam), 'quantos', 'lotado'
+    (quantos >= limite)}. Pedido em análise conta, porque é justamente o que o gestor está para decidir."""
+    periodos = _periodos_equipe(ferias)
+    base = {(d["data"]): d for semana in calendario_mes(ano, mes, feriados, [], hoje) for d in semana if d}
+    semanas = []
+    for semana in calendar.Calendar(firstweekday=6).monthdatescalendar(ano, mes):
+        linha = []
+        for d in semana:
+            if d.month != mes:
+                linha.append(None)
+                continue
+            no_dia = [f for i, fim, f in periodos if i <= d <= fim]
+            pessoas = [(nome_curto(f.get("nome")), _SITUACAO_EQUIPE[f["status"]][1], f.get("nome") or "") for f in no_dia]
+            linha.append({**base[d], "pessoas": pessoas[:_NOMES_POR_DIA], "mais": max(0, len(pessoas) - _NOMES_POR_DIA),
+                          "quantos": len(pessoas), "lotado": bool(limite) and len(pessoas) >= limite})
+        semanas.append(linha)
+    return semanas
+
+
+def pico_equipe(semanas: list[list[dict | None]]) -> tuple[int, list[date]]:
+    """O maior número de pessoas de férias num mesmo dia do mês e os dias em que isso acontece."""
+    dias = [d for semana in semanas for d in semana if d]
+    maior = max((d["quantos"] for d in dias), default=0)
+    return maior, [d["data"] for d in dias if maior and d["quantos"] == maior]
+
+
+def lista_equipe_mes(ano: int, mes: int, ferias: list[dict]) -> list[dict]:
+    """Quem tem férias que tocam o mês, pela data de início: {'nome', 'periodo', 'detalhe', 'badge', 'tipo', 'e_voce'}."""
+    primeiro, ultimo = limites_do_mes(ano, mes)
+    linhas = []
+    for inicio, fim, f in _periodos_equipe(ferias):
+        if inicio > ultimo or fim < primeiro:
+            continue
+        badge, tom = _SITUACAO_EQUIPE[f["status"]]
+        dias = f.get("quantidade_dias") or dias_do_periodo(inicio, fim)
+        linhas.append({
+            "nome": (f.get("nome") or "Colaborador") + (" (você)" if f.get("e_voce") else ""),
+            "periodo": f"{inicio.strftime('%d/%m/%Y')} a {fim.strftime('%d/%m/%Y')}",
+            "detalhe": _plural(dias),
+            "badge": badge, "tipo": tom, "e_voce": bool(f.get("e_voce")),
+        })
+    return linhas
+
+
+def aviso_equipe(semanas: list[list[dict | None]], limite: int) -> str | None:
+    """O alerta do mês quando algum dia chega ao limite de pessoas de férias ao mesmo tempo."""
+    lotados = [d["data"] for semana in semanas for d in semana if d and d["lotado"]]
+    if not lotados:
+        return None
+    maior, dias_pico = pico_equipe(semanas)
+    return (f"Em {_plural(len(lotados))} deste mês, {limite} ou mais pessoas estão de férias ao mesmo tempo. "
+            f"Pico: {maior} pessoas em {dias_pico[0].strftime('%d/%m')}"
+            + (f" (e mais {_plural(len(dias_pico) - 1)})" if len(dias_pico) > 1 else "") + ".")

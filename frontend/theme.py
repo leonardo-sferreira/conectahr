@@ -780,6 +780,11 @@ _APP_CSS = f"""
                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
   .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO}; }}
   .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-cal .tag.pessoa.ok {{ background: #DCFCE7; color: #166534; }}
+  .crh-cal .tag.pessoa.amb {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-cal .tag.pessoa.mais {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cal-equipe td {{ height: 92px; }}
+  .crh-cal-equipe td.lotado {{ box-shadow: inset 0 0 0 2px {ERRO}; }}
   .crh-cal-titulo {{ margin: 0; font: 600 17px 'Sora', sans-serif; color: {GRAFITE}; }}
   .crh-cal-legenda {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }}
   /* Ponto REP-P (Figma 463:825 e 464:826) */
@@ -1054,6 +1059,9 @@ _ESCURO_CSS = f"""
   .crh-cal td {{ border-color: {ESC_BORDA}; color: {ESC_TEXTO}; }}
   .crh-cal td.ferias {{ background: #16301F; }}
   .crh-cal td.analise {{ background: {ESC_AMBAR_SUAVE}; }}
+  .crh-cal .tag.pessoa.ok {{ background: #16301F; color: #86EFAC; }}
+  .crh-cal .tag.pessoa.amb {{ background: {ESC_AMBAR_SUAVE}; color: #FCD34D; }}
+  .crh-cal .tag.pessoa.mais {{ background: {ESC_NEUTRO}; color: {ESC_TEXTO_2}; }}
   .crh-cal-titulo {{ color: {ESC_TEXTO}; }}
 </style>
 """
