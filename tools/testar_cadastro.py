@@ -395,6 +395,20 @@ at = app("RH", erro_documentos=ApiError("Muitas requisicoes. Tente de novo em in
 at.button(key="col_ficha_7").click()
 at = at.run()
 conferir("Os documentos não carregaram agora" in texto(at) and not at.exception, "sem os documentos, a ficha aparece com o aviso")
+
+caso("Modais: o @st.dialog fica na função do modal")
+import ast  # noqa: E402
+
+# O AppTest não diferencia modal de conteúdo da página: um @st.dialog na função errada passaria despercebido.
+_trocados = []
+for _arq in sorted((RAIZ / "frontend").glob("pagina_*.py")):
+    for _f in ast.walk(ast.parse(_arq.read_text(encoding="utf-8"))):
+        if isinstance(_f, ast.FunctionDef):
+            _e_dialogo = any("dialog" in ast.unparse(d) for d in _f.decorator_list)
+            if _e_dialogo != _f.name.lstrip("_").startswith("modal"):
+                _trocados.append(f"{_arq.name}:{_f.name}")
+conferir(not _trocados, "toda função de modal tem @st.dialog, e nenhuma outra tem" + (f" (trocados: {_trocados})" if _trocados else ""))
+
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:
     print("Falharam:")
