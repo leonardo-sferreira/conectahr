@@ -555,7 +555,18 @@ O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) s
 - `avaliacoes/{id}/competencias` GET: as competências ativas do nível do avaliado (todas as ativas se o nível não tiver nenhuma) e as respostas já salvas (`xano-workspace/api/conecta_rh_colaboradores/avaliacoes/id/competencias_GET.xs`).
 - Na tela: enviar exige nota em todas as competências e a confirmação de que o envio é definitivo; a contestação só é oferecida para avaliação sem contestação aberta. Meta ou PDI com prazo vencido aparece como Atrasada/Atrasado.
 
-### 10.7 O que é auditado (complemento)
+### 10.7 Ciclo anual de metas (change `ciclo-de-metas`, desde 20/10/2026)
+
+- **Ciclo** (`ciclo_metas`): um por ano, com três janelas iguais para toda a empresa: 1) definir as metas, 2) acompanhamento, 3) fechamento. Sugestão da tela: fevereiro, junho e outubro, o mês inteiro. As datas são do ano do ciclo, cada fim é igual ou depois do início e cada etapa começa depois do fim da anterior. Só RH e Admin criam e alteram; as datas só mudam antes de a etapa 1 abrir (`xano-workspace/api/conecta_rh_colaboradores/ciclos_metas_POST.xs` e `ciclos_metas/id_PATCH.xs`).
+- **Etapa aberta:** início <= hoje <= fim, com hoje pelo horário de Brasília. Fora da janela nada é gravado, mesmo que a etapa não tenha sido enviada.
+- **Perguntas** (`pergunta_meta`): o RH cria, edita e desativa (sem excluir). A resposta guarda o texto da pergunta da época.
+- **Formulário** (`formulario_meta` e `resposta_meta`): qualquer conta com ficha de colaborador preenche o próprio, qualquer que seja o perfil. Etapa 1: a meta de cada pergunta ativa. Etapas 2 e 3: o que foi alcançado e a autoavaliação `abaixo`, `dentro` ou `acima` do esperado. Salvar grava dentro da janela; enviar exige todas as perguntas preenchidas (e a autoavaliação nas etapas 2 e 3) e fecha a etapa para sempre. As etapas 2 e 3 só são aceitas se a etapa 1 foi enviada; a 3 não depende da 2.
+- **Feedback** (`feedback_meta`): o superior direto (`superior_colaborador_id`) ou o gestor do departamento da pessoa registra feedback em cada etapa enviada, sem prazo; só inclusão, nunca no próprio formulário.
+- **Quem vê:** a própria pessoa, o superior direto, o gestor do departamento, RH e Admin (`formularios_meta/{id}`); a lista `formularios_meta` mostra a todos ao RH e ao Admin, e só a equipe a quem a gere.
+- **Avisos:** ao enviar uma etapa, o superior direto (ou, sem ele, o gestor do departamento) recebe `pedido_novo`; ao receber feedback, a pessoa recebe `avaliacao_disponivel` (recurso `formulario_meta`).
+- **Auditoria:** `criar_ciclo_metas`, `alterar_ciclo_metas` (datas antes e depois), `criar_pergunta_meta`, `alterar_pergunta_meta`, `registrar_resposta_meta` e `enviar_etapa_meta` (etapa e pergunta, sem o texto) e `registrar_feedback_meta` (sem o texto).
+
+### 10.8 O que é auditado (complemento)
 
 Os dois GET acima não são auditados, como as demais consultas da pessoa sobre si mesma.
 

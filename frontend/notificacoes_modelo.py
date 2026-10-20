@@ -33,6 +33,8 @@ _DESTINO_PEDIDO_NOVO = {
     "solicitacao_rh": "ir_solicitacoes",
     "documento": "ir_conferencia",
     "solicitacao_desligamento": "ir_central",
+    # Etapa do ciclo de metas enviada: o superior abre a equipe (change ciclo-de-metas).
+    "formulario_meta": "ir_metas_equipe",
 }
 # Retorno do pedido, para quem pediu: a tela onde ela acompanha.
 _DESTINO_PEDIDO_DECIDIDO = {
@@ -65,6 +67,8 @@ def destino(n: dict, perfil: str | None = None) -> str:
         return _DESTINO_PEDIDO_NOVO.get(recurso, "ir_central")
     if tipo == "pedido_decidido":
         return _DESTINO_PEDIDO_DECIDIDO.get(recurso, "ir_central")
+    if recurso == "formulario_meta":
+        return "ir_metas_ciclo"  # feedback do gestor nas próprias metas
     return _DESTINO_TIPO.get(tipo) or _DESTINO_RECURSO.get(recurso) or "ir_inicio"
 
 

@@ -29,6 +29,7 @@ from pagina_ausencias import pagina_ausencias
 from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
 from pagina_beneficios import pagina_beneficios
 from pagina_central import pagina_central
+from pagina_ciclos_avaliacao import pagina_ciclos_avaliacao
 from pagina_colaboradores import pagina_colaboradores
 from pagina_conferencia_documentos import pagina_conferencia_documentos
 from pagina_configuracoes import pagina_configuracoes
@@ -40,6 +41,8 @@ from pagina_faq import pagina_faq
 from pagina_folha_ponto import pagina_folha_ponto
 from pagina_inicio import pagina_inicio
 from pagina_meu_onboarding import pagina_meu_onboarding
+from pagina_metas_ciclo import pagina_metas_ciclo
+from pagina_metas_equipe import pagina_metas_equipe
 from pagina_onboarding import pagina_onboarding
 from pagina_organograma import pagina_organograma
 from pagina_pagamento import pagina_lancamento_pagamentos, pagina_pagamento
@@ -89,7 +92,8 @@ _MENU_EQUIPE = [
     "Minha equipe",
     "Folha de ponto da equipe",
     "Avaliações da equipe",
-    "Metas e PDI da equipe",
+    # Ciclo anual de metas da equipe, com o feedback de cada etapa (change ciclo-de-metas).
+    "Metas da equipe",
     "Delegações",
     "Indicadores da equipe",
 ]
@@ -184,9 +188,12 @@ PG_CONFERENCIA = st.Page(pagina_conferencia_documentos, title="Conferência de d
 PG_ESTRUTURA = st.Page(pagina_estrutura, title="Estrutura da empresa", url_path="estrutura-da-empresa")
 PG_FAQ = st.Page(pagina_faq, title="Comunicados e FAQ", url_path="comunicados-e-faq")
 PG_ORGANOGRAMA = st.Page(pagina_organograma, title="Organograma", url_path="organograma")
+PG_METAS_CICLO = st.Page(pagina_metas_ciclo, title="Metas do ciclo", url_path="metas-do-ciclo")
+PG_CICLOS = st.Page(pagina_ciclos_avaliacao, title="Ciclos de avaliação", url_path="ciclos-de-avaliacao")
+PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -210,17 +217,19 @@ _ATALHOS = {
     "ir_perfil": PG_PERFIL,
     "ir_pagamento": PG_PAGAMENTO,
     "ir_trajetoria": PG_TRAJETORIA,
+    "ir_metas_ciclo": PG_METAS_CICLO,
+    "ir_metas_equipe": PG_METAS_EQUIPE,
 }
 for marca, destino in _ATALHOS.items():
     if st.session_state.pop(marca, False):
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
-ativo_no_menu = {"Meu onboarding": "Início", "Organograma": "Perfil"}.get(pagina_atual.title, pagina_atual.title)
+ativo_no_menu = {"Meu onboarding": "Início", "Organograma": "Perfil", "Metas do ciclo": "Trajetória"}.get(pagina_atual.title, pagina_atual.title)
 perfil = str(st.session_state.usuario.get("perfil", "")).upper()
 
 # Quem é superior direto de alguém decide e vê a folha da equipe, qualquer que seja o perfil (tarefa 83).
@@ -230,7 +239,8 @@ if perfil not in ("RH", "ADMIN", "GESTOR") and "tem_equipe" not in st.session_st
         st.session_state.tem_equipe = any(not p.get("e_voce") for p in folha_pessoas(st.session_state.token).get("pessoas") or [])
     except ApiError:
         st.session_state.tem_equipe = False
-menu_equipe = _MENU_EQUIPE if perfil == "GESTOR" else ["Folha de ponto da equipe"] if st.session_state.get("tem_equipe") else []
+# Quem é superior direto também acompanha as metas da equipe e dá feedback (change ciclo-de-metas).
+menu_equipe = _MENU_EQUIPE if perfil == "GESTOR" else ["Folha de ponto da equipe", "Metas da equipe"] if st.session_state.get("tem_equipe") else []
 if ativo_no_menu == "Folha de ponto" and menu_equipe:
     ativo_no_menu = "Folha de ponto da equipe"
 

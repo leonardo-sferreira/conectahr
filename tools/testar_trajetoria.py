@@ -84,6 +84,8 @@ api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
 api_client.meus_comunicados = lambda token: {"comunicados": []}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
+# Bloco "Ciclo de metas" (change ciclo-de-metas): sem ciclo aberto aqui; testado em tools/testar_ciclo_metas.py.
+api_client.meu_ciclo_metas = lambda token: {"hoje": "2026-10-20", "perguntas_ativas": [], "ciclos": []}
 api_client.minha_trajetoria = lambda token: chamadas.append(("ler",)) or _falha_ou("ler", copy.deepcopy(estado.get("dados", TRAJETORIA)))
 api_client.competencias_avaliacao = lambda token, aid: chamadas.append(("form", aid)) or _falha_ou("form", copy.deepcopy(FORMULARIO))
 api_client.responder_avaliacao = lambda token, aid, cid, nota, com: chamadas.append(("resp", aid, cid, nota, com)) or _falha_ou("resp", {"sucesso": True})

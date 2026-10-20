@@ -890,3 +890,66 @@ def checkin_meta(token: str, meta_id: int, progresso: float, comentario: str | N
 def progresso_pdi(token: str, pdi_id: int, progresso: float, evidencia: str | None) -> dict:
     """POST pdi/{id}/progresso: progresso de 0 a 100 e evidência opcional."""
     return _post(f"pdi/{int(pdi_id)}/progresso", {"progresso_percentual": float(progresso), "evidencia": evidencia or None}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Ciclo anual de metas (change ciclo-de-metas): a pessoa preenche; o RH configura; o superior dá feedback.
+# ---------------------------------------------------------------------------
+def meu_ciclo_metas(token: str) -> dict:
+    """GET meu_ciclo_metas -> {hoje, perguntas_ativas, ciclos: [{datas, etapa_aberta, formulario_id, etapaN_enviada_em, respostas, feedbacks}]}."""
+    return _get("meu_ciclo_metas", token, GRUPO_COLABORADORES)
+
+
+def responder_meta(token: str, ciclo_id: int, pergunta_id: int, texto: str | None, autoavaliacao: str | None = None) -> dict:
+    """POST meu_ciclo_metas/{ciclo_id}/respostas: uma pergunta da etapa aberta (meta, ou alcançado e autoavaliação)."""
+    return _post(f"meu_ciclo_metas/{int(ciclo_id)}/respostas", {"pergunta_meta_id": int(pergunta_id), "texto": texto or None, "autoavaliacao": autoavaliacao or None},
+                 token, GRUPO_COLABORADORES)
+
+
+def enviar_etapa_meta(token: str, ciclo_id: int) -> dict:
+    """POST meu_ciclo_metas/{ciclo_id}/enviar: fecha a etapa aberta (definitivo)."""
+    return _post(f"meu_ciclo_metas/{int(ciclo_id)}/enviar", {}, token, GRUPO_COLABORADORES)
+
+
+def ciclos_metas(token: str) -> dict:
+    """GET ciclos_metas -> {hoje, ciclos} (RH e Admin)."""
+    return _get("ciclos_metas", token, GRUPO_COLABORADORES)
+
+
+def criar_ciclo_metas(token: str, ano: int, datas: dict) -> dict:
+    """POST ciclos_metas: ano e as seis datas (etapaN_inicio/etapaN_fim, 'AAAA-MM-DD')."""
+    return _post("ciclos_metas", {"ano": int(ano), **datas}, token, GRUPO_COLABORADORES)
+
+
+def alterar_ciclo_metas(token: str, ciclo_id: int, datas: dict) -> dict:
+    """PATCH ciclos_metas/{id}: as seis datas; só antes de a etapa 1 abrir."""
+    return _request("PATCH", f"ciclos_metas/{int(ciclo_id)}", token, GRUPO_COLABORADORES, datas)
+
+
+def perguntas_meta(token: str) -> dict:
+    """GET perguntas_meta -> {perguntas} (ativas e inativas; RH e Admin)."""
+    return _get("perguntas_meta", token, GRUPO_COLABORADORES)
+
+
+def criar_pergunta_meta(token: str, texto: str, orientacao: str | None, ordem: int) -> dict:
+    return _post("perguntas_meta", {"texto": texto, "orientacao": orientacao or None, "ordem": int(ordem)}, token, GRUPO_COLABORADORES)
+
+
+def alterar_pergunta_meta(token: str, pergunta_id: int, texto: str, orientacao: str | None, ordem: int, ativa: bool) -> dict:
+    return _request("PATCH", f"perguntas_meta/{int(pergunta_id)}", token, GRUPO_COLABORADORES,
+                    {"texto": texto, "orientacao": orientacao or None, "ordem": int(ordem), "ativa": bool(ativa)})
+
+
+def formularios_meta(token: str, ciclo_id: int) -> dict:
+    """GET formularios_meta?ciclo_id= -> {ciclo, etapa_aberta, pessoas} (RH: todos; superior e gestor: a equipe)."""
+    return _get(f"formularios_meta?ciclo_id={int(ciclo_id)}", token, GRUPO_COLABORADORES)
+
+
+def formulario_meta(token: str, formulario_id: int) -> dict:
+    """GET formularios_meta/{id} -> {formulario, colaborador_nome, ciclo, respostas, feedbacks, pode_dar_feedback}."""
+    return _get(f"formularios_meta/{int(formulario_id)}", token, GRUPO_COLABORADORES)
+
+
+def feedback_meta(token: str, formulario_id: int, etapa: int, texto: str) -> dict:
+    """POST formularios_meta/{id}/feedback: superior direto ou gestor do departamento, em etapa enviada."""
+    return _post(f"formularios_meta/{int(formulario_id)}/feedback", {"etapa": int(etapa), "texto": texto}, token, GRUPO_COLABORADORES)
