@@ -1181,3 +1181,27 @@ def atribuir_avaliacao(token: str, ciclo_id: int, colaborador_id: int, avaliador
 def revisar_contestacao(token: str, contestacao_id: int, resposta: str) -> dict:
     """POST contestacoes_avaliacao/{id}/revisar: a resposta do RH à contestação."""
     return _post(f"contestacoes_avaliacao/{int(contestacao_id)}/revisar", {"resposta_revisao": resposta}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Integrações e e-mails (change integracoes-e-emails)
+# ---------------------------------------------------------------------------
+def fila_emails(token: str, status: str | None = None) -> dict:
+    """GET email_outbox -> {contagens: {na_fila, enviados_24h, falharam_24h}, emails (destinatário mascarado)} (RH e Admin)."""
+    caminho = f"email_outbox?status={quote(status)}" if status else "email_outbox"
+    return _get(caminho, token, GRUPO_COLABORADORES)
+
+
+def processar_fila_emails(token: str) -> dict:
+    """POST email_outbox/processar -> {total_pendentes_no_lote, total_enviados, total_falhados, total_ja_no_limite}."""
+    return _post("email_outbox/processar", {}, token, GRUPO_COLABORADORES)
+
+
+def status_operacional(token: str) -> dict:
+    """GET status_operacional -> {fila_email, tarefas_manuais_pendentes, rotina_diaria_pendente, acesso_bloqueado} (RH e Admin)."""
+    return _get("status_operacional", token, GRUPO_AUTENTICACAO)
+
+
+def processar_rotina_diaria(token: str) -> dict:
+    """POST rotinas/processar_diarias -> {aplicadas: contagens do que mudou}. Idempotente."""
+    return _post("rotinas/processar_diarias", {}, token, GRUPO_COLABORADORES)

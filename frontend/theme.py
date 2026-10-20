@@ -934,6 +934,8 @@ _APP_CSS = f"""
   .crh-lgpd-resumo b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
   .crh-lgpd-resumo b.ambar {{ color: {AMBAR_ESCURO}; }}
   .crh-lgpd-detalhe {{ margin: 2px 0 12px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; white-space: pre-wrap; }}
+  /* Admin — tela de integrações (Figma 249:7847): aviso em rosa do cartão Modelos. */
+  .crh-alerta-inline {{ background: #FDE2E2; color: {ERRO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 10px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
   /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
   .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
   .crh-av360-barra .barra {{ flex: 1; height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
@@ -1095,6 +1097,7 @@ _ESCURO_CSS = f"""
   .crh-av360-barra .barra {{ background: {ESC_BORDA} !important; }}
   .crh-av360-barra .v {{ color: {ESC_TEXTO} !important; }}
   .crh-nota-neutra {{ background: {ESC_FUNDO} !important; color: {ESC_TEXTO} !important; }}
+  .crh-alerta-inline {{ background: #3A1F1F !important; color: #FCA5A5 !important; }}
   div[class*="st-key-rh_lin_"][class*="_alerta"] {{ background: {ESC_AMBAR_SUAVE} !important; }}
   .crh-lgpd-resumo {{ background: {ESC_FUNDO} !important; }}
   .crh-lgpd-resumo b, .crh-lgpd-detalhe {{ color: {ESC_TEXTO} !important; }}
