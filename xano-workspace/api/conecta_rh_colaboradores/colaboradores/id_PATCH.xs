@@ -129,26 +129,6 @@ query "colaboradores/{id}" verb=PATCH {
     }
   
     // Contato e endereco: o valor enviado, ou o da ficha quando vem vazio.
-    // Telefone (10 ou 11 digitos, com DDD) e numero do endereco (1 a 10 digitos): so numeros
-    // (pedido do usuario, 20/10/2026). O complemento guarda o resto ("casa B", "apto 12").
-    function.run "ConectaHR/somente_digitos" {
-      input = {texto: $input.telefone}
-    } as $telefone_so_digitos
-
-    precondition (($input.telefone == null) || ($input.telefone == "") || (($telefone_so_digitos == $input.telefone) && ((($telefone_so_digitos|strlen) == 10) || (($telefone_so_digitos|strlen) == 11)))) {
-      error_type = "inputerror"
-      error = "Informe o telefone so com numeros, com DDD (10 ou 11 digitos)."
-    }
-
-    function.run "ConectaHR/somente_digitos" {
-      input = {texto: $input.numero}
-    } as $numero_so_digitos
-
-    precondition (($input.numero == null) || ($input.numero == "") || (($numero_so_digitos == $input.numero) && (($numero_so_digitos|strlen) >= 1) && (($numero_so_digitos|strlen) <= 10))) {
-      error_type = "inputerror"
-      error = "O numero do endereco aceita so numeros. Use o complemento para letras (ex.: casa B)."
-    }
-
     var $telefone_final {
       value = ($input.telefone != null && $input.telefone != "" ? $input.telefone : $colaborador_atual.telefone)
     }

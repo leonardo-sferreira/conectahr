@@ -106,26 +106,6 @@ query meu_perfil_colaborador verb=PATCH {
 
     // Telefone e CEP: guarda so os digitos, caractere por caractere
     // (regex_replace nao esta disponivel de forma confiavel neste workspace).
-    // Telefone (10 ou 11 digitos, com DDD) e numero do endereco (1 a 10 digitos): so numeros
-    // (pedido do usuario, 20/10/2026). O complemento guarda o resto ("casa B", "apto 12").
-    function.run "ConectaHR/somente_digitos" {
-      input = {texto: $input.telefone}
-    } as $telefone_so_digitos
-
-    precondition ((($telefone_so_digitos == $input.telefone) && ((($telefone_so_digitos|strlen) == 10) || (($telefone_so_digitos|strlen) == 11)))) {
-      error_type = "inputerror"
-      error = "Informe o telefone so com numeros, com DDD (10 ou 11 digitos)."
-    }
-
-    function.run "ConectaHR/somente_digitos" {
-      input = {texto: $input.numero}
-    } as $numero_so_digitos
-
-    precondition ((($numero_so_digitos == $input.numero) && (($numero_so_digitos|strlen) >= 1) && (($numero_so_digitos|strlen) <= 10))) {
-      error_type = "inputerror"
-      error = "O numero do endereco aceita so numeros. Use o complemento para letras (ex.: casa B)."
-    }
-
     var $telefone_caracteres {
       value = $input.telefone|split:""
     }

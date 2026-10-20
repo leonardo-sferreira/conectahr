@@ -114,11 +114,6 @@ def validar_contato(d: dict) -> dict:
     for campo, nome in (("logradouro", "o logradouro"), ("numero", "o número"), ("bairro", "o bairro"), ("cidade", "a cidade")):
         if not (d.get(campo) or "").strip():
             erros[campo] = f"Preencha {nome}."
-    # Só números (pedido do usuário, 20/10/2026; o backend confere o mesmo).
-    if (d.get("telefone") or "").strip() and not (d.get("telefone") or "").strip().isdigit():
-        erros["telefone"] = "Telefone só com números, com DDD."
-    if (d.get("numero") or "").strip() and not (d.get("numero") or "").strip().isdigit():
-        erros["numero"] = "O número do endereço aceita só números. Use o complemento para letras (ex.: casa B)."
     if (d.get("estado") or "").strip().upper() not in UFS:
         erros["estado"] = "Escolha o estado (UF)."
     return erros

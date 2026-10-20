@@ -20,7 +20,6 @@ from api_client import ApiError, atender_solicitacao, atualizar_dados_pessoais, 
 from cadastro_modelo import perfil
 from decisoes_modelo import pessoas
 from solicitacoes_modelo import ABAS, CAMPO_PARA_CADASTRO, TIPOS, aplicar_pedido, dados_atuais, linhas, resumo, validar_dados_pessoais, validar_justificativa
-from campos import campo as campo_tipado, limpar
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _CACHE = "solicitacoes_cache"
@@ -28,8 +27,6 @@ _VALIDADE_CACHE_S = 20
 _ROTULOS = {"nome": "Nome completo", "cpf": "CPF (só números)", "email_pessoal": "E-mail pessoal", "telefone": "Telefone", "cep": "CEP",
             "logradouro": "Logradouro", "numero": "Número", "complemento": "Complemento", "bairro": "Bairro", "cidade": "Cidade", "estado": "Estado (UF)"}
 _ENDERECO = ["cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"]
-_TIPO_CAMPO = {"nome": "nome", "cpf": "numero", "email_pessoal": "email", "telefone": "numero", "cep": "numero", "logradouro": "endereco",
-               "numero": "numero", "complemento": "endereco", "bairro": "endereco", "cidade": "endereco", "estado": "nome"}
 
 
 def _carregar(token: str) -> dict:
@@ -86,10 +83,7 @@ def _formulario_cadastro(atuais: dict, preenchido: dict, campo_pedido: str | Non
             escolhida = st.date_input("Data de nascimento", value=valor, min_value=date(1920, 1, 1), max_value=date.today(), format="DD/MM/YYYY", key="sol_campo_nasc")
             dados["data_nascimento"] = escolhida.isoformat() if escolhida else ""
         else:
-            # Cada campo aceita só o seu tipo (campos.py); o valor pedido entra limpo (ex.: telefone sem máscara).
-            tipo = _TIPO_CAMPO.get(campo, "texto")
-            st.session_state.setdefault(f"sol_campo_{campo}", limpar(preenchido.get(campo, ""), tipo)[0])
-            dados[campo] = campo_tipado(st, _ROTULOS[campo], tipo, f"sol_campo_{campo}")
+            dados[campo] = st.text_input(_ROTULOS[campo], value=preenchido.get(campo, ""), key=f"sol_campo_{campo}")
     return dados
 
 
