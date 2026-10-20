@@ -27,7 +27,7 @@
 | F09 | Ausências e atestados | Tipo, período, **motivo (lista fechada)**; o arquivo do atestado **não é guardado no sistema** | Colaborador | **Sim** (saúde) | Obrigação legal (art. 11, II, "a") | Próprio, RH, Admin. **Gestor vê só tipo, período e status** | Xano (armazenamento do arquivo) | Prazo legal (a confirmar) | Arquivo privado; Gestor sem acesso ao atestado; ver RIPD |
 | F10 | Saúde e segurança do trabalho (SST) | Tipo de evento, **resultado do ASO**, médico responsável, documento; laudo de deficiência | Colaborador | **Sim** (saúde) | Obrigação legal: NR-7, eSocial e cota de PcD (art. 11, II, "a") | RH e Admin (laudo: também o próprio) | Xano | Longo, definido por norma (a confirmar) | Só metadados operacionais, nunca prontuário; acesso restrito; ver RIPD |
 | F11 | Desligamento | Solicitação, motivo, decisão, data efetiva | Colaborador | Não | Execução de contrato e obrigação legal | Próprio (a sua), Gestor (da equipe), RH, Admin | Xano | Prazo legal trabalhista | Decisão por outra pessoa; conta desativada e sessões revogadas |
-| F12 | Avaliação e desenvolvimento | Avaliações, respostas, metas, check-ins, PDI, contestações, reuniões individuais | Colaborador | Não | Legítimo interesse (art. 7º, IX); ver [legitimo-interesse.md](legitimo-interesse.md) | Participantes e RH; feedback privado só do autor e do RH | Xano | Ciclo + prazo a confirmar | Revisão humana; nenhuma decisão automática de promoção ou punição |
+| F12 | Avaliação e desenvolvimento | Avaliações, respostas, metas, check-ins, PDI, contestações, reuniões individuais; **ciclo anual de metas** (metas, o que foi alcançado, autoavaliação e feedback do superior, change `ciclo-de-metas`, 20/10/2026) | Colaborador | Não | Legítimo interesse (art. 7º, IX); ver [legitimo-interesse.md](legitimo-interesse.md) | Participantes e RH; feedback privado só do autor e do RH. Ciclo de metas: a própria pessoa, o superior direto, o gestor do departamento, RH e Admin | Xano | Ciclo + prazo a confirmar | Revisão humana; nenhuma decisão automática de promoção ou punição |
 | F13 | Reconhecimento (mural) | Mensagem de reconhecimento, remetente, destinatário | Colaborador | Não | Legítimo interesse (art. 7º, IX) | **Todos os colaboradores** (mural público) | Xano | Prazo a confirmar | Só reconhecimento positivo; moderação; opção de sair do mural |
 | F14 | Aniversariantes do mês | Nome e dia/mês de nascimento | Colaborador | Não | Legítimo interesse (art. 7º, IX) | Todos os colaboradores | Xano | Enquanto vínculo | Só dia e mês; opção de sair da lista |
 | F15 | Pesquisa de clima (anônima) | Nota por pergunta e departamento; participação separada | Colaborador | Não (se anônima) | Legítimo interesse (art. 7º, IX) | RH e Admin, **só o agregado** | Xano | Agregado: prazo a confirmar | Resposta gravada só como contagem; grupo abaixo do mínimo suprimido; ver limitação conhecida no RIPD |
@@ -40,7 +40,7 @@
 
 O sistema **não coleta nem armazena** raça, sexo, religião, filiação sindical ou biometria. Nenhuma funcionalidade do escopo precisa desses dados. Criar qualquer campo desse tipo exige atualizar este registro e o [RIPD](ripd.md) antes.
 
-## Cobertura: todas as 49 tabelas
+## Cobertura: 55 das 65 tabelas
 
 A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalidade. "Sem dado pessoal" significa que a tabela guarda só regras, catálogos ou conteúdo geral.
 
@@ -71,9 +71,13 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `historico_profissional` | F06 | `instrumento_normativo` | F18 |
 | `meta_avaliacao` | F12 | `meta_checkin` | F12 |
 | `notificacao_interna` | F16 | `solicitacao_acesso` | F01 |
+| `ciclo_metas` | Sem dado pessoal | `pergunta_meta` | Sem dado pessoal |
+| `formulario_meta` | F12 | `resposta_meta` | F12 |
+| `feedback_meta` | F12 | | |
 
 ## Pendências conhecidas
 
+- **Tabelas sem finalidade na cobertura** (levantado em 20/10/2026, change `ciclo-de-metas`): `beneficio`, `beneficio_arquivo`, `beneficio_faq`, `colaborador_beneficio`, `configuracao`, `empregador`, `marcacao_ponto`, `nivel_hierarquico`, `preferencia_privacidade` e `tratamento_ponto` foram criadas depois do levantamento e ainda precisam ser ligadas a uma finalidade.
 - **Prazos de retenção** ainda são sugestões. A política por categoria (`retencao.md`) é uma tarefa pendente.
 - **Região onde o Xano guarda os dados** e **criptografia em repouso**: a confirmar no painel do Xano, ver [operadores.md](operadores.md).
 - **Respostas de clima antigas** (`resposta_clima`) continuam no banco, sem ser lidas por nenhum endpoint. A decisão sobre anonimizá-las fica registrada no [RIPD](ripd.md).

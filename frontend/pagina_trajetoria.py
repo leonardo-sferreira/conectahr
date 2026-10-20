@@ -21,6 +21,9 @@ import streamlit as st
 
 from api_client import (ApiError, checkin_meta, competencias_avaliacao, contestar_avaliacao, enviar_avaliacao, minha_trajetoria, progresso_pdi,
                         responder_avaliacao)
+from ciclo_metas_modelo import enviadas_do, etapa_editavel
+from formulario_metas_ui import trilha_etapas
+from pagina_metas_ciclo import carregar as carregar_ciclo_metas
 from theme import alerta, html_linha_onboarding, render_hero, render_topbar
 from trajetoria_modelo import (NOTAS, linhas_360, linhas_a_preencher, linhas_metas, linhas_pdi, linhas_recebidas, nivel, reconhecimentos,
                                respostas_alteradas, titulo_360, validar_contestacao, validar_envio)
@@ -225,6 +228,31 @@ def _carreira(dados: dict) -> None:
             f'{proximo}</div>')
 
 
+def _ciclo_metas(token: str) -> None:
+    """Bloco "Ciclo de metas" (change ciclo-de-metas): as três etapas do ciclo atual e o caminho para "Metas do ciclo"."""
+    try:
+        dados = carregar_ciclo_metas(token)
+    except ApiError as erro:
+        if erro.status_code != 404:
+            st.html('<p class="crh-bloco-titulo">Ciclo de metas</p>')
+            alerta(st.empty(), "atencao", f"O ciclo de metas não carregou agora: {erro.message}")
+        return
+    ciclos = dados.get("ciclos") or []
+    if not ciclos:
+        st.html('<p class="crh-bloco-titulo">Ciclo de metas</p>'
+                '<div class="crh-painel crh-bloco"><p class="crh-meta">O RH ainda não abriu um ciclo de metas.</p></div>')
+        return
+    ciclo = ciclos[0]
+    hoje = date.fromisoformat(str(dados.get("hoje") or date.today())[:10])
+    st.html(f'<p class="crh-bloco-titulo">Ciclo de metas {html.escape(str(ciclo.get("ano")))}</p>')
+    trilha_etapas(ciclo, hoje, enviadas_do(ciclo))
+    rotulo = f"Preencher a etapa {etapa_editavel(ciclo)} →" if etapa_editavel(ciclo) else "Abrir minhas metas do ciclo →"
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button(rotulo, key="traj_abrir_metas", type="primary" if etapa_editavel(ciclo) else "tertiary"):
+            st.session_state.ir_metas_ciclo = True
+            st.rerun()
+
+
 def _reconhecimentos(dados: dict) -> None:
     itens = reconhecimentos(dados)
     if not itens:
@@ -263,6 +291,7 @@ def pagina_trajetoria() -> None:
     pdi = linhas_pdi(dados.get("pdi"), hoje)
 
     _carreira(dados)
+    _ciclo_metas(token)
     if a_preencher:
         _trilha("Para você avaliar", a_preencher)
         _acao("Responder avaliação →", "traj_abrir_responder", "responder")

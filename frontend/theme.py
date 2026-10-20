@@ -865,6 +865,19 @@ _APP_CSS = f"""
   .crh-rec .nome {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE}; }}
   .crh-rec .quando {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; white-space: nowrap; }}
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
+  /* Ciclo de metas (change ciclo-de-metas): etapa, pergunta com as respostas e a caixa de feedback. */
+  .crh-cm-etapa {{ padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }}
+  .crh-cm-cab {{ display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }}
+  .crh-cm-cab .t {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 15px; color: {GRAFITE}; }}
+  .crh-cm-cab .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cm-q {{ border-top: 1px solid {BORDA}; padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }}
+  .crh-cm-q .p {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 13.5px; color: {GRAFITE}; }}
+  .crh-cm-q .r {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; white-space: pre-wrap; }}
+  .crh-cm-q .r b {{ font-weight: 600; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cm-fb {{ background: {MARFIM}; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }}
+  .crh-cm-fb .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 13px; color: {GRAFITE}; }}
+  .crh-cm-fb .i {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; white-space: pre-wrap; }}
+  .crh-cm-fb .q {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; }}
   /* Ficha do colaborador (Figma 243:580). */
   .st-key-col_ficha_card {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 12px; }}
   .st-key-col_ficha_card button[kind="primary"] {{ padding: 0.55rem 1.1rem; border-radius: 10px; white-space: nowrap; }}
@@ -982,6 +995,10 @@ _ESCURO_CSS = f"""
   .crh-carreira .r, .crh-rec .quando, .crh-rec .msg {{ color: {ESC_TEXTO_2} !important; }}
   .crh-carreira .comp {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
   .crh-rec .item {{ border-color: {ESC_BORDA}; }}
+  .crh-cm-cab .t, .crh-cm-q .p, .crh-cm-q .r, .crh-cm-fb .t, .crh-cm-fb .i {{ color: {ESC_TEXTO} !important; }}
+  .crh-cm-cab .s, .crh-cm-q .r b, .crh-cm-fb .q {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-cm-q {{ border-color: {ESC_BORDA}; }}
+  .crh-cm-fb {{ background: {ESC_FUNDO}; }}
   .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}
   .st-key-col_ficha_card {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .crh-ponto-status.neu {{ color: {ESC_TEXTO_2}; }}
