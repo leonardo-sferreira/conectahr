@@ -63,10 +63,7 @@ query minhas_solicitacoes_desligamento verb=GET {
     }
   
     // Esta consulta é destinada a colaboradores e gestores.
-    precondition ($perfil_autenticado == "COLABORADOR" || $perfil_autenticado == "GESTOR") {
-      error_type = "accessdenied"
-      error = "Somente colaboradores ou gestores podem consultar suas próprias solicitações."
-    }
+    // Qualquer perfil com ficha (change fluxo-de-desligamento, D3).
   
     // Confirma que a conta possui um colaborador vinculado.
     db.get colaborador {

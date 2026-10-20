@@ -32,7 +32,7 @@ _DESTINO_PEDIDO_NOVO = {
     "ausencia": "ir_central",
     "solicitacao_rh": "ir_solicitacoes",
     "documento": "ir_conferencia",
-    "solicitacao_desligamento": "ir_central",
+    "solicitacao_desligamento": "ir_desligamentos",
     # Etapa do ciclo de metas enviada: o superior abre a equipe (change ciclo-de-metas).
     "formulario_meta": "ir_metas_equipe",
 }
@@ -42,7 +42,7 @@ _DESTINO_PEDIDO_DECIDIDO = {
     "ferias": "ir_ferias",
     "ausencia": "ir_central",
     "documento": "ir_documentos",
-    "solicitacao_desligamento": "ir_central",
+    "solicitacao_desligamento": "ir_pedir_desligamento",
 }
 _DESTINO_RECURSO = {
     "ferias": "ir_ferias",

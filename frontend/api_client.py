@@ -71,6 +71,7 @@ GRUPO_AUSENCIAS = "x-LkEdmU"
 GRUPO_FERIAS = "AI-dSGch"
 GRUPO_USUARIOS = "GjsM93yp"
 GRUPO_CARGOS = "iy_CTE1P"
+GRUPO_DESLIGAMENTOS = "yECNVuXQ"
 
 
 # Pausas antes de cada nova tentativa depois de um 429 (o limite do plano gratuito é por janela de 20 s).
@@ -1050,3 +1051,51 @@ def prioridade_override(token: str, override_id: int, prioridade: int) -> dict:
 def simular_override(token: str, override_id: int) -> dict:
     """GET regras_override/{id}/simular -> {override_simulado, total_afetados, departamentos, detalhes, conflitos}."""
     return _get(f"regras_override/{int(override_id)}/simular", token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Desligamento (Figma 224:4056 e 249:3075; change fluxo-de-desligamento).
+# ---------------------------------------------------------------------------
+def pedir_desligamento(token: str, colaborador_id: int, tipo: str, data_prevista: str, dias_aviso: int, motivo: str) -> dict:
+    """POST solicitacoes_desligamento: o próprio (qualquer perfil com ficha) ou, para o gestor, alguém da equipe."""
+    return _post("solicitacoes_desligamento", {"colaborador_id": int(colaborador_id), "tipo_desligamento": tipo, "data_prevista": data_prevista,
+                                               "dias_aviso": int(dias_aviso), "motivo_solicitacao": motivo}, token, GRUPO_DESLIGAMENTOS)
+
+
+def meus_desligamentos(token: str) -> dict:
+    """GET minhas_solicitacoes_desligamento -> os pedidos criados pela conta."""
+    return _get("minhas_solicitacoes_desligamento", token, GRUPO_DESLIGAMENTOS)
+
+
+def cancelar_desligamento(token: str, solicitacao_id: int, motivo: str) -> dict:
+    return _post(f"solicitacoes_desligamento/{int(solicitacao_id)}/cancelar", {"motivo_cancelamento": motivo}, token, GRUPO_DESLIGAMENTOS)
+
+
+def desligamentos_rh(token: str) -> dict:
+    """GET solicitacoes_desligamento (todos) -> {solicitacoes (com nomes), contagens} (só RH)."""
+    return _get("solicitacoes_desligamento", token, GRUPO_DESLIGAMENTOS)
+
+
+def desligamento(token: str, solicitacao_id: int) -> dict:
+    """GET solicitacoes_desligamento/{id} -> {solicitacao, colaborador, departamento, checklist}."""
+    return _get(f"solicitacoes_desligamento/{int(solicitacao_id)}", token, GRUPO_DESLIGAMENTOS)
+
+
+def assumir_desligamento(token: str, solicitacao_id: int) -> dict:
+    return _post(f"solicitacoes_desligamento/{int(solicitacao_id)}/iniciar_analise", {}, token, GRUPO_DESLIGAMENTOS)
+
+
+def aprovar_desligamento(token: str, solicitacao_id: int, data_efetiva: str, motivo: str) -> dict:
+    return _post(f"solicitacoes_desligamento/{int(solicitacao_id)}/aprovar", {"data_efetiva": data_efetiva, "motivo_decisao": motivo}, token, GRUPO_DESLIGAMENTOS)
+
+
+def rejeitar_desligamento(token: str, solicitacao_id: int, motivo: str) -> dict:
+    return _post(f"solicitacoes_desligamento/{int(solicitacao_id)}/rejeitar", {"motivo_decisao": motivo}, token, GRUPO_DESLIGAMENTOS)
+
+
+def concluir_desligamento(token: str, solicitacao_id: int) -> dict:
+    return _post(f"solicitacoes_desligamento/{int(solicitacao_id)}/concluir", {}, token, GRUPO_DESLIGAMENTOS)
+
+
+def marcar_checklist_desligamento(token: str, solicitacao_id: int, item_id: int, feito: bool) -> dict:
+    return _post(f"solicitacoes_desligamento/{int(solicitacao_id)}/checklist/{int(item_id)}", {"feito": bool(feito)}, token, GRUPO_DESLIGAMENTOS)

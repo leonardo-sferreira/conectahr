@@ -40,7 +40,7 @@
 
 O sistema **não coleta nem armazena** raça, sexo, religião, filiação sindical ou biometria. Nenhuma funcionalidade do escopo precisa desses dados. Criar qualquer campo desse tipo exige atualizar este registro e o [RIPD](ripd.md) antes.
 
-## Cobertura: 56 das 66 tabelas
+## Cobertura: 57 das 67 tabelas
 
 A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalidade. "Sem dado pessoal" significa que a tabela guarda só regras, catálogos ou conteúdo geral.
 
@@ -66,6 +66,7 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `email_outbox` | F17 | `reuniao_individual` | F12 |
 | `evento_sst` | F10 | `sessao` | F01 |
 | `feriado` | Sem dado pessoal | `solicitacao_desligamento` | F11 |
+| `desligamento_checklist` | F11 | | |
 | `ferias` | F08 | `solicitacao_rh` | F16 |
 | `historico_gestor_departamento` | F06 | `user` | F01 |
 | `historico_profissional` | F06 | `instrumento_normativo` | F18 |

@@ -322,6 +322,33 @@ query "solicitacoes_desligamento/{id}/aprovar" verb=POST {
       field_name = "id"
       field_value = $solicitacao.id
     } as $solicitacao_atualizada
+
+    // Checklist de saida (change fluxo-de-desligamento, D1): os itens padrao, uma vez por pedido.
+    db.query desligamento_checklist {
+      where = $db.desligamento_checklist.solicitacao_desligamento_id == $input.id
+      return = {type: "list"}
+    } as $checklist_existente
+
+    conditional {
+      if (($checklist_existente|count) == 0) {
+        db.add desligamento_checklist {
+          data = {solicitacao_desligamento_id: $input.id, titulo: "Devolução de equipamentos", responsavel: "TI", ordem: 1, feito: false}
+        } as $item_checklist_1
+
+        db.add desligamento_checklist {
+          data = {solicitacao_desligamento_id: $input.id, titulo: "Revogar acessos aos sistemas", responsavel: "TI", ordem: 2, feito: false}
+        } as $item_checklist_2
+
+        db.add desligamento_checklist {
+          data = {solicitacao_desligamento_id: $input.id, titulo: "Entrevista de desligamento", responsavel: "RH", ordem: 3, feito: false}
+        } as $item_checklist_3
+
+        db.add desligamento_checklist {
+          data = {solicitacao_desligamento_id: $input.id, titulo: "Cálculo das verbas rescisórias", responsavel: "Financeiro", ordem: 4, feito: false}
+        } as $item_checklist_4
+
+      }
+    }
   
     db.get colaborador {
       field_name = "id"
