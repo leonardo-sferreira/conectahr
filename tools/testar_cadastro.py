@@ -179,12 +179,15 @@ def app(perfil: str = "RH", pagina: str = "colaboradores", **extra) -> AppTest:
     return abrir(at.run(), pagina)
 
 
-def preencher_admissao(at: AppTest, cpf: str = "390.533.447-05") -> None:
+def preencher_admissao(at: AppTest, cpf: str = "39053344705") -> None:
     at.text_input(key="adm_nome").set_value("Juliana Prado")
     at.text_input(key="adm_cpf").set_value(cpf)
-    at.date_input(key="adm_nasc").set_value(date(1998, 4, 12))
+    # Nascimento em três listas (campos.data_por_partes).
+    at.selectbox(key="adm_nasc_dia").set_value(12)
+    at.selectbox(key="adm_nasc_mes").set_value(4)
+    at.selectbox(key="adm_nasc_ano").set_value(1998)
     at.text_input(key="adm_email").set_value("juliana.prado@exemplo.com")
-    at.text_input(key="adm_tel").set_value("(11) 98765-4321")
+    at.text_input(key="adm_tel").set_value("11987654321")
     at.text_input(key="adm_bairro").set_value("Centro")
     at.selectbox(key="adm_dep").set_value(2)
     at.selectbox(key="adm_cargo").set_value(2)
@@ -196,11 +199,14 @@ def preencher_admissao(at: AppTest, cpf: str = "390.533.447-05") -> None:
 # ---------------------------------------------------------------------------
 caso("Regras de apresentação (cadastro_modelo.py)")
 conferir(m.cpf_valido("529.982.247-25") and not m.cpf_valido("111.111.111-11") and not m.cpf_valido("529.982.247-24"), "CPF: dígitos verificadores")
-base = {"nome": "Juliana Prado", "cpf": "39053344705", "data_nascimento": date(1998, 4, 12), "email_pessoal": "j@exemplo.com", "telefone": "11", "logradouro": "Rua",
+base = {"nome": "Juliana Prado", "cpf": "39053344705", "data_nascimento": date(1998, 4, 12), "email_pessoal": "j@exemplo.com", "telefone": "11987654321", "logradouro": "Rua",
         "numero": "1", "bairro": "Centro", "departamento_id": 2, "cargo_id": 2, "tipo_contrato": "CLT", "nivel": "l1", "data_admissao": HOJE, "salario": 3500.0, "carga_horaria_semanal": 44.0}
 conferir(m.validar_admissao(base, HOJE) is None, "admissão completa passa")
 conferir("CPF inválido" in m.validar_admissao(dict(base, cpf="123"), HOJE) and "bairro" in m.validar_admissao(dict(base, bairro=" "), HOJE), "admissão: CPF e campo obrigatório")
 conferir("1 a 60" in m.validar_admissao(dict(base, carga_horaria_semanal=80), HOJE) and "e-mail" in m.validar_admissao(dict(base, email_pessoal="x"), HOJE), "admissão: carga horária e e-mail")
+conferir("10 ou 11" in m.validar_admissao(dict(base, telefone="1198"), HOJE) and "10 ou 11" in m.validar_admissao(dict(base, telefone="11 98765-4321"), HOJE)
+         and "complemento" in m.validar_admissao(dict(base, numero="12A"), HOJE), "admissão: telefone e número só com números (20/10/2026)")
+conferir(m.corpo_admissao(dict(base, complemento=" casa B "))["complemento"] == "casa B" and m.corpo_admissao(base)["complemento"] is None, "corpo do POST leva o complemento")
 corpo = m.corpo_admissao(dict(base, cpf="390.533.447-05"))
 conferir(corpo["cpf"] == "39053344705" and corpo["data_admissao"] == HOJE.isoformat() and corpo["nivel"] == "l1", "corpo do POST: CPF só com dígitos e datas ISO")
 lc = m.linhas_colaboradores(colabs(), ORGANOGRAMA)
@@ -256,11 +262,11 @@ conferir(at.number_input(key="adm_carga").value == 36.0, "PJ não tem jornada de
 at.selectbox(key="adm_contrato").set_value("CLT")
 at = at.run()
 conferir(at.number_input(key="adm_carga").value == 44.0, "voltar para CLT sugere 44h")
-preencher_admissao(at, cpf="123.456.789-00")
+preencher_admissao(at, cpf="12345678900")
 at.button(key="adm_ok").click()
 at = at.run()
 conferir("CPF inválido" in texto(at) and not any(c[0] == "admitir" for c in chamadas), "CPF inválido: mensagem, sem chamar a API")
-at.text_input(key="adm_cpf").set_value("390.533.447-05")
+at.text_input(key="adm_cpf").set_value("39053344705")
 at.button(key="adm_ok").click()
 at = at.run()
 adm = next((c[1] for c in chamadas if c[0] == "admitir"), {})
@@ -295,6 +301,51 @@ at.button(key="acesso_ok").click()
 at = at.run()
 conferir(any(c[0] == "criar" for c in chamadas) and "Esqueci minha senha" in str(at.session_state["aviso_toast"] if "aviso_toast" in at.session_state else [x.value for x in at.toast]), "e-mail não enviado: orienta 'Esqueci minha senha'")
 
+caso("Admissão: cada campo aceita só o seu tipo e nenhum aceita emoji (20/10/2026)")
+at = app("RH")
+at.button(key="col_admitir").click()
+at = at.run()
+conferir(at.text_input(key="adm_cpf").max_chars == 11 and at.text_input(key="adm_tel").max_chars == 11 and at.text_input(key="adm_numero").max_chars == 10
+         and at.text_input(key="adm_complemento") is not None, "CPF e telefone com 11, número com 10 e o campo Complemento")
+conferir([s.key for s in at.selectbox if str(s.key).startswith("adm_nasc_")] == ["adm_nasc_dia", "adm_nasc_mes", "adm_nasc_ano"]
+         and "Março" in at.selectbox(key="adm_nasc_mes").options and at.selectbox(key="adm_nasc_ano").options[0] == str(HOJE.year),
+         "nascimento em três listas: dia, mês (por nome) e ano (do mais recente)")
+preencher_admissao(at)
+at.text_input(key="adm_nome").set_value("Juliana Prado \U0001F600")
+at.text_input(key="adm_tel").set_value("1198765432a")
+at.text_input(key="adm_numero").set_value("12A")
+at.text_input(key="adm_complemento").set_value("Casa B \U0001F3E0")
+at = at.run()
+t_av = texto(at)
+conferir("Nome completo: não é permitido emoji. Apague para continuar." in t_av and "Telefone: aceita só números. Apague “a” para continuar." in t_av
+         and "Número: aceita só números. Apague “A” para continuar." in t_av and "Complemento (opcional): não é permitido emoji" in t_av,
+         "aviso embaixo de cada campo com o que ele não aceita")
+conferir(at.text_input(key="adm_tel").value == "1198765432a" and at.text_input(key="adm_complemento").value == "Casa B \U0001F3E0",
+         "o que a pessoa digitou fica no campo (nada é apagado sozinho)")
+at.button(key="adm_ok").click()
+at = at.run()
+conferir(not any(c[0] == "admitir" for c in chamadas) and any("não é permitido emoji" in str(e.value) for e in at.get("toast")), "Admitir não grava e mostra o aviso flutuante")
+at.text_input(key="adm_nome").set_value("Juliana Prado")
+at.text_input(key="adm_tel").set_value("1198765432")
+at.text_input(key="adm_numero").set_value("12")
+at.text_input(key="adm_complemento").set_value("Casa B")
+at.button(key="adm_ok").click()
+at = at.run()
+adm = next((c[1] for c in chamadas if c[0] == "admitir"), {})
+conferir(adm.get("numero") == "12" and adm.get("complemento") == "Casa B" and adm.get("telefone") == "1198765432" and adm.get("nome") == "Juliana Prado",
+         "depois de apagar, admite com o complemento")
+at = app("RH")
+at.button(key="col_admitir").click()
+at = at.run()
+preencher_admissao(at)
+at.selectbox(key="adm_nasc_dia").set_value(31)
+at.selectbox(key="adm_nasc_mes").set_value(2)
+at = at.run()
+conferir("Fevereiro de 1998 não tem dia 31." in texto(at), "data que não existe: avisa no campo")
+at.button(key="adm_ok").click()
+at = at.run()
+conferir("data de nascimento" in texto(at) and not any(c[0] == "admitir" for c in chamadas), "e não admite")
+
 caso("Tipo de acesso: Admin troca direto; RH pede ao Admin (change pedido-de-acesso)")
 lp = m.linhas_pedidos_acesso(pedidos())
 conferir([l["id"] for l in lp] == [51, 50] and lp[0]["de"] == "Colaborador" and lp[0]["para"] == "Gestor" and lp[0]["pendente"] and not lp[0]["mudou"], "pendente primeiro, com de → para")
@@ -318,6 +369,12 @@ at.text_input(key="acesso_email").set_value("juliana.prado@empresa.com")
 at.button(key="acesso_ok").click()
 at = at.run()
 conferir("10 caracteres" in texto(at) and not any(c[0] == "criar" for c in chamadas), "sem justificativa: mensagem, sem criar a conta")
+# Campo de texto livre, sem tipo: o aviso e a conferência do botão valem para todo campo (campos.instalar).
+at.text_area(key="acesso_justificativa").set_value("Vai coordenar o time de suporte. \U0001F44D\U0001F3FD")
+at.button(key="acesso_ok").click()
+at = at.run()
+conferir(not any(c[0] in ("criar", "pedir") for c in chamadas) and "Justificativa para o Admin: não é permitido emoji" in texto(at),
+         "campo livre com emoji: aviso e o botão não grava (vale para todo campo)")
 at.text_area(key="acesso_justificativa").set_value("Vai coordenar o time de suporte.")
 at.button(key="acesso_ok").click()
 at = at.run()

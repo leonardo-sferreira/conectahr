@@ -53,6 +53,22 @@ Todo acesso à API passa por `frontend/api_client.py`. Não chame `requests` dir
 - Validação de campos antes do envio em `frontend/validacao.py`. Ela é conveniência de
   usabilidade: o backend sempre valida de novo.
 
+## Campos de texto (`campos.py`)
+
+Pedido do usuário (20/10/2026): número só número, nome só letras, endereço letras e números, e nenhum campo aceita
+emoji.
+
+- O `app.py` chama `instalar()` e, a cada execução completa, `nova_rodada()`. Todo `text_input`/`text_area` com `key`
+  se registra e, se tiver o que não é permitido, mostra um aviso vermelho embaixo; todo botão `type="primary"`
+  confere os campos registrados e, se algum estiver errado, mostra um aviso flutuante e não grava.
+- **Nunca** mostre elemento (`st.toast`, `st.html`...) nem mexa no valor de um campo dentro de um callback
+  (`on_change`): num `st.dialog` isso apaga a página inteira (foi o que derrubou a plataforma no PR #73, revertido no
+  #74).
+- Campo com tipo: `campo(container, rotulo, tipo, key, ...)`, com `tipo` em `TIPOS` (`numero`, `nome`, `endereco`,
+  `email`, `codigo`, `texto`). Dê `max_chars` do tamanho real (CPF e telefone 11, CEP 8).
+- Data de nascimento: `data_por_partes(...)` (dia, mês e ano em listas).
+- O backend continua sendo a validação de verdade.
+
 ## Tema e HTML
 
 - Cores, fontes e componentes visuais ficam em `frontend/theme.py` (`GRAFITE`, `AMBAR`, `MARFIM`,
