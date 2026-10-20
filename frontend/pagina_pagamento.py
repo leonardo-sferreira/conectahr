@@ -3,7 +3,8 @@ Página "Pagamento" (tarefas 29 e 30 da change concluir-frontend-streamlit).
 
 - Colaborador (Figma 70:46): os próprios holerites por ano e os informes de rendimentos, com "Baixar"
   (`documentos/{id}/arquivo`, que só o dono, o RH e o Admin abrem, e audita cada abertura).
-- RH e Admin (Figma 236:357 e 236:594, "Pagamento — lançamentos"): abas Holerites e Informes, filtros de
+- RH e Admin, na tela "Lançamento de pagamentos" do grupo RH do menu (Figma 236:357 e 236:594, "Pagamento —
+  lançamentos"; separada do "Pagamento" pessoal em 20/10/2026, onde o RH e o Admin veem os próprios): abas Holerites e Informes, filtros de
   competência e departamento, quem já tem e quem falta, "Lançar" (237:363 e 237:402) e "Substituir"
   (237:441). Lançar é `documentos` (POST) com tipo holerite ou informe_rendimentos, que só RH e Admin
   podem; substituir é o mesmo POST com `documento_substituido_id`, e o anterior fica "substituído".
@@ -319,11 +320,23 @@ def _visao_rh(token: str) -> None:
 
 
 def pagina_pagamento() -> None:
+    """Menu pessoal: os próprios holerites e informes, para qualquer perfil (o RH e o Admin também recebem os seus)."""
     usuario = st.session_state.usuario
     render_topbar(usuario["nome"])
     if aviso := st.session_state.pop("aviso_toast", None):
         st.toast(aviso)
-    if str(usuario.get("perfil", "")).upper() in ("RH", "ADMIN"):
-        _visao_rh(st.session_state.token)
-    else:
-        _visao_colaborador(st.session_state.token)
+    _visao_colaborador(st.session_state.token)
+
+
+def pagina_lancamento_pagamentos() -> None:
+    """Grupo RH do menu: lançar e substituir os holerites e informes dos colaboradores (pedido do usuário em
+    20/10/2026: antes, o RH lançava e via os próprios na mesma tela "Pagamento"). A autorização é do backend."""
+    usuario = st.session_state.usuario
+    render_topbar(usuario["nome"])
+    if aviso := st.session_state.pop("aviso_toast", None):
+        st.toast(aviso)
+    if str(usuario.get("perfil", "")).upper() not in ("RH", "ADMIN"):
+        render_hero("Pagamento — lançamentos", "Lance e acompanhe os holerites e informes de rendimentos de todos os colaboradores")
+        alerta(st.empty(), "erro", "Esta tela é só do RH e do Admin.")
+        return
+    _visao_rh(st.session_state.token)

@@ -138,7 +138,8 @@ def abrir(at: AppTest, url_path: str) -> AppTest:
     return at.run()
 
 
-def app(perfil: str = "COLABORADOR", **extra) -> AppTest:
+def app(perfil: str = "COLABORADOR", pagina: str | None = None, **extra) -> AppTest:
+    """Colaborador abre "Pagamento"; RH e Admin, "Lançamento de pagamentos" (grupo RH do menu), salvo `pagina`."""
     anexo["arquivo"] = None
     chamadas.clear()
     estado.clear()
@@ -151,7 +152,7 @@ def app(perfil: str = "COLABORADOR", **extra) -> AppTest:
     else:
         at.session_state["usuario"] = {"id": 2, "nome": "Ana Ribeiro", "email": "ana@empresa.com", "perfil": perfil, "colaborador_id": 7}
     at.session_state["sessao_validada"] = True
-    return abrir(at.run(), "pagamento")
+    return abrir(at.run(), pagina or ("pagamento" if perfil == "COLABORADOR" else "lancamento-de-pagamentos"))
 
 
 def enviados() -> list[dict]:
@@ -230,6 +231,19 @@ at = at.run()
 conferir("pg_lan_11" not in chaves(at) and "pg_sub_7" in chaves(at), "filtro de departamento na tabela")
 at = app("ADMIN")
 conferir("Pagamento — lançamentos" in texto(at), "Admin também lança")
+
+caso("RH: os próprios holerites ficam em Pagamento, separados dos lançamentos (pedido de 20/10/2026)")
+at = app("RH", pagina="pagamento")
+t = texto(at)
+conferir(("meus",) in chamadas and ("rh",) not in chamadas and "Pagamento — lançamentos" not in t and "pg_lan_11" not in chaves(at),
+         "RH em Pagamento: só os próprios holerites e informes, sem lançar")
+conferir(f"Holerite — {m.MESES[MES_COMP - 1]}/{ANO_COMP}" in t, "RH vê o próprio holerite")
+conferir("nav_Lançamento de pagamentos" in chaves(at), "o menu do RH tem 'Lançamento de pagamentos' no grupo RH")
+at = app("ADMIN", pagina="pagamento")
+conferir(("meus",) in chamadas and ("rh",) not in chamadas, "Admin em Pagamento: só os próprios")
+at = app(pagina="lancamento-de-pagamentos")
+conferir("só do RH e do Admin" in texto(at) and ("rh",) not in chamadas, "colaborador na tela de lançamentos: mensagem, sem a lista do RH")
+conferir("nav_Lançamento de pagamentos" not in chaves(app()), "o menu do colaborador não tem 'Lançamento de pagamentos'")
 
 caso("RH: lançar holerite (Figma 237:363)")
 at = app("RH")
