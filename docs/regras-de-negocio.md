@@ -738,7 +738,7 @@ Ambos **estão implementados**:
 
 ### 13.3 Consulta de auditoria (`GET auditoria`)
 
-RH/ADMIN, com filtros opcionais combináveis (`recurso`, `registro_id`, `user_id`, `acao`, `resultado`); sem filtro, retorna os eventos mais recentes primeiro. Não audita a própria consulta. Antes deste endpoint (adicionado na tarefa 7.11), os eventos já eram gravados mas não havia nenhuma forma de lê-los pela API — gap encontrado durante os testes de segurança (`xano-workspace/api/conecta_rh_colaboradores/auditoria_GET.xs`).
+RH/ADMIN, com filtros opcionais combináveis (`recurso`, `registro_id`, `user_id`, `acao`, `resultado`); sem filtro, retorna os eventos mais recentes primeiro. Não audita a própria consulta. Antes deste endpoint (adicionado na tarefa 7.11), os eventos já eram gravados mas não havia nenhuma forma de lê-los pela API — gap encontrado durante os testes de segurança (`xano-workspace/api/conecta_rh_colaboradores/auditoria_GET.xs`). Desde 20/10/2026 (tela Auditoria): consulta só uma janela de `dias` (padrão 30, até 366), devolve no máximo 300 eventos, aplica os filtros no laço (o `||` no `where` não filtrava direito) e traz as opções dos filtros (recursos, ações e usuários da janela) e os nomes (`id`, `nome`, `perfil`) de quem aparece.
 
 ### 13.4 Lacunas identificadas
 
