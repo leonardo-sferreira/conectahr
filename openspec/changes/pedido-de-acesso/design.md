@@ -15,7 +15,7 @@
 
 ## D3. Telas
 
-- Admissão: "Tipo de acesso" (padrão Colaborador) só pré-seleciona o "Criar acesso" seguinte, que é onde a conta nasce.
+- Admissão: "Tipo de acesso" (padrão Colaborador) só pré-seleciona o "Criar acesso" seguinte, que é onde a conta nasce. Os dois oferecem Colaborador, Gestor e RH; Admin não (ajuste de 20/10/2026, pedido do usuário): o acesso Admin só é dado a quem já está cadastrado, pela ficha ("Alterar acesso" do Admin ou pedido do RH).
 - Criar acesso: o RH que escolhe outro perfil vê o aviso de que a conta nasce Colaborador e o pedido vai ao Admin, e escreve a justificativa; se o pedido falhar, a conta fica criada e o aviso manda pedir pela ficha.
 - Ficha: "Tipo de acesso: X", com o pedido pendente ou o último decidido. Admin: "Alterar acesso". RH: "Solicitar alteração de acesso", desligado com pedido pendente. Nenhum dos dois aparece na própria conta.
 - Usuários e perfis: bloco "Pedidos de alteração de acesso (N)" acima da tabela, com Aprovar (confirmação) e Recusar (motivo), e "Histórico de pedidos".

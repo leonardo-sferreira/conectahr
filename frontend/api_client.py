@@ -20,6 +20,7 @@ _log = logging.getLogger(__name__)
 _MENSAGEM_SEM_CONEXAO = "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente em instantes."
 _MENSAGEM_GENERICA = "Erro inesperado. Tente novamente."
 _MENSAGEM_SESSAO_TERMINOU = "Sua sessão terminou. Entre de novo para continuar."
+_MENSAGEM_LIMITE = "O servidor recebeu muitas consultas seguidas. Espere alguns segundos e tente de novo."
 
 # Mensagens de validação que o próprio Xano gera em inglês (tipos e filtros de
 # input), traduzidas para o usuário. As mensagens escritas nos endpoints já
@@ -71,7 +72,8 @@ GRUPO_USUARIOS = "GjsM93yp"
 GRUPO_CARGOS = "iy_CTE1P"
 
 
-_PAUSA_429_S = 3
+# Pausas antes de cada nova tentativa depois de um 429 (o limite do plano gratuito é por janela de 20 s).
+_PAUSAS_429_S = (3, 5)
 
 
 def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
@@ -108,10 +110,12 @@ def _request(method: str, path: str, token: str | None, canonical: str, payload:
 
     try:
         resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
-        if resp.status_code == 429:
-            # Plano gratuito do Xano: 10 requisições a cada 20 s. Uma nova tentativa depois de uma pausa curta
-            # evita que uma tela com várias consultas mostre erro só por ter chegado ao limite.
-            time.sleep(_PAUSA_429_S)
+        for pausa in _PAUSAS_429_S:
+            if resp.status_code != 429:
+                break
+            # Plano gratuito do Xano: 10 requisições a cada 20 s. Novas tentativas depois de pausas curtas
+            # evitam que uma tela com várias consultas mostre erro (ou fique sem dados) só por ter chegado ao limite.
+            time.sleep(pausa)
             resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
     except requests.RequestException as exc:
         # O detalhe técnico (host, SSL, retries) vai só para o log do servidor,
@@ -133,6 +137,8 @@ def _request(method: str, path: str, token: str | None, canonical: str, payload:
             # aviso. Um 401 sem token (credencial errada no login) não conta.
             st.session_state["sessao_expirada"] = True
             raise ApiError(_MENSAGEM_SESSAO_TERMINOU, 401)
+        if resp.status_code == 429:
+            raise ApiError(_MENSAGEM_LIMITE, 429)
         message = data.get("message") or data.get("error") or _MENSAGEM_GENERICA
         raise ApiError(_traduzir(str(message)), resp.status_code)
 

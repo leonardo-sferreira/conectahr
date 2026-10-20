@@ -16,6 +16,9 @@ from datetime import date, datetime, timedelta, timezone
 from onboarding_modelo import data_br
 
 PERFIS = {"COLABORADOR": "Colaborador", "GESTOR": "Gestor", "RH": "RH", "ADMIN": "Admin"}
+# Na admissão e no "Criar acesso" não há Admin: ele só é dado a quem já está cadastrado, pela ficha (o Admin altera;
+# o RH pede ao Admin). Pedido do usuário em 20/10/2026.
+PERFIS_NOVA_CONTA = {p: r for p, r in PERFIS.items() if p != "ADMIN"}
 CONTRATOS = {"CLT": "CLT", "PJ": "PJ", "ESTAGIO": "Estágio", "APRENDIZ": "Aprendiz", "TEMPORARIO": "Temporário", "OUTRO": "Outro"}
 # Carga horária semanal de cada contrato na matriz regra_contrato (ConectaHR/semear_regras_contrato): sugerida na
 # admissão quando o RH troca o contrato (pedido do usuário em 13/10/2026). PJ e Outro não têm jornada: o campo fica como está.

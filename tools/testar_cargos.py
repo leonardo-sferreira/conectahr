@@ -68,7 +68,7 @@ api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
 api_client.meus_comunicados = lambda token: {"comunicados": []}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
-api_client.organograma = lambda token: ORG
+api_client.organograma = lambda token: _falha_ou("org", ORG)
 api_client.niveis_hierarquicos = lambda token: {"niveis": NIVEIS}
 api_client.listar_cargos = lambda token: {"cargos": CARGOS}
 api_client.calendario = lambda token: {"feriados": []}
@@ -183,6 +183,19 @@ conferir(at.selectbox(key="adm_cargo").options == ["Desenvolvedor Front-end Jún
 at.selectbox(key="adm_dep").set_value(13)
 at = at.run()
 conferir(at.selectbox(key="adm_cargo").options == ["Analista de Contas a Pagar Pleno · Analista", "Estagiário"], "Financeiro: só os do Financeiro e os sem departamento")
+
+caso("Admissão: organograma que não carregou (ex.: limite de requisições do Xano)")
+at = app(pagina="colaboradores", erro_org=ApiError("Muitas requisições. Tente de novo em instantes.", 429))
+conferir("não carregaram agora" in texto(at) and "Muitas requisições" in texto(at), "a lista avisa que departamentos e cargos não carregaram, com o motivo")
+at.button(key="col_admitir").click()
+at = at.run()
+conferir(at.selectbox(key="adm_dep").options == [] and "Muitas requisições" in texto(at), "o modal diz por que não há departamentos")
+at.text_input(key="adm_nome").set_value("Nicolas Teste")
+estado.pop("erro_org")
+at.button(key="adm_recarregar").click()
+at = at.run()
+conferir(len(at.selectbox(key="adm_dep").options) == 3 and at.text_input(key="adm_nome").value == "Nicolas Teste" and "Muitas requisições" not in texto(at),
+         "Tentar de novo carrega os departamentos e mantém o que foi digitado")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:
