@@ -50,11 +50,16 @@ def pedidos_privacidade(solicitacoes: list[dict]) -> list[dict]:
         if s.get("tipo") != "privacidade_lgpd":
             continue
         selo, tom = _SITUACAO.get(s.get("status") or "recebida", ("Recebido", "neu"))
+        # Resultado gravado pelo RH na tela "Pedidos LGPD" (change pedidos-lgpd).
+        if s.get("resultado_lgpd") == "atendido_parcial":
+            selo, tom = "Atendido em parte", "amb"
         aberto = data_br(s.get("created_at") or s.get("updated_at"))
         partes = [f"Aberto em {aberto}"] if aberto else []
         prazo = data_br(s.get("prazo_resposta"))
         if prazo and s.get("status") in (None, "recebida", "em_analise"):
             partes.append(f"responder até {prazo}")
+        if s.get("status") in ("atendida", "indeferida") and s.get("justificativa_decisao"):
+            partes.append(f"Resposta do RH: {s['justificativa_decisao']}")
         linhas.append({
             "titulo": SUBTIPOS.get(s.get("subtipo_lgpd"), "Pedido de privacidade"),
             "detalhe": " · ".join(partes) or None,
