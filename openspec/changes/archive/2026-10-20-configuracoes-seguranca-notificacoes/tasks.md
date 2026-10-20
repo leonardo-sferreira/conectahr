@@ -15,8 +15,8 @@
   - **Feito (20/10/2026):** publicados (6 `UPDATE` de endpoint e 1 da função), conferidos contra o git antes e pelo pull depois; `checar_endpoints` 244, 0 falhas. `ponto/marcar` ficou de fora (REP-P; alerta legal).
 - [x] 2.3 Aba Notificações (D2). Verificar: `tools/testar_configuracoes.py`.
   - **Feito (20/10/2026):** 8 verificações de Notificações; 22/22 no total, no CI.
-- [ ] 2.4 Publicar e `tools/testar_configuracoes_http.py` com login de verdade.
-  - **Publicado (20/10/2026).** Falta rodar `tools/testar_configuracoes_http.py` (pede o código que chega por e-mail).
+- [x] 2.4 Publicar e `tools/testar_configuracoes_http.py` com login de verdade.
+  - **Publicado (20/10/2026).** `tools/testar_configuracoes_http.py`: 8/8 (20/10/2026).
 
 ## 3. Documentação
 

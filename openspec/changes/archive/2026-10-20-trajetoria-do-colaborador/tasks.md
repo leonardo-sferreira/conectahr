@@ -6,8 +6,8 @@
   - **Feito (20/10/2026):** `checar_endpoints` 230, 0 falhas.
 - [x] 1.2 `avaliacoes/{id}/competencias` GET (D3). Verificar: `python tools/checar_endpoints.py` sem falhas.
   - **Feito (20/10/2026):** idem.
-- [ ] 1.3 Publicar os dois endpoints. Verificar: dry-run só com 2 `CREATE`; depois do push, `tools/testar_trajetoria_http.py` com login de verdade.
-  - **Publicado (20/10/2026):** dry-run com 2 `CREATE` e nada mais; o `pull` depois do push só difere na formatação. Falta rodar `tools/testar_trajetoria_http.py` (pede o código que chega por e-mail).
+- [x] 1.3 Publicar os dois endpoints. Verificar: dry-run só com 2 `CREATE`; depois do push, `tools/testar_trajetoria_http.py` com login de verdade.
+  - **Publicado (20/10/2026):** dry-run com 2 `CREATE` e nada mais; o `pull` depois do push só difere na formatação. `tools/testar_trajetoria_http.py`: 10/10 (20/10/2026). O caso 200 de `avaliacoes/{id}/competencias` não rodou: a conta não tinha avaliação a preencher.
 
 ## 2. Frontend
 

@@ -10,8 +10,8 @@
   - **Feito (20/10/2026):** publicado; antes, conferido igual ao git.
 - [x] 1.4 POST, `minhas_solicitacoes_desligamento` e `cancelar` sem a restrição de perfil (D3). Verificar: idem.
   - **Feito (20/10/2026):** publicados; `checar_endpoints` 247, 0 falhas.
-- [ ] 1.5 Publicar e rodar `tools/testar_desligamento_http.py` com login de verdade.
-  - **Publicado (20/10/2026).** Falta rodar `tools/testar_desligamento_http.py` (pede o código que chega por e-mail).
+- [x] 1.5 Publicar e rodar `tools/testar_desligamento_http.py` com login de verdade.
+  - **Publicado (20/10/2026).** Rodado com conta do RH: 6/6 (20/10/2026). O detalhe com o checklist não rodou: ainda não há pedido de desligamento.
 
 ## 2. Frontend
 
