@@ -101,6 +101,9 @@ jobs:
       - name: Testes das Regras
         run: python tools/testar_regras.py
 
+      - name: Testes do Desligamento
+        run: python tools/testar_desligamento.py
+
       - name: Testes da Trajetória
         run: python tools/testar_trajetoria.py
 

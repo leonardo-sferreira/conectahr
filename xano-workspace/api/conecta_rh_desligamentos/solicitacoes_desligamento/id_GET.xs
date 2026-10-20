@@ -119,6 +119,13 @@ query "solicitacoes_desligamento/{id}" verb=GET {
       error_type = "accessdenied"
       error = "Você não possui permissão para consultar esta solicitação."
     }
+
+    // Checklist de saida (change fluxo-de-desligamento, D1).
+    db.query desligamento_checklist {
+      where = $db.desligamento_checklist.solicitacao_desligamento_id == $solicitacao.id
+      sort = {desligamento_checklist.ordem: "asc"}
+      return = {type: "list"}
+    } as $checklist
   }
 
   response = {
@@ -126,6 +133,7 @@ query "solicitacoes_desligamento/{id}" verb=GET {
     solicitacao : $solicitacao
     colaborador : $colaborador_alvo
     departamento: $departamento_alvo
+    checklist   : $checklist
   }
 
   guid = "dLSP_lnlkzi-sAOtxWkoVSeiNIE"

@@ -66,10 +66,7 @@ query "solicitacoes_desligamento/{id}/cancelar" verb=POST {
   
     // Apenas Colaborador ou Gestor podem cancelar
     // as próprias solicitações.
-    precondition ($perfil_autenticado == "COLABORADOR" || $perfil_autenticado == "GESTOR") {
-      error_type = "accessdenied"
-      error = "Somente colaboradores ou gestores podem cancelar solicitações próprias."
-    }
+    // Qualquer perfil com ficha (change fluxo-de-desligamento, D3).
   
     // Confirma que existe um colaborador vinculado.
     db.get colaborador {

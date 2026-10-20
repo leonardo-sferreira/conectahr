@@ -88,11 +88,8 @@ query solicitacoes_desligamento verb=POST {
       value = $usuario_autenticado.perfil|trim|to_upper
     }
   
-    // Somente Colaborador ou Gestor podem abrir a solicitação.
-    precondition ($perfil_solicitante == "COLABORADOR" || $perfil_solicitante == "GESTOR") {
-      error_type = "accessdenied"
-      error = "Somente colaboradores ou gestores podem criar solicitações de desligamento."
-    }
+    // Qualquer perfil com ficha pede o proprio desligamento; o de outra pessoa, so o gestor do
+    // departamento dela (change fluxo-de-desligamento, D3).
   
     // Localiza o colaborador que será desligado.
     db.get colaborador {
@@ -105,12 +102,8 @@ query solicitacoes_desligamento verb=POST {
       error = "Colaborador informado não encontrado."
     }
   
-    // Colaborador comum só pode solicitar o próprio desligamento — checado
-    // antes de qualquer estado do colaborador-alvo, para não revelar esse
-    // estado a quem não tem escopo sobre o registro.
-    precondition ($perfil_solicitante == "GESTOR" || $colaborador_alvo.id == $colaborador_solicitante.id) {
-      error_type = "accessdenied"
-      error = "O colaborador só pode solicitar o próprio desligamento."
+    var $e_o_proprio {
+      value = ($colaborador_alvo.id == $colaborador_solicitante.id)
     }
 
     // Localiza o departamento do colaborador-alvo.
@@ -126,7 +119,7 @@ query solicitacoes_desligamento verb=POST {
 
     // Gestor só pode solicitar desligamento em departamento
     // pelo qual seja responsável.
-    precondition ($perfil_solicitante != "GESTOR" || $departamento_alvo.gestor_colaborador_id == $colaborador_solicitante.id) {
+    precondition ($e_o_proprio || ($departamento_alvo.gestor_colaborador_id == $colaborador_solicitante.id)) {
       error_type = "accessdenied"
       error = "O gestor só pode solicitar desligamentos de colaboradores do próprio departamento."
     }
@@ -199,7 +192,7 @@ query solicitacoes_desligamento verb=POST {
     // Define a origem da solicitação.
     // A expressão precisa permanecer em uma única linha.
     var $origem_solicitacao {
-      value = ($perfil_solicitante == "GESTOR" ? "gestor" : "funcionario")
+      value = ($e_o_proprio ? "funcionario" : "gestor")
     }
   
     // Cria a solicitação.

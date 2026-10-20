@@ -136,6 +136,34 @@ query "solicitacoes_desligamento/{id}/concluir" verb=POST {
       error = "A data efetiva desta solicitação ainda não chegou."
     }
 
+    // Checklist de saida completo (change fluxo-de-desligamento, D1). Pedidos aprovados antes do
+    // checklist nao tem itens e concluem como antes.
+    db.query desligamento_checklist {
+      where = $db.desligamento_checklist.solicitacao_desligamento_id == $input.id
+      return = {type: "list"}
+    } as $itens_checklist
+
+    var $itens_pendentes {
+      value = 0
+    }
+
+    foreach ($itens_checklist) {
+      each as $item_checklist {
+        conditional {
+          if ($item_checklist.feito != true) {
+            var.update $itens_pendentes {
+              value = $itens_pendentes + 1
+            }
+          }
+        }
+      }
+    }
+
+    precondition ($itens_pendentes == 0) {
+      error_type = "inputerror"
+      error = "Faltam " ~ ($itens_pendentes|to_text) ~ " item(ns) do checklist de saida. Marque todos como feitos antes de concluir."
+    }
+
     // Localiza o colaborador relacionado.
     db.get colaborador {
       field_name = "id"

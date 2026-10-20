@@ -887,6 +887,15 @@ _APP_CSS = f"""
   .crh-reg-lista {{ margin: 0; padding-left: 18px; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-reg_rej_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
   .st-key-reg_rej_perigo button p {{ color: white !important; }}
+  /* Desligamento (Figma 224:4056 e 249:3075; change fluxo-de-desligamento). */
+  .crh-pd-passo {{ display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; }}
+  .crh-pd-passo .n {{ width: 22px; height: 22px; border-radius: 999px; background: {AMBAR_BG}; color: {AMBAR_ESCURO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }}
+  .crh-pd-passo .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-pd-passo .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  div[class*="st-key-dl_rejeitar_"] button p {{ color: {ERRO} !important; font-weight: 600; }}
+  div[class*="st-key-dl_aprovar_"] button p, div[class*="st-key-dl_assumir_"] button p, div[class*="st-key-dl_concluir_"] button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600; }}
+  .st-key-dl_rej_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
+  .st-key-dl_rej_perigo button p {{ color: white !important; }}
   /* Aviso embaixo de um campo com o que ele não aceita (campos.py). */
   .crh-campo-invalido {{ margin: -8px 0 4px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; color: {ERRO} !important; }}
   /* Configurações, Segurança e Notificações (Figma 213:142 e 213:236; change configuracoes-seguranca-notificacoes). */
@@ -1031,6 +1040,8 @@ _ESCURO_CSS = f"""
   .crh-cm-cab .s, .crh-cm-q .r b, .crh-cm-fb .q {{ color: {ESC_TEXTO_2} !important; }}
   .crh-cm-q {{ border-color: {ESC_BORDA}; }}
   .crh-cm-fb {{ background: {ESC_FUNDO}; }}
+  .crh-pd-passo .t {{ color: {ESC_TEXTO} !important; }}
+  .crh-pd-passo .d {{ color: {ESC_TEXTO_2} !important; }}
   div[class*="st-key-reg_card_"], .st-key-reg_sim_conflitos {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .crh-reg-txt .t {{ color: {ESC_TEXTO} !important; }}
   .crh-reg-txt .d, .crh-reg-lista {{ color: {ESC_TEXTO_2} !important; }}

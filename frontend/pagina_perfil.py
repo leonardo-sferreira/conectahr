@@ -376,6 +376,11 @@ def pagina_perfil() -> None:
             st.html('<p class="crh-meta">Nenhuma conta cadastrada. Cadastre para receber o pagamento.</p>')
 
     _cartao_organograma(org)
+    # Caminho para pedir o desligamento (change fluxo-de-desligamento; o menu do Figma não tem o item).
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Pedir desligamento →", type="tertiary", key="pf_pedir_desligamento"):
+            st.session_state.ir_pedir_desligamento = True
+            st.rerun()
 
     modal = st.session_state.get("modal_perfil")
     if modal == "bancarios":

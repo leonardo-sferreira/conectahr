@@ -343,11 +343,19 @@ Não há verificação de escopo por departamento do aprovador em nenhum endpoin
 
 | Ação | Perfis permitidos | Escopo |
 |---|---|---|
-| Criar solicitação | COLABORADOR (de si mesmo) ou GESTOR (do próprio departamento) | — |
+| Criar solicitação | Qualquer perfil com ficha ativa, de si mesmo; de outra pessoa, só o gestor do departamento dela (desde 20/10/2026) | — |
 | Iniciar análise / Aprovar / Rejeitar / Concluir | RH exclusivamente | — |
-| Cancelar | COLABORADOR ou GESTOR | só o próprio `solicitante_user_id` |
+| Cancelar | Qualquer perfil (desde 20/10/2026) | só o próprio `solicitante_user_id`, só pendente |
 | Consultar por id | RH (qualquer); solicitante (própria); GESTOR responsável pelo departamento do colaborador-alvo | — |
-| Listar fila | RH exclusivamente | — |
+| Listar fila | RH exclusivamente | status opcional; contagens e nomes na resposta (desde 20/10/2026) |
+| Marcar item do checklist de saída | RH exclusivamente | só agendado ou concluído; nunca o próprio desligamento |
+
+### 6.4.1 Checklist de saída (change `fluxo-de-desligamento`, desde 20/10/2026)
+
+- `aprovar` cria quatro itens (`desligamento_checklist`): Devolução de equipamentos (TI), Revogar acessos aos sistemas (TI), Entrevista de desligamento (RH) e Cálculo das verbas rescisórias (Financeiro).
+- `solicitacoes_desligamento/{id}/checklist/{item_id}` POST marca feito ou pendente (audita `marcar_checklist_desligamento`); o detalhe (`{id}` GET) traz o checklist.
+- `concluir` exige todos os itens feitos; pedidos aprovados antes do checklist não têm itens e concluem como antes.
+- O pedido pela tela manda `aviso_previo` com os dias até o último dia escolhido (ou `imediato` com 0, se for hoje) e monta o motivo com o motivo escolhido e o comentário.
 
 ### 6.5 O que é auditado
 
