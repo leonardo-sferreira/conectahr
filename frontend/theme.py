@@ -926,6 +926,14 @@ _APP_CSS = f"""
   .crh-pcr-kv {{ display: flex; justify-content: space-between; gap: 12px; margin: 10px 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-pcr-kv b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
   .crh-pcr-kv b.ambar {{ color: {AMBAR_ESCURO}; }}
+  /* RH — Pedidos LGPD (Figma 249:5709 e 249:5955): linha vencendo, resumo e detalhe do modal. */
+  div[class*="st-key-rh_lin_"][class*="_alerta"] {{ background: #FFFBEB; }}
+  .crh-lgpd-resumo {{ background: {MARFIM}; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; }}
+  .crh-lgpd-resumo div {{ display: flex; justify-content: space-between; gap: 12px; margin: 6px 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; }}
+  .crh-lgpd-resumo span {{ color: {GRAFITE_SECUNDARIO}; }}
+  .crh-lgpd-resumo b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
+  .crh-lgpd-resumo b.ambar {{ color: {AMBAR_ESCURO}; }}
+  .crh-lgpd-detalhe {{ margin: 2px 0 12px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; white-space: pre-wrap; }}
   /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
   .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
   .crh-av360-barra .barra {{ flex: 1; height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
@@ -1087,6 +1095,10 @@ _ESCURO_CSS = f"""
   .crh-av360-barra .barra {{ background: {ESC_BORDA} !important; }}
   .crh-av360-barra .v {{ color: {ESC_TEXTO} !important; }}
   .crh-nota-neutra {{ background: {ESC_FUNDO} !important; color: {ESC_TEXTO} !important; }}
+  div[class*="st-key-rh_lin_"][class*="_alerta"] {{ background: {ESC_AMBAR_SUAVE} !important; }}
+  .crh-lgpd-resumo {{ background: {ESC_FUNDO} !important; }}
+  .crh-lgpd-resumo b, .crh-lgpd-detalhe {{ color: {ESC_TEXTO} !important; }}
+  .crh-lgpd-resumo b.ambar {{ color: {AMBAR} !important; }}
   .st-key-cfg_card_pc button[kind^="segmented_control"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
   .st-key-cfg_card_pc button[kind="segmented_controlActive"] {{ background: {ESC_AMBAR_SUAVE} !important; border-color: {AMBAR} !important; }}
   .crh-pd-passo .t {{ color: {ESC_TEXTO} !important; }}

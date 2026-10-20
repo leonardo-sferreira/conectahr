@@ -33,6 +33,13 @@ table solicitacao_rh {
     }
     text? justificativa_decisao filters=trim|max:1000
     timestamp? data_decisao
+
+    // Resultado do pedido LGPD (change pedidos-lgpd, D1; Figma 249:5955): atendido,
+    // atendido em parte (status atendida) ou nao atendido (status indeferida).
+    // A resposta ao titular fica em justificativa_decisao.
+    enum? resultado_lgpd {
+      values = ["atendido", "atendido_parcial", "nao_atendido"]
+    }
   }
 
   index = [

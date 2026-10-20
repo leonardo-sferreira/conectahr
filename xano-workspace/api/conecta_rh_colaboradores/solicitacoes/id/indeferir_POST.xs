@@ -109,6 +109,7 @@ query "solicitacoes/{id}/indeferir" verb=POST {
       field_name = "id"
       field_value = $solicitacao_atual.id
       data = {
+        resultado_lgpd        : ($solicitacao_atual.tipo == "privacidade_lgpd" ? "nao_atendido" : null)
         status                : "indeferida"
         decidido_por_user_id  : $usuario_autenticado.id
         justificativa_decisao : $input.justificativa_decisao

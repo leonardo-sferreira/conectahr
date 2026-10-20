@@ -51,6 +51,7 @@ from pagina_organograma import pagina_organograma
 from pagina_pagamento import pagina_lancamento_pagamentos, pagina_pagamento
 from pagina_desligamentos import pagina_desligamentos
 from pagina_pedir_desligamento import pagina_pedir_desligamento
+from pagina_pedidos_lgpd import pagina_pedidos_lgpd
 from pagina_perfil import pagina_perfil
 from pagina_pesquisa_clima import pagina_pesquisa_clima
 from pagina_pesquisas_clima import pagina_pesquisas_clima
@@ -210,10 +211,11 @@ PG_METAS_CICLO = st.Page(pagina_metas_ciclo, title="Metas do ciclo", url_path="m
 PG_CICLOS = st.Page(pagina_ciclos_avaliacao, title="Ciclos de avaliação", url_path="ciclos-de-avaliacao")
 PG_CLIMA = st.Page(pagina_pesquisa_clima, title="Pesquisa de clima", url_path="pesquisa-de-clima")
 PG_CLIMA_RH = st.Page(pagina_pesquisas_clima, title="Pesquisas de clima", url_path="pesquisas-de-clima")
+PG_LGPD = st.Page(pagina_pedidos_lgpd, title="Pedidos LGPD", url_path="pedidos-lgpd")
 PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -247,7 +249,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).

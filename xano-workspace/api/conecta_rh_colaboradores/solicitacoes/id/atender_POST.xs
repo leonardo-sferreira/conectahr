@@ -10,6 +10,7 @@ query "solicitacoes/{id}/atender" verb=POST {
   input {
     int id
     text? justificativa_decisao? filters=trim|max:1000
+    text? resultado? filters=trim|to_lower
   }
 
   stack {
@@ -109,10 +110,35 @@ query "solicitacoes/{id}/atender" verb=POST {
       error = "Somente solicitacoes recebidas ou em analise podem ser atendidas."
     }
 
+    // Pedido LGPD (change pedidos-lgpd, D1): a resposta ao titular e obrigatoria, e
+    // resultado = "parcial" registra "atendido em parte".
+    var $pedido_lgpd {
+      value = ($solicitacao_atual.tipo == "privacidade_lgpd")
+    }
+
+    var $resposta_texto {
+      value = (($input.justificativa_decisao == null) ? "" : $input.justificativa_decisao)
+    }
+
+    precondition (($pedido_lgpd == false) || (($resposta_texto|strlen) >= 5)) {
+      error_type = "inputerror"
+      error = "Escreva a resposta ao titular (pelo menos 5 caracteres)."
+    }
+
+    precondition (($input.resultado == null) || ($input.resultado == "") || ($input.resultado == "parcial") || ($input.resultado == "total")) {
+      error_type = "inputerror"
+      error = "Resultado invalido. Use total ou parcial."
+    }
+
+    var $resultado_lgpd {
+      value = ($pedido_lgpd ? (($input.resultado == "parcial") ? "atendido_parcial" : "atendido") : null)
+    }
+
     db.edit solicitacao_rh {
       field_name = "id"
       field_value = $solicitacao_atual.id
       data = {
+        resultado_lgpd        : $resultado_lgpd
         status                : "atendida"
         decidido_por_user_id  : $usuario_autenticado.id
         justificativa_decisao : $input.justificativa_decisao

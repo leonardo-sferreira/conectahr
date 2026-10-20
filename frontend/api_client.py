@@ -710,9 +710,12 @@ def solicitacoes_rh(token: str) -> dict:
     return _get("solicitacoes", token, GRUPO_COLABORADORES)
 
 
-def atender_solicitacao(token: str, solicitacao_id: int, justificativa: str | None = None) -> dict:
-    """POST solicitacoes/{id}/atender. Para alteração cadastral, não muda o cadastro sozinho."""
+def atender_solicitacao(token: str, solicitacao_id: int, justificativa: str | None = None, parcial: bool = False) -> dict:
+    """POST solicitacoes/{id}/atender. Para alteração cadastral, não muda o cadastro sozinho. No pedido LGPD, a
+    justificativa é a resposta ao titular (obrigatória) e `parcial` registra "atendido em parte" (change pedidos-lgpd)."""
     corpo = {"justificativa_decisao": justificativa} if justificativa else {}
+    if parcial:
+        corpo["resultado"] = "parcial"
     return _post(f"solicitacoes/{int(solicitacao_id)}/atender", corpo, token, GRUPO_COLABORADORES)
 
 
