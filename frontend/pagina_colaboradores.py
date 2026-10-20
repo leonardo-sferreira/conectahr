@@ -49,7 +49,7 @@ from cadastro_modelo import (
 from cargos_modelo import cargos_do_departamento, rotulo_cargo
 from ficha_colaborador import documentos_da_pessoa, ficha_pdf, nome_arquivo_ficha, secoes
 from pagina_conferencia_documentos import _detalhes as detalhes_documento
-from campos import campo, data_por_partes, houve_correcao, mensagem_correcao
+from campos import campo, data_por_partes
 from theme import alerta, render_hero, render_topbar
 
 CACHE = "cadastro_cache"
@@ -132,7 +132,8 @@ def _modal_admitir(org: dict, erro_org: str | None = None) -> None:
         alerta(st.empty(), "erro", f"{_SEM_ORGANOGRAMA}: {erro_org}" if erro_org else "Nenhum departamento ativo. Cadastre um em Estrutura da empresa.")
         if erro_org and st.button("Tentar de novo", key="adm_recarregar"):
             recarregar()
-    # Cada campo aceita só o seu tipo (campos.py; pedido do usuário em 20/10/2026): o resto sai ao deixar o campo.
+    # Cada campo aceita só o seu tipo (campos.py; pedido do usuário em 20/10/2026): o que não é permitido ganha um aviso
+    # embaixo do campo, e o botão Admitir não grava enquanto houver.
     dados = {"nome": campo(st, "Nome completo", "nome", "adm_nome", max_chars=100)}
     c1, c2 = st.columns(2)
     dados["cpf"] = campo(c1, "CPF", "numero", "adm_cpf", max_chars=11, placeholder="Só os 11 números")
@@ -172,8 +173,7 @@ def _modal_admitir(org: dict, erro_org: str | None = None) -> None:
             st.rerun()
         if st.button("Admitir", type="primary", key="adm_ok"):
             # Algum campo acabou de ser limpo (emoji, letra no número...): mostra e espera um novo clique.
-            corrigidos = houve_correcao()
-            erro_campo = mensagem_correcao(corrigidos) if corrigidos else validar_admissao(dados, hoje)
+            erro_campo = validar_admissao(dados, hoje)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return

@@ -315,17 +315,25 @@ at.text_input(key="adm_nome").set_value("Juliana Prado \U0001F600")
 at.text_input(key="adm_tel").set_value("1198765432a")
 at.text_input(key="adm_numero").set_value("12A")
 at.text_input(key="adm_complemento").set_value("Casa B \U0001F3E0")
+at = at.run()
+t_av = texto(at)
+conferir("Nome completo: não é permitido emoji. Apague para continuar." in t_av and "Telefone: aceita só números. Apague “a” para continuar." in t_av
+         and "Número: aceita só números. Apague “A” para continuar." in t_av and "Complemento (opcional): não é permitido emoji" in t_av,
+         "aviso embaixo de cada campo com o que ele não aceita")
+conferir(at.text_input(key="adm_tel").value == "1198765432a" and at.text_input(key="adm_complemento").value == "Casa B \U0001F3E0",
+         "o que a pessoa digitou fica no campo (nada é apagado sozinho)")
 at.button(key="adm_ok").click()
 at = at.run()
-conferir("Removemos caracteres que não são aceitos em" in texto(at) and not any(c[0] == "admitir" for c in chamadas), "o primeiro clique só limpa e avisa, sem admitir")
-conferir(at.text_input(key="adm_nome").value == "Juliana Prado " and at.text_input(key="adm_tel").value == "1198765432" and at.text_input(key="adm_numero").value == "12"
-         and at.text_input(key="adm_complemento").value == "Casa B ", "emoji, letra no telefone e letra no número saem dos campos")
-conferir(any("Este campo aceita só números" in str(e.value) for e in at.get("toast")), "aviso flutuante diz o que o campo aceita")
+conferir(not any(c[0] == "admitir" for c in chamadas) and any("não é permitido emoji" in str(e.value) for e in at.get("toast")), "Admitir não grava e mostra o aviso flutuante")
+at.text_input(key="adm_nome").set_value("Juliana Prado")
+at.text_input(key="adm_tel").set_value("1198765432")
+at.text_input(key="adm_numero").set_value("12")
+at.text_input(key="adm_complemento").set_value("Casa B")
 at.button(key="adm_ok").click()
 at = at.run()
 adm = next((c[1] for c in chamadas if c[0] == "admitir"), {})
 conferir(adm.get("numero") == "12" and adm.get("complemento") == "Casa B" and adm.get("telefone") == "1198765432" and adm.get("nome") == "Juliana Prado",
-         "o segundo clique admite com os campos limpos e o complemento")
+         "depois de apagar, admite com o complemento")
 at = app("RH")
 at.button(key="col_admitir").click()
 at = at.run()
@@ -361,11 +369,15 @@ at.text_input(key="acesso_email").set_value("juliana.prado@empresa.com")
 at.button(key="acesso_ok").click()
 at = at.run()
 conferir("10 caracteres" in texto(at) and not any(c[0] == "criar" for c in chamadas), "sem justificativa: mensagem, sem criar a conta")
-# Campo de texto livre, sem tipo: o filtro global (campos.instalar_filtro_emoji) tira o emoji mesmo assim.
+# Campo de texto livre, sem tipo: o aviso e a conferência do botão valem para todo campo (campos.instalar).
 at.text_area(key="acesso_justificativa").set_value("Vai coordenar o time de suporte. \U0001F44D\U0001F3FD")
 at.button(key="acesso_ok").click()
 at = at.run()
-conferir(any(c[0] == "pedir" for c in chamadas) and not any("\U0001F44D" in str(c) for c in chamadas), "campo livre: o emoji não chega ao pedido (filtro em todos os campos)")
+conferir(not any(c[0] in ("criar", "pedir") for c in chamadas) and "Justificativa para o Admin: não é permitido emoji" in texto(at),
+         "campo livre com emoji: aviso e o botão não grava (vale para todo campo)")
+at.text_area(key="acesso_justificativa").set_value("Vai coordenar o time de suporte.")
+at.button(key="acesso_ok").click()
+at = at.run()
 conferir(any(c[0] == "criar" for c in chamadas) and ("pedir", 30, "GESTOR", "Vai coordenar o time de suporte.") in chamadas and not any(c[0] == "perfil" for c in chamadas),
          "RH: cria a conta como Colaborador e manda o pedido de Gestor ao Admin, sem trocar o perfil")
 conferir("foi para o Admin" in str(at.session_state["aviso_toast"] if "aviso_toast" in at.session_state else [x.value for x in at.toast]), "o aviso diz que o pedido foi para o Admin")

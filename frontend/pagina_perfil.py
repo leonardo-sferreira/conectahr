@@ -51,7 +51,7 @@ from perfil_modelo import (
     validar_bancarios,
     validar_contato,
 )
-from campos import campo, houve_correcao, limpar, mensagem_correcao
+from campos import campo, limpar
 from theme import alerta, render_hero, render_topbar
 
 _CACHE = "perfil_cache"
@@ -104,7 +104,7 @@ def _modal_bancarios(atual: dict) -> None:
     if escolha == "Outro banco":
         st.session_state.setdefault("pf_banco_outro", "" if banco_atual in BANCOS else banco_atual)
         banco = campo(st, "Nome do banco", "texto", "pf_banco_outro", max_chars=100)
-    # Valores atuais pela sessão (a limpeza dos campos também escreve nela); só números, e o dígito aceita X.
+    # Valores atuais pela sessão; agência e conta só números, e o dígito aceita X.
     for chave, valor in (("pf_agencia", atual.get("agencia")), ("pf_conta", atual.get("conta")), ("pf_digito", atual.get("digito"))):
         st.session_state.setdefault(chave, valor or "")
     c1, c2, c3 = st.columns([1.2, 1.6, 0.8])
@@ -122,8 +122,7 @@ def _modal_bancarios(atual: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Salvar dados bancários", type="primary", key="pf_bancarios_salvar"):
-            corrigidos = houve_correcao()
-            erros = {"campos": mensagem_correcao(corrigidos)} if corrigidos else validar_bancarios(banco or "", agencia, conta, digito, tipo)
+            erros = validar_bancarios(banco or "", agencia, conta, digito, tipo)
             if erros:
                 alerta(slot, "erro", " ".join(erros.values()))
                 return
@@ -198,8 +197,7 @@ def _modal_contato(atual: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Salvar contato e endereço", type="primary", key="pf_contato_salvar"):
-            corrigidos = houve_correcao()
-            erros = {"campos": mensagem_correcao(corrigidos)} if corrigidos else validar_contato(d)
+            erros = validar_contato(d)
             if erros:
                 alerta(slot, "erro", " ".join(erros.values()))
                 return

@@ -24,7 +24,8 @@ real continua sendo do backend.
 import streamlit as st
 
 from api_client import ApiError, auth_me, folha_pessoas, logout
-from campos import fim_da_rodada, instalar_filtro_emoji
+from campos import instalar as instalar_campos
+from campos import nova_rodada
 from notificacoes import render_sino
 from pagina_ausencias import pagina_ausencias
 from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
@@ -108,8 +109,10 @@ _MENU_ADMIN = [
 
 # O sino do topo fala com a API; o tema só o desenha (render_topbar).
 definir_sino(render_sino)
-# Nenhum campo de texto aceita emoji (pedido do usuário, 20/10/2026; campos.py).
-instalar_filtro_emoji()
+# Nenhum campo de texto aceita emoji e cada campo aceita só o seu tipo (pedido do usuário, 20/10/2026; campos.py):
+# aviso embaixo do campo e o botão principal não grava. Sem callback: dentro de st.dialog ele apagava a página.
+instalar_campos()
+nova_rodada()
 
 logado = bool(st.session_state.get("token"))
 em_onboarding = logado and bool(st.session_state.get("onboarding_pendente"))
@@ -290,7 +293,6 @@ with st.sidebar:
                 st.toast(f"A tela {rotulo} ainda está em construção.")
 
 pagina_atual.run()
-fim_da_rodada()
 
 # Uma chamada da página recebeu 401 (sessão encerrada em outro lugar): login com aviso.
 if st.session_state.get("sessao_expirada"):

@@ -269,8 +269,8 @@ conferir("auditoria" not in texto(at), "sem texto de como o sistema funciona (au
 at.text_input(key="pf_conta").set_value("98a")
 at.button(key="pf_bancarios_salvar").click()
 at = at.run()
-conferir("Removemos caracteres que não são aceitos em: Conta" in texto(at) and at.text_input(key="pf_conta").value == "98"
-         and not any(c[0] == "bancarios" for c in chamadas), "letra na conta: sai do campo, aviso no modal, sem chamar a API (20/10/2026)")
+conferir("Conta: aceita só números. Apague “a” para continuar." in texto(at) and at.text_input(key="pf_conta").value == "98a"
+         and not any(c[0] == "bancarios" for c in chamadas), "letra na conta: aviso embaixo do campo, sem chamar a API (20/10/2026)")
 at.text_input(key="pf_conta").set_value("987654")
 at.radio(key="pf_tipo").set_value("poupanca")
 at.button(key="pf_bancarios_salvar").click()
