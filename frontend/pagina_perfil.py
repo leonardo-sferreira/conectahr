@@ -35,7 +35,6 @@ from api_client import (
 )
 from cep import CepErro
 from cep import consultar as consultar_cep
-from cep import formatar as formatar_cep
 from perfil_modelo import (
     BANCOS,
     CAMPOS_ALTERACAO,
@@ -52,6 +51,7 @@ from perfil_modelo import (
     validar_bancarios,
     validar_contato,
 )
+from campos import campo, houve_correcao, limpar, mensagem_correcao
 from theme import alerta, render_hero, render_topbar
 
 _CACHE = "perfil_cache"
@@ -81,7 +81,7 @@ def _invalidar() -> None:
 
 def _fechar() -> None:
     st.session_state.pop("modal_perfil", None)
-    for chave in _CHAVES_CONTATO:  # o próximo "Editar" abre com os dados salvos, não com o que ficou digitado
+    for chave in _CHAVES_CONTATO + _CHAVES_BANCO:  # o próximo "Editar" abre com os dados salvos, não com o que ficou digitado
         st.session_state.pop(chave, None)
 
 
@@ -102,11 +102,15 @@ def _modal_bancarios(atual: dict) -> None:
     escolha = st.selectbox("Banco", opcoes, index=indice, placeholder="Escolha o banco", key="pf_banco")
     banco = escolha
     if escolha == "Outro banco":
-        banco = st.text_input("Nome do banco", value="" if banco_atual in BANCOS else banco_atual, max_chars=100, key="pf_banco_outro")
+        st.session_state.setdefault("pf_banco_outro", "" if banco_atual in BANCOS else banco_atual)
+        banco = campo(st, "Nome do banco", "texto", "pf_banco_outro", max_chars=100)
+    # Valores atuais pela sessão (a limpeza dos campos também escreve nela); só números, e o dígito aceita X.
+    for chave, valor in (("pf_agencia", atual.get("agencia")), ("pf_conta", atual.get("conta")), ("pf_digito", atual.get("digito"))):
+        st.session_state.setdefault(chave, valor or "")
     c1, c2, c3 = st.columns([1.2, 1.6, 0.8])
-    agencia = c1.text_input("Agência", value=atual.get("agencia") or "", max_chars=10, key="pf_agencia")
-    conta = c2.text_input("Conta", value=atual.get("conta") or "", max_chars=20, key="pf_conta")
-    digito = c3.text_input("Dígito", value=atual.get("digito") or "", max_chars=2, key="pf_digito")
+    agencia = campo(c1, "Agência", "numero", "pf_agencia", max_chars=10)
+    conta = campo(c2, "Conta", "numero", "pf_conta", max_chars=20)
+    digito = campo(c3, "Dígito", "codigo", "pf_digito", max_chars=2)
     tipos = list(TIPOS_CONTA)
     tipo = st.radio(
         "Tipo de conta", tipos, format_func=TIPOS_CONTA.get, horizontal=True, key="pf_tipo",
@@ -118,7 +122,8 @@ def _modal_bancarios(atual: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Salvar dados bancários", type="primary", key="pf_bancarios_salvar"):
-            erros = validar_bancarios(banco or "", agencia, conta, digito, tipo)
+            corrigidos = houve_correcao()
+            erros = {"campos": mensagem_correcao(corrigidos)} if corrigidos else validar_bancarios(banco or "", agencia, conta, digito, tipo)
             if erros:
                 alerta(slot, "erro", " ".join(erros.values()))
                 return
@@ -135,6 +140,7 @@ def _modal_bancarios(atual: dict) -> None:
             st.rerun()
 
 
+_CHAVES_BANCO = ("pf_banco_outro", "pf_agencia", "pf_conta", "pf_digito")
 _CHAVES_CONTATO = ("pf_ct_telefone", "pf_ct_email", "pf_ct_cep", "pf_ct_logradouro", "pf_ct_numero", "pf_ct_complemento",
                    "pf_ct_bairro", "pf_ct_cidade", "pf_ct_estado", "pf_ct_cep_msg")
 
@@ -147,7 +153,7 @@ def _buscar_cep() -> None:
     except CepErro as erro:
         st.session_state.pf_ct_cep_msg = ("atencao", str(erro))
         return
-    st.session_state.pf_ct_cep = formatar_cep(st.session_state.get("pf_ct_cep"))
+    st.session_state.pf_ct_cep = limpar(st.session_state.get("pf_ct_cep"), "numero")[0]  # só os 8 números, como o campo aceita
     for campo in ("logradouro", "bairro", "cidade"):
         if achado[campo]:
             st.session_state[f"pf_ct_{campo}"] = achado[campo]
@@ -162,27 +168,29 @@ def _modal_contato(atual: dict) -> None:
     # Valores atuais vão para a sessão uma vez; os campos não recebem `value=`, porque a busca do CEP também escreve
     # neles pela sessão (os dois juntos fazem o Streamlit mostrar um aviso na tela).
     uf = (atual.get("estado") or "").upper()
-    for chave, valor in (("pf_ct_telefone", atual.get("telefone")), ("pf_ct_email", atual.get("email_pessoal")), ("pf_ct_cep", atual.get("cep")),
+    # Telefone e CEP já gravados com máscara vêm só com os números (o backend passou a aceitar só números, 20/10/2026).
+    for chave, valor in (("pf_ct_telefone", limpar(atual.get("telefone"), "numero")[0]), ("pf_ct_email", atual.get("email_pessoal")),
+                         ("pf_ct_cep", limpar(atual.get("cep"), "numero")[0]),
                          ("pf_ct_logradouro", atual.get("logradouro")), ("pf_ct_numero", atual.get("numero")), ("pf_ct_complemento", atual.get("complemento")),
                          ("pf_ct_bairro", atual.get("bairro")), ("pf_ct_cidade", atual.get("cidade"))):
         st.session_state.setdefault(chave, valor or "")
     st.session_state.setdefault("pf_ct_estado", uf if uf in UFS else None)
     d = {}
     c1, c2 = st.columns([1, 1.6])
-    d["telefone"] = c1.text_input("Telefone", max_chars=20, placeholder="(11) 96666-5555", key="pf_ct_telefone")
-    d["email_pessoal"] = c2.text_input("E-mail pessoal", max_chars=255, key="pf_ct_email")
+    d["telefone"] = campo(c1, "Telefone", "numero", "pf_ct_telefone", max_chars=11, placeholder="DDD + número, só números")
+    d["email_pessoal"] = campo(c2, "E-mail pessoal", "email", "pf_ct_email", max_chars=255)
     c1, c2 = st.columns([1, 2.6])
-    d["cep"] = c1.text_input("CEP", max_chars=9, placeholder="01001-000", key="pf_ct_cep", on_change=_buscar_cep,
+    d["cep"] = campo(c1, "CEP", "numero", "pf_ct_cep", max_chars=8, placeholder="Só os 8 números", on_change=_buscar_cep,
                              help="Digite o CEP e aperte Enter: o endereço é preenchido sozinho.")
-    d["logradouro"] = c2.text_input("Logradouro", max_chars=150, key="pf_ct_logradouro")
+    d["logradouro"] = campo(c2, "Logradouro", "endereco", "pf_ct_logradouro", max_chars=150)
     c1, c2 = st.columns([1, 2.6])
-    d["numero"] = c1.text_input("Número", max_chars=20, key="pf_ct_numero")
-    d["complemento"] = c2.text_input("Complemento (opcional)", max_chars=100, key="pf_ct_complemento")
+    d["numero"] = campo(c1, "Número", "numero", "pf_ct_numero", max_chars=10, placeholder="Só números")
+    d["complemento"] = campo(c2, "Complemento (opcional)", "endereco", "pf_ct_complemento", max_chars=100, placeholder="Ex.: casa B, apto 12")
     if msg := st.session_state.get("pf_ct_cep_msg"):
         alerta(st.empty(), msg[0], msg[1])
-    d["bairro"] = st.text_input("Bairro", max_chars=100, key="pf_ct_bairro")
+    d["bairro"] = campo(st, "Bairro", "endereco", "pf_ct_bairro", max_chars=100)
     c1, c2 = st.columns([2.6, 1])
-    d["cidade"] = c1.text_input("Cidade", max_chars=100, key="pf_ct_cidade")
+    d["cidade"] = campo(c1, "Cidade", "endereco", "pf_ct_cidade", max_chars=100)
     d["estado"] = c2.selectbox("Estado (UF)", UFS, placeholder="UF", key="pf_ct_estado")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
@@ -190,7 +198,8 @@ def _modal_contato(atual: dict) -> None:
             _fechar()
             st.rerun()
         if st.button("Salvar contato e endereço", type="primary", key="pf_contato_salvar"):
-            erros = validar_contato(d)
+            corrigidos = houve_correcao()
+            erros = {"campos": mensagem_correcao(corrigidos)} if corrigidos else validar_contato(d)
             if erros:
                 alerta(slot, "erro", " ".join(erros.values()))
                 return
