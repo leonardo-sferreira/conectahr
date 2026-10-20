@@ -896,6 +896,43 @@ _APP_CSS = f"""
   div[class*="st-key-dl_aprovar_"] button p, div[class*="st-key-dl_assumir_"] button p, div[class*="st-key-dl_concluir_"] button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600; }}
   .st-key-dl_rej_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
   .st-key-dl_rej_perigo button p {{ color: white !important; }}
+  /* Pesquisa de clima (Figma 225:4668): aviso de anonimato, progresso, escala em caixas e a lista de pesquisas. */
+  .crh-pc-anonimo {{ background: #DCFCE7; color: {SUCESSO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 14px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
+  .crh-pc-progresso p {{ margin: 0 0 6px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-pc-progresso .barra {{ height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
+  .crh-pc-progresso .barra span {{ display: block; height: 100%; background: {AMBAR}; border-radius: 999px; }}
+  .crh-pc-pergunta {{ margin: 18px 0 0; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-pc-extremos {{ display: flex; justify-content: space-between; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; margin: -4px 0 8px; }}
+  .st-key-cfg_card_pc [data-testid="stButtonGroup"] > div {{ gap: 8px; flex-wrap: wrap; }}
+  .st-key-cfg_card_pc button[kind^="segmented_control"] {{ min-width: 44px; height: 41px; border-radius: 8px !important; border: 1px solid {BORDA} !important; background: #FFFFFF; color: {GRAFITE}; }}
+  .st-key-cfg_card_pc button[kind="segmented_controlActive"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; color: {GRAFITE} !important; }}
+  .crh-pc-item {{ border: 1px solid {BORDA}; border-radius: 10px; padding: 12px 15px; margin-top: 12px; }}
+  .crh-pc-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-pc-item .d {{ margin: 4px 0 8px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-pcr-lista {{ margin: 0; padding-left: 20px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; }}
+  .crh-pcr-lista li {{ margin: 6px 0; }}
+  .crh-pcr-res .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-pcr-res .d {{ margin: 2px 0 8px; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-pcr-res table, .crh-av360-tabela {{ width: 100%; border-collapse: collapse; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; }}
+  .crh-pcr-res td, .crh-av360-tabela td, .crh-av360-tabela th {{ padding: 7px 8px; border-top: 1px solid {BORDA}; text-align: left; vertical-align: top; }}
+  .crh-av360-tabela th {{ font-weight: 600; font-size: 12px; color: {GRAFITE_SECUNDARIO}; border-top: none; }}
+  .crh-pcr-res td:first-child {{ width: 34%; }}
+  /* RH — Pesquisas de clima (Figma 249:4645): cartão com a adesão em barras e o cartão Resultado. */
+  .crh-pcr-topo {{ display: flex; justify-content: space-between; align-items: center; gap: 8px; }}
+  .crh-pcr-barra {{ margin-top: 12px; }}
+  .crh-pcr-barra .r {{ display: flex; justify-content: space-between; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; margin-bottom: 6px; }}
+  .crh-pcr-barra .barra {{ height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
+  .crh-pcr-barra .barra span {{ display: block; height: 100%; background: {AMBAR}; border-radius: 999px; }}
+  .crh-pcr-kv {{ display: flex; justify-content: space-between; gap: 12px; margin: 10px 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-pcr-kv b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
+  .crh-pcr-kv b.ambar {{ color: {AMBAR_ESCURO}; }}
+  /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
+  .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
+  .crh-av360-barra .barra {{ flex: 1; height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
+  .crh-av360-barra .barra span {{ display: block; height: 100%; background: {AMBAR}; border-radius: 999px; }}
+  .crh-av360-barra .v {{ font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE}; min-width: 34px; text-align: right; }}
+  .crh-nota-neutra {{ background: {MARFIM}; color: {GRAFITE}; border-radius: 10px; padding: 12px 14px; margin: 4px 0; font-family: 'Manrope', sans-serif; font-size: 13px; }}
+
   /* Aviso embaixo de um campo com o que ele não aceita (campos.py). */
   .crh-campo-invalido {{ margin: -8px 0 4px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; color: {ERRO} !important; }}
   /* Configurações, Segurança e Notificações (Figma 213:142 e 213:236; change configuracoes-seguranca-notificacoes). */
@@ -1040,6 +1077,18 @@ _ESCURO_CSS = f"""
   .crh-cm-cab .s, .crh-cm-q .r b, .crh-cm-fb .q {{ color: {ESC_TEXTO_2} !important; }}
   .crh-cm-q {{ border-color: {ESC_BORDA}; }}
   .crh-cm-fb {{ background: {ESC_FUNDO}; }}
+  .crh-pc-anonimo {{ background: #14301F !important; color: #86EFAC !important; }}
+  .crh-pc-pergunta, .crh-pc-item .t, .crh-pcr-lista, .crh-pcr-res .t, .crh-pcr-res table, .crh-av360-tabela {{ color: {ESC_TEXTO} !important; }}
+  .crh-pc-item, .crh-pcr-res td, .crh-av360-tabela td {{ border-color: {ESC_BORDA} !important; }}
+  .crh-pc-progresso .barra {{ background: {ESC_BORDA} !important; }}
+  .crh-pcr-barra .barra {{ background: {ESC_BORDA} !important; }}
+  .crh-pcr-barra .r, .crh-pcr-kv b {{ color: {ESC_TEXTO} !important; }}
+  .crh-pcr-kv b.ambar {{ color: {AMBAR} !important; }}
+  .crh-av360-barra .barra {{ background: {ESC_BORDA} !important; }}
+  .crh-av360-barra .v {{ color: {ESC_TEXTO} !important; }}
+  .crh-nota-neutra {{ background: {ESC_FUNDO} !important; color: {ESC_TEXTO} !important; }}
+  .st-key-cfg_card_pc button[kind^="segmented_control"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
+  .st-key-cfg_card_pc button[kind="segmented_controlActive"] {{ background: {ESC_AMBAR_SUAVE} !important; border-color: {AMBAR} !important; }}
   .crh-pd-passo .t {{ color: {ESC_TEXTO} !important; }}
   .crh-pd-passo .d {{ color: {ESC_TEXTO_2} !important; }}
   div[class*="st-key-reg_card_"], .st-key-reg_sim_conflitos {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}

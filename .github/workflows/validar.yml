@@ -104,6 +104,9 @@ jobs:
       - name: Testes do Desligamento
         run: python tools/testar_desligamento.py
 
+      - name: Testes da pesquisa de clima e da avaliação de desempenho
+        run: python tools/testar_clima_avaliacao.py
+
       - name: Testes da Trajetória
         run: python tools/testar_trajetoria.py
 

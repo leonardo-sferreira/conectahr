@@ -544,8 +544,8 @@ Cadastro, aprovação, rejeição, suspensão e revogação de `instrumento_norm
 
 ### 10.3 Máquina de estados
 
-- **ciclo_avaliacao**: criado como `planejamento`. Nenhum endpoint transiciona para `em_andamento`/`fechamento`/`concluido`/`cancelado` — não mapeado.
-- **avaliacao**: `pendente` → (primeiro `respostas_POST`) → `em_andamento` → (`enviar_POST`, exige ≥1 resposta) → `enviada` (terminal). `cancelada` existe no enum mas nenhum endpoint a define — não mapeado. Uma vez `enviada`, `respostas_POST` e `enviar_POST` rejeitam novas escritas.
+- **ciclo_avaliacao**: criado como `planejamento`; `ciclos_avaliacao/{id}/status` PATCH (RH, Admin; auditado) faz `planejamento` → `em_andamento` → `fechamento` → `concluido`, e qualquer um desses (menos `concluido`) → `cancelado`.
+- **avaliacao**: `pendente` → (primeiro `respostas_POST`) → `em_andamento` → (`enviar_POST`, exige ≥1 resposta) → `enviada` (terminal). Desde 20/10/2026, concluir ou cancelar o ciclo leva as `pendente` e `em_andamento` a `cancelada` (ver 10.8). Uma vez `enviada`, `respostas_POST` e `enviar_POST` rejeitam novas escritas.
 - **contestacao_avaliacao**: `aberta` → (`revisar_POST`) → `revisada` (terminal; segunda revisão é rejeitada).
 
 O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) sugere feedback multi-fonte (estilo 360°), mas não existe um campo explícito "tipo 90/180/360" — não mapeado.
@@ -563,6 +563,7 @@ O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) s
 | Ver a própria trajetória (`minha_trajetoria`) | Qualquer conta com ficha de colaborador, só sobre si |
 | Contestar avaliação | Somente o colaborador avaliado, e somente se `enviada` |
 | Listar/revisar contestações | RH, ADMIN |
+| Mudar a situação do ciclo; atribuir em lote; ver a visão do RH e as avaliações do ciclo (10.8) | RH, ADMIN |
 
 ### 10.5 O que é auditado
 
@@ -584,7 +585,14 @@ O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) s
 - **Avisos:** ao enviar uma etapa, o superior direto (ou, sem ele, o gestor do departamento) recebe `pedido_novo`; ao receber feedback, a pessoa recebe `avaliacao_disponivel` (recurso `formulario_meta`).
 - **Auditoria:** `criar_ciclo_metas`, `alterar_ciclo_metas` (datas antes e depois), `criar_pergunta_meta`, `alterar_pergunta_meta`, `registrar_resposta_meta` e `enviar_etapa_meta` (etapa e pergunta, sem o texto) e `registrar_feedback_meta` (sem o texto).
 
-### 10.8 O que é auditado (complemento)
+### 10.8 Ciclos de avaliação de desempenho pelo RH (change `pesquisa-clima-e-avaliacao-360`, desde 20/10/2026)
+
+- **Tela:** "Ciclos de avaliação" (grupo RH; Figma F27 249:5068) ganhou a aba "Avaliações de desempenho": "Abrir novo ciclo" cria o ciclo, já o abre e atribui a autoavaliação e/ou a do gestor a todos os ativos; a tabela mostra o % enviado de autoavaliações e de avaliações do gestor; embaixo, as contestações do ciclo e o andamento por departamento. A aba do ciclo de metas passou a se chamar "Ciclos de metas".
+- **Visão do RH** (`ciclos_avaliacao_rh` GET, uma chamada): os ciclos ativos com as contagens (`total`, `enviadas`, `abertas` = pendente ou em andamento, `canceladas`, e `auto_total`, `auto_enviadas`, `gestor_total` e `gestor_enviadas`, sem as canceladas), as contestações abertas com os nomes do avaliado, do avaliador e do ciclo, a relação e a nota, os departamentos ativos e as pessoas não desligadas. `ciclos_avaliacao/{id}/avaliacoes` GET lista as avaliações do ciclo com avaliado (nome e departamento), avaliador, relação, situação, nota e data de envio.
+- **Atribuição em lote** (`ciclos_avaliacao/{id}/atribuir` POST): só com o ciclo `em_andamento`; de um departamento ou de todos; autoavaliação e/ou gestor para cada ficha não desligada com conta. O gestor é o superior direto (`superior_colaborador_id`); sem ele, o gestor do departamento; quem seria o próprio gestor fica sem essa avaliação (contado em `sem_gestor`). Avaliação já existente no ciclo (mesma pessoa, avaliador e relação, não cancelada) é pulada. Cada avaliador recebe, uma vez por lote, um aviso no sino (`avaliacao_disponivel`, recurso `avaliacao`) e um e-mail, pela preferência "Avaliações e metas". Auditado como `atribuir_avaliacoes_lote` (quantas criadas e quantas já existiam). Par, subordinado e RH seguem um a um por `avaliacoes` POST.
+- **Encerramento:** ao concluir ou cancelar o ciclo, as avaliações ainda em aberto ficam `cancelada`; a resposta informa quantas.
+
+### 10.9 O que é auditado (complemento)
 
 Os dois GET acima não são auditados, como as demais consultas da pessoa sobre si mesma.
 
@@ -620,7 +628,7 @@ Os dois GET acima não são auditados, como as demais consultas da pessoa sobre 
 - **meta_avaliacao**: `planejada` → (qualquer check-in) → `em_andamento` → (`concluir_POST`) → `concluida`; `cancelada` existe no enum mas nenhum endpoint a define — não mapeado.
 - **pdi**: `planejado` → (`progresso_POST`) → `em_andamento` ou, se `progresso_percentual >= 100`, direto para `concluido`; `cancelado` não é definido por nenhum endpoint — não mapeado.
 - **reconhecimento**: `ativo` → (`moderar_POST`, RH/ADMIN, só se `ativo`) → `moderado` (terminal); `cancelado` existe no enum mas nunca é definido — não mapeado.
-- **pesquisa_clima**: sem enum de status, só booleano `ativo` (true na criação); nenhum endpoint o desativa — não mapeado.
+- **pesquisa_clima**: sem enum de status, só booleano `ativo` (true na criação); `pesquisas_clima/{id}/encerrar` (RH, Admin; auditado) o desliga. A tela chama de agendada antes de `data_inicio`, aberta enquanto ativa e no prazo, e encerrada quando desligada ou vencida.
 
 ### 11.4 Tabela de autorização (perfil × ação)
 
@@ -638,6 +646,8 @@ Os dois GET acima não são auditados, como as demais consultas da pessoa sobre 
 | Criar pesquisa / perguntas de clima | RH, ADMIN |
 | Ver resultados agregados de clima | RH, ADMIN |
 | Responder pergunta de clima | Qualquer colaborador (uma vez por pergunta) |
+| Responder a pesquisa inteira de uma vez; ver as próprias pesquisas (11.7) | Qualquer perfil com ficha não desligada |
+| Ver a lista do RH, com a adesão (11.7) | RH, ADMIN |
 
 ### 11.5 Reconhecimento — regra automática de visibilidade
 
@@ -647,7 +657,15 @@ Visibilidade não é escolhida pelo remetente: o sistema verifica se o remetente
 
 A resposta da pesquisa de clima **não é gravada individualmente**. `perguntas_clima/id/responder_POST.xs` só incrementa a contagem de `resposta_clima_agregado`, uma linha por (`pergunta_clima_id`, `departamento_id`, `nota`) com a `quantidade` e um índice único nos três campos; a tabela não tem `created_at` nem id por resposta, então não há horário ou ordem que permita cruzar com a participação. `departamento_id = 0` representa "sem departamento". `resposta_clima_participacao` (`pergunta_clima_id`, `colaborador_id`, índice único no par) serve só para bloquear a segunda resposta à mesma pergunta. O endpoint recusa a resposta quando a pesquisa não está ativa (`ativo`), está fora de `data_inicio`–`data_fim`, o colaborador está `Desligado` ou a guarda de acesso falha, **sem gravar participação**. `pesquisas_clima/id/resultados_GET.xs` soma as quantidades do agregado e suprime qualquer grupo (departamento ou geral) abaixo de `pesquisa.minimo_respostas`. A tabela `resposta_clima`, com as respostas individuais antigas, deixou de ser lida e de receber gravações; `ConectaHR/consolidar_resposta_clima_legado` converteu as linhas antigas no agregado (idempotente, auditada). **Limitação conhecida:** os resultados ainda permitem deduzir uma resposta por complemento (um único grupo suprimido pode ser calculado pelo total) e por diferença (consultas antes e depois de uma resposta, com a pesquisa aberta); a correção está planejada em `concluir-mvp-conectarh` (tarefa 3.49).
 
-### 11.7 O que é auditado
+### 11.7 Escala, comentário e envio único (change `pesquisa-clima-e-avaliacao-360`, desde 20/10/2026)
+
+- **Escala por pergunta** (`pergunta_clima.escala`): `concordancia` (1 a 5, o padrão) ou `nps` (0 a 10). `resposta_clima_agregado.nota` aceita de 0 a 10, e a faixa é conferida pela escala da pergunta (também em `perguntas_clima/{id}/responder`).
+- **Envio único** (`pesquisas_clima/{id}/responder` POST): todas as notas que faltam e o comentário opcional numa chamada; tudo ou nada; recusa se faltar uma nota, se a nota estiver fora da escala ou se a pessoa já respondeu tudo. A tela "Pesquisa de clima" (menu principal, todos os perfis) mostra uma pergunta por vez e usa só este envio. `minhas_pesquisas_clima` GET lista as pesquisas já iniciadas, com aberta, respondida e as perguntas que faltam.
+- **Comentário** (`comentario_clima`): sem pessoa, departamento ou data. Nos resultados, só quando o número de pessoas que responderam atinge o mínimo da pesquisa, em ordem alfabética e sem id.
+- **RH:** `pesquisas_clima` POST aceita as perguntas junto (até 30) e grava `criar_pesquisa_clima` na auditoria; incluir pergunta (`pesquisas_clima/{id}/perguntas`) só antes da data de início. `pesquisas_clima_rh` GET traz a situação (agendada, aberta, encerrada), as perguntas, quantas pessoas responderam e quantas podem responder, no geral e por departamento (adesão: conta quem respondeu, nunca o que respondeu). A tela do RH (Figma 249:4645) cria com o mínimo padrão de 5 por grupo.
+- **Resultados:** cada linha traz a escala e quantas respostas foram favoráveis (4 e 5; NPS 9 e 10) e desfavoráveis (1 e 2; NPS 0 a 6); a tela mostra a média, o % favorável e o NPS (promotores menos detratores), e o cartão "Resultado" da última encerrada (eNPS, a primeira pergunta e o pior tema).
+
+### 11.8 O que é auditado
 
 Nenhuma chamada `db.add auditoria` foi encontrada em nenhum endpoint desta seção (metas, pdi, reconhecimentos, pesquisas_clima, perguntas_clima) — incluindo `moderar_POST.xs`, que apesar de tratar uma ação de moderação **não** grava em `auditoria` (só persiste `reconhecimento.motivo_moderacao`/`moderado_por_user_id`) — não mapeado.
 

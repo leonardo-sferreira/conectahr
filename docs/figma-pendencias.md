@@ -26,6 +26,9 @@ do usuário (13/10/2026).
 | Auditoria | 225:6784 | Filtro de período (7, 30 ou 90 dias, ou o último ano), aviso de limite de 300 eventos e "Ver" com os detalhes do evento (registro, valores anterior e novo mascarados, IP) | Tarefas 34 e 35 de `concluir-frontend-streamlit` |
 | Regras e Conformidade | 287:884, 288:886 e 288:1186 a 288:1391 | "Aprovar" e "Aplicar" são um passo só (aprovar já deixa a regra vigente, com a versão anterior no histórico); o modal de aprovação usa o texto do "Aplicar regra". Novo instrumento com "Processo no MTE" e "Data do registro no MTE" (exigidos para aprovar um coletivo). Instrumento em rascunho com "Enviar para aprovação". "Valor atual" da nova regra aparece na simulação | Change `tela-de-regras` |
 | Desligamento | 224:4056 e 249:3075 | "Pedir desligamento" aberto pelo Perfil (o menu do Figma não tem o item); "Para quem" para o gestor de departamento; "Meus pedidos" com Cancelar; no RH, "Ver" abre o checklist e cada item tem "Marcar feito"; a aba Concluídos mostra também os rejeitados e cancelados | Change `fluxo-de-desligamento` |
+| Pesquisa de clima | 225:4668 | Item "Pesquisa de clima" no menu principal de todos os perfis (o menu do Figma não tem); o aviso de anonimato mostra o mínimo da pesquisa; a pergunta da escala de 0 a 10 é uma pergunta da vez, como as de 1 a 5, e o comentário aparece na última; o botão da última é "Enviar respostas" | Change `pesquisa-clima-e-avaliacao-360` (pedido do usuário, 20/10/2026) |
+| RH — Pesquisas de clima | 249:4645 e 249:4885 | O cartão mostra o selo da situação; "Editar perguntas" só antes de abrir (depois, "Ver perguntas"); a aba Encerradas usa o mesmo cartão com "Ver resultados" (média, % favorável e NPS por pergunta, no geral e por departamento, e os comentários), que o Figma não desenha; o modal aceita várias perguntas de 1 a 5, uma por linha, e a de 0 a 10 é opcional | Change `pesquisa-clima-e-avaliacao-360` |
+| RH — Ciclos de avaliação | 249:5068 e 249:5364 | Virou a aba "Avaliações de desempenho" da tela que já tinha o ciclo de metas (abas "Ciclos de metas", "Perguntas" e "Formulários"); a tabela ganhou ações (atribuir em lote ou uma a uma, ver avaliações, iniciar fechamento, concluir, cancelar); "Responder" nas contestações (o Figma diz "Aguardando gestor", mas quem responde é o RH); o modal não tem "Avaliação de pares" (sem regra de escolha; entram uma a uma em "Atribuir") nem "Permitir contestação" (sempre permitida) | Change `pesquisa-clima-e-avaliacao-360` |
 | Benefícios | — | Construída sem conferência, com o Figma fora do ar. Desde 13/10/2026: o colaborador vê só "Benefícios ativos" e um item por benefício (formato da FAQ) com descrição, links e materiais; o RH tem "Editar" no Catálogo com links e materiais | `pagina_beneficios.py`; change `apresentacao-de-beneficios` |
 | Folha de ponto (Gestor e RH) | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_folha_ponto.py` |
 | Solicitações ao RH | 225:5299 e 206:1072 | Construída sem conferência, com o Figma fora do ar | `pagina_solicitacoes.py` |
@@ -45,6 +48,6 @@ A página "Protótipo — Dark" ainda não tem todas as seções (tarefas 63 e 7
 
 ## Telas desenhadas no Figma e ainda não construídas no Streamlit
 
-Auditoria, Regras (instrumentos normativos e overrides), Rotina diária e
-Retenção e anonimização, Reconhecimentos, Pesquisa de clima, Indicadores, Desligamento, Delegações e Minha
-equipe. Os endpoints existem no backend; as tarefas estão na change `concluir-frontend-streamlit`.
+Rotina diária e Retenção e anonimização, Reconhecimentos, Indicadores, Delegações e Minha equipe. Os endpoints
+existem no backend; as tarefas estão na change `concluir-frontend-streamlit`. (Auditoria, Regras, Desligamento e
+Pesquisa de clima foram construídas em 20/10/2026.)

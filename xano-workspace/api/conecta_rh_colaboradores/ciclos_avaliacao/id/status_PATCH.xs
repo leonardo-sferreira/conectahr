@@ -101,6 +101,36 @@ query "ciclos_avaliacao/{id}/status" verb=PATCH {
       }
     } as $ciclo_atualizado
 
+    // Ao concluir ou cancelar o ciclo, as avaliacoes ainda em aberto (pendente ou em andamento)
+    // ficam canceladas: nao ha mais o que preencher (change pesquisa-clima-e-avaliacao-360, D7).
+    var $avaliacoes_canceladas {
+      value = 0
+    }
+
+    conditional {
+      if (($input.status == "concluido") || ($input.status == "cancelado")) {
+        db.query avaliacao {
+          where = $db.avaliacao.ciclo_avaliacao_id == $ciclo.id && $db.avaliacao.status != "enviada" && $db.avaliacao.status != "cancelada"
+          return = {type: "list"}
+          output = ["id"]
+        } as $avaliacoes_abertas
+
+        foreach ($avaliacoes_abertas) {
+          each as $avaliacao_aberta {
+            db.edit avaliacao {
+              field_name = "id"
+              field_value = $avaliacao_aberta.id
+              data = {status: "cancelada", updated_at: "now"}
+            } as $avaliacao_cancelada
+
+            var.update $avaliacoes_canceladas {
+              value = $avaliacoes_canceladas + 1
+            }
+          }
+        }
+      }
+    }
+
     db.add auditoria {
       data = {
         user_id      : $usuario_autenticado.id
@@ -117,6 +147,7 @@ query "ciclos_avaliacao/{id}/status" verb=PATCH {
     sucesso : true
     mensagem: "Status do ciclo atualizado com sucesso."
     ciclo   : $ciclo_atualizado
+    avaliacoes_canceladas: $avaliacoes_canceladas
   }
 
   guid = "conectahr-ciclos-avaliacao-status-patch-0001"

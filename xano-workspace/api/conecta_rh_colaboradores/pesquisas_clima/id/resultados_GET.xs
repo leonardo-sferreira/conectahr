@@ -5,6 +5,10 @@
 // configurado na pesquisa - abaixo disso, e omitido (nao ha como
 // identificar quem respondeu, mas um grupo pequeno demais poderia
 // permitir inferir a resposta de uma pessoa especifica por eliminacao).
+// Cada linha traz tambem a escala da pergunta e quantas respostas foram favoraveis
+// (4 e 5; no nps, 9 e 10) e desfavoraveis (1 e 2; no nps, 0 a 6), e a resposta traz os
+// nomes dos departamentos, quantas pessoas responderam e os comentarios em ordem
+// alfabetica, sem id (change pesquisa-clima-e-avaliacao-360, D4), so com o minimo atingido.
 query "pesquisas_clima/{id}/resultados" verb=GET {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -105,12 +109,12 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
     // entram no total e, por isso, tambem contam na supressao complementar.
     db.query departamento {
       return = {type: "list"}
-      output = ["id"]
+      output = ["id", "nome"]
     } as $departamentos_todos
 
     // Grupo 0 = colaborador sem departamento (ver resposta_clima_agregado.xs).
     var $departamentos {
-      value = $departamentos_todos|push:{id: 0}
+      value = $departamentos_todos|push:{id: 0, nome: "Sem departamento"}
     }
 
     var $grupos_suprimidos {
@@ -129,10 +133,26 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
       value = 0
     }
 
+    var $favoraveis_temp {
+      value = 0
+    }
+
+    var $desfavoraveis_temp {
+      value = 0
+    }
+
     foreach ($perguntas_da_pesquisa) {
       each as $pergunta_item {
         var.update $grupos_suprimidos {
           value = 0
+        }
+
+        var $limite_favoravel {
+          value = ($pergunta_item.escala == "nps" ? 9 : 4)
+        }
+
+        var $limite_desfavoravel {
+          value = ($pergunta_item.escala == "nps" ? 6 : 2)
         }
 
         foreach ($departamentos) {
@@ -150,8 +170,30 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
               value = 0
             }
 
+            var.update $favoraveis_temp {
+              value = 0
+            }
+
+            var.update $desfavoraveis_temp {
+              value = 0
+            }
+
             foreach ($contadores_grupo) {
               each as $contador_item {
+                conditional {
+                  if ($contador_item.nota >= $limite_favoravel) {
+                    var.update $favoraveis_temp {
+                      value = $favoraveis_temp + $contador_item.quantidade
+                    }
+                  }
+
+                  elseif ($contador_item.nota <= $limite_desfavoravel) {
+                    var.update $desfavoraveis_temp {
+                      value = $desfavoraveis_temp + $contador_item.quantidade
+                    }
+                  }
+                }
+
                 var.update $contagem_temp {
                   value = $contagem_temp + $contador_item.quantidade
                 }
@@ -168,8 +210,11 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
                   value = $resultados|push:{
                     pergunta_id     : $pergunta_item.id
                     departamento_id : $departamento_item.id
+                    escala          : $pergunta_item.escala
                     quantidade      : $contagem_temp
                     media           : ($soma_temp / $contagem_temp)
+                    favoraveis      : $favoraveis_temp
+                    desfavoraveis   : $desfavoraveis_temp
                   }
                 }
               }
@@ -196,8 +241,30 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
           value = 0
         }
 
+        var.update $favoraveis_temp {
+          value = 0
+        }
+
+        var.update $desfavoraveis_temp {
+          value = 0
+        }
+
         foreach ($contadores_geral_pergunta) {
           each as $contador_geral_item {
+            conditional {
+              if ($contador_geral_item.nota >= $limite_favoravel) {
+                var.update $favoraveis_temp {
+                  value = $favoraveis_temp + $contador_geral_item.quantidade
+                }
+              }
+
+              elseif ($contador_geral_item.nota <= $limite_desfavoravel) {
+                var.update $desfavoraveis_temp {
+                  value = $desfavoraveis_temp + $contador_geral_item.quantidade
+                }
+              }
+            }
+
             var.update $contagem_temp {
               value = $contagem_temp + $contador_geral_item.quantidade
             }
@@ -216,11 +283,57 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
               value = $resultados|push:{
                 pergunta_id     : $pergunta_item.id
                 departamento_id : null
+                escala          : $pergunta_item.escala
                 quantidade      : $contagem_temp
                 media           : ($soma_temp / $contagem_temp)
+                favoraveis      : $favoraveis_temp
+                desfavoraveis   : $desfavoraveis_temp
               }
             }
           }
+        }
+      }
+    }
+
+    // Pessoas que responderam: participacoes na primeira pergunta (o envio e de tudo de uma vez).
+    var $participantes {
+      value = 0
+    }
+
+    conditional {
+      if (($perguntas_da_pesquisa|count) > 0) {
+        var $primeira_pergunta {
+          value = $perguntas_da_pesquisa|first
+        }
+
+        db.query resposta_clima_participacao {
+          where = $db.resposta_clima_participacao.pergunta_clima_id == $primeira_pergunta.id
+          return = {type: "count"}
+        } as $participacoes_primeira
+
+        var.update $participantes {
+          value = $participacoes_primeira
+        }
+      }
+    }
+
+    // Comentarios so com o minimo de respostas, em ordem alfabetica e sem id: a ordem de
+    // gravacao poderia ser cruzada com a ordem das participacoes.
+    var $comentarios {
+      value = []
+    }
+
+    conditional {
+      if ($participantes >= $pesquisa.minimo_respostas) {
+        db.query comentario_clima {
+          where = $db.comentario_clima.pesquisa_clima_id == $pesquisa.id
+          sort = {comentario_clima.texto: "asc"}
+          return = {type: "list"}
+          output = ["texto"]
+        } as $comentarios_pesquisa
+
+        var.update $comentarios {
+          value = $comentarios_pesquisa
         }
       }
     }
@@ -229,7 +342,10 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
   response = {
     sucesso    : true
     minimo_respostas: $pesquisa.minimo_respostas
+    participantes: $participantes
+    departamentos: $departamentos
     resultados : $resultados
+    comentarios: $comentarios
   }
 
   guid = "conectahr-pesquisas-clima-resultados-get-0001"

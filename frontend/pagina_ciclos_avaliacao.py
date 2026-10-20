@@ -9,6 +9,9 @@ Página "Ciclos de avaliação" (change ciclo-de-metas, D1, D2 e D5), no grupo R
   (o mesmo modal da tela "Metas da equipe").
 
 Endpoints: `ciclos_metas` (GET, POST, PATCH), `perguntas_meta` (GET, POST, PATCH) e `formularios_meta`.
+
+A aba "Avaliações de desempenho" (Figma F27 249:5068; change pesquisa-clima-e-avaliacao-360) fica em
+`avaliacoes_ciclo_ui.py`: os ciclos da avaliação por competências, a atribuição, as contestações e o andamento.
 """
 
 import html
@@ -18,6 +21,7 @@ from datetime import date
 import streamlit as st
 
 from api_client import ApiError, alterar_ciclo_metas, alterar_pergunta_meta, ciclos_metas, criar_ciclo_metas, criar_pergunta_meta, perguntas_meta
+from avaliacoes_ciclo_ui import aba_desempenho, abrir_modal
 from ciclo_metas_modelo import (ETAPAS, PERGUNTAS_SUGERIDAS, datas_para_api, datas_sugeridas, linhas_pessoas, periodo, pode_alterar_datas,
                                 resumo_envios, situacao_ciclo, validar_ciclo, validar_pergunta)
 from formulario_metas_ui import tabela_pessoas
@@ -25,7 +29,7 @@ from pagina_metas_equipe import modal_formulario, pessoas_do_ciclo
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
 _VALIDADE_CACHE_S = 20
-_ABAS = ["Ciclos", "Perguntas", "Formulários"]
+_ABAS = ["Ciclos de metas", "Perguntas", "Formulários", "Avaliações de desempenho"]
 
 
 def _guardado(chave: str, buscar):
@@ -217,7 +221,7 @@ def _aba_formularios(token: str) -> None:
     dados = _guardado("cav_cache_ciclos", lambda: ciclos_metas(token))
     ciclos, hoje = dados.get("ciclos") or [], _hoje(dados)
     if not ciclos:
-        st.html('<div class="crh-painel crh-bloco"><p class="crh-meta">Nenhum ciclo ainda. Crie o do ano na aba Ciclos.</p></div>')
+        st.html('<div class="crh-painel crh-bloco"><p class="crh-meta">Nenhum ciclo ainda. Crie o do ano na aba Ciclos de metas.</p></div>')
         return
     por_id = {c["id"]: c for c in ciclos}
     lista = None
@@ -245,18 +249,24 @@ def pagina_ciclos_avaliacao() -> None:
     render_topbar(usuario["nome"])
     if aviso := st.session_state.pop("aviso_toast", None):
         st.toast(aviso)
-    render_hero("Ciclos de avaliação", "Ciclo anual de metas: as datas, as perguntas e o formulário de cada pessoa")
+    render_hero("Ciclos de avaliação", "Abra o ciclo, acompanhe cada etapa e feche quando terminar")
     if str(usuario.get("perfil", "")).upper() not in ("RH", "ADMIN"):
         alerta(st.empty(), "erro", "Esta tela é só do RH e do Admin.")
         return
     with st.container(key="cfg_abas"):
         aba = st.segmented_control("Aba", _ABAS, default=_ABAS[0], required=True, key="cav_aba", label_visibility="collapsed")
     try:
-        {"Ciclos": _aba_ciclos, "Perguntas": _aba_perguntas, "Formulários": _aba_formularios}[aba](token)
+        {"Ciclos de metas": _aba_ciclos, "Perguntas": _aba_perguntas, "Formulários": _aba_formularios, "Avaliações de desempenho": aba_desempenho}[aba](token)
     except ApiError as erro:
         alerta(st.empty(), "erro", erro.message)
         return
 
+    if aba == "Avaliações de desempenho":
+        try:
+            abrir_modal(token)
+        except ApiError as erro:
+            alerta(st.empty(), "erro", erro.message)
+        return
     if st.session_state.get("mf_aberto") and aba == "Formulários":
         modal_formulario(st.session_state.mf_aberto)
         return

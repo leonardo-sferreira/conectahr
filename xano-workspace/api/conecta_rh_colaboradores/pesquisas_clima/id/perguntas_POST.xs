@@ -1,4 +1,6 @@
-// RH/ADMIN adiciona uma pergunta a uma pesquisa de clima ativa.
+// RH/ADMIN adiciona uma pergunta a uma pesquisa de clima ativa, so antes de ela abrir
+// (change pesquisa-clima-e-avaliacao-360, D3): depois, quem ja respondeu ficaria com a
+// pesquisa incompleta. escala: concordancia (1 a 5, o padrao) ou nps (0 a 10).
 query "pesquisas_clima/{id}/perguntas" verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -7,6 +9,7 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
     int id
     text texto filters=trim|max:500
     int? ordem?
+    text? escala? filters=trim|to_lower
   }
 
   stack {
@@ -75,6 +78,29 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
       error = "Pesquisa de clima nao encontrada."
     }
 
+    precondition ($pesquisa.ativo) {
+      error_type = "inputerror"
+      error = "Esta pesquisa ja esta encerrada."
+    }
+
+    var $hoje_pergunta {
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
+    }
+
+    precondition ($pesquisa.data_inicio > $hoje_pergunta) {
+      error_type = "inputerror"
+      error = "As perguntas so mudam antes de a pesquisa abrir."
+    }
+
+    var $escala_final {
+      value = (($input.escala == null) || ($input.escala == "")) ? "concordancia" : $input.escala
+    }
+
+    precondition (($escala_final == "concordancia") || ($escala_final == "nps")) {
+      error_type = "inputerror"
+      error = "Escala invalida. Use concordancia ou nps."
+    }
+
     // "!= null" trata 0 como igual a null nesta plataforma (ver
     // conectahr-xano-platform-quirks) — comparar como texto preserva a
     // distincao entre "ordem 0" (valida) e "nao informado".
@@ -91,6 +117,7 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
         pesquisa_clima_id: $pesquisa.id
         texto            : $input.texto
         ordem            : $ordem_final
+        escala           : $escala_final
       }
     } as $pergunta_criada
   }

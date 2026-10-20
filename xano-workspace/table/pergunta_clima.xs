@@ -11,6 +11,12 @@ table pergunta_clima {
     }
     text texto filters=trim|max:500
     int ordem?=1
+
+    // Escala da resposta (change pesquisa-clima-e-avaliacao-360, D1): concordancia = 1 a 5
+    // (discordo totalmente a concordo totalmente); nps = 0 a 10 (recomendaria a empresa).
+    enum escala?=concordancia {
+      values = ["concordancia", "nps"]
+    }
   }
 
   index = [

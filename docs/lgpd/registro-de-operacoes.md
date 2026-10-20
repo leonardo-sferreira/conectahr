@@ -30,7 +30,7 @@
 | F12 | Avaliação e desenvolvimento | Avaliações, respostas, metas, check-ins, PDI, contestações, reuniões individuais; **ciclo anual de metas** (metas, o que foi alcançado, autoavaliação e feedback do superior, change `ciclo-de-metas`, 20/10/2026) | Colaborador | Não | Legítimo interesse (art. 7º, IX); ver [legitimo-interesse.md](legitimo-interesse.md) | Participantes e RH; feedback privado só do autor e do RH. Ciclo de metas: a própria pessoa, o superior direto, o gestor do departamento, RH e Admin | Xano | Ciclo + prazo a confirmar | Revisão humana; nenhuma decisão automática de promoção ou punição |
 | F13 | Reconhecimento (mural) | Mensagem de reconhecimento, remetente, destinatário | Colaborador | Não | Legítimo interesse (art. 7º, IX) | **Todos os colaboradores** (mural público) | Xano | Prazo a confirmar | Só reconhecimento positivo; moderação; opção de sair do mural |
 | F14 | Aniversariantes do mês | Nome e dia/mês de nascimento | Colaborador | Não | Legítimo interesse (art. 7º, IX) | Todos os colaboradores | Xano | Enquanto vínculo | Só dia e mês; opção de sair da lista |
-| F15 | Pesquisa de clima (anônima) | Nota por pergunta e departamento; participação separada | Colaborador | Não (se anônima) | Legítimo interesse (art. 7º, IX) | RH e Admin, **só o agregado** | Xano | Agregado: prazo a confirmar | Resposta gravada só como contagem; grupo abaixo do mínimo suprimido; ver limitação conhecida no RIPD |
+| F15 | Pesquisa de clima (anônima) | Nota por pergunta e departamento (escala de 1 a 5 ou de 0 a 10); comentário opcional sem autor, departamento ou data; participação separada | Colaborador | Não (se anônima) | Legítimo interesse (art. 7º, IX) | RH e Admin, **só o agregado**; a adesão (quantos responderam, no geral e por departamento) e os comentários em ordem alfabética, sem id, só com o mínimo de respostas | Xano | Agregado: prazo a confirmar | Resposta gravada só como contagem; grupo abaixo do mínimo suprimido; a tela pede para não escrever nomes no comentário; ver limitação conhecida no RIPD |
 | F16 | Solicitações ao RH, comunicados e notificações | Descrição e decisão da solicitação, notificações internas, preferências | Colaborador | Não | Execução de contrato e legítimo interesse | Próprio e RH; comunicados conforme o público | Xano | Prazo a confirmar | Escopo por propriedade |
 | F17 | Envio de e-mail transacional | Nome, e-mail, conteúdo da mensagem (código, avisos) | Usuário | Não | Execução de contrato e legítimo interesse | Sistema; RH e Admin processam a fila | **Brevo** | Mensagens enviadas: 6 a 12 meses (a confirmar) | Fila com chave de idempotência; avisos de segurança não podem ser desativados |
 | F18 | Regras e conformidade trabalhista | Instrumentos normativos, regras e exceções por contrato, regra aplicada a cada colaborador | Colaborador (vínculo) | Não | Obrigação legal (art. 7º, II) | RH e Admin | Xano | Prazo legal | Aprovação por outra pessoa; versionamento |
@@ -40,7 +40,7 @@
 
 O sistema **não coleta nem armazena** raça, sexo, religião, filiação sindical ou biometria. Nenhuma funcionalidade do escopo precisa desses dados. Criar qualquer campo desse tipo exige atualizar este registro e o [RIPD](ripd.md) antes.
 
-## Cobertura: 57 das 67 tabelas
+## Cobertura: 58 das 68 tabelas
 
 A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalidade. "Sem dado pessoal" significa que a tabela guarda só regras, catálogos ou conteúdo geral.
 
@@ -66,7 +66,7 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `email_outbox` | F17 | `reuniao_individual` | F12 |
 | `evento_sst` | F10 | `sessao` | F01 |
 | `feriado` | Sem dado pessoal | `solicitacao_desligamento` | F11 |
-| `desligamento_checklist` | F11 | | |
+| `desligamento_checklist` | F11 | `comentario_clima` | F15 |
 | `ferias` | F08 | `solicitacao_rh` | F16 |
 | `historico_gestor_departamento` | F06 | `user` | F01 |
 | `historico_profissional` | F06 | `instrumento_normativo` | F18 |
