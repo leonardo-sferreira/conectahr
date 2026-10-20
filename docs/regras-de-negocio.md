@@ -541,10 +541,23 @@ O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) s
 | Atribuir avaliação (avaliador×avaliado) | RH, ADMIN |
 | Registrar resposta / enviar avaliação | Somente o `user_id` designado como avaliador |
 | Ver avaliação por id | RH/ADMIN sempre; avaliador sempre; avaliado somente se `enviada` |
+| Ver as competências a responder (`avaliacoes/{id}/competencias`) | Somente o avaliador designado; avaliação inexistente dá a mesma recusa |
+| Ver a própria trajetória (`minha_trajetoria`) | Qualquer conta com ficha de colaborador, só sobre si |
 | Contestar avaliação | Somente o colaborador avaliado, e somente se `enviada` |
 | Listar/revisar contestações | RH, ADMIN |
 
 ### 10.5 O que é auditado
+
+### 10.6 Trajetória do colaborador (change `trajetoria-do-colaborador`, desde 20/10/2026)
+
+- `minha_trajetoria` GET devolve numa chamada o plano de carreira (nível atual, próximo nível l1→l5 e as competências ativas do próximo nível; nunca promove), o ciclo `em_andamento` mais recente, o 360 sobre a pessoa nesse ciclo (status da autoavaliação, status e nome do gestor, e só a contagem de pares: total e enviadas), as avaliações que ela tem a preencher (`pendente`/`em_andamento`), as enviadas sobre ela com a última contestação, as metas e ações de PDI não concluídas nem canceladas e os reconhecimentos `ativos` com o nome de quem enviou (`xano-workspace/api/conecta_rh_colaboradores/minha_trajetoria_GET.xs`).
+- **Anonimato:** o nome do avaliador só sai para `gestor` e `rh`; `par` e `subordinado` vêm sem nome. Pendência conhecida: `avaliacoes/{id}` GET ainda devolve o `user_id` do avaliador ao avaliado (a tela não usa).
+- `avaliacoes/{id}/competencias` GET: as competências ativas do nível do avaliado (todas as ativas se o nível não tiver nenhuma) e as respostas já salvas (`xano-workspace/api/conecta_rh_colaboradores/avaliacoes/id/competencias_GET.xs`).
+- Na tela: enviar exige nota em todas as competências e a confirmação de que o envio é definitivo; a contestação só é oferecida para avaliação sem contestação aberta. Meta ou PDI com prazo vencido aparece como Atrasada/Atrasado.
+
+### 10.7 O que é auditado (complemento)
+
+Os dois GET acima não são auditados, como as demais consultas da pessoa sobre si mesma.
 
 `atribuir_avaliacao`, `contestar_avaliacao`, `revisar_contestacao_avaliacao` (com `justificativa` = `resposta_revisao`), `enviar_avaliacao` (descrito no código como "decisão imutável em trilha de auditoria"). **Não auditado:** criação de ciclo, criação de respostas, e os endpoints GET — não mapeado.
 

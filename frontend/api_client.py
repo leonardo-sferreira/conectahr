@@ -844,3 +844,43 @@ def prazo_correcao(token: str) -> dict:
 def definir_prazo_correcao(token: str, prazo_dias: int | None) -> dict:
     """PATCH ponto/prazo_correcao (RH e Admin). None tira o limite. O ajuste do gestor e do RH não tem prazo."""
     return _request("PATCH", "ponto/prazo_correcao", token, GRUPO_PONTO, {"prazo_dias": prazo_dias})
+
+
+# ---------------------------------------------------------------------------
+# Trajetória (change trajetoria-do-colaborador): avaliação, metas, PDI e reconhecimentos da própria pessoa.
+# ---------------------------------------------------------------------------
+def minha_trajetoria(token: str) -> dict:
+    """GET minha_trajetoria -> plano de carreira, 360 do ciclo, a_preencher, recebidas, metas, pdi e reconhecimentos."""
+    return _get("minha_trajetoria", token, GRUPO_COLABORADORES)
+
+
+def competencias_avaliacao(token: str, avaliacao_id: int) -> dict:
+    """GET avaliacoes/{id}/competencias -> {competencias, respostas, avaliado_nome} (só o avaliador designado)."""
+    return _get(f"avaliacoes/{int(avaliacao_id)}/competencias", token, GRUPO_COLABORADORES)
+
+
+def responder_avaliacao(token: str, avaliacao_id: int, competencia_id: int, nota: int, comentario: str | None) -> dict:
+    """POST avaliacoes/{id}/respostas: nota de 1 a 5 de uma competência; chamar de novo atualiza a resposta."""
+    return _post(f"avaliacoes/{int(avaliacao_id)}/respostas", {"competencia_avaliacao_id": int(competencia_id), "nota": int(nota), "comentario": comentario or None},
+                 token, GRUPO_COLABORADORES)
+
+
+def enviar_avaliacao(token: str, avaliacao_id: int, comentario: str | None) -> dict:
+    """POST avaliacoes/{id}/enviar: fecha a avaliação (definitivo) com a nota geral pela média."""
+    return _post(f"avaliacoes/{int(avaliacao_id)}/enviar", {"comentario": comentario or None}, token, GRUPO_COLABORADORES)
+
+
+def contestar_avaliacao(token: str, avaliacao_id: int, motivo: str) -> dict:
+    """POST avaliacoes/{id}/contestar: só o avaliado, só avaliação enviada; o RH revisa."""
+    return _post(f"avaliacoes/{int(avaliacao_id)}/contestar", {"motivo": motivo}, token, GRUPO_COLABORADORES)
+
+
+def checkin_meta(token: str, meta_id: int, progresso: float, comentario: str | None, dificuldades: str | None, evidencia: str | None) -> dict:
+    """POST metas/{id}/checkin: progresso de 0 a 100, com comentário, dificuldades e evidência opcionais."""
+    return _post(f"metas/{int(meta_id)}/checkin", {"progresso_percentual": float(progresso), "comentario_checkin": comentario or None,
+                                                    "dificuldades": dificuldades or None, "evidencia": evidencia or None}, token, GRUPO_COLABORADORES)
+
+
+def progresso_pdi(token: str, pdi_id: int, progresso: float, evidencia: str | None) -> dict:
+    """POST pdi/{id}/progresso: progresso de 0 a 100 e evidência opcional."""
+    return _post(f"pdi/{int(pdi_id)}/progresso", {"progresso_percentual": float(progresso), "evidencia": evidencia or None}, token, GRUPO_COLABORADORES)
