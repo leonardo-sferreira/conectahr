@@ -934,7 +934,7 @@ _APP_CSS = f"""
   .crh-lgpd-resumo b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
   .crh-lgpd-resumo b.ambar {{ color: {AMBAR_ESCURO}; }}
   .crh-lgpd-detalhe {{ margin: 2px 0 12px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; white-space: pre-wrap; }}
-  /* Admin — Integrações e e-mails (Figma 249:7847): aviso em rosa do cartão Modelos. */
+  /* Admin — tela de integrações (Figma 249:7847): aviso em rosa do cartão Modelos. */
   .crh-alerta-inline {{ background: #FDE2E2; color: {ERRO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 10px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
   /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
   .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
