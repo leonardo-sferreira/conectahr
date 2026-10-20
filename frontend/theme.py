@@ -858,7 +858,6 @@ _APP_CSS = f"""
   .crh-carreira .seta {{ font-size: 20px; color: {AMBAR}; }}
   .crh-carreira .prox {{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }}
   .crh-carreira .comp {{ border-radius: 999px; padding: 4px 10px; background: {AMBAR_BG}; color: {AMBAR_ESCURO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; }}
-  .crh-carreira .nota {{ margin: 0 0 0 auto; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-rec {{ padding: 8px 24px; }}
   .crh-rec .item {{ padding: 12px 0; border-bottom: 1px solid {BORDA}; display: flex; flex-direction: column; gap: 4px; }}
   .crh-rec .item:last-child {{ border-bottom: none; }}
@@ -980,7 +979,7 @@ _ESCURO_CSS = f"""
   .crh-fe-item .d {{ color: {ESC_TEXTO_2}; }}
   .crh-ct-item .crh-linha-onb {{ background: {ESC_CARTAO}; }}
   .crh-carreira .n, .crh-rec .nome {{ color: {ESC_TEXTO} !important; }}
-  .crh-carreira .r, .crh-carreira .nota, .crh-rec .quando, .crh-rec .msg {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-carreira .r, .crh-rec .quando, .crh-rec .msg {{ color: {ESC_TEXTO_2} !important; }}
   .crh-carreira .comp {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
   .crh-rec .item {{ border-color: {ESC_BORDA}; }}
   .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}

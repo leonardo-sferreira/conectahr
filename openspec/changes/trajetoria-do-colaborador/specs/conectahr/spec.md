@@ -5,7 +5,7 @@ O sistema SHALL mostrar a cada pessoa com ficha de colaborador a própria trajet
 
 #### Scenario: Carreira sem promoção automática
 - **WHEN** uma pessoa no nível L2 abre a Trajetória
-- **THEN** a tela mostra L2 como nível atual, L3 como próximo nível com as competências ativas de L3 e o aviso de que não há promoção automática, sem nenhum botão de promover
+- **THEN** a tela mostra L2 como nível atual, L3 como próximo nível com as competências ativas de L3, sem nenhum botão de promover
 
 #### Scenario: Avaliação de pares anônima
 - **WHEN** três pares foram designados para avaliar a pessoa no ciclo e dois enviaram
