@@ -142,7 +142,6 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 
 ### 3.2 Regras de validação
 
-- Telefone e número do endereço (desde 20/10/2026): só dígitos; telefone com 10 ou 11 (com DDD), número de 1 a 10. Vale em `colaboradores_POST` (obrigatórios), `colaboradores/{id}` PATCH (quando informados) e `meu_perfil_colaborador` PATCH. Letras do endereço vão no complemento, que a admissão também passa a gravar. No front, nenhum campo aceita emoji e cada campo aceita só o seu tipo (`frontend/campos.py`).
 - `colaboradores_POST`: só RH; CPF único; e-mail pessoal único; `cargo_id`/`departamento_id` devem existir e estar `ativo`; `tipo_contrato` normalizado contra o enum exato; `nivel` normalizado contra `l1`-`l5`; `nivel_desde = data_admissao` (`xano-workspace/api/conecta_rh_colaboradores/colaboradores_POST.xs`).
 - `colaboradores/{id}` PATCH: só RH; altera apenas dados pessoais/endereço; CPF e e-mail pessoal únicos (exceto o próprio registro) (`xano-workspace/api/conecta_rh_colaboradores/colaboradores/id_PATCH.xs`).
 - `colaboradores/{id}/vinculo` PATCH: só RH; bloqueia colaborador `DESLIGADO`; `data_inicio >= data_admissao`; cargo/departamento devem existir e estar ativos; `tipo_contrato`/`nivel` validados contra os enums; `tipo_alteracao` validado, mas **exclui explicitamente "desligamento"** deste endpoint (`xano-workspace/api/conecta_rh_colaboradores/colaboradores/id/vinculo_PATCH.xs`).
