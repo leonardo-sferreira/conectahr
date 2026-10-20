@@ -11,8 +11,8 @@ import sys
 import tomllib
 from pathlib import Path
 
-import requests
 from ler_senha import ler_senha
+from limite_http import pedir
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -39,7 +39,7 @@ def conferir(ok: bool, descricao: str, detalhe=None) -> None:
 
 
 def chamar(metodo, grupo, caminho, token=None, corpo=None):
-    r = requests.request(metodo, f"{BASE}api:{grupo}/{caminho}", json=corpo,
+    r = pedir(metodo, f"{BASE}api:{grupo}/{caminho}", json=corpo,
                          headers={"Authorization": f"Bearer {token}"} if token else {}, timeout=20)
     try:
         dados = r.json()
