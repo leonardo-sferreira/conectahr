@@ -10,7 +10,7 @@ query "solicitacoes/{id}/atender" verb=POST {
   input {
     int id
     text? justificativa_decisao? filters=trim|max:1000
-    text? resultado? filters=trim|to_lower
+    text? resultado? filters=trim|lower
   }
 
   stack {

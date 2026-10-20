@@ -8,7 +8,7 @@ query "email_outbox" verb=GET {
   auth = "user"
 
   input {
-    text? status? filters=trim|to_lower
+    text? status? filters=trim|lower
   }
 
   stack {
