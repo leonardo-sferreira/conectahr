@@ -1209,3 +1209,210 @@ O sistema SHALL mostrar a quem decide férias (Gestor, superior direto, RH e Adm
 #### Scenario: Pedido rejeitado
 - **WHEN** um pedido da equipe foi rejeitado ou cancelado
 - **THEN** ele não aparece no calendário da equipe
+
+### Requirement: Checklist de saída do desligamento
+O sistema SHALL criar, ao aprovar um desligamento, os itens do checklist de saída (devolução de equipamentos, revogação de acessos, entrevista de desligamento e cálculo das verbas rescisórias), cada um com a área responsável. O RH SHALL poder marcar cada item como feito ou pendente, nunca no próprio desligamento, e cada marcação SHALL ficar na auditoria. A conclusão de um desligamento agendado SHALL exigir todos os itens feitos.
+
+#### Scenario: Itens na aprovação
+- **WHEN** o RH aprova um desligamento com aviso prévio
+- **THEN** o pedido fica agendado com os quatro itens do checklist pendentes
+
+#### Scenario: Concluir com checklist incompleto
+- **WHEN** o RH tenta concluir um desligamento agendado com um item pendente, na data efetiva
+- **THEN** o backend recusa e informa quantos itens faltam
+
+### Requirement: Pedido de desligamento por qualquer pessoa com ficha
+O sistema SHALL permitir que qualquer pessoa com ficha de colaborador ativa peça o próprio desligamento, qualquer que seja o perfil, e que o gestor do departamento peça o de alguém da equipe. A decisão SHALL continuar com o RH, e ninguém SHALL decidir o próprio pedido.
+
+#### Scenario: RH pede o próprio desligamento
+- **WHEN** uma pessoa com perfil RH pede o próprio desligamento
+- **THEN** o pedido fica pendente e outra pessoa do RH decide
+
+#### Scenario: Pedido para alguém de fora da equipe
+- **WHEN** alguém pede o desligamento de uma pessoa de um departamento que não gere
+- **THEN** o backend recusa
+
+### Requirement: Trajetória do colaborador
+O sistema SHALL mostrar a cada pessoa com ficha de colaborador a própria trajetória: o nível atual, o próximo nível e as competências a desenvolver, sem nenhuma ação de promoção; a avaliação 360 do ciclo em andamento (autoavaliação, avaliação do gestor e avaliação de pares); as avaliações que ela tem a preencher; as avaliações enviadas sobre ela; as metas e as ações de PDI não concluídas nem canceladas; e os reconhecimentos recebidos, com o nome de quem enviou. O nome do avaliador SHALL aparecer só quando ele é o gestor ou o RH; avaliações de pares e de subordinados SHALL aparecer sem identificar o avaliador. Pela mesma tela, a pessoa SHALL poder responder e enviar as avaliações que lhe foram atribuídas, contestar uma avaliação enviada sobre ela, registrar check-in das próprias metas e atualizar o progresso do próprio PDI, sempre com a autorização decidida pelo backend.
+
+#### Scenario: Carreira sem promoção automática
+- **WHEN** uma pessoa no nível L2 abre a Trajetória
+- **THEN** a tela mostra L2 como nível atual, L3 como próximo nível com as competências ativas de L3, sem nenhum botão de promover
+
+#### Scenario: Avaliação de pares anônima
+- **WHEN** três pares foram designados para avaliar a pessoa no ciclo e dois enviaram
+- **THEN** a tela mostra "2 de 3 respondidas" e nenhum nome de par
+
+#### Scenario: Avaliação do gestor com nome
+- **WHEN** o gestor da pessoa tem uma avaliação sobre ela no ciclo
+- **THEN** a tela mostra o nome do gestor e se a avaliação está pendente ou enviada
+
+#### Scenario: Responder e enviar
+- **WHEN** a pessoa dá notas de 1 a 5 às competências de uma avaliação que lhe foi atribuída e envia
+- **THEN** as respostas são gravadas, a avaliação fica enviada e sai da lista "Para você avaliar"
+
+#### Scenario: Competências só para o avaliador
+- **WHEN** alguém que não é o avaliador designado pede as competências de uma avaliação
+- **THEN** o backend recusa, sem dizer se a avaliação existe
+
+#### Scenario: Contestar
+- **WHEN** a pessoa contesta uma avaliação enviada sobre ela, com motivo de pelo menos 5 caracteres
+- **THEN** a contestação fica aberta para o RH e a avaliação passa a mostrar "Contestação em análise"
+
+#### Scenario: Meta atrasada
+- **WHEN** o prazo de uma meta não concluída já passou
+- **THEN** a meta aparece com o selo "Atrasada" e o texto "Prazo era DD/MM/AAAA"
+
+#### Scenario: Conta sem ficha de colaborador
+- **WHEN** uma conta sem colaborador vinculado abre a Trajetória
+- **THEN** a tela mostra a mensagem do backend em vez dos blocos
+
+### Requirement: Ciclo anual de metas
+O sistema SHALL manter um ciclo de metas por ano, criado pelo RH ou pelo Admin, com três etapas em janelas de datas iguais para toda a empresa: definir as metas, registrar o que foi alcançado e fechar. Toda pessoa com ficha de colaborador, qualquer que seja o perfil, SHALL poder preencher o próprio formulário, com uma resposta por pergunta pré-definida mantida pelo RH. Na etapa 1 a pessoa SHALL escrever a meta de cada pergunta; nas etapas 2 e 3 SHALL escrever o que foi alcançado e se autoavaliar como abaixo, dentro ou acima do esperado. A pessoa SHALL poder salvar e alterar as respostas só enquanto a janela da etapa estiver aberta e a etapa não tiver sido enviada; depois do envio ou do fim da janela, as respostas SHALL ficar imutáveis. O superior direto ou o gestor do departamento da pessoa SHALL poder registrar feedback em cada etapa enviada, e o formulário, as respostas e os feedbacks SHALL ficar visíveis para a própria pessoa, para quem pode dar o feedback e para o RH e o Admin, em ciclos em andamento e encerrados. Criação e alteração de ciclo, gravação, envio e feedback SHALL ser auditados.
+
+#### Scenario: Etapa aberta
+- **WHEN** hoje está entre o início e o fim da etapa 1 e a pessoa ainda não a enviou
+- **THEN** ela escreve e salva a meta de cada pergunta, e pode alterá-las até enviar
+
+#### Scenario: Envio fecha a etapa
+- **WHEN** a pessoa envia a etapa 1 com todas as metas preenchidas
+- **THEN** a etapa fica enviada, nenhuma resposta dela muda mais, e o superior direto é avisado
+
+#### Scenario: Envio incompleto
+- **WHEN** a pessoa tenta enviar a etapa 2 sem a autoavaliação de uma pergunta
+- **THEN** o sistema recusa o envio e a etapa continua aberta
+
+#### Scenario: Janela encerrada
+- **WHEN** a pessoa tenta gravar uma resposta da etapa 1 depois do fim da janela
+- **THEN** o backend recusa, mesmo que a etapa não tenha sido enviada
+
+#### Scenario: Etapa 2 sem metas
+- **WHEN** a etapa 2 está aberta e a pessoa não enviou a etapa 1
+- **THEN** o backend recusa as respostas da etapa 2
+
+#### Scenario: Qualquer perfil preenche
+- **WHEN** uma pessoa com perfil RH, Admin ou Gestor e ficha de colaborador abre o ciclo
+- **THEN** ela preenche o próprio formulário como qualquer outra pessoa
+
+#### Scenario: Feedback do superior
+- **WHEN** o superior direto registra um feedback na etapa 1 enviada de alguém da equipe
+- **THEN** o feedback aparece na caixa da etapa para a pessoa, para o superior e para o RH, e a pessoa é avisada no sino
+
+#### Scenario: Feedback de quem não é da equipe
+- **WHEN** alguém que não é o superior direto nem o gestor do departamento tenta registrar feedback
+- **THEN** o backend recusa
+
+#### Scenario: Datas fixas depois da abertura
+- **WHEN** o RH tenta alterar as datas de um ciclo cuja etapa 1 já começou
+- **THEN** o backend recusa
+
+#### Scenario: Pergunta editada depois
+- **WHEN** o RH altera o texto de uma pergunta depois de alguém ter respondido
+- **THEN** o formulário respondido continua mostrando o texto da pergunta da época
+
+### Requirement: Segurança da conta em Configurações
+O sistema SHALL permitir que a pessoa troque a própria senha informando a senha atual, e SHALL encerrar as outras sessões ativas dela quando a senha for trocada, mantendo a sessão de onde a troca foi feita. O sistema SHALL mostrar as sessões ativas da pessoa, indicando qual é a do aparelho atual, e SHALL permitir encerrar qualquer outra, uma a uma ou todas de uma vez.
+
+#### Scenario: Troca de senha encerra as outras sessões
+- **WHEN** a pessoa troca a senha com a senha atual correta, estando conectada em dois aparelhos
+- **THEN** a senha muda, a sessão do aparelho de onde trocou continua e a do outro aparelho é encerrada
+
+#### Scenario: Senha atual errada
+- **WHEN** a pessoa informa a senha atual errada
+- **THEN** a senha não muda e nenhuma sessão é encerrada
+
+#### Scenario: Este dispositivo
+- **WHEN** a pessoa abre Sessões e dispositivos
+- **THEN** a sessão do aparelho atual aparece marcada como "Este dispositivo", sem a opção de encerrar
+
+### Requirement: Preferências de aviso por assunto e canal
+O sistema SHALL permitir que a pessoa ligue ou desligue, por assunto (férias e ausências, ponto e correções, documentos, avaliações e metas, solicitações ao RH), os avisos na plataforma e por e-mail, e SHALL respeitar essa escolha ao criar avisos e ao pôr e-mails na fila. Avisos de benefícios, alertas de segurança e pedidos que esperam a decisão da pessoa SHALL ser sempre entregues. Sem escolha registrada, todos os canais SHALL estar ligados.
+
+#### Scenario: Plataforma desligada
+- **WHEN** a pessoa desliga "Na plataforma" em Férias e ausências e o gestor aprova as férias dela
+- **THEN** nenhum aviso aparece no sino dela sobre essa aprovação
+
+#### Scenario: E-mail desligado
+- **WHEN** a pessoa desliga o e-mail de Solicitações ao RH e o RH responde a solicitação dela
+- **THEN** o aviso aparece no sino, mas nenhum e-mail vai para a fila
+
+#### Scenario: Pedido para decidir
+- **WHEN** a pessoa, sendo gestora, desligou "Na plataforma" em Férias e ausências e alguém da equipe pede férias
+- **THEN** o aviso do pedido novo aparece mesmo assim
+
+#### Scenario: Assunto obrigatório
+- **WHEN** alguém tenta desligar alertas de segurança ou benefícios
+- **THEN** o backend recusa
+
+### Requirement: Conflito entre regras de override
+O sistema SHALL considerar em conflito uma regra de override que tenha o mesmo parâmetro e a mesma prioridade de outra regra vigente, com valor diferente, vigência que se sobrepõe e pelo menos uma pessoa atingida pelas duas. O sistema SHALL mostrar os conflitos na simulação de impacto e SHALL recusar o envio para aprovação e a aprovação de uma regra em conflito, até que a prioridade ou o escopo seja ajustado.
+
+#### Scenario: Simulação mostra o conflito
+- **WHEN** o RH simula uma regra de antecedência de férias para o Departamento Comercial com a prioridade de uma regra vigente para o cargo Analista, de valor diferente
+- **THEN** a simulação lista o conflito com a regra do cargo Analista e quantas pessoas do Comercial são atingidas pelas duas
+
+#### Scenario: Conflito bloqueia a aprovação
+- **WHEN** alguém tenta enviar para aprovação ou aprovar uma regra em conflito
+- **THEN** o backend recusa e informa a regra em conflito
+
+#### Scenario: Prioridade resolve
+- **WHEN** o RH muda a prioridade da regra em rascunho para um valor diferente da regra vigente
+- **THEN** o conflito deixa de existir e a regra pode seguir para aprovação
+
+### Requirement: Rejeição e prioridade da regra de override
+O sistema SHALL permitir que RH ou Admin rejeitem uma regra de override pendente de aprovação com um motivo de 5 a 1000 caracteres, nunca a própria, e que mudem a prioridade de uma regra em rascunho ou pendente. As duas ações SHALL ficar na auditoria.
+
+#### Scenario: Rejeitar com motivo
+- **WHEN** o Admin rejeita uma regra pendente criada pelo RH, com motivo
+- **THEN** a regra fica rejeitada e o motivo fica na auditoria
+
+#### Scenario: Não rejeita a própria
+- **WHEN** quem criou a regra tenta rejeitá-la
+- **THEN** o backend recusa
+
+### Requirement: Pesquisa de clima respondida de uma vez, com escala de recomendação e comentário anônimo
+O sistema SHALL permitir que qualquer pessoa com ficha não desligada responda uma pesquisa de clima aberta enviando todas as notas numa única chamada, cada uma na escala da pergunta (concordância de 1 a 5 ou recomendação de 0 a 10), com um comentário opcional. As notas SHALL continuar só somando nos contadores anônimos por pergunta, departamento e nota, e o comentário SHALL ser guardado sem pessoa, departamento nem data. O envio SHALL ser tudo ou nada e SHALL ser recusado quando faltar a nota de alguma pergunta ainda não respondida.
+
+#### Scenario: Envio completo
+- **WHEN** a pessoa envia as notas de todas as perguntas da pesquisa aberta, incluindo 0 na pergunta de recomendação, e um comentário
+- **THEN** cada nota soma no contador do seu departamento, a participação fica registrada e o comentário fica guardado sem autor
+
+#### Scenario: Falta uma nota
+- **WHEN** a pessoa envia as notas sem a de uma pergunta que ainda não respondeu
+- **THEN** o backend recusa e nada é gravado
+
+#### Scenario: Já respondida
+- **WHEN** a pessoa tenta responder de novo uma pesquisa em que já respondeu todas as perguntas
+- **THEN** o backend recusa com "Você já respondeu esta pesquisa"
+
+### Requirement: Resultados de clima com favoráveis e comentários protegidos
+Os resultados de uma pesquisa encerrada SHALL trazer, para o geral e para cada departamento que atinja o mínimo de respostas, a média e quantas respostas foram favoráveis e desfavoráveis na escala da pergunta. Os comentários SHALL aparecer só quando o número de pessoas que responderam atingir o mínimo da pesquisa, em ordem alfabética e sem identificador.
+
+#### Scenario: Comentários abaixo do mínimo
+- **WHEN** o RH consulta os resultados de uma pesquisa encerrada em que responderam menos pessoas que o mínimo
+- **THEN** a resposta não traz nenhum comentário
+
+### Requirement: Perguntas de clima só antes da abertura
+O RH SHALL poder criar a pesquisa já com as perguntas numa única chamada. Incluir perguntas SHALL ser permitido só antes da data de início da pesquisa.
+
+#### Scenario: Incluir pergunta com a pesquisa aberta
+- **WHEN** o RH tenta incluir uma pergunta numa pesquisa que já começou
+- **THEN** o backend recusa
+
+### Requirement: Atribuição em lote das avaliações de desempenho
+O RH SHALL poder atribuir, num ciclo de avaliação em andamento e numa única chamada, a autoavaliação e/ou a avaliação do gestor de todas as pessoas não desligadas com conta, de um departamento ou de todos. O gestor SHALL ser o superior direto e, sem ele, o gestor do departamento; ninguém SHALL avaliar a si mesmo como gestor. Avaliações que já existam no ciclo SHALL ser puladas, e cada avaliador SHALL receber um aviso.
+
+#### Scenario: Lote repetido
+- **WHEN** o RH atribui o mesmo lote duas vezes no mesmo ciclo
+- **THEN** a segunda vez não cria nenhuma avaliação e informa quantas já existiam
+
+#### Scenario: Ciclo fora de andamento
+- **WHEN** o RH tenta atribuir avaliações num ciclo em planejamento
+- **THEN** o backend recusa
+
+### Requirement: Encerramento do ciclo de avaliação cancela o que ficou em aberto
+Ao concluir ou cancelar um ciclo de avaliação, as avaliações ainda pendentes ou em andamento SHALL ficar canceladas.
+
+#### Scenario: Concluir com avaliações pendentes
+- **WHEN** o RH conclui um ciclo em fechamento com duas avaliações pendentes
+- **THEN** as duas ficam canceladas e a resposta informa a quantidade
