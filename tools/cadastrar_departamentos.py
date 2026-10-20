@@ -16,7 +16,6 @@ Uso (na raiz do repositório):
     python tools/cadastrar_departamentos.py --listar   # só mostra a lista padrão, sem entrar
 """
 
-import getpass
 import sys
 import time
 import tomllib
@@ -24,6 +23,7 @@ import unicodedata
 from pathlib import Path
 
 import requests
+from ler_senha import ler_senha
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -89,7 +89,7 @@ def _chamar(metodo: str, canonical: str, caminho: str, token: str | None = None,
 
 def entrar() -> str:
     email = input("E-mail (conta RH ou Admin): ").strip()
-    senha = getpass.getpass("Senha (não aparece na tela): ")
+    senha = ler_senha("Senha")
     _chamar("POST", GRUPO_AUTENTICACAO, "auth/login", corpo={"email": email, "password": senha})
     codigo = input("Código de 6 dígitos enviado por e-mail: ").strip()
     resposta = _chamar("POST", GRUPO_AUTENTICACAO, "auth/otp/validar", corpo={"email": email, "codigo": codigo, "dispositivo": "Script cadastrar_departamentos"})
