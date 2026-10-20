@@ -202,28 +202,51 @@ query "documentos/processar_vencimentos" verb=POST {
                   value = ($venceu ? ("O documento " ~ $documento_item.nome_documento ~ " venceu hoje. Envie uma substituicao assim que possivel.") : ("O documento " ~ $documento_item.nome_documento ~ " vence em " ~ ($limiar_alerta|to_text) ~ " dias. Envie uma substituicao antes do vencimento."))
                 }
 
-                db.add email_outbox {
-                  data = {
-                    destinatario_email: $colaborador_documento.email_pessoal
-                    destinatario_nome : $colaborador_documento.nome
-                    assunto           : $assunto_alerta
-                    corpo             : $corpo_alerta
-                    chave_idempotencia: ("documento_vencendo_" ~ ($documento_item.id|to_text) ~ "_" ~ ($limiar_alerta|to_text))
+                // Preferencia de aviso do destinatario (change configuracoes-seguranca-notificacoes, D3):
+                // sem registro, os dois canais ligados.
+                db.query preferencia_aviso {
+                  where = $db.preferencia_aviso.user_id == $colaborador_documento.user_id && $db.preferencia_aviso.assunto == "documentos"
+                  return = {type: "single"}
+                } as $preferencia_aviso_doc
+
+                var $aviso_plataforma_doc {
+                  value = (($preferencia_aviso_doc == null) || ($preferencia_aviso_doc.plataforma == true))
+                }
+
+                var $aviso_email_doc {
+                  value = (($preferencia_aviso_doc == null) || ($preferencia_aviso_doc.email == true))
+                }
+
+                conditional {
+                  if ($aviso_email_doc) {
+                    db.add email_outbox {
+                      data = {
+                        destinatario_email: $colaborador_documento.email_pessoal
+                        destinatario_nome : $colaborador_documento.nome
+                        assunto           : $assunto_alerta
+                        corpo             : $corpo_alerta
+                        chave_idempotencia: ("documento_vencendo_" ~ ($documento_item.id|to_text) ~ "_" ~ ($limiar_alerta|to_text))
+                      }
+                    } as $outbox_alerta_criado
                   }
-                } as $outbox_alerta_criado
+                }
 
                 conditional {
                   if ($colaborador_documento.user_id != null) {
-                    db.add notificacao_interna {
-                      data = {
-                        destinatario_user_id: $colaborador_documento.user_id
-                        tipo                : "documento_vencendo"
-                        titulo              : $assunto_alerta
-                        mensagem            : $corpo_alerta
-                        recurso             : "documento"
-                        registro_id         : $documento_item.id
+                    conditional {
+                      if ($aviso_plataforma_doc) {
+                        db.add notificacao_interna {
+                          data = {
+                            destinatario_user_id: $colaborador_documento.user_id
+                            tipo                : "documento_vencendo"
+                            titulo              : $assunto_alerta
+                            mensagem            : $corpo_alerta
+                            recurso             : "documento"
+                            registro_id         : $documento_item.id
+                          }
+                        } as $notificacao_alerta_criada
                       }
-                    } as $notificacao_alerta_criada
+                    }
                   }
                 }
 
