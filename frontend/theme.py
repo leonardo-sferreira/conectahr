@@ -851,6 +851,21 @@ _APP_CSS = f"""
   .crh-ct-item:last-child .l {{ display: none; }}
   .crh-ct-item .crh-linha-onb {{ flex: 1 1 auto; background: white; }}
   .crh-ct-item .crh-linha-onb .t {{ font-weight: 500; }}
+  /* Trajetória (Figma 64:42): cartão do plano de carreira e reconhecimentos recebidos. */
+  .crh-carreira {{ padding: 20px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }}
+  .crh-carreira .r {{ margin: 0 0 2px; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-carreira .n {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: {GRAFITE}; }}
+  .crh-carreira .seta {{ font-size: 20px; color: {AMBAR}; }}
+  .crh-carreira .prox {{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }}
+  .crh-carreira .comp {{ border-radius: 999px; padding: 4px 10px; background: {AMBAR_BG}; color: {AMBAR_ESCURO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; }}
+  .crh-carreira .nota {{ margin: 0 0 0 auto; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-rec {{ padding: 8px 24px; }}
+  .crh-rec .item {{ padding: 12px 0; border-bottom: 1px solid {BORDA}; display: flex; flex-direction: column; gap: 4px; }}
+  .crh-rec .item:last-child {{ border-bottom: none; }}
+  .crh-rec .cab {{ display: flex; justify-content: space-between; gap: 12px; }}
+  .crh-rec .nome {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE}; }}
+  .crh-rec .quando {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; white-space: nowrap; }}
+  .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
   /* Ficha do colaborador (Figma 243:580). */
   .st-key-col_ficha_card {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 12px; }}
   .st-key-col_ficha_card button[kind="primary"] {{ padding: 0.55rem 1.1rem; border-radius: 10px; white-space: nowrap; }}
@@ -964,6 +979,10 @@ _ESCURO_CSS = f"""
   .crh-fe-item .t {{ color: {ESC_TEXTO}; }}
   .crh-fe-item .d {{ color: {ESC_TEXTO_2}; }}
   .crh-ct-item .crh-linha-onb {{ background: {ESC_CARTAO}; }}
+  .crh-carreira .n, .crh-rec .nome {{ color: {ESC_TEXTO} !important; }}
+  .crh-carreira .r, .crh-carreira .nota, .crh-rec .quando, .crh-rec .msg {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-carreira .comp {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
+  .crh-rec .item {{ border-color: {ESC_BORDA}; }}
   .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}
   .st-key-col_ficha_card {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .crh-ponto-status.neu {{ color: {ESC_TEXTO_2}; }}

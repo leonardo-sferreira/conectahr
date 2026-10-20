@@ -92,6 +92,9 @@ jobs:
           python tools/testar_faq.py
           python tools/testar_notificacoes.py
 
+      - name: Testes da Trajetória
+        run: python tools/testar_trajetoria.py
+
       - name: Procurar segredos no repositorio
         run: |
           if git grep -n -E "xkeysib-[A-Za-z0-9]{20,}|SG\.[A-Za-z0-9_-]{20,}|Bearer eyJ[A-Za-z0-9_-]{20,}" -- . ':!.github'; then

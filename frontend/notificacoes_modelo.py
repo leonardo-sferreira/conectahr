@@ -19,7 +19,7 @@ _DESTINO_TIPO = {
     "solicitacao_respondida": "ir_central",
     "beneficio_atualizado": "ir_beneficios",
     "documento_vencendo": "ir_documentos",
-    "avaliacao_disponivel": "ir_central",
+    "avaliacao_disponivel": "ir_trajetoria",
     # Parte 2 (12/10/2026): mudanças que afetam a pessoa.
     "cadastro_atualizado": "ir_perfil",
     "documento_pedido": "ir_documentos",
@@ -51,7 +51,7 @@ _DESTINO_RECURSO = {
     "beneficio": "ir_beneficios",
     "documento": "ir_documentos",
     "pendencia_documento": "ir_documentos",
-    "avaliacao": "ir_central",
+    "avaliacao": "ir_trajetoria",
 }
 
 
