@@ -17,7 +17,6 @@ import tomllib
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-import requests
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -26,6 +25,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "frontend"))
 import rep_modelo as m  # noqa: E402
 from ler_senha import ler_senha
+from limite_http import pedir
 
 SEGREDOS = tomllib.loads((RAIZ / ".streamlit" / "secrets.toml").read_text(encoding="utf-8"))
 BASE = SEGREDOS["xano"]["auth_base_url"].rstrip("/").rsplit("api:", 1)[0]
@@ -47,7 +47,7 @@ def conferir(ok: bool, descricao: str, detalhe=None) -> None:
 
 
 def chamar(metodo, grupo, caminho, token=None, corpo=None, params=None):
-    r = requests.request(metodo, f"{BASE}api:{grupo}/{caminho}", json=corpo, params=params,
+    r = pedir(metodo, f"{BASE}api:{grupo}/{caminho}", json=corpo, params=params,
                          headers={"Authorization": f"Bearer {token}"} if token else {}, timeout=20)
     try:
         dados = r.json()
