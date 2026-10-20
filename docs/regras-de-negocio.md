@@ -497,6 +497,14 @@ Não há estados no banco de horas — cada lançamento é imutável desde a cri
 
 Cadastro, aprovação, rejeição, suspensão e revogação de `instrumento_normativo` (com `justificativa` nas três últimas). **Exceção:** `enviar_aprovacao` de instrumento não grava auditoria. Para override: criação e aprovação são auditadas (aprovação registra `valor_anterior`/`valor_novo`); `enviar_aprovacao` de override também não audita. Resolução de regra: `aplicar_regra_resolvida` (ao persistir em `regra_aplicada`) e `simular_impacto_regra_override` são auditados; a consulta de resolução (`resolver`, GET) não audita.
 
+### 9.7 Conflito, rejeição e prioridade (change `tela-de-regras`, desde 20/10/2026)
+
+- **Conflito** (função `ConectaHR/impacto_override`): outra regra `vigente` do mesmo `parametro` e da mesma `prioridade`, com `valor_novo` diferente, vigência sobreposta e pelo menos uma pessoa ativa atingida pelas duas (conferida pessoa a pessoa contra a abrangência da outra regra). `enviar_aprovacao` e `aprovar` recusam a regra com conflito; `regras_override` GET devolve os `conflitos` das regras em rascunho ou pendentes; `simular` devolve os conflitos, o número de departamentos e, por pessoa, o valor da matriz do contrato (antes vinha nulo quando nenhuma regra se aplicava).
+- **Rejeitar regra** (`regras_override/{id}/rejeitar`): RH ou Admin, só pendente, motivo de 5 a 1000 caracteres, nunca a própria; vai a `rejeitada`, audita `rejeitar_regra_override` com o motivo e avisa quem criou.
+- **Prioridade** (`regras_override/{id}/prioridade`): RH ou Admin, só rascunho ou pendente, de 1 a 99; audita `alterar_prioridade_regra_override` com antes e depois.
+- **Aprovar** aceita `justificativa` opcional, gravada na auditoria. O encerramento da versão vigente anterior deixou de usar `||` no `where` (filtra o escopo no laço).
+- Pendência: `resolver_regra` ainda filtra `data_fim` com `||` no `where`.
+
 ### 9.6 Motor de resolução de regras (`resolver` / `aplicar` / `simular`)
 
 - **`regras_override/resolver`** (GET): dado `colaborador_id` e `parametro` (validado contra os 15 parâmetros protegidos existentes), resolve o valor efetivo considerando, em ordem de especificidade: exceção individual (nível 5) → regra de cargo/departamento (nível 4) → instrumento coletivo — acordo/convenção coletiva/termo aditivo (nível 3) → demais escopos com override vigente (empresa/estabelecimento/estado/município/tipo_contrato/categoria_profissional, tratados como "norma vigente", nível 2) → só a matriz `regra_contrato`, sem override (nível 1). Acesso: RH/ADMIN ou o próprio colaborador (`xano-workspace/function/conectahr/resolver_regra.xs`, `xano-workspace/api/conecta_rh_colaboradores/regras_override/resolver_GET.xs`).

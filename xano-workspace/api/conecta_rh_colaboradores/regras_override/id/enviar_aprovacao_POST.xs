@@ -78,6 +78,17 @@ query "regras_override/{id}/enviar_aprovacao" verb=POST {
       error = "Somente regras em rascunho podem ser enviadas para aprovacao."
     }
 
+    // Conflito nao resolvido bloqueia (change tela-de-regras, D3): outra regra vigente do mesmo parametro e
+    // da mesma prioridade, com valor diferente e pessoas em comum.
+    function.run "ConectaHR/impacto_override" {
+      input = {override_id: $override_atual.id}
+    } as $impacto
+
+    precondition (($impacto.conflitos|count) == 0) {
+      error_type = "inputerror"
+      error = "Conflito nao resolvido com outra regra vigente do mesmo parametro e da mesma prioridade. Mude a prioridade ou o escopo antes de seguir."
+    }
+
     db.edit regra_override {
       field_name = "id"
       field_value = $override_atual.id

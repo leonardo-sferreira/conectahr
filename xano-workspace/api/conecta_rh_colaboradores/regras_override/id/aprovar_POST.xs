@@ -10,6 +10,7 @@ query "regras_override/{id}/aprovar" verb=POST {
 
   input {
     int id
+    text? justificativa? filters=trim|max:1000
   }
 
   stack {
@@ -88,15 +89,44 @@ query "regras_override/{id}/aprovar" verb=POST {
       error = "Quem criou a regra nao pode aprova-la."
     }
 
+    // Conflito nao resolvido bloqueia (change tela-de-regras, D3): outra regra vigente do mesmo parametro e
+    // da mesma prioridade, com valor diferente e pessoas em comum.
+    function.run "ConectaHR/impacto_override" {
+      input = {override_id: $override_atual.id}
+    } as $impacto
+
+    precondition (($impacto.conflitos|count) == 0) {
+      error_type = "inputerror"
+      error = "Conflito nao resolvido com outra regra vigente do mesmo parametro e da mesma prioridade. Mude a prioridade ou o escopo antes de seguir."
+    }
+
     // Localiza uma regra vigente com o mesmo parametro, abrangencia e escopo
     // completo (todas as sete dimensoes de abrangencia, nao so
     // departamento/cargo/colaborador, senao overrides por estado/municipio/
     // tipo_contrato/categoria_profissional encerrariam a regra vigente
     // errada de outra jurisdicao com o mesmo parametro+abrangencia).
+    // O `||` entre parenteses no where nao filtrava direito neste workspace (change tela-de-regras): a consulta
+    // fica so com `&&` e o escopo e conferido no laco.
     db.query regra_override {
-      where = $db.regra_override.parametro == $override_atual.parametro && $db.regra_override.abrangencia == $override_atual.abrangencia && $db.regra_override.status == "vigente" && (($db.regra_override.departamento_id == $override_atual.departamento_id) || ($db.regra_override.departamento_id == null && $override_atual.departamento_id == null)) && (($db.regra_override.cargo_id == $override_atual.cargo_id) || ($db.regra_override.cargo_id == null && $override_atual.cargo_id == null)) && (($db.regra_override.colaborador_id == $override_atual.colaborador_id) || ($db.regra_override.colaborador_id == null && $override_atual.colaborador_id == null)) && (($db.regra_override.tipo_contrato == $override_atual.tipo_contrato) || ($db.regra_override.tipo_contrato == null && $override_atual.tipo_contrato == null)) && (($db.regra_override.estado == $override_atual.estado) || ($db.regra_override.estado == null && $override_atual.estado == null)) && (($db.regra_override.municipio == $override_atual.municipio) || ($db.regra_override.municipio == null && $override_atual.municipio == null)) && (($db.regra_override.categoria_profissional == $override_atual.categoria_profissional) || ($db.regra_override.categoria_profissional == null && $override_atual.categoria_profissional == null))
-      return = {type: "single"}
-    } as $override_vigente_anterior
+      where = $db.regra_override.parametro == $override_atual.parametro && $db.regra_override.abrangencia == $override_atual.abrangencia && $db.regra_override.status == "vigente"
+      return = {type: "list"}
+    } as $vigentes_mesmo_parametro
+
+    var $override_vigente_anterior {
+      value = null
+    }
+
+    foreach ($vigentes_mesmo_parametro) {
+      each as $vg {
+        conditional {
+          if (($override_vigente_anterior == null) && ($vg.id != $override_atual.id) && ($vg.departamento_id == $override_atual.departamento_id) && ($vg.cargo_id == $override_atual.cargo_id) && ($vg.colaborador_id == $override_atual.colaborador_id) && ($vg.tipo_contrato == $override_atual.tipo_contrato) && ($vg.estado == $override_atual.estado) && ($vg.municipio == $override_atual.municipio) && ($vg.categoria_profissional == $override_atual.categoria_profissional)) {
+            var.update $override_vigente_anterior {
+              value = $vg
+            }
+          }
+        }
+      }
+    }
 
     var $versao_final {
       value = 1
@@ -149,6 +179,7 @@ query "regras_override/{id}/aprovar" verb=POST {
             registro_id   : $override_atual.id
             valor_anterior: ($override_vigente_anterior != null ? $override_vigente_anterior.valor_novo : null)
             valor_novo    : $override_atual.valor_novo
+            justificativa : $input.justificativa
             resultado     : "sucesso"
           }
         } as $evento_auditoria

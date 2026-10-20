@@ -56,7 +56,36 @@ query regras_override verb=GET {
     db.query regra_override {
       sort = {regra_override.created_at: "desc"}
       return = {type: "list"}
-    } as $overrides
+    } as $todas
+
+    // Conflitos das regras em rascunho ou pendentes (change tela-de-regras, D3); as demais vao sem.
+    var $overrides {
+      value = []
+    }
+
+    foreach ($todas) {
+      each as $r {
+        var $conflitos_regra {
+          value = []
+        }
+
+        conditional {
+          if (($r.status == "rascunho") || ($r.status == "pendente_aprovacao")) {
+            function.run "ConectaHR/impacto_override" {
+              input = {override_id: $r.id}
+            } as $impacto_regra
+
+            var.update $conflitos_regra {
+              value = $impacto_regra.conflitos
+            }
+          }
+        }
+
+        var.update $overrides {
+          value = $overrides|push:($r|set:"conflitos":$conflitos_regra)
+        }
+      }
+    }
   }
 
   response = {

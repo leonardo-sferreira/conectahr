@@ -78,101 +78,35 @@ query "regras_override/{id}/simular" verb=GET {
       error = "Regra de override nao encontrada."
     }
 
-    // Levanta os colaboradores afetados pela abrangencia do override,
-    // um caso por vez. "categoria_profissional" nunca resolve populacao
-    // — mesmo gap documentado no resolver_regra (colaborador nao tem
-    // esse campo). "estabelecimento" tratado como empresa inteira.
+    // Pessoas atingidas e conflitos (change tela-de-regras, D1 e D2).
+    function.run "ConectaHR/impacto_override" {
+      input = {override_id: $override_simulado.id}
+    } as $impacto
+
     var $colaboradores_afetados {
-      value = []
+      value = $impacto.afetados
     }
 
-    conditional {
-      if ($override_simulado.abrangencia == "empresa" || $override_simulado.abrangencia == "estabelecimento") {
-        db.query colaborador {
-          where = $db.colaborador.status == "Ativo"
-          return = {type: "list"}
-        } as $populacao_empresa
-
-        var.update $colaboradores_afetados {
-          value = $populacao_empresa
-        }
-      }
+    var $departamentos_txt {
+      value = ","
     }
 
-    conditional {
-      if ($override_simulado.abrangencia == "estado" && $override_simulado.estado != null) {
-        db.query colaborador {
-          where = $db.colaborador.status == "Ativo" && $db.colaborador.estado == $override_simulado.estado
-          return = {type: "list"}
-        } as $populacao_estado
-
-        var.update $colaboradores_afetados {
-          value = $populacao_estado
-        }
-      }
+    var $departamentos {
+      value = 0
     }
 
-    conditional {
-      if ($override_simulado.abrangencia == "municipio" && $override_simulado.municipio != null) {
-        db.query colaborador {
-          where = $db.colaborador.status == "Ativo" && $db.colaborador.cidade == $override_simulado.municipio
-          return = {type: "list"}
-        } as $populacao_municipio
+    foreach ($colaboradores_afetados) {
+      each as $pd {
+        conditional {
+          if (($pd.departamento_id != null) && (($departamentos_txt|contains:("," ~ ($pd.departamento_id|to_text) ~ ",")) == false)) {
+            var.update $departamentos_txt {
+              value = $departamentos_txt ~ ($pd.departamento_id|to_text) ~ ","
+            }
 
-        var.update $colaboradores_afetados {
-          value = $populacao_municipio
-        }
-      }
-    }
-
-    conditional {
-      if ($override_simulado.abrangencia == "tipo_contrato" && $override_simulado.tipo_contrato != null) {
-        db.query colaborador {
-          where = $db.colaborador.status == "Ativo" && $db.colaborador.tipo_contrato == $override_simulado.tipo_contrato
-          return = {type: "list"}
-        } as $populacao_tipo_contrato
-
-        var.update $colaboradores_afetados {
-          value = $populacao_tipo_contrato
-        }
-      }
-    }
-
-    conditional {
-      if ($override_simulado.abrangencia == "departamento" && $override_simulado.departamento_id != null) {
-        db.query colaborador {
-          where = $db.colaborador.status == "Ativo" && $db.colaborador.departamento_id == $override_simulado.departamento_id
-          return = {type: "list"}
-        } as $populacao_departamento
-
-        var.update $colaboradores_afetados {
-          value = $populacao_departamento
-        }
-      }
-    }
-
-    conditional {
-      if ($override_simulado.abrangencia == "cargo" && $override_simulado.cargo_id != null) {
-        db.query colaborador {
-          where = $db.colaborador.status == "Ativo" && $db.colaborador.cargo_id == $override_simulado.cargo_id
-          return = {type: "list"}
-        } as $populacao_cargo
-
-        var.update $colaboradores_afetados {
-          value = $populacao_cargo
-        }
-      }
-    }
-
-    conditional {
-      if ($override_simulado.abrangencia == "colaborador" && $override_simulado.colaborador_id != null) {
-        db.query colaborador {
-          where = $db.colaborador.status == "Ativo" && $db.colaborador.id == $override_simulado.colaborador_id
-          return = {type: "list"}
-        } as $populacao_individual
-
-        var.update $colaboradores_afetados {
-          value = $populacao_individual
+            var.update $departamentos {
+              value = $departamentos + 1
+            }
+          }
         }
       }
     }
@@ -201,9 +135,17 @@ query "regras_override/{id}/simular" verb=GET {
           value = ($valor_atual_resolvido != $override_simulado.valor_novo)
         }
 
+        // Valor da matriz do contrato, para quando nenhuma regra de override se aplica (change tela-de-regras, D2).
+        var $valor_matriz {
+          value = ($resolucao_atual.regra_contrato != null ? ($resolucao_atual.regra_contrato|get:$override_simulado.parametro) : null)
+        }
+
         var.update $detalhes_simulacao {
           value = $detalhes_simulacao|push:{
             colaborador_id    : $colaborador_afetado.id
+            cargo_id          : $colaborador_afetado.cargo_id
+            departamento_id   : $colaborador_afetado.departamento_id
+            valor_matriz      : $valor_matriz
             nome              : $colaborador_afetado.nome
             valor_atual       : $valor_atual_resolvido
             nivel_atual       : $resolucao_atual.nivel_resolvido
@@ -232,6 +174,8 @@ query "regras_override/{id}/simular" verb=GET {
     override_simulado : $override_simulado
     total_afetados    : $total_afetados
     detalhes          : $detalhes_simulacao
+    departamentos     : $departamentos
+    conflitos         : $impacto.conflitos
   }
 
   guid = "conectahr-regras-override-simular-get-0001"
