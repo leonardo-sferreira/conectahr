@@ -15,8 +15,8 @@ from datetime import date
 import streamlit as st
 
 from api_client import ApiError, enviar_etapa_meta, meu_ciclo_metas, responder_meta
-from ciclo_metas_modelo import (ESCALA, ETAPAS, enviadas_do, etapa_editavel, perguntas_do_formulario, periodo, respostas_alteradas,
-                                situacao_ciclo, validar_envio)
+from ciclo_metas_modelo import (ESCALA, ETAPAS, ciclo_em_foco, enviadas_do, etapa_editavel, perguntas_do_formulario, periodo, proxima_abertura,
+                                respostas_alteradas, situacao_ciclo, validar_envio)
 from formulario_metas_ui import etapa_leitura, trilha_etapas
 from onboarding_modelo import data_br
 from theme import alerta, render_hero, render_topbar
@@ -117,7 +117,8 @@ def pagina_metas_ciclo() -> None:
         return
     hoje = date.fromisoformat(str(dados.get("hoje") or date.today())[:10])
     por_id = {c["id"]: c for c in ciclos}
-    escolhido = st.selectbox("Ciclo", list(por_id), format_func=lambda i: f"Ciclo {por_id[i].get('ano')} — {situacao_ciclo(por_id[i], hoje)[0]}",
+    foco = ciclo_em_foco(ciclos)["id"]
+    escolhido = st.selectbox("Ciclo", list(por_id), index=list(por_id).index(foco), format_func=lambda i: f"Ciclo {por_id[i].get('ano')} — {situacao_ciclo(por_id[i], hoje)[0]}",
                              key="cm_ciclo", width=320) if len(ciclos) > 1 else ciclos[0]["id"]
     ciclo = por_id[escolhido]
     enviadas = enviadas_do(ciclo)
@@ -131,6 +132,14 @@ def pagina_metas_ciclo() -> None:
             _formulario(ciclo, aberta, perguntas)
     elif ciclo.get("etapa_aberta") and not enviadas.get(1) and ciclo["etapa_aberta"] > 1:
         alerta(st.empty(), "atencao", f"A etapa {ciclo['etapa_aberta']} está aberta, mas você não enviou as metas na etapa 1 ({periodo(ciclo, 1)}). Fale com o seu gestor.")
+    elif not ciclo.get("etapa_aberta"):
+        # Fora das janelas não há campo para preencher: diz quando abre (pedido do usuário, 20/10/2026).
+        proxima = proxima_abertura(ciclo, hoje)
+        alerta(st.empty(), "atencao", f"Nenhuma etapa está aberta agora. A etapa {proxima[0]} ({ETAPAS[proxima[0]].lower()}) abre em {proxima[1]}; "
+                                      "os campos aparecem aqui nesse dia." if proxima else "As três etapas deste ciclo já terminaram: o formulário fica só para consulta.")
+    # Com a etapa 1 aberta, o próprio formulário avisa; antes dela, o aviso fica aqui.
+    if not aberta and not enviadas.get(1) and not dados.get("perguntas_ativas"):
+        alerta(st.empty(), "atencao", "O RH ainda não cadastrou as perguntas do formulário.")
     for n in (1, 2, 3):
         if n != aberta:
             etapa_leitura(ciclo, n, perguntas, enviadas, ciclo.get("feedbacks"), hoje)

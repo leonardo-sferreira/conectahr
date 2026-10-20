@@ -246,6 +246,25 @@ conferir("O RH ainda não abriu um ciclo de metas." in texto(at), "sem ciclo: av
 at = app("metas-do-ciclo", perfil="RH")
 conferir("cm_2_enviar" in chaves(at), "o RH também preenche o próprio formulário")
 
+futuro = meu("2026-10-20", None, formulario=False)
+at = app("metas-do-ciclo", meu=futuro)
+t = texto(at)
+conferir("Nenhuma etapa está aberta agora. A etapa 1 (definir as metas) abre em 01/02/2027" in t and "Ainda não começou." in t and "cm_2_salvar" not in chaves(at),
+         "antes da etapa 1: diz quando abre, sem campos (pedido de 20/10/2026)")
+at = app("metas-do-ciclo", meu=dict(futuro, perguntas_ativas=[]))
+conferir("O RH ainda não cadastrou as perguntas" in texto(at), "sem perguntas cadastradas: avisa")
+dois = meu("2026-10-25", 1, formulario=False)
+dois["ciclos"] = [dict(CICLO_2027, id=5, etapa_aberta=None, formulario_id=None, respostas=[], feedbacks=[], etapa1_enviada_em=None, etapa2_enviada_em=None, etapa3_enviada_em=None),
+                  dict(dois["ciclos"][0], id=6, ano=2026, etapa1_inicio="2026-10-20", etapa1_fim="2026-10-31", etapa2_inicio="2026-11-01", etapa2_fim="2026-11-30",
+                       etapa3_inicio="2026-12-01", etapa3_fim="2026-12-31")]
+at = app("metas-do-ciclo", meu=dois)
+conferir(at.selectbox(key="cm_ciclo").value == 6 and "cm_6_salvar" in chaves(at), "com dois ciclos, abre no que tem etapa aberta")
+at = app("trajetoria", meu=dois)
+conferir("Ciclo de metas 2026" in texto(at) and at.button(key="traj_abrir_metas").label == "Preencher a etapa 1 →", "a Trajetória mostra o ciclo com etapa aberta")
+m_foco = m.ciclo_em_foco(dois["ciclos"])
+conferir(m_foco["id"] == 6 and m.ciclo_em_foco(futuro["ciclos"])["ano"] == 2027 and m.proxima_abertura(CICLO_2027, date(2027, 3, 1)) == (2, "01/06/2027")
+         and m.proxima_abertura(CICLO_2027, date(2027, 11, 1)) is None, "regras: ciclo em foco e próxima abertura")
+
 caso("Trajetória: bloco do ciclo de metas")
 at = app("trajetoria")
 conferir("Ciclo de metas 2027" in texto(at) and "Etapa 1 — Definir as metas" in texto(at) and at.button(key="traj_abrir_metas").label == "Preencher a etapa 1 →",

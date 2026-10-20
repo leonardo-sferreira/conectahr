@@ -95,6 +95,20 @@ def situacao_etapa(ciclo: dict, n: int, hoje: date, enviadas: dict) -> tuple[str
     return f"Aberta até {data_br(ciclo.get(f'etapa{n}_fim'))}", "amb"
 
 
+def ciclo_em_foco(ciclos: list[dict]) -> dict | None:
+    """O ciclo que a tela abre: o que tem etapa aberta hoje; sem nenhum, o mais recente (a lista vem do mais novo)."""
+    return next((c for c in ciclos or [] if c.get("etapa_aberta")), None) or (ciclos[0] if ciclos else None)
+
+
+def proxima_abertura(ciclo: dict, hoje: date) -> tuple[int, str] | None:
+    """(etapa, "dd/mm/aaaa") da próxima etapa a abrir depois de hoje; None se todas já começaram."""
+    for n in (1, 2, 3):
+        inicio = _data(ciclo.get(f"etapa{n}_inicio"))
+        if inicio and hoje < inicio:
+            return n, data_br(ciclo.get(f"etapa{n}_inicio"))
+    return None
+
+
 def enviadas_do(registro: dict) -> dict:
     return {n: registro.get(f"etapa{n}_enviada_em") for n in (1, 2, 3)}
 
