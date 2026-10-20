@@ -14,7 +14,7 @@ A tela Trajetória (Figma 64:42; tarefas 31 a 33 da change `concluir-frontend-st
 
 - Mural de reconhecimentos, envio de reconhecimento e moderação (seção 16 do Figma; tarefa 66 da change `concluir-frontend-streamlit`).
 - Telas do RH e do gestor para criar ciclos, atribuir avaliações, metas e PDI, e revisar contestações.
-- Promoção: a tela só informa o próximo nível ("Sem promoção automática — decisão sempre humana").
+- Promoção: a tela só informa o próximo nível, sem nenhuma ação de promover. O aviso "Sem promoção automática — decisão sempre humana" do Figma foi tirado a pedido do usuário (20/10/2026).
 
 ## Capabilities
 

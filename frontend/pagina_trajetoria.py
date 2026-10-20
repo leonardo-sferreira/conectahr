@@ -2,7 +2,7 @@
 Página "Trajetória" (Figma 64:42; change trajetoria-do-colaborador; tarefas 31 a 33 da change
 concluir-frontend-streamlit). Para qualquer perfil com ficha de colaborador.
 
-Blocos do Figma: plano de carreira (nível atual, próximo nível e competências, "Sem promoção automática"),
+Blocos do Figma: plano de carreira (nível atual, próximo nível e competências; sem ação de promover),
 Avaliação 360 do ciclo em andamento, Metas ativas, PDI e Reconhecimentos recebidos. Além deles, "Para você avaliar"
 (as avaliações que a pessoa responde) e "Avaliações recebidas" (as enviadas sobre ela, para contestar), que só
 aparecem quando há algo. Os modais de responder, contestar, check-in e progresso não têm nó no Figma
@@ -222,7 +222,7 @@ def _carreira(dados: dict) -> None:
     else:
         proximo = '<div><p class="r">Próximo nível</p><p class="crh-meta">Você está no nível mais alto da trilha.</p></div>'
     st.html(f'<div class="crh-painel crh-carreira"><div><p class="r">Nível atual</p><p class="n">{html.escape(nivel(dados.get("nivel_atual")))}</p></div>'
-            f'{proximo}<p class="nota">Sem promoção automática — decisão sempre humana</p></div>')
+            f'{proximo}</div>')
 
 
 def _reconhecimentos(dados: dict) -> None:
