@@ -9,7 +9,7 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
     int id
     text texto filters=trim|max:500
     int? ordem?
-    text? escala? filters=trim|to_lower
+    text? escala? filters=trim|lower
   }
 
   stack {
