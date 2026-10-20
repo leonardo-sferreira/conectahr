@@ -19,6 +19,10 @@ O sistema SHALL permitir que só o Admin altere o tipo de acesso (perfil) de uma
 - **WHEN** o Admin escolhe outro tipo de acesso na ficha do colaborador
 - **THEN** o perfil é trocado na hora, sem pedido
 
+#### Scenario: Admin não é escolhido na admissão
+- **WHEN** o RH admite uma pessoa ou cria o acesso dela
+- **THEN** o tipo de acesso oferece Colaborador, Gestor e RH, e o acesso Admin só pode ser dado depois, pela ficha do colaborador já cadastrado
+
 #### Scenario: Pedido repetido
 - **WHEN** o RH pede de novo para uma conta que já tem pedido pendente
 - **THEN** o sistema recusa o novo pedido
