@@ -21,7 +21,7 @@ import streamlit as st
 
 from api_client import (ApiError, checkin_meta, competencias_avaliacao, contestar_avaliacao, enviar_avaliacao, minha_trajetoria, progresso_pdi,
                         responder_avaliacao)
-from ciclo_metas_modelo import enviadas_do, etapa_editavel
+from ciclo_metas_modelo import ciclo_em_foco, enviadas_do, etapa_editavel
 from formulario_metas_ui import trilha_etapas
 from pagina_metas_ciclo import carregar as carregar_ciclo_metas
 from theme import alerta, html_linha_onboarding, render_hero, render_topbar
@@ -242,7 +242,7 @@ def _ciclo_metas(token: str) -> None:
         st.html('<p class="crh-bloco-titulo">Ciclo de metas</p>'
                 '<div class="crh-painel crh-bloco"><p class="crh-meta">O RH ainda não abriu um ciclo de metas.</p></div>')
         return
-    ciclo = ciclos[0]
+    ciclo = ciclo_em_foco(ciclos)
     hoje = date.fromisoformat(str(dados.get("hoje") or date.today())[:10])
     st.html(f'<p class="crh-bloco-titulo">Ciclo de metas {html.escape(str(ciclo.get("ano")))}</p>')
     trilha_etapas(ciclo, hoje, enviadas_do(ciclo))

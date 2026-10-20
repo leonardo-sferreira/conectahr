@@ -46,7 +46,7 @@ def etapa_leitura(ciclo: dict, n: int, perguntas: list[dict], enviadas: dict, fe
             corpo += f'<div class="crh-cm-q"><p class="p">{html.escape(p["texto"])}</p>{linhas}</div>'
         corpo += _caixa_feedback(feedbacks, n)
     else:
-        corpo = '<p class="crh-meta">Ainda não enviada.</p>'
+        corpo = '<p class="crh-meta">Ainda não começou.</p>' if badge.startswith("Abre em") else '<p class="crh-meta">Ainda não enviada.</p>'
     st.html(f'<div class="crh-painel crh-cm-etapa"><div class="crh-cm-cab"><div><p class="t">Etapa {n} — {html.escape(ETAPAS[n])}</p>'
             f'<p class="s">{html.escape(periodo(ciclo, n))}</p></div><span class="crh-selo {tom}">{html.escape(badge)}</span></div>{corpo}</div>')
 
