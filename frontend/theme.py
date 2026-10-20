@@ -867,6 +867,10 @@ _APP_CSS = f"""
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
   /* Data em três listas (campos.data_por_partes): o rótulo igual ao dos outros campos. */
   .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
+  /* Auditoria (Figma 225:6784): resultado em verde (sucesso) ou vermelho (falha). */
+  .crh-aud-res {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; font-weight: 600; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-aud-res.ok {{ color: {SUCESSO}; }}
+  .crh-aud-res.err {{ color: {ERRO}; }}
   /* Aviso embaixo de um campo com o que ele não aceita (campos.py). */
   .crh-campo-invalido {{ margin: -8px 0 4px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; color: {ERRO} !important; }}
   /* Configurações, Segurança e Notificações (Figma 213:142 e 213:236; change configuracoes-seguranca-notificacoes). */
