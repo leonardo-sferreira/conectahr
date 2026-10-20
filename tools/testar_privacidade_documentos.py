@@ -42,6 +42,10 @@ from api_client import ApiError  # noqa: E402
 
 api_client.minhas_notificacoes = lambda token: {"total_nao_lidas": 0, "notificacoes": []}  # sino do topo (sem rede)
 
+# Configurações: abas Segurança e Notificações (change configuracoes-seguranca-notificacoes), sem rede.
+api_client.minhas_sessoes = lambda token: {"sessoes": [], "sessao_atual_id": None}
+api_client.minhas_preferencias_aviso = lambda token: {"preferencias": []}
+
 APP = RAIZ / "frontend" / "app.py"
 
 chamadas: list[tuple] = []
@@ -158,6 +162,8 @@ def app_logado(destino: str, perfil: str = "COLABORADOR", colaborador_id=9, **ex
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 1, "nome": "Leonardo dos Santos", "email": "leonardo@empresa.com", "perfil": perfil, "colaborador_id": colaborador_id}
     at.session_state["sessao_validada"] = True
+    if destino == "configuracoes":
+        at.session_state["cfg_aba"] = "Privacidade"  # a aba padrão é Segurança (change configuracoes-seguranca-notificacoes)
     return abrir(at.run(), destino)
 
 

@@ -149,26 +149,49 @@ query "solicitacoes/{id}/atender" verb=POST {
 
         conditional {
           if ($conta_solicitante_atender != null) {
-            db.add notificacao_interna {
-              data = {
-                destinatario_user_id: $conta_solicitante_atender.id
-                tipo                : "solicitacao_respondida"
-                titulo              : "Solicitacao atendida"
-                mensagem            : "Sua solicitacao ao RH foi atendida. Acesse o sistema para ver os detalhes."
-                recurso             : "solicitacao_rh"
-                registro_id         : $solicitacao_atual.id
-              }
-            } as $notificacao_atender_criada
+            // Preferencia de aviso do destinatario (change configuracoes-seguranca-notificacoes, D3):
+            // sem registro, os dois canais ligados.
+            db.query preferencia_aviso {
+              where = $db.preferencia_aviso.user_id == $conta_solicitante_atender.id && $db.preferencia_aviso.assunto == "solicitacoes"
+              return = {type: "single"}
+            } as $preferencia_aviso_sol
 
-            db.add email_outbox {
-              data = {
-                destinatario_email : $conta_solicitante_atender.email
-                destinatario_nome  : $conta_solicitante_atender.nome
-                assunto            : "ConectaRH - Solicitacao atendida"
-                corpo              : "Ola " ~ $conta_solicitante_atender.nome ~ ",\n\nSua solicitacao ao RH foi atendida. Acesse o ConectaRH para ver os detalhes.\n\nEste e um aviso automatico."
-                chave_idempotencia : ("solicitacao_respondida_" ~ ($solicitacao_atual.id|to_text))
+            var $aviso_plataforma_sol {
+              value = (($preferencia_aviso_sol == null) || ($preferencia_aviso_sol.plataforma == true))
+            }
+
+            var $aviso_email_sol {
+              value = (($preferencia_aviso_sol == null) || ($preferencia_aviso_sol.email == true))
+            }
+
+            conditional {
+              if ($aviso_plataforma_sol) {
+                db.add notificacao_interna {
+                  data = {
+                    destinatario_user_id: $conta_solicitante_atender.id
+                    tipo                : "solicitacao_respondida"
+                    titulo              : "Solicitacao atendida"
+                    mensagem            : "Sua solicitacao ao RH foi atendida. Acesse o sistema para ver os detalhes."
+                    recurso             : "solicitacao_rh"
+                    registro_id         : $solicitacao_atual.id
+                  }
+                } as $notificacao_atender_criada
               }
-            } as $outbox_atender_criado
+            }
+
+            conditional {
+              if ($aviso_email_sol) {
+                db.add email_outbox {
+                  data = {
+                    destinatario_email : $conta_solicitante_atender.email
+                    destinatario_nome  : $conta_solicitante_atender.nome
+                    assunto            : "ConectaRH - Solicitacao atendida"
+                    corpo              : "Ola " ~ $conta_solicitante_atender.nome ~ ",\n\nSua solicitacao ao RH foi atendida. Acesse o ConectaRH para ver os detalhes.\n\nEste e um aviso automatico."
+                    chave_idempotencia : ("solicitacao_respondida_" ~ ($solicitacao_atual.id|to_text))
+                  }
+                } as $outbox_atender_criado
+              }
+            }
           }
         }
       }

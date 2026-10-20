@@ -100,6 +100,50 @@ query "auth/senha" verb=PATCH {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Senha nova encerra as outras sessoes ativas; a deste token continua
+    // (change configuracoes-seguranca-notificacoes, D1).
+    db.query sessao {
+      where = $db.sessao.user_id == $user.id && $db.sessao.ativa == true
+      return = {type: "list"}
+    } as $sessoes_ativas
+
+    var $total_encerradas {
+      value = 0
+    }
+
+    foreach ($sessoes_ativas) {
+      each as $sessao_item {
+        conditional {
+          if ($sessao_item.id != $sessao_token.id) {
+            db.edit sessao {
+              field_name = "id"
+              field_value = $sessao_item.id
+              data = {ativa: false, revogada_em: "now", updated_at: "now"}
+            } as $sessao_encerrada
+
+            var.update $total_encerradas {
+              value = $total_encerradas + 1
+            }
+          }
+        }
+      }
+    }
+
+    conditional {
+      if ($total_encerradas > 0) {
+        db.add auditoria {
+          data = {
+            user_id    : $user.id
+            acao       : "encerrar_outras_sessoes"
+            recurso    : "sessao"
+            valor_novo : ($total_encerradas|to_text)
+            justificativa: "troca de senha"
+            resultado  : "sucesso"
+          }
+        } as $evento_auditoria_sessoes
+      }
+    }
   }
 
   response = {
@@ -107,6 +151,7 @@ query "auth/senha" verb=PATCH {
     mensagem             : "Senha alterada com sucesso. Primeiro acesso concluído."
     usuario_id           : $user_atualizado.id
     senha_primeiro_acesso: $user_atualizado.senha_primeiro_acesso
+    sessoes_encerradas   : $total_encerradas
   }
 
   guid = "vxc3gNMdyGzZWWdfzr3trm3Vq0s"

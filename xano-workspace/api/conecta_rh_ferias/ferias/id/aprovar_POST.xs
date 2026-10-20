@@ -267,27 +267,38 @@ query "ferias/{id}/aprovar" verb=POST {
 
         conditional {
           if ($conta_colaborador_notificar != null) {
-            db.add notificacao_interna {
-              data = {
-                destinatario_user_id: $conta_colaborador_notificar.id
-                tipo                : "ferias_aprovada"
-                titulo              : "Ferias aprovadas"
-                mensagem            : "Sua solicitacao de ferias foi aprovada. Consulte o periodo no sistema."
-                recurso             : "ferias"
-                registro_id         : $solicitacao.id
-              }
-            } as $notificacao_criada
-
-            // Preferencia de notificacao (item 7.8): notificacao interna
-            // acima e sempre criada; o e-mail respeita a preferencia de
-            // canal do colaborador, com padrao ativo quando nunca configurada.
-            db.query preferencia_notificacao {
-              where = $db.preferencia_notificacao.user_id == $conta_colaborador_notificar.id && $db.preferencia_notificacao.tipo_evento == "ferias_aprovada"
+            // Preferencia de aviso do destinatario (change configuracoes-seguranca-notificacoes, D3):
+            // sem registro, os dois canais ligados.
+            db.query preferencia_aviso {
+              where = $db.preferencia_aviso.user_id == $conta_colaborador_notificar.id && $db.preferencia_aviso.assunto == "ferias_ausencias"
               return = {type: "single"}
-            } as $preferencia_ferias_aprovada
+            } as $preferencia_aviso_fer
+
+            var $aviso_plataforma_fer {
+              value = (($preferencia_aviso_fer == null) || ($preferencia_aviso_fer.plataforma == true))
+            }
+
+            var $aviso_email_fer {
+              value = (($preferencia_aviso_fer == null) || ($preferencia_aviso_fer.email == true))
+            }
+
+            conditional {
+              if ($aviso_plataforma_fer) {
+                db.add notificacao_interna {
+                  data = {
+                    destinatario_user_id: $conta_colaborador_notificar.id
+                    tipo                : "ferias_aprovada"
+                    titulo              : "Ferias aprovadas"
+                    mensagem            : "Sua solicitacao de ferias foi aprovada. Consulte o periodo no sistema."
+                    recurso             : "ferias"
+                    registro_id         : $solicitacao.id
+                  }
+                } as $notificacao_criada
+              }
+            }
 
             var $enviar_email_ferias_aprovada {
-              value = ($preferencia_ferias_aprovada != null ? $preferencia_ferias_aprovada.canal_email : true)
+              value = $aviso_email_fer
             }
 
             conditional {

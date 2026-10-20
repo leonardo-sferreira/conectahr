@@ -10,9 +10,15 @@ Cartões, como no Figma:
 - O que os colegas veem: aniversariantes e mural (`minhas_preferencias_privacidade`);
 - Meus pedidos de privacidade: os pedidos `privacidade_lgpd` de `minhas_solicitacoes`.
 
-Tudo é do próprio usuário: nenhum endpoint daqui recebe id de outra pessoa. As abas "Segurança"
-e "Notificações" já têm desenho (213:142 e 213:236), mas ainda não foram construídas (tarefas da
-seção 2 do tasks.md).
+Aba "Segurança" (Figma 213:142; change configuracoes-seguranca-notificacoes): trocar senha (`auth/senha`, que
+encerra as outras sessões) e sessões e dispositivos (`auth/minhas_sessoes`, `auth/sessoes/{id}/encerrar` e
+`auth/sessoes/encerrar_outras`).
+
+Aba "Notificações" (Figma 213:236): por assunto, "Na plataforma" e "E-mail" (`minhas_preferencias_aviso`). Benefícios,
+alertas de segurança e pedidos para decidir são sempre ligados. Sem "Comunicados" nem "Frequência dos e-mails": o
+backend não manda aviso de comunicado nem resumo diário (docs/figma-pendencias.md).
+
+Tudo é do próprio usuário: nenhum endpoint daqui recebe id de outra pessoa.
 """
 
 import base64
@@ -24,11 +30,18 @@ import streamlit as st
 from api_client import (
     ApiError,
     criar_pedido_privacidade,
+    encerrar_outras_sessoes,
+    encerrar_sessao,
     meus_dados,
+    minhas_preferencias_aviso,
     minhas_preferencias_privacidade,
+    minhas_sessoes,
     minhas_solicitacoes,
+    salvar_preferencia_aviso,
     salvar_preferencias_privacidade,
+    trocar_senha,
 )
+from configuracoes_modelo import ASSUNTOS, SEMPRE_LIGADOS, alteradas, linhas_sessoes, preferencias_por_assunto, regras_senha, validar_troca
 from aviso_privacidade import encarregado, versao
 from privacidade_modelo import FORMATOS, OPCOES_PEDIDO, arquivo_exportado, pedidos_privacidade, validar_pedido
 from theme import alerta, render_linhas_onboarding, render_titulo_pagina, render_topbar
@@ -296,6 +309,168 @@ def _cartao_pedidos(pedidos) -> None:
         render_linhas_onboarding(pedidos)
 
 
+# ---------------------------------------------------------------------------
+# Aba Segurança (Figma 213:142)
+# ---------------------------------------------------------------------------
+_CACHE_SEG = "cfg_seg_cache"
+_CACHE_AVISOS = "cfg_avisos_cache"
+
+
+def _guardado(chave: str, buscar):
+    item = st.session_state.get(chave)
+    if item and time.time() - item["em"] < _VALIDADE_CACHE_S:
+        return item["dados"]
+    dados = buscar()
+    st.session_state[chave] = {"em": time.time(), "dados": dados}
+    return dados
+
+
+def _plural(n: int, um: str, varios: str) -> str:
+    return f"{n} {um if n == 1 else varios}"
+
+
+def _cartao_senha(token: str) -> None:
+    with st.container(key="cfg_card_senha"):
+        st.html('<p class="crh-cfg-titulo">Trocar senha</p>'
+                '<p class="crh-cfg-texto">Use pelo menos 8 caracteres, com letras e números. Ao trocar, as outras sessões são encerradas.</p>')
+        atual = st.text_input("Senha atual", type="password", max_chars=64, key="cfg_senha_atual")
+        nova = st.text_input("Nova senha", type="password", max_chars=64, key="cfg_senha_nova")
+        confirmar = st.text_input("Confirmar nova senha", type="password", max_chars=64, key="cfg_senha_confirmar")
+        regras = "".join(
+            f'<p class="crh-cfg-nota crh-regra{" ok" if ok else ""}" style="margin:0">{"✓" if ok else "•"} {html.escape(texto)}</p>'
+            for texto, ok in regras_senha(nova, atual)
+        )
+        st.html(regras)
+        slot = st.empty()
+        if st.button("Salvar nova senha", type="primary", key="cfg_senha_salvar", width="stretch"):
+            erro_campo = validar_troca(atual, nova, confirmar)
+            if erro_campo:
+                alerta(slot, "erro", erro_campo)
+                return
+            try:
+                resposta = trocar_senha(token, atual, nova, confirmar)
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            for chave in ("cfg_senha_atual", "cfg_senha_nova", "cfg_senha_confirmar", _CACHE_SEG):
+                st.session_state.pop(chave, None)
+            encerradas = resposta.get("sessoes_encerradas") or 0
+            aviso = "Senha alterada."
+            if encerradas:
+                aviso += " " + _plural(encerradas, "outra sessão encerrada.", "outras sessões encerradas.")
+            st.session_state.aviso_toast = aviso
+            st.rerun()
+
+
+def _cartao_sessoes(token: str) -> None:
+    with st.container(key="cfg_card_sessoes"):
+        st.html('<p class="crh-cfg-titulo">Sessões e dispositivos</p>'
+                '<p class="crh-cfg-texto">Lugares onde sua conta está aberta agora. Se não reconhecer algum, encerre e troque a senha.</p>')
+        try:
+            dados = _guardado(_CACHE_SEG, lambda: minhas_sessoes(token))
+        except ApiError as erro:
+            alerta(st.empty(), "erro", erro.message)
+            return
+        linhas = linhas_sessoes(dados.get("sessoes"), dados.get("sessao_atual_id"))
+        slot = st.empty()
+        for l in linhas:
+            with st.container(key=f"cfg_sessao_{l['id']}", horizontal=True, vertical_alignment="center"):
+                st.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["titulo"])}</p><p class="d">{html.escape(l["detalhe"])}</p></div>')
+                if l["atual"]:
+                    st.html('<span class="crh-selo ok">Este dispositivo</span>', width="content")
+                elif st.button("Encerrar", key=f"cfg_encerrar_{l['id']}"):
+                    try:
+                        encerrar_sessao(token, l["id"])
+                    except ApiError as erro:
+                        alerta(slot, "erro", erro.message)
+                        return
+                    st.session_state.pop(_CACHE_SEG, None)
+                    st.session_state.aviso_toast = f"Sessão encerrada: {l['titulo']}."
+                    st.rerun()
+        outras = [l for l in linhas if not l["atual"]]
+        if not outras:
+            st.html('<p class="crh-cfg-nota">Só este dispositivo está conectado.</p>')
+        elif st.button("Encerrar todas as outras sessões", key="cfg_encerrar_todas", width="stretch"):
+            try:
+                resposta = encerrar_outras_sessoes(token)
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            st.session_state.pop(_CACHE_SEG, None)
+            total = resposta.get("total_encerradas", len(outras))
+            st.session_state.aviso_toast = _plural(total, "sessão encerrada.", "sessões encerradas.") + " Só este dispositivo continua conectado."
+            st.rerun()
+
+
+def _aba_seguranca(token: str) -> None:
+    esquerda, direita = st.columns(2, gap="medium")
+    with esquerda:
+        _cartao_senha(token)
+    with direita:
+        _cartao_sessoes(token)
+
+
+# ---------------------------------------------------------------------------
+# Aba Notificações (Figma 213:236)
+# ---------------------------------------------------------------------------
+def _desfazer_avisos(salvas: dict) -> None:
+    for assunto, (plataforma, email) in salvas.items():
+        st.session_state[f"cfg_av_{assunto}_pl"] = plataforma
+        st.session_state[f"cfg_av_{assunto}_em"] = email
+
+
+def _aba_notificacoes(token: str) -> None:
+    with st.container(key="cfg_card_avisos"):
+        st.html('<p class="crh-cfg-titulo">Avisos que você recebe</p>'
+                '<p class="crh-cfg-texto">Escolha por onde quer ser avisado de cada assunto. Alertas de segurança, avisos de benefícios e '
+                'pedidos que esperam a sua decisão não podem ser desligados.</p>')
+        try:
+            salvas = preferencias_por_assunto(_guardado(_CACHE_AVISOS, lambda: minhas_preferencias_aviso(token)).get("preferencias"))
+        except ApiError as erro:
+            alerta(st.empty(), "erro", erro.message)
+            return
+        pesos = [5, 1.4, 1.2]
+        with st.container(key="cfg_av_cab"):
+            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Assunto", "Na plataforma", "E-mail"]):
+                coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
+        escolhidas = {}
+        for assunto, titulo, descricao, tem_email in ASSUNTOS:
+            st.session_state.setdefault(f"cfg_av_{assunto}_pl", salvas[assunto][0])
+            st.session_state.setdefault(f"cfg_av_{assunto}_em", salvas[assunto][1])
+            with st.container(key=f"cfg_av_{assunto}"):
+                c = st.columns(pesos, vertical_alignment="center")
+                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(titulo)}</p><p class="d">{html.escape(descricao)}</p></div>')
+                plataforma = c[1].toggle(f"{titulo}: na plataforma", key=f"cfg_av_{assunto}_pl", label_visibility="collapsed")
+                if tem_email:
+                    email = c[2].toggle(f"{titulo}: e-mail", key=f"cfg_av_{assunto}_em", label_visibility="collapsed")
+                else:
+                    c[2].html('<p class="crh-cfg-nota" style="margin:0">Sem e-mail</p>')
+                    email = salvas[assunto][1]
+                escolhidas[assunto] = (plataforma, email)
+        for i, (titulo, descricao) in enumerate(SEMPRE_LIGADOS):
+            with st.container(key=f"cfg_av_sempre_{i}"):
+                c = st.columns(pesos, vertical_alignment="center")
+                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(titulo)} <span class="crh-selo amb">Sempre ligado</span></p>'
+                          f'<p class="d">{html.escape(descricao)}</p></div>')
+                c[1].toggle(f"{titulo}: na plataforma", value=True, disabled=True, key=f"cfg_av_sempre_pl_{i}", label_visibility="collapsed")
+                c[2].toggle(f"{titulo}: e-mail", value=True, disabled=True, key=f"cfg_av_sempre_em_{i}", label_visibility="collapsed")
+        mudou = alteradas(salvas, escolhidas)
+        slot = st.empty()
+        with st.container(horizontal=True, horizontal_alignment="right"):
+            st.button("Desfazer", key="cfg_av_desfazer", disabled=not mudou, on_click=_desfazer_avisos, args=(salvas,))
+            if st.button("Salvar preferências", type="primary", key="cfg_av_salvar", disabled=not mudou):
+                try:
+                    for assunto, plataforma, email in mudou:
+                        salvar_preferencia_aviso(token, assunto, plataforma, email)
+                except ApiError as erro:
+                    st.session_state.pop(_CACHE_AVISOS, None)
+                    alerta(slot, "erro", erro.message)
+                    return
+                st.session_state.pop(_CACHE_AVISOS, None)
+                st.session_state.aviso_toast = "Preferências salvas."
+                st.rerun()
+
+
 def pagina_configuracoes() -> None:
     token = st.session_state.token
     render_topbar(st.session_state.usuario["nome"])
@@ -307,13 +482,13 @@ def pagina_configuracoes() -> None:
     )
     with st.container(key="cfg_abas"):
         aba = st.segmented_control(
-            "Seção", _ABAS, default="Privacidade", required=True, key="cfg_aba", label_visibility="collapsed"
+            "Seção", _ABAS, default="Segurança", required=True, key="cfg_aba", label_visibility="collapsed"
         )
-    if aba != "Privacidade":
-        st.html(
-            f'<p class="crh-nota-ambar">A aba {html.escape(aba)} ainda está em construção. Por enquanto, '
-            "use a aba Privacidade.</p>"
-        )
+    if aba == "Segurança":
+        _aba_seguranca(token)
+        return
+    if aba == "Notificações":
+        _aba_notificacoes(token)
         return
 
     with st.spinner("Carregando..."):

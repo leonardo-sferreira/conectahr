@@ -1,3 +1,5 @@
+// sessao_atual_id: a sessao deste token, para a tela marcar "Este dispositivo"
+// (change configuracoes-seguranca-notificacoes).
 // Lista as sessoes do usuario autenticado (ativas e encerradas), mais
 // recentes primeiro. Base para a tela "sessoes e dispositivos".
 query "auth/minhas_sessoes" verb=GET {
@@ -57,8 +59,9 @@ query "auth/minhas_sessoes" verb=GET {
   }
 
   response = {
-    sucesso : true
-    sessoes : $sessoes
+    sucesso        : true
+    sessoes        : $sessoes
+    sessao_atual_id: $sessao_token.id
   }
 
   guid = "conectahr-auth-minhas-sessoes-get-0001"
