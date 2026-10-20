@@ -867,6 +867,22 @@ _APP_CSS = f"""
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
   /* Data em três listas (campos.data_por_partes): o rótulo igual ao dos outros campos. */
   .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
+  /* Regras e Conformidade (Figma 287:884 e 288:886; change tela-de-regras). */
+  div[class*="st-key-reg_card_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; margin-bottom: 6px; }}
+  .crh-reg-txt {{ display: flex; flex-direction: column; gap: 3px; }}
+  .crh-reg-txt .cat {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: {AMBAR_ESCURO}; }}
+  .crh-reg-txt .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: {GRAFITE}; }}
+  .crh-reg-txt .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-reg-nota {{ margin: 4px 0 0; width: fit-content; border-radius: 6px; padding: 3px 8px; font-family: 'Manrope', sans-serif; font-size: 11.5px; background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-reg-nota.err {{ background: #FEE2E2; color: {ERRO}; }}
+  .crh-reg-seta {{ margin: 0; text-align: center; font-size: 22px; color: {AMBAR}; }}
+  .st-key-reg_sim_conflitos {{ background: white; border: 1px solid {BORDA}; border-radius: 14px; padding: 18px 22px; }}
+  div[class*="st-key-reg_conf_"]:not([class*="st-key-reg_conf_abrir"]):not([class*="st-key-reg_conf_prio"]) {{ background: #FEE2E2; border-radius: 10px; padding: 10px 14px; justify-content: space-between; }}
+  .crh-reg-conf .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; font-weight: 600; color: {ERRO}; }}
+  .crh-reg-conf .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {ERRO}; }}
+  .crh-reg-lista {{ margin: 0; padding-left: 18px; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-reg_rej_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
+  .st-key-reg_rej_perigo button p {{ color: white !important; }}
   /* Aviso embaixo de um campo com o que ele não aceita (campos.py). */
   .crh-campo-invalido {{ margin: -8px 0 4px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; color: {ERRO} !important; }}
   /* Configurações, Segurança e Notificações (Figma 213:142 e 213:236; change configuracoes-seguranca-notificacoes). */
@@ -1011,6 +1027,10 @@ _ESCURO_CSS = f"""
   .crh-cm-cab .s, .crh-cm-q .r b, .crh-cm-fb .q {{ color: {ESC_TEXTO_2} !important; }}
   .crh-cm-q {{ border-color: {ESC_BORDA}; }}
   .crh-cm-fb {{ background: {ESC_FUNDO}; }}
+  div[class*="st-key-reg_card_"], .st-key-reg_sim_conflitos {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .crh-reg-txt .t {{ color: {ESC_TEXTO} !important; }}
+  .crh-reg-txt .d, .crh-reg-lista {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-reg-nota:not(.err) {{ background: {ESC_FUNDO}; color: {ESC_TEXTO_2}; }}
   div[class*="st-key-cfg_sessao_"], div[class*="st-key-cfg_av_"] {{ border-color: {ESC_BORDA} !important; }}
   div[class*="st-key-cfg_sessao_"] button {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .st-key-cfg_av_cab {{ background: {ESC_FUNDO}; }}

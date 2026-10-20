@@ -107,9 +107,11 @@
   - **Figma (09/10/2026):** o mural, o envio e a moderação de reconhecimentos foram desenhados na seção 16 (291:908, 291:1075, 291:1239, 291:1374 e modais); ver a tarefa 66.
 - [ ] 34 (origem: `concluir-mvp-conectarh` 2.29) [FE 12.1] Buscar o node "Auditoria" no Figma e conferir antes de codar; construir o painel de consulta com os filtros disponíveis (recurso, registro, usuário, ação, resultado).
 - [ ] 35 (origem: `concluir-mvp-conectarh` 2.30) [FE 12.2] Integrar com `GET auditoria`; testar que a tela é inacessível (via guarda de perfil) para quem não é RH/ADMIN.
-- [ ] 36 (origem: `concluir-mvp-conectarh` 2.31) [FE 13.1] Buscar o node "Regras" no Figma e conferir antes de codar; construir a gestão de instrumentos normativos e regras de override, incluindo a tela de simulação de impacto antes de publicar.
+- [x] 36 (origem: `concluir-mvp-conectarh` 2.31) [FE 13.1] Buscar o node "Regras" no Figma e conferir antes de codar; construir a gestão de instrumentos normativos e regras de override, incluindo a tela de simulação de impacto antes de publicar.
+  - **Feito (20/10/2026):** change `tela-de-regras`. Nós 287:884, 288:886 e os 7 modais conferidos. `frontend/pagina_regras.py` e `regras_modelo.py`.
   - **Figma (09/10/2026):** a lista existe (225:6895, F29). Criar, aprovar, simular e aplicar foram desenhados: RH — Regras 287:884, Simulação de impacto 288:886 e os 7 modais 288:1186 a 288:1391 (seção 14, claro e escuro).
-- [ ] 37 (origem: `concluir-mvp-conectarh` 2.32) [FE 13.2] Integrar com `instrumentos_normativos` (CRUD + aprovação), `regras_override` (CRUD + aprovação), `regras_override/resolver`, `regras_override/aplicar` e `regras_override/{id}/simular`.
+- [x] 37 (origem: `concluir-mvp-conectarh` 2.32) [FE 13.2] Integrar com `instrumentos_normativos` (CRUD + aprovação), `regras_override` (CRUD + aprovação), `regras_override/resolver`, `regras_override/aplicar` e `regras_override/{id}/simular`.
+  - **Feito (20/10/2026):** change `tela-de-regras`: função `impacto_override` (conflito bloqueia o envio e a aprovação), `rejeitar` e `prioridade` novos, simulação com o valor da matriz. `tools/testar_regras.py` (32, no CI).
   - **Figma (09/10/2026):** ver a tarefa 36. Endpoints: `regras_override/{id}/simular`, `regras_override/aplicar` e a aprovação (que bloqueia a autoaprovação).
 - [ ] 38 (origem: `concluir-mvp-conectarh` 2.33) [FE 13.3] Testar o bloqueio de autoaprovação, a exigência de número Mediador/MTE para instrumentos coletivos, e o bloqueio de "aplicar" quando há conflito não resolvido.
   - **Figma (09/10/2026):** estados prontos nos modais 288:1321 (autoaprovação bloqueada) e 288:1391 (conflito bloqueia a aplicação).

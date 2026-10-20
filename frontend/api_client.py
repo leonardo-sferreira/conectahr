@@ -982,3 +982,59 @@ def salvar_preferencia_aviso(token: str, assunto: str, plataforma: bool, email: 
     """PATCH minhas_preferencias_aviso: os dois canais de um assunto."""
     return _request("PATCH", "minhas_preferencias_aviso", token, GRUPO_COLABORADORES,
                     {"assunto": assunto, "plataforma": bool(plataforma), "email": bool(email)})
+
+
+# ---------------------------------------------------------------------------
+# Regras e Conformidade (Figma 287:884 e 288:886; change tela-de-regras). Só RH e Admin.
+# ---------------------------------------------------------------------------
+def instrumentos_normativos(token: str) -> dict:
+    """GET instrumentos_normativos -> {instrumentos}."""
+    return _get("instrumentos_normativos", token, GRUPO_COLABORADORES)
+
+
+def criar_instrumento(token: str, dados: dict) -> dict:
+    """POST instrumentos_normativos (rascunho)."""
+    return _post("instrumentos_normativos", dados, token, GRUPO_COLABORADORES)
+
+
+def enviar_instrumento(token: str, instrumento_id: int) -> dict:
+    return _post(f"instrumentos_normativos/{int(instrumento_id)}/enviar_aprovacao", {}, token, GRUPO_COLABORADORES)
+
+
+def aprovar_instrumento(token: str, instrumento_id: int) -> dict:
+    return _post(f"instrumentos_normativos/{int(instrumento_id)}/aprovar", {}, token, GRUPO_COLABORADORES)
+
+
+def rejeitar_instrumento(token: str, instrumento_id: int, motivo: str) -> dict:
+    return _post(f"instrumentos_normativos/{int(instrumento_id)}/rejeitar", {"motivo": motivo}, token, GRUPO_COLABORADORES)
+
+
+def regras_override(token: str) -> dict:
+    """GET regras_override -> {overrides (com `conflitos` nas em rascunho ou pendentes)}."""
+    return _get("regras_override", token, GRUPO_COLABORADORES)
+
+
+def criar_override(token: str, dados: dict) -> dict:
+    """POST regras_override (rascunho)."""
+    return _post("regras_override", dados, token, GRUPO_COLABORADORES)
+
+
+def enviar_override(token: str, override_id: int) -> dict:
+    return _post(f"regras_override/{int(override_id)}/enviar_aprovacao", {}, token, GRUPO_COLABORADORES)
+
+
+def aprovar_override(token: str, override_id: int, justificativa: str | None = None) -> dict:
+    return _post(f"regras_override/{int(override_id)}/aprovar", {"justificativa": justificativa or None}, token, GRUPO_COLABORADORES)
+
+
+def rejeitar_override(token: str, override_id: int, motivo: str) -> dict:
+    return _post(f"regras_override/{int(override_id)}/rejeitar", {"motivo": motivo}, token, GRUPO_COLABORADORES)
+
+
+def prioridade_override(token: str, override_id: int, prioridade: int) -> dict:
+    return _request("PATCH", f"regras_override/{int(override_id)}/prioridade", token, GRUPO_COLABORADORES, {"prioridade": int(prioridade)})
+
+
+def simular_override(token: str, override_id: int) -> dict:
+    """GET regras_override/{id}/simular -> {override_simulado, total_afetados, departamentos, detalhes, conflitos}."""
+    return _get(f"regras_override/{int(override_id)}/simular", token, GRUPO_COLABORADORES)
