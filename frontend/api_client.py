@@ -1099,3 +1099,82 @@ def concluir_desligamento(token: str, solicitacao_id: int) -> dict:
 
 def marcar_checklist_desligamento(token: str, solicitacao_id: int, item_id: int, feito: bool) -> dict:
     return _post(f"solicitacoes_desligamento/{int(solicitacao_id)}/checklist/{int(item_id)}", {"feito": bool(feito)}, token, GRUPO_DESLIGAMENTOS)
+
+
+# ---------------------------------------------------------------------------
+# Pesquisa de clima (change pesquisa-clima-e-avaliacao-360)
+# ---------------------------------------------------------------------------
+def minhas_pesquisas_clima(token: str) -> dict:
+    """GET minhas_pesquisas_clima -> {hoje, pesquisas: [{aberta, respondida, perguntas (as que faltam, com a escala)}]}."""
+    return _get("minhas_pesquisas_clima", token, GRUPO_COLABORADORES)
+
+
+def responder_pesquisa_clima(token: str, pesquisa_id: int, respostas: list[dict], comentario: str | None) -> dict:
+    """POST pesquisas_clima/{id}/responder: todas as notas de uma vez ([{pergunta_id, nota}]) e o comentário anônimo."""
+    return _post(f"pesquisas_clima/{int(pesquisa_id)}/responder", {"respostas": respostas, "comentario": comentario or None}, token, GRUPO_COLABORADORES)
+
+
+def pesquisas_clima_rh(token: str) -> dict:
+    """GET pesquisas_clima_rh -> {hoje, elegiveis, pesquisas: [{situacao, participantes, perguntas}]} (RH e Admin)."""
+    return _get("pesquisas_clima_rh", token, GRUPO_COLABORADORES)
+
+
+def criar_pesquisa_clima(token: str, titulo: str, descricao: str | None, data_inicio: str, data_fim: str, minimo: int, perguntas: list[dict]) -> dict:
+    """POST pesquisas_clima: a pesquisa e as perguntas ([{texto, escala}]) numa chamada."""
+    return _post("pesquisas_clima", {"titulo": titulo, "descricao": descricao or None, "data_inicio": data_inicio, "data_fim": data_fim,
+                                     "minimo_respostas": int(minimo), "perguntas": perguntas}, token, GRUPO_COLABORADORES)
+
+
+def adicionar_pergunta_clima(token: str, pesquisa_id: int, texto: str, escala: str, ordem: int) -> dict:
+    """POST pesquisas_clima/{id}/perguntas: só antes de a pesquisa abrir."""
+    return _post(f"pesquisas_clima/{int(pesquisa_id)}/perguntas", {"texto": texto, "escala": escala, "ordem": int(ordem)}, token, GRUPO_COLABORADORES)
+
+
+def encerrar_pesquisa_clima(token: str, pesquisa_id: int) -> dict:
+    """POST pesquisas_clima/{id}/encerrar: para de aceitar respostas e libera os resultados."""
+    return _post(f"pesquisas_clima/{int(pesquisa_id)}/encerrar", {}, token, GRUPO_COLABORADORES)
+
+
+def resultados_pesquisa_clima(token: str, pesquisa_id: int) -> dict:
+    """GET pesquisas_clima/{id}/resultados -> {participantes, departamentos, resultados (média, favoráveis), comentarios}."""
+    return _get(f"pesquisas_clima/{int(pesquisa_id)}/resultados", token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Ciclos de avaliação de desempenho (change pesquisa-clima-e-avaliacao-360)
+# ---------------------------------------------------------------------------
+def ciclos_avaliacao_rh(token: str) -> dict:
+    """GET ciclos_avaliacao_rh -> {hoje, ciclos (com contagens), contestacoes (com nomes), departamentos, pessoas} (RH e Admin)."""
+    return _get("ciclos_avaliacao_rh", token, GRUPO_COLABORADORES)
+
+
+def criar_ciclo_avaliacao(token: str, nome: str, descricao: str, data_inicio: str, data_fim: str) -> dict:
+    """POST ciclos_avaliacao: nasce em planejamento."""
+    return _post("ciclos_avaliacao", {"nome": nome, "descricao": descricao, "data_inicio": data_inicio, "data_fim": data_fim}, token, GRUPO_COLABORADORES)
+
+
+def mudar_status_ciclo_avaliacao(token: str, ciclo_id: int, status: str) -> dict:
+    """PATCH ciclos_avaliacao/{id}/status: planejamento → em_andamento → fechamento → concluido (ou cancelado)."""
+    return _request("PATCH", f"ciclos_avaliacao/{int(ciclo_id)}/status", token, GRUPO_COLABORADORES, {"status": status})
+
+
+def avaliacoes_do_ciclo(token: str, ciclo_id: int) -> dict:
+    """GET ciclos_avaliacao/{id}/avaliacoes -> {ciclo, avaliacoes (com nomes, relação, situação e nota)}."""
+    return _get(f"ciclos_avaliacao/{int(ciclo_id)}/avaliacoes", token, GRUPO_COLABORADORES)
+
+
+def atribuir_avaliacoes_lote(token: str, ciclo_id: int, departamento_id: int | None, autoavaliacao: bool, gestor: bool) -> dict:
+    """POST ciclos_avaliacao/{id}/atribuir -> {criadas, puladas, sem_gestor}."""
+    return _post(f"ciclos_avaliacao/{int(ciclo_id)}/atribuir", {"departamento_id": departamento_id or 0, "autoavaliacao": bool(autoavaliacao), "gestor": bool(gestor)},
+                 token, GRUPO_COLABORADORES)
+
+
+def atribuir_avaliacao(token: str, ciclo_id: int, colaborador_id: int, avaliador_user_id: int, relacao: str, inicio: str | None, fim: str | None) -> dict:
+    """POST avaliacoes: uma avaliação avulsa (par, subordinado, rh...)."""
+    return _post("avaliacoes", {"ciclo_avaliacao_id": int(ciclo_id), "colaborador_id": int(colaborador_id), "user_id": int(avaliador_user_id),
+                                "relacao_avaliador": relacao, "periodo_incio": inicio, "periodo_fim": fim}, token, GRUPO_COLABORADORES)
+
+
+def revisar_contestacao(token: str, contestacao_id: int, resposta: str) -> dict:
+    """POST contestacoes_avaliacao/{id}/revisar: a resposta do RH à contestação."""
+    return _post(f"contestacoes_avaliacao/{int(contestacao_id)}/revisar", {"resposta_revisao": resposta}, token, GRUPO_COLABORADORES)

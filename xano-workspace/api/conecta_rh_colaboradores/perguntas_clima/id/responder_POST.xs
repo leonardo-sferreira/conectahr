@@ -104,9 +104,10 @@ query "perguntas_clima/{id}/responder" verb=POST {
       error = "Esta pesquisa esta fora do periodo de respostas."
     }
 
-    precondition ($input.nota >= 1 && $input.nota <= 5) {
+    // Escala da pergunta (change pesquisa-clima-e-avaliacao-360, D1): concordancia 1 a 5, nps 0 a 10.
+    precondition (($pergunta.escala == "nps" && $input.nota >= 0 && $input.nota <= 10) || ($pergunta.escala != "nps" && $input.nota >= 1 && $input.nota <= 5)) {
       error_type = "inputerror"
-      error = "A nota deve estar entre 1 e 5."
+      error = "Nota fora da escala da pergunta."
     }
 
     // Bloqueia responder a mesma pergunta duas vezes.

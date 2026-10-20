@@ -1,5 +1,7 @@
-// RH/ADMIN cria uma pesquisa de clima. As perguntas sao adicionadas
-// separadamente via `pesquisas_clima/{id}/perguntas`.
+// RH/ADMIN cria uma pesquisa de clima. As perguntas podem vir juntas em `perguntas`
+// (lista de {texto, escala}; change pesquisa-clima-e-avaliacao-360, D3), numa chamada so,
+// ou ser adicionadas depois via `pesquisas_clima/{id}/perguntas`, antes de a pesquisa abrir.
+// escala: concordancia (1 a 5, o padrao) ou nps (0 a 10).
 query pesquisas_clima verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -10,6 +12,7 @@ query pesquisas_clima verb=POST {
     date data_inicio
     date data_fim
     int? minimo_respostas? filters=min:2
+    json? perguntas?
   }
 
   stack {
@@ -73,6 +76,38 @@ query pesquisas_clima verb=POST {
       error = "A data de fim nao pode ser anterior a data de inicio."
     }
 
+    var $perguntas_entrada {
+      value = ($input.perguntas == null ? [] : $input.perguntas)
+    }
+
+    precondition (($perguntas_entrada|count) <= 30) {
+      error_type = "inputerror"
+      error = "Use no maximo 30 perguntas por pesquisa."
+    }
+
+    // Confere as perguntas antes de gravar qualquer coisa.
+    foreach ($perguntas_entrada) {
+      each as $pergunta_entrada {
+        var $texto_pergunta {
+          value = (($pergunta_entrada|get:"texto")|to_text)|trim
+        }
+
+        var $escala_pergunta {
+          value = (($pergunta_entrada|get:"escala")|to_text)|trim
+        }
+
+        precondition ((($texto_pergunta|strlen) >= 5) && (($texto_pergunta|strlen) <= 500)) {
+          error_type = "inputerror"
+          error = "Cada pergunta precisa ter de 5 a 500 caracteres."
+        }
+
+        precondition (($escala_pergunta == "") || ($escala_pergunta == "concordancia") || ($escala_pergunta == "nps")) {
+          error_type = "inputerror"
+          error = "Escala invalida. Use concordancia ou nps."
+        }
+      }
+    }
+
     var $minimo_final {
       value = ($input.minimo_respostas != null ? $input.minimo_respostas : 5)
     }
@@ -89,6 +124,41 @@ query pesquisas_clima verb=POST {
         updated_at                              : "now"
       }
     } as $pesquisa_criada
+
+    var $ordem_pergunta {
+      value = 0
+    }
+
+    foreach ($perguntas_entrada) {
+      each as $pergunta_nova {
+        var.update $ordem_pergunta {
+          value = $ordem_pergunta + 1
+        }
+
+        var $escala_nova {
+          value = (($pergunta_nova|get:"escala")|to_text)|trim
+        }
+
+        db.add pergunta_clima {
+          data = {
+            pesquisa_clima_id: $pesquisa_criada.id
+            texto            : (($pergunta_nova|get:"texto")|to_text)|trim
+            ordem            : $ordem_pergunta
+            escala           : ($escala_nova == "nps" ? "nps" : "concordancia")
+          }
+        } as $pergunta_criada
+      }
+    }
+
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "criar_pesquisa_clima"
+        recurso    : "pesquisa_clima"
+        registro_id: $pesquisa_criada.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
   }
 
   response = {
