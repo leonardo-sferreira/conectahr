@@ -867,6 +867,10 @@ _APP_CSS = f"""
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
   /* Data em três listas (campos.data_por_partes): o rótulo igual ao dos outros campos. */
   .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
+  /* Auditoria (Figma 225:6784): resultado em verde (sucesso) ou vermelho (falha). */
+  .crh-aud-res {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; font-weight: 600; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-aud-res.ok {{ color: {SUCESSO}; }}
+  .crh-aud-res.err {{ color: {ERRO}; }}
   /* Regras e Conformidade (Figma 287:884 e 288:886; change tela-de-regras). */
   div[class*="st-key-reg_card_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; margin-bottom: 6px; }}
   .crh-reg-txt {{ display: flex; flex-direction: column; gap: 3px; }}

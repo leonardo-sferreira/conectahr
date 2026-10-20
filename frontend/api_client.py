@@ -11,6 +11,7 @@ A base URL fica em .streamlit/secrets.toml (nunca versionado - ver .gitignore).
 import logging
 import re
 import time
+from urllib.parse import quote
 
 import requests
 import streamlit as st
@@ -982,6 +983,17 @@ def salvar_preferencia_aviso(token: str, assunto: str, plataforma: bool, email: 
     """PATCH minhas_preferencias_aviso: os dois canais de um assunto."""
     return _request("PATCH", "minhas_preferencias_aviso", token, GRUPO_COLABORADORES,
                     {"assunto": assunto, "plataforma": bool(plataforma), "email": bool(email)})
+
+
+# ---------------------------------------------------------------------------
+# Auditoria (Figma 225:6784; tarefas 34 e 35 de concluir-frontend-streamlit). Só RH e Admin.
+# ---------------------------------------------------------------------------
+def auditoria(token: str, dias: int = 30, recurso: str | None = None, acao: str | None = None, resultado: str | None = None,
+              user_id: int | None = None) -> dict:
+    """GET auditoria -> {eventos (até 300, mais recentes primeiro), recursos, acoes, usuarios_na_janela, usuarios, dias}."""
+    filtros = {"dias": int(dias), "recurso": recurso, "acao": acao, "resultado": resultado, "user_id": user_id}
+    consulta = "&".join(f"{k}={quote(str(v))}" for k, v in filtros.items() if v not in (None, ""))
+    return _get(f"auditoria?{consulta}", token, GRUPO_COLABORADORES)
 
 
 # ---------------------------------------------------------------------------
