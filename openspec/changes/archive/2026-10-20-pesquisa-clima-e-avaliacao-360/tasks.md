@@ -10,8 +10,8 @@
   - **Feito (20/10/2026):** publicados.
 - [x] 1.4 `ciclos_avaliacao_rh` GET, `ciclos_avaliacao/{id}/avaliacoes` GET, `ciclos_avaliacao/{id}/atribuir` POST e o status cancelando as em aberto (D5 a D7). Verificar: idem.
   - **Feito (20/10/2026):** publicados; `checar_endpoints` 253, 0 falhas.
-- [ ] 1.5 Rodar `tools/testar_clima_avaliacao_http.py` com login de verdade (uma conta do RH e uma que não seja).
-  - Falta rodar (pede o código que chega por e-mail).
+- [x] 1.5 Rodar `tools/testar_clima_avaliacao_http.py` com login de verdade (uma conta do RH e uma que não seja).
+  - **Feito:** rodado com conta do RH: 13/13 (20/10/2026). O caminho de quem não é RH (403) não foi exercitado.
 
 ## 2. Frontend
 

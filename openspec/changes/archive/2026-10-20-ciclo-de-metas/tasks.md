@@ -10,8 +10,8 @@
   - **Feito (20/10/2026):** idem.
 - [x] 1.4 `formularios_meta` GET, `formularios_meta/{id}` GET e `formularios_meta/{id}/feedback` POST (D4, D5). Verificar: `checar_endpoints` sem falhas.
   - **Feito (20/10/2026):** idem.
-- [ ] 1.5 Publicar (tabelas, depois endpoints, só criações) e `tools/testar_ciclo_metas_http.py` com login de verdade.
-  - **Publicado (20/10/2026):** tabelas e depois 12 endpoints, só criações; o pull confere. Falta rodar `tools/testar_ciclo_metas_http.py` (pede o código que chega por e-mail).
+- [x] 1.5 Publicar (tabelas, depois endpoints, só criações) e `tools/testar_ciclo_metas_http.py` com login de verdade.
+  - **Publicado (20/10/2026):** tabelas e depois 12 endpoints, só criações; o pull confere. `tools/testar_ciclo_metas_http.py`: 12/12 (20/10/2026; a primeira rodada teve 2 falhas por 429 do limite do plano, e o script passou a esperar e repetir).
 
 ## 2. Frontend
 

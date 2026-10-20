@@ -10,8 +10,8 @@
   - **Feito (20/10/2026):** publicados (3 `UPDATE`). O encerramento da versão anterior em `aprovar` deixou de usar `||` no `where`.
 - [x] 1.4 `regras_override/{id}/rejeitar` e `/prioridade` (D4). Verificar: `checar_endpoints` e dry-run com `CREATE`.
   - **Feito (20/10/2026):** publicados (2 `CREATE`); `checar_endpoints` 246, 0 falhas.
-- [ ] 1.5 Publicar e rodar `tools/testar_regras_http.py` com login de verdade.
-  - **Publicado (20/10/2026).** Falta rodar `tools/testar_regras_http.py` (pede o código que chega por e-mail).
+- [x] 1.5 Publicar e rodar `tools/testar_regras_http.py` com login de verdade.
+  - **Publicado (20/10/2026).** `tools/testar_regras_http.py`: 5/5 (20/10/2026). A simulação e a prioridade de regra vigente não rodaram: ainda não há regra cadastrada.
 
 ## 2. Frontend
 
