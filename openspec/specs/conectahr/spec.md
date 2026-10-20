@@ -1159,3 +1159,53 @@ O sistema SHALL vir com a matriz de documentos obrigatórios preenchida por tipo
 #### Scenario: CIN no lugar do RG
 - **WHEN** a pessoa tem a CIN aprovada e a regra pede RG
 - **THEN** o RG não aparece como pendente
+
+### Requirement: Pedido de alteração do tipo de acesso
+O sistema SHALL permitir que só o Admin altere o tipo de acesso (perfil) de uma conta, inclusive pela ficha do colaborador, e SHALL permitir que o RH peça ao Admin outro tipo de acesso para uma conta, informando o perfil desejado e uma justificativa. O Admin SHALL aprovar (o perfil é trocado na hora) ou recusar com motivo, e quem pediu SHALL ser avisado da decisão. Ninguém SHALL pedir nem decidir sobre a própria conta, e SHALL haver no máximo um pedido pendente por conta. Toda etapa SHALL ficar na auditoria.
+
+#### Scenario: RH pede acesso de Gestor
+- **WHEN** o RH pede o perfil Gestor para a conta de um colaborador, com justificativa
+- **THEN** o pedido fica pendente, os Admins são avisados e o perfil da conta não muda
+
+#### Scenario: Admin aprova
+- **WHEN** o Admin aprova o pedido pendente
+- **THEN** o perfil da conta passa a ser o pedido, e o RH e a pessoa são avisados
+
+#### Scenario: Admin recusa
+- **WHEN** o Admin recusa o pedido com um motivo
+- **THEN** o perfil não muda e o RH recebe o motivo
+
+#### Scenario: Admin altera direto
+- **WHEN** o Admin escolhe outro tipo de acesso na ficha do colaborador
+- **THEN** o perfil é trocado na hora, sem pedido
+
+#### Scenario: Admin não é escolhido na admissão
+- **WHEN** o RH admite uma pessoa ou cria o acesso dela
+- **THEN** o tipo de acesso oferece Colaborador, Gestor e RH, e o acesso Admin só pode ser dado depois, pela ficha do colaborador já cadastrado
+
+#### Scenario: Pedido repetido
+- **WHEN** o RH pede de novo para uma conta que já tem pedido pendente
+- **THEN** o sistema recusa o novo pedido
+
+#### Scenario: Admissão com tipo de acesso
+- **WHEN** o RH admite uma pessoa escolhendo o tipo de acesso Gestor e cria a conta em seguida
+- **THEN** a conta nasce Colaborador e o pedido de Gestor vai para o Admin
+
+### Requirement: Calendário de férias da equipe
+O sistema SHALL mostrar a quem decide férias (Gestor, superior direto, RH e Admin) um calendário do mês com o nome de cada pessoa da sua equipe que está de férias aprovadas, concluídas ou em análise em cada dia, do início ao fim, e SHALL alertar quando o número de pessoas de férias no mesmo dia chega ao limite escolhido. O escopo SHALL ser o da hierarquia (RH e Admin, todos; os demais, a si mesmos e quem está abaixo deles), e a resposta SHALL trazer só nome, período, dias e situação.
+
+#### Scenario: Gestor vê quem sai no mês
+- **WHEN** o gestor abre "Férias da equipe" em dezembro
+- **THEN** cada dia mostra o nome de quem da equipe está de férias, e a lista do mês traz o período e a situação de cada um
+
+#### Scenario: Muita gente no mesmo dia
+- **WHEN** num dia o número de pessoas de férias chega ao limite escolhido
+- **THEN** o dia aparece destacado e a tela avisa em quantos dias isso acontece e qual é o pico
+
+#### Scenario: Fora do escopo
+- **WHEN** um colaborador sem equipe abre a tela de Férias
+- **THEN** a aba da equipe não aparece, e o backend devolve só as férias dele mesmo
+
+#### Scenario: Pedido rejeitado
+- **WHEN** um pedido da equipe foi rejeitado ou cancelado
+- **THEN** ele não aparece no calendário da equipe
