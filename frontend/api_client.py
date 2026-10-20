@@ -953,3 +953,32 @@ def formulario_meta(token: str, formulario_id: int) -> dict:
 def feedback_meta(token: str, formulario_id: int, etapa: int, texto: str) -> dict:
     """POST formularios_meta/{id}/feedback: superior direto ou gestor do departamento, em etapa enviada."""
     return _post(f"formularios_meta/{int(formulario_id)}/feedback", {"etapa": int(etapa), "texto": texto}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Configurações: Segurança e Notificações (change configuracoes-seguranca-notificacoes).
+# ---------------------------------------------------------------------------
+def minhas_sessoes(token: str) -> dict:
+    """GET auth/minhas_sessoes -> {sessoes, sessao_atual_id}."""
+    return _get("auth/minhas_sessoes", token, GRUPO_AUTENTICACAO)
+
+
+def encerrar_sessao(token: str, sessao_id: int) -> dict:
+    """POST auth/sessoes/{id}/encerrar: uma sessão da própria pessoa."""
+    return _post(f"auth/sessoes/{int(sessao_id)}/encerrar", {}, token, GRUPO_AUTENTICACAO)
+
+
+def encerrar_outras_sessoes(token: str) -> dict:
+    """POST auth/sessoes/encerrar_outras -> {total_encerradas}; a sessão deste token continua."""
+    return _post("auth/sessoes/encerrar_outras", {}, token, GRUPO_AUTENTICACAO)
+
+
+def minhas_preferencias_aviso(token: str) -> dict:
+    """GET minhas_preferencias_aviso -> {preferencias: [{assunto, plataforma, email}]}."""
+    return _get("minhas_preferencias_aviso", token, GRUPO_COLABORADORES)
+
+
+def salvar_preferencia_aviso(token: str, assunto: str, plataforma: bool, email: bool) -> dict:
+    """PATCH minhas_preferencias_aviso: os dois canais de um assunto."""
+    return _request("PATCH", "minhas_preferencias_aviso", token, GRUPO_COLABORADORES,
+                    {"assunto": assunto, "plataforma": bool(plataforma), "email": bool(email)})

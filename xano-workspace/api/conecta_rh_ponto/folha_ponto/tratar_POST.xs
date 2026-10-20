@@ -345,16 +345,35 @@ query "folha_ponto/tratar" verb=POST {
     // Avisa a pessoa (quando ela tem conta).
     conditional {
       if ($colaborador_alvo.user_id != null) {
-        db.add notificacao_interna {
-          data = {
-            destinatario_user_id: $colaborador_alvo.user_id
-            tipo                : "ponto_ajustado"
-            titulo              : "Seu ponto foi ajustado"
-            mensagem            : "O dia " ~ ($input.data|format_timestamp:"d/m/Y":"UTC") ~ " teve uma marcacao " ~ ($input.tipo == "inclusao" ? "incluida" : ($input.tipo == "alteracao" ? "com o horario corrigido" : "desconsiderada")) ~ ". Motivo: " ~ $input.motivo
-            recurso             : "registro_ponto"
-            registro_id         : $dia_recalculado.registro.id
+        // Preferencia de aviso do destinatario (change configuracoes-seguranca-notificacoes, D3):
+        // sem registro, os dois canais ligados.
+        db.query preferencia_aviso {
+          where = $db.preferencia_aviso.user_id == $colaborador_alvo.user_id && $db.preferencia_aviso.assunto == "ponto"
+          return = {type: "single"}
+        } as $preferencia_aviso_pto
+
+        var $aviso_plataforma_pto {
+          value = (($preferencia_aviso_pto == null) || ($preferencia_aviso_pto.plataforma == true))
+        }
+
+        var $aviso_email_pto {
+          value = (($preferencia_aviso_pto == null) || ($preferencia_aviso_pto.email == true))
+        }
+
+        conditional {
+          if ($aviso_plataforma_pto) {
+            db.add notificacao_interna {
+              data = {
+                destinatario_user_id: $colaborador_alvo.user_id
+                tipo                : "ponto_ajustado"
+                titulo              : "Seu ponto foi ajustado"
+                mensagem            : "O dia " ~ ($input.data|format_timestamp:"d/m/Y":"UTC") ~ " teve uma marcacao " ~ ($input.tipo == "inclusao" ? "incluida" : ($input.tipo == "alteracao" ? "com o horario corrigido" : "desconsiderada")) ~ ". Motivo: " ~ $input.motivo
+                recurso             : "registro_ponto"
+                registro_id         : $dia_recalculado.registro.id
+              }
+            } as $aviso_ajuste
           }
-        } as $aviso_ajuste
+        }
       }
     }
   }

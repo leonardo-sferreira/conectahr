@@ -35,12 +35,84 @@ function "ConectaHR/notificar" {
       }
     }
 
+    // Preferencia "Na plataforma" do destinatario por assunto (change
+    // configuracoes-seguranca-notificacoes, D2 e D3). Pedido novo (trabalho esperando a
+    // decisao da pessoa) e recursos sem assunto (beneficio, cadastro, acesso) sempre chegam.
+    var $assunto {
+      value = null
+    }
+
+    conditional {
+      if ($input.tipo != "pedido_novo") {
+        conditional {
+          if (($input.recurso == "ferias") || ($input.recurso == "ausencia")) {
+            var.update $assunto {
+              value = "ferias_ausencias"
+            }
+          }
+        }
+
+        conditional {
+          if (($input.recurso == "correcao_ponto") || ($input.recurso == "registro_ponto")) {
+            var.update $assunto {
+              value = "ponto"
+            }
+          }
+        }
+
+        conditional {
+          if (($input.recurso == "documento") || ($input.recurso == "pendencia_documento")) {
+            var.update $assunto {
+              value = "documentos"
+            }
+          }
+        }
+
+        conditional {
+          if (($input.recurso == "avaliacao") || ($input.recurso == "formulario_meta")) {
+            var.update $assunto {
+              value = "avaliacoes_metas"
+            }
+          }
+        }
+
+        conditional {
+          if ($input.recurso == "solicitacao_rh") {
+            var.update $assunto {
+              value = "solicitacoes"
+            }
+          }
+        }
+      }
+    }
+
+    var $plataforma_ligada {
+      value = true
+    }
+
+    conditional {
+      if (($destino != null) && ($assunto != null)) {
+        db.query preferencia_aviso {
+          where = $db.preferencia_aviso.user_id == $destino && $db.preferencia_aviso.assunto == $assunto
+          return = {type: "single"}
+        } as $preferencia_aviso
+
+        conditional {
+          if (($preferencia_aviso != null) && ($preferencia_aviso.plataforma != true)) {
+            var.update $plataforma_ligada {
+              value = false
+            }
+          }
+        }
+      }
+    }
+
     var $criada {
       value = false
     }
 
     conditional {
-      if ($destino != null && $destino != $input.autor_user_id) {
+      if ($destino != null && $destino != $input.autor_user_id && $plataforma_ligada) {
         db.add notificacao_interna {
           data = {
             destinatario_user_id: $destino

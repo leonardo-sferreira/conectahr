@@ -867,6 +867,14 @@ _APP_CSS = f"""
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
   /* Data em três listas (campos.data_por_partes): o rótulo igual ao dos outros campos. */
   .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
+  /* Configurações, Segurança e Notificações (Figma 213:142 e 213:236; change configuracoes-seguranca-notificacoes). */
+  .crh-regra.ok {{ color: {SUCESSO} !important; }}
+  div[class*="st-key-cfg_sessao_"] {{ border: 1px solid {BORDA}; border-radius: 12px; padding: 10px 14px; justify-content: space-between; }}
+  div[class*="st-key-cfg_sessao_"] button {{ border: 1px solid {BORDA}; border-radius: 10px; background: white; }}
+  .st-key-cfg_encerrar_todas button {{ border: 1px solid {ERRO} !important; background: transparent !important; border-radius: 10px; }}
+  .st-key-cfg_encerrar_todas button p {{ color: {ERRO} !important; }}
+  .st-key-cfg_av_cab {{ background: {MARFIM}; border-radius: 10px; padding: 6px 12px; }}
+  div[class*="st-key-cfg_av_"]:not(.st-key-cfg_av_cab):not(.st-key-cfg_av_desfazer):not(.st-key-cfg_av_salvar) {{ border-bottom: 1px solid {BORDA}; padding: 6px 12px; }}
   /* Ciclo de metas (change ciclo-de-metas): etapa, pergunta com as respostas e a caixa de feedback. */
   .crh-cm-etapa {{ padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }}
   .crh-cm-cab {{ display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }}
@@ -1001,6 +1009,9 @@ _ESCURO_CSS = f"""
   .crh-cm-cab .s, .crh-cm-q .r b, .crh-cm-fb .q {{ color: {ESC_TEXTO_2} !important; }}
   .crh-cm-q {{ border-color: {ESC_BORDA}; }}
   .crh-cm-fb {{ background: {ESC_FUNDO}; }}
+  div[class*="st-key-cfg_sessao_"], div[class*="st-key-cfg_av_"] {{ border-color: {ESC_BORDA} !important; }}
+  div[class*="st-key-cfg_sessao_"] button {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .st-key-cfg_av_cab {{ background: {ESC_FUNDO}; }}
   .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}
   .st-key-col_ficha_card {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .crh-ponto-status.neu {{ color: {ESC_TEXTO_2}; }}

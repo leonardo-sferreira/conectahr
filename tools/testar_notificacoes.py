@@ -81,6 +81,10 @@ def _marcar_todas(token):
 
 
 api_client.auth_me = lambda token: {"autenticado": True}
+
+# Configurações: abas Segurança e Notificações (change configuracoes-seguranca-notificacoes), sem rede.
+api_client.minhas_sessoes = lambda token: {"sessoes": [], "sessao_atual_id": None}
+api_client.minhas_preferencias_aviso = lambda token: {"preferencias": []}
 api_client.folha_pessoas = lambda token: {"ve_todos": False, "pessoas": []}
 api_client.prazo_correcao = lambda token: {"prazo_dias": None}
 api_client.central_de_tarefas = lambda token: {}

@@ -145,26 +145,49 @@ query "solicitacoes/{id}/indeferir" verb=POST {
 
         conditional {
           if ($conta_solicitante_indeferir != null) {
-            db.add notificacao_interna {
-              data = {
-                destinatario_user_id: $conta_solicitante_indeferir.id
-                tipo                : "solicitacao_respondida"
-                titulo              : "Solicitacao indeferida"
-                mensagem            : "Sua solicitacao ao RH foi indeferida. Acesse o sistema para ver o motivo."
-                recurso             : "solicitacao_rh"
-                registro_id         : $solicitacao_atual.id
-              }
-            } as $notificacao_indeferir_criada
+            // Preferencia de aviso do destinatario (change configuracoes-seguranca-notificacoes, D3):
+            // sem registro, os dois canais ligados.
+            db.query preferencia_aviso {
+              where = $db.preferencia_aviso.user_id == $conta_solicitante_indeferir.id && $db.preferencia_aviso.assunto == "solicitacoes"
+              return = {type: "single"}
+            } as $preferencia_aviso_sol
 
-            db.add email_outbox {
-              data = {
-                destinatario_email : $conta_solicitante_indeferir.email
-                destinatario_nome  : $conta_solicitante_indeferir.nome
-                assunto            : "ConectaRH - Solicitacao indeferida"
-                corpo              : "Ola " ~ $conta_solicitante_indeferir.nome ~ ",\n\nSua solicitacao ao RH foi indeferida. Acesse o ConectaRH para ver o motivo.\n\nEste e um aviso automatico."
-                chave_idempotencia : ("solicitacao_respondida_" ~ ($solicitacao_atual.id|to_text))
+            var $aviso_plataforma_sol {
+              value = (($preferencia_aviso_sol == null) || ($preferencia_aviso_sol.plataforma == true))
+            }
+
+            var $aviso_email_sol {
+              value = (($preferencia_aviso_sol == null) || ($preferencia_aviso_sol.email == true))
+            }
+
+            conditional {
+              if ($aviso_plataforma_sol) {
+                db.add notificacao_interna {
+                  data = {
+                    destinatario_user_id: $conta_solicitante_indeferir.id
+                    tipo                : "solicitacao_respondida"
+                    titulo              : "Solicitacao indeferida"
+                    mensagem            : "Sua solicitacao ao RH foi indeferida. Acesse o sistema para ver o motivo."
+                    recurso             : "solicitacao_rh"
+                    registro_id         : $solicitacao_atual.id
+                  }
+                } as $notificacao_indeferir_criada
               }
-            } as $outbox_indeferir_criado
+            }
+
+            conditional {
+              if ($aviso_email_sol) {
+                db.add email_outbox {
+                  data = {
+                    destinatario_email : $conta_solicitante_indeferir.email
+                    destinatario_nome  : $conta_solicitante_indeferir.nome
+                    assunto            : "ConectaRH - Solicitacao indeferida"
+                    corpo              : "Ola " ~ $conta_solicitante_indeferir.nome ~ ",\n\nSua solicitacao ao RH foi indeferida. Acesse o ConectaRH para ver o motivo.\n\nEste e um aviso automatico."
+                    chave_idempotencia : ("solicitacao_respondida_" ~ ($solicitacao_atual.id|to_text))
+                  }
+                } as $outbox_indeferir_criado
+              }
+            }
           }
         }
       }

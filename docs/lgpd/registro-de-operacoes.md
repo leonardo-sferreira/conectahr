@@ -40,7 +40,7 @@
 
 O sistema **não coleta nem armazena** raça, sexo, religião, filiação sindical ou biometria. Nenhuma funcionalidade do escopo precisa desses dados. Criar qualquer campo desse tipo exige atualizar este registro e o [RIPD](ripd.md) antes.
 
-## Cobertura: 55 das 65 tabelas
+## Cobertura: 56 das 66 tabelas
 
 A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalidade. "Sem dado pessoal" significa que a tabela guarda só regras, catálogos ou conteúdo geral.
 
@@ -53,7 +53,7 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `banco_horas_lancamento` | F07 | `pendencia_documento` | F19 |
 | `cargo` | Sem dado pessoal | `pergunta_clima` | Sem dado pessoal |
 | `ciclo_avaliacao` | Sem dado pessoal | `pesquisa_clima` | Sem dado pessoal |
-| `colaborador` | F03, F05, F14 | `preferencia_notificacao` | F16 |
+| `colaborador` | F03, F05, F14 | `preferencia_notificacao` | F16 (sem uso desde 20/10/2026; ver `preferencia_aviso`) |
 | `competencia_avaliacao` | Sem dado pessoal | `reconhecimento` | F13 |
 | `comunicado` | F16 | `registro_ponto` | F07 |
 | `contestacao_avaliacao` | F12 | `regra_aplicada` | F18 |
@@ -73,7 +73,7 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `notificacao_interna` | F16 | `solicitacao_acesso` | F01 |
 | `ciclo_metas` | Sem dado pessoal | `pergunta_meta` | Sem dado pessoal |
 | `formulario_meta` | F12 | `resposta_meta` | F12 |
-| `feedback_meta` | F12 | | |
+| `feedback_meta` | F12 | `preferencia_aviso` | F16 |
 
 ## Pendências conhecidas
 

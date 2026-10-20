@@ -143,27 +143,38 @@ query avaliacoes verb=POST {
 
     // Notificacao interna + outbox de e-mail (itens 5.5/5.6/5.11) para
     // o avaliador — a avaliacao ficou disponivel para ser preenchida.
-    db.add notificacao_interna {
-      data = {
-        destinatario_user_id: $usuario_avaliador.id
-        tipo                : "avaliacao_disponivel"
-        titulo              : "Avaliacao disponivel"
-        mensagem            : "Uma avaliacao foi atribuida a voce. Acesse o sistema para preenche-la."
-        recurso             : "avaliacao"
-        registro_id         : $avaliacao_criada.id
-      }
-    } as $notificacao_avaliacao_criada
-
-    // Preferencia de notificacao (item 7.8): notificacao interna acima e
-    // sempre criada; o e-mail respeita a preferencia de canal do
-    // avaliador, com padrao ativo quando nunca configurada.
-    db.query preferencia_notificacao {
-      where = $db.preferencia_notificacao.user_id == $usuario_avaliador.id && $db.preferencia_notificacao.tipo_evento == "avaliacao_disponivel"
+    // Preferencia de aviso do destinatario (change configuracoes-seguranca-notificacoes, D3):
+    // sem registro, os dois canais ligados.
+    db.query preferencia_aviso {
+      where = $db.preferencia_aviso.user_id == $usuario_avaliador.id && $db.preferencia_aviso.assunto == "avaliacoes_metas"
       return = {type: "single"}
-    } as $preferencia_avaliacao_disponivel
+    } as $preferencia_aviso_aval
+
+    var $aviso_plataforma_aval {
+      value = (($preferencia_aviso_aval == null) || ($preferencia_aviso_aval.plataforma == true))
+    }
+
+    var $aviso_email_aval {
+      value = (($preferencia_aviso_aval == null) || ($preferencia_aviso_aval.email == true))
+    }
+
+    conditional {
+      if ($aviso_plataforma_aval) {
+        db.add notificacao_interna {
+          data = {
+            destinatario_user_id: $usuario_avaliador.id
+            tipo                : "avaliacao_disponivel"
+            titulo              : "Avaliacao disponivel"
+            mensagem            : "Uma avaliacao foi atribuida a voce. Acesse o sistema para preenche-la."
+            recurso             : "avaliacao"
+            registro_id         : $avaliacao_criada.id
+          }
+        } as $notificacao_avaliacao_criada
+      }
+    }
 
     var $enviar_email_avaliacao_disponivel {
-      value = ($preferencia_avaliacao_disponivel != null ? $preferencia_avaliacao_disponivel.canal_email : true)
+      value = $aviso_email_aval
     }
 
     conditional {
