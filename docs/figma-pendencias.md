@@ -19,6 +19,7 @@ do usuário (13/10/2026).
 | Tipo de acesso: admissão, Criar acesso, ficha e Usuários e perfis | 243:1075, 246:1245, 243:580 e 246:612 | "Tipo de acesso" na admissão e no Criar acesso (o RH também escolhe; outro perfil vira pedido com justificativa); na ficha, o acesso da conta, "Alterar acesso" (Admin) e "Solicitar alteração de acesso" (RH); em Usuários e perfis, "Pedidos de alteração de acesso" com Aprovar, Recusar e o histórico | Change `pedido-de-acesso` |
 | Férias: aba "Férias da equipe" | 40:22 (sem nó próprio) | Calendário do mês com o nome de quem da equipe está de férias em cada dia (verde aprovada, âmbar em análise, "+N"), "Alertar a partir de" com borda vermelha no dia lotado, indicadores e a lista do mês | Change `calendario-ferias-da-equipe` |
 | Ponto: Mês (planilha) | 464:826 (escuro 468:1603) | Data completa (dd/mm/aaaa); resumo com horas positivas e horas negativas, sem o saldo único e sem o cartão de atestados; pedido de ajuste pela célula da marcação (Ent. 1, Saí. 2…), com "Corrigir horário" também para a marcação incluída (I); nenhum ajuste no dia de hoje | Change `ponto-rep-p-e-ferias-clt`, tarefas 9.6 a 9.8 (D15 a D18) |
+| Trajetória: modais | 64:42 (sem nó dos modais) | "Responder avaliação" (nota de 1 a 5 por competência, Salvar e Enviar com confirmação), "Contestar avaliação", "Check-in da meta" e "Progresso do PDI"; blocos "Para você avaliar" e "Avaliações recebidas" (com a resposta do RH à contestação); no PDI, "Previsto para" no lugar de "Check-in previsto para" e "Próximo encontro em" (o PDI só tem o prazo) | Change `trajetoria-do-colaborador` |
 | Pagamento (RH e Admin) | 70:46, 236:357 e 236:594 | Duas telas: "Pagamento" (menu pessoal) mostra a todos, inclusive RH e Admin, só os próprios holerites e informes; "Lançamento de pagamentos" (grupo RH do menu) tem as abas, os filtros, Lançar e Substituir | Pedido do usuário (20/10/2026) |
 | Benefícios | — | Construída sem conferência, com o Figma fora do ar. Desde 13/10/2026: o colaborador vê só "Benefícios ativos" e um item por benefício (formato da FAQ) com descrição, links e materiais; o RH tem "Editar" no Catálogo com links e materiais | `pagina_beneficios.py`; change `apresentacao-de-beneficios` |
 | Folha de ponto (Gestor e RH) | — | Tela construída sem conferência, com o Figma fora do ar | `pagina_folha_ponto.py` |
@@ -39,6 +40,6 @@ A página "Protótipo — Dark" ainda não tem todas as seções (tarefas 63 e 7
 
 ## Telas desenhadas no Figma e ainda não construídas no Streamlit
 
-Trajetória (avaliação, metas e PDI), Auditoria, Regras (instrumentos normativos e overrides), Rotina diária e
+Auditoria, Regras (instrumentos normativos e overrides), Rotina diária e
 Retenção e anonimização, Reconhecimentos, Pesquisa de clima, Indicadores, Desligamento, Delegações e Minha
 equipe. Os endpoints existem no backend; as tarefas estão na change `concluir-frontend-streamlit`.

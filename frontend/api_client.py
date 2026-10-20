@@ -20,6 +20,7 @@ _log = logging.getLogger(__name__)
 _MENSAGEM_SEM_CONEXAO = "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente em instantes."
 _MENSAGEM_GENERICA = "Erro inesperado. Tente novamente."
 _MENSAGEM_SESSAO_TERMINOU = "Sua sessão terminou. Entre de novo para continuar."
+_MENSAGEM_LIMITE = "O servidor recebeu muitas consultas seguidas. Espere alguns segundos e tente de novo."
 
 # Mensagens de validação que o próprio Xano gera em inglês (tipos e filtros de
 # input), traduzidas para o usuário. As mensagens escritas nos endpoints já
@@ -71,7 +72,8 @@ GRUPO_USUARIOS = "GjsM93yp"
 GRUPO_CARGOS = "iy_CTE1P"
 
 
-_PAUSA_429_S = 3
+# Pausas antes de cada nova tentativa depois de um 429 (o limite do plano gratuito é por janela de 20 s).
+_PAUSAS_429_S = (3, 5)
 
 
 def _base_url(canonical: str = GRUPO_AUTENTICACAO) -> str:
@@ -108,10 +110,12 @@ def _request(method: str, path: str, token: str | None, canonical: str, payload:
 
     try:
         resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
-        if resp.status_code == 429:
-            # Plano gratuito do Xano: 10 requisições a cada 20 s. Uma nova tentativa depois de uma pausa curta
-            # evita que uma tela com várias consultas mostre erro só por ter chegado ao limite.
-            time.sleep(_PAUSA_429_S)
+        for pausa in _PAUSAS_429_S:
+            if resp.status_code != 429:
+                break
+            # Plano gratuito do Xano: 10 requisições a cada 20 s. Novas tentativas depois de pausas curtas
+            # evitam que uma tela com várias consultas mostre erro (ou fique sem dados) só por ter chegado ao limite.
+            time.sleep(pausa)
             resp = requests.request(method, url, json=payload, headers=headers, timeout=10)
     except requests.RequestException as exc:
         # O detalhe técnico (host, SSL, retries) vai só para o log do servidor,
@@ -133,6 +137,8 @@ def _request(method: str, path: str, token: str | None, canonical: str, payload:
             # aviso. Um 401 sem token (credencial errada no login) não conta.
             st.session_state["sessao_expirada"] = True
             raise ApiError(_MENSAGEM_SESSAO_TERMINOU, 401)
+        if resp.status_code == 429:
+            raise ApiError(_MENSAGEM_LIMITE, 429)
         message = data.get("message") or data.get("error") or _MENSAGEM_GENERICA
         raise ApiError(_traduzir(str(message)), resp.status_code)
 
@@ -844,3 +850,43 @@ def prazo_correcao(token: str) -> dict:
 def definir_prazo_correcao(token: str, prazo_dias: int | None) -> dict:
     """PATCH ponto/prazo_correcao (RH e Admin). None tira o limite. O ajuste do gestor e do RH não tem prazo."""
     return _request("PATCH", "ponto/prazo_correcao", token, GRUPO_PONTO, {"prazo_dias": prazo_dias})
+
+
+# ---------------------------------------------------------------------------
+# Trajetória (change trajetoria-do-colaborador): avaliação, metas, PDI e reconhecimentos da própria pessoa.
+# ---------------------------------------------------------------------------
+def minha_trajetoria(token: str) -> dict:
+    """GET minha_trajetoria -> plano de carreira, 360 do ciclo, a_preencher, recebidas, metas, pdi e reconhecimentos."""
+    return _get("minha_trajetoria", token, GRUPO_COLABORADORES)
+
+
+def competencias_avaliacao(token: str, avaliacao_id: int) -> dict:
+    """GET avaliacoes/{id}/competencias -> {competencias, respostas, avaliado_nome} (só o avaliador designado)."""
+    return _get(f"avaliacoes/{int(avaliacao_id)}/competencias", token, GRUPO_COLABORADORES)
+
+
+def responder_avaliacao(token: str, avaliacao_id: int, competencia_id: int, nota: int, comentario: str | None) -> dict:
+    """POST avaliacoes/{id}/respostas: nota de 1 a 5 de uma competência; chamar de novo atualiza a resposta."""
+    return _post(f"avaliacoes/{int(avaliacao_id)}/respostas", {"competencia_avaliacao_id": int(competencia_id), "nota": int(nota), "comentario": comentario or None},
+                 token, GRUPO_COLABORADORES)
+
+
+def enviar_avaliacao(token: str, avaliacao_id: int, comentario: str | None) -> dict:
+    """POST avaliacoes/{id}/enviar: fecha a avaliação (definitivo) com a nota geral pela média."""
+    return _post(f"avaliacoes/{int(avaliacao_id)}/enviar", {"comentario": comentario or None}, token, GRUPO_COLABORADORES)
+
+
+def contestar_avaliacao(token: str, avaliacao_id: int, motivo: str) -> dict:
+    """POST avaliacoes/{id}/contestar: só o avaliado, só avaliação enviada; o RH revisa."""
+    return _post(f"avaliacoes/{int(avaliacao_id)}/contestar", {"motivo": motivo}, token, GRUPO_COLABORADORES)
+
+
+def checkin_meta(token: str, meta_id: int, progresso: float, comentario: str | None, dificuldades: str | None, evidencia: str | None) -> dict:
+    """POST metas/{id}/checkin: progresso de 0 a 100, com comentário, dificuldades e evidência opcionais."""
+    return _post(f"metas/{int(meta_id)}/checkin", {"progresso_percentual": float(progresso), "comentario_checkin": comentario or None,
+                                                    "dificuldades": dificuldades or None, "evidencia": evidencia or None}, token, GRUPO_COLABORADORES)
+
+
+def progresso_pdi(token: str, pdi_id: int, progresso: float, evidencia: str | None) -> dict:
+    """POST pdi/{id}/progresso: progresso de 0 a 100 e evidência opcional."""
+    return _post(f"pdi/{int(pdi_id)}/progresso", {"progresso_percentual": float(progresso), "evidencia": evidencia or None}, token, GRUPO_COLABORADORES)

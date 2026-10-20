@@ -14,7 +14,8 @@ PDF" (`ficha_colaborador.ficha_pdf`).
 Tipo de acesso (change pedido-de-acesso): a admissão já escolhe o perfil, que "Criar acesso" traz marcado. O Admin
 cria com o perfil e troca direto pela ficha ("Alterar acesso"); o RH, quando escolhe um perfil diferente de
 Colaborador, manda um pedido com justificativa ao Admin (`solicitacoes_acesso`), que aprova ou recusa em Usuários e
-perfis. A ficha mostra o perfil da conta e o pedido pendente.
+perfis. A ficha mostra o perfil da conta e o pedido pendente. Admin não é oferecido na admissão nem no "Criar acesso":
+só pela ficha de quem já está cadastrado.
 """
 
 import html
@@ -30,6 +31,7 @@ from cadastro_modelo import (
     JORNADA_SEMANAL,
     NIVEIS,
     PERFIS,
+    PERFIS_NOVA_CONTA,
     SITUACOES_COLAB,
     candidatos_superior,
     conta_do_colaborador,
@@ -51,6 +53,8 @@ from theme import alerta, render_hero, render_topbar
 
 CACHE = "cadastro_cache"
 _VALIDADE_CACHE_S = 20
+_VALIDADE_FALHA_S = 5
+_SEM_ORGANOGRAMA = "Os departamentos e cargos não carregaram agora"
 _CACHE_PEDIDOS = "pedidos_acesso_cache"
 _AJUDA_PEDIDO = "Só o Admin libera outro tipo de acesso. Diga por que a pessoa precisa dele (ex.: assume a coordenação da equipe)."
 
@@ -69,20 +73,29 @@ def pedidos_acesso(token: str) -> list[dict] | str:
 
 
 def carregar(token: str) -> dict:
-    """{'colaboradores', 'organograma', 'usuarios'} por 20 s. Erro de `colaboradores` sobe; sem organograma
-    ou sem a lista de usuários a tela segue com o que tem."""
+    """{'colaboradores', 'organograma', 'usuarios', 'erros'} por 20 s. Erro de `colaboradores` sobe; sem organograma
+    ou sem a lista de usuários a tela segue com o que tem, e `erros` guarda a mensagem de cada falha. Com falha, o
+    cache vale só 5 s: antes, um organograma vazio (ex.: limite de requisições) ficava 20 s guardado e o modal Admitir
+    abria sem departamentos nem cargos, sem dizer por quê."""
     cache = st.session_state.get(CACHE)
-    if cache and time.time() - cache["em"] < _VALIDADE_CACHE_S:
+    if cache and time.time() - cache["em"] < cache.get("validade", _VALIDADE_CACHE_S):
         return cache["dados"]
-    dados = {"colaboradores": colaboradores(token).get("colaboradores") or []}
+    dados = {"colaboradores": colaboradores(token).get("colaboradores") or [], "erros": {}}
     for chave, funcao, campo in (("organograma", organograma, None), ("usuarios", usuarios, "usuarios")):
         try:
             resposta = funcao(token)
             dados[chave] = (resposta.get(campo) or []) if campo else resposta
-        except ApiError:
+        except ApiError as erro:
             dados[chave] = [] if campo else {}
-    st.session_state[CACHE] = {"em": time.time(), "dados": dados}
+            dados["erros"][chave] = erro.message
+    st.session_state[CACHE] = {"em": time.time(), "dados": dados, "validade": _VALIDADE_FALHA_S if dados["erros"] else _VALIDADE_CACHE_S}
     return dados
+
+
+def recarregar() -> None:
+    """Descarta o que está guardado e roda a tela de novo (botão "Tentar de novo")."""
+    st.session_state.pop(CACHE, None)
+    st.rerun()
 
 
 def fechar() -> None:
@@ -108,10 +121,16 @@ def _jornada_do_contrato() -> None:
 
 
 @st.dialog("Admitir colaborador", width="medium", on_dismiss=fechar)
-def _modal_admitir(org: dict) -> None:
+def _modal_admitir(org: dict, erro_org: str | None = None) -> None:
     deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or [] if d.get("ativo", True)}
     niveis = {n.get("id"): n for n in org.get("niveis") or []}
     hoje = date.today()
+    if not deps:
+        # Sem departamentos não dá para escolher o cargo nem admitir: diz por quê e deixa tentar de novo (o que já foi
+        # digitado fica, porque os campos guardam o valor pela key).
+        alerta(st.empty(), "erro", f"{_SEM_ORGANOGRAMA}: {erro_org}" if erro_org else "Nenhum departamento ativo. Cadastre um em Estrutura da empresa.")
+        if erro_org and st.button("Tentar de novo", key="adm_recarregar"):
+            recarregar()
     dados = {"nome": st.text_input("Nome completo", max_chars=100, key="adm_nome")}
     c1, c2 = st.columns(2)
     dados["cpf"] = c1.text_input("CPF", max_chars=14, placeholder="000.000.000-00", key="adm_cpf")
@@ -139,8 +158,9 @@ def _modal_admitir(org: dict) -> None:
     dados["carga_horaria_semanal"] = c2.number_input("Carga horária semanal", min_value=1.0, max_value=60.0, value=JORNADA_SEMANAL["CLT"], step=1.0, key="adm_carga",
                                                  help="Vem do contrato (CLT 44h, estágio e aprendiz 30h); PJ não tem jornada definida. Dá para ajustar.")
     dados["salario"] = st.number_input("Salário (R$)", min_value=0.0, value=None, step=100.0, format="%.2f", key="adm_salario")
-    acesso = st.radio("Tipo de acesso", list(PERFIS), format_func=PERFIS.get, horizontal=True, key="adm_acesso",
-                      help="A conta é criada no passo seguinte (Criar acesso). Outro tipo além de Colaborador vai como pedido ao Admin.")
+    acesso = st.radio("Tipo de acesso", list(PERFIS_NOVA_CONTA), format_func=PERFIS_NOVA_CONTA.get, horizontal=True, key="adm_acesso",
+                      help="A conta é criada no passo seguinte (Criar acesso). Gestor ou RH vai como pedido ao Admin. "
+                           "Acesso Admin só depois, pela ficha da pessoa.")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Cancelar", key="adm_cancelar"):
@@ -186,7 +206,10 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
                          placeholder="Escolha a pessoa (só fichas sem conta)" if ids else "Nenhuma ficha sem conta neste departamento", key="acesso_colab")
     email = st.text_input("E-mail de acesso", max_chars=120, placeholder="nome@empresa.com", key="acesso_email")
     admin = perfil(st.session_state.usuario.get("perfil")) == "ADMIN"
-    escolhido = st.radio("Tipo de acesso", list(PERFIS), format_func=PERFIS.get, horizontal=True, key="acesso_perfil")
+    if st.session_state.get("acesso_perfil") not in PERFIS_NOVA_CONTA:
+        st.session_state.acesso_perfil = "COLABORADOR"
+    escolhido = st.radio("Tipo de acesso", list(PERFIS_NOVA_CONTA), format_func=PERFIS_NOVA_CONTA.get, horizontal=True, key="acesso_perfil",
+                         help="Acesso Admin só depois, pela ficha da pessoa.")
     justificativa = ""
     if not admin and escolhido != "COLABORADOR":
         st.html('<div class="crh-incluso"><p class="n" style="margin:0">A conta nasce Colaborador, e o pedido de '
@@ -443,6 +466,11 @@ def pagina_colaboradores() -> None:
             st.session_state.modal_cadastro = ("admitir", None)
             st.rerun()
 
+    if erro_org := dados["erros"].get("organograma"):
+        with st.container(horizontal=True, vertical_alignment="center"):
+            alerta(st.empty(), "atencao", f"{_SEM_ORGANOGRAMA} (departamento e cargo aparecem como —): {erro_org}")
+            if st.button("Tentar de novo", key="col_recarregar"):
+                recarregar()
     _tabela(linhas_colaboradores(colabs, org, busca, dep, situacao))
 
     selecionado = next((c for c in colabs if c.get("id") == st.session_state.get("col_ficha")), None)
@@ -454,7 +482,7 @@ def pagina_colaboradores() -> None:
         return
     acao, alvo = modal
     if acao == "admitir" and meu_perfil == "RH":
-        _modal_admitir(org)
+        _modal_admitir(org, dados["erros"].get("organograma"))
     elif acao == "acesso":
         modal_criar_acesso(colabs, deps, alvo)
     elif acao == "tipo_acesso":
