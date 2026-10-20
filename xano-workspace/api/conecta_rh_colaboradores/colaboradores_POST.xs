@@ -18,6 +18,7 @@ query colaboradores verb=POST {
     text telefone filters=trim
     text logradouro filters=trim
     text numero filters=trim
+    text? complemento? filters=trim|max:100
     text bairro filters=trim
     int cargo_id
     int departamento_id
@@ -174,6 +175,26 @@ query colaboradores verb=POST {
       error = "Nivel profissional invalido. Use l1, l2, l3, l4 ou l5."
     }
   
+    // Telefone (10 ou 11 digitos, com DDD) e numero do endereco (1 a 10 digitos): so numeros
+    // (pedido do usuario, 20/10/2026). O complemento guarda o resto ("casa B", "apto 12").
+    function.run "ConectaHR/somente_digitos" {
+      input = {texto: $input.telefone}
+    } as $telefone_so_digitos
+
+    precondition ((($telefone_so_digitos == $input.telefone) && ((($telefone_so_digitos|strlen) == 10) || (($telefone_so_digitos|strlen) == 11)))) {
+      error_type = "inputerror"
+      error = "Informe o telefone so com numeros, com DDD (10 ou 11 digitos)."
+    }
+
+    function.run "ConectaHR/somente_digitos" {
+      input = {texto: $input.numero}
+    } as $numero_so_digitos
+
+    precondition ((($numero_so_digitos == $input.numero) && (($numero_so_digitos|strlen) >= 1) && (($numero_so_digitos|strlen) <= 10))) {
+      error_type = "inputerror"
+      error = "O numero do endereco aceita so numeros. Use o complemento para letras (ex.: casa B)."
+    }
+
     // Cria o registro profissional.
     db.add colaborador {
       data = {
@@ -185,6 +206,7 @@ query colaboradores verb=POST {
         telefone             : $input.telefone
         logradouro           : $input.logradouro
         numero               : $input.numero
+        complemento          : $input.complemento
         bairro               : $input.bairro
         cargo_id             : $cargo.id
         departamento_id      : $departamento.id

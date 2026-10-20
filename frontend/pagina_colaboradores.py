@@ -49,6 +49,7 @@ from cadastro_modelo import (
 from cargos_modelo import cargos_do_departamento, rotulo_cargo
 from ficha_colaborador import documentos_da_pessoa, ficha_pdf, nome_arquivo_ficha, secoes
 from pagina_conferencia_documentos import _detalhes as detalhes_documento
+from campos import campo, data_por_partes, houve_correcao, mensagem_correcao
 from theme import alerta, render_hero, render_topbar
 
 CACHE = "cadastro_cache"
@@ -131,14 +132,16 @@ def _modal_admitir(org: dict, erro_org: str | None = None) -> None:
         alerta(st.empty(), "erro", f"{_SEM_ORGANOGRAMA}: {erro_org}" if erro_org else "Nenhum departamento ativo. Cadastre um em Estrutura da empresa.")
         if erro_org and st.button("Tentar de novo", key="adm_recarregar"):
             recarregar()
-    dados = {"nome": st.text_input("Nome completo", max_chars=100, key="adm_nome")}
+    # Cada campo aceita só o seu tipo (campos.py; pedido do usuário em 20/10/2026): o resto sai ao deixar o campo.
+    dados = {"nome": campo(st, "Nome completo", "nome", "adm_nome", max_chars=100)}
     c1, c2 = st.columns(2)
-    dados["cpf"] = c1.text_input("CPF", max_chars=14, placeholder="000.000.000-00", key="adm_cpf")
-    dados["data_nascimento"] = c2.date_input("Nascimento", value=None, min_value=date(1940, 1, 1), max_value=hoje, format="DD/MM/YYYY", key="adm_nasc")
-    dados["email_pessoal"] = st.text_input("E-mail pessoal", max_chars=120, key="adm_email")
+    dados["cpf"] = campo(c1, "CPF", "numero", "adm_cpf", max_chars=11, placeholder="Só os 11 números")
+    with c2:
+        dados["data_nascimento"] = data_por_partes(st, "Nascimento", "adm_nasc", 1940, hoje.year)
+    dados["email_pessoal"] = campo(st, "E-mail pessoal", "email", "adm_email", max_chars=120)
     c1, c2 = st.columns(2)
-    dados["telefone"] = c1.text_input("Telefone", max_chars=20, key="adm_tel")
-    dados["bairro"] = c2.text_input("Bairro", max_chars=100, key="adm_bairro")
+    dados["telefone"] = campo(c1, "Telefone", "numero", "adm_tel", max_chars=11, placeholder="DDD + número, só números")
+    dados["bairro"] = campo(c2, "Bairro", "endereco", "adm_bairro", max_chars=100)
     c1, c2 = st.columns(2)
     dados["departamento_id"] = c1.selectbox("Departamento", sorted(deps, key=deps.get), index=None, format_func=deps.get, placeholder="Escolha", key="adm_dep")
     # Os cargos do departamento escolhido e os sem departamento (change cadastro-de-cargos, D3), com o nível do cargo.
@@ -151,8 +154,9 @@ def _modal_admitir(org: dict, erro_org: str | None = None) -> None:
     dados["tipo_contrato"] = c1.selectbox("Contrato", list(CONTRATOS), format_func=CONTRATOS.get, key="adm_contrato", on_change=_jornada_do_contrato)
     dados["data_admissao"] = c2.date_input("Admissão", value=hoje, format="DD/MM/YYYY", key="adm_admissao")
     c1, c2 = st.columns(2)
-    dados["logradouro"] = c1.text_input("Logradouro", max_chars=150, key="adm_logradouro")
-    dados["numero"] = c2.text_input("Número", max_chars=20, key="adm_numero")
+    dados["logradouro"] = campo(c1, "Logradouro", "endereco", "adm_logradouro", max_chars=150)
+    dados["numero"] = campo(c2, "Número", "numero", "adm_numero", max_chars=10, placeholder="Só números")
+    dados["complemento"] = campo(st, "Complemento (opcional)", "endereco", "adm_complemento", max_chars=100, placeholder="Ex.: casa B, apto 12, bloco 3")
     c1, c2 = st.columns(2)
     dados["nivel"] = c1.selectbox("Nível", list(NIVEIS), format_func=NIVEIS.get, key="adm_nivel")
     dados["carga_horaria_semanal"] = c2.number_input("Carga horária semanal", min_value=1.0, max_value=60.0, value=JORNADA_SEMANAL["CLT"], step=1.0, key="adm_carga",
@@ -167,7 +171,9 @@ def _modal_admitir(org: dict, erro_org: str | None = None) -> None:
             fechar()
             st.rerun()
         if st.button("Admitir", type="primary", key="adm_ok"):
-            erro_campo = validar_admissao(dados, hoje)
+            # Algum campo acabou de ser limpo (emoji, letra no número...): mostra e espera um novo clique.
+            corrigidos = houve_correcao()
+            erro_campo = mensagem_correcao(corrigidos) if corrigidos else validar_admissao(dados, hoje)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
@@ -204,7 +210,7 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
     rotulo = lambda i: f"{sem_conta[i].get('nome')} — {deps.get(sem_conta[i].get('departamento_id')) or '—'}"
     colab = st.selectbox("Colaborador", ids, index=ids.index(colaborador_id) if colaborador_id in ids else None, format_func=rotulo,
                          placeholder="Escolha a pessoa (só fichas sem conta)" if ids else "Nenhuma ficha sem conta neste departamento", key="acesso_colab")
-    email = st.text_input("E-mail de acesso", max_chars=120, placeholder="nome@empresa.com", key="acesso_email")
+    email = campo(st, "E-mail de acesso", "email", "acesso_email", max_chars=120, placeholder="nome@empresa.com")
     admin = perfil(st.session_state.usuario.get("perfil")) == "ADMIN"
     if st.session_state.get("acesso_perfil") not in PERFIS_NOVA_CONTA:
         st.session_state.acesso_perfil = "COLABORADOR"

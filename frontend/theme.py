@@ -865,6 +865,8 @@ _APP_CSS = f"""
   .crh-rec .nome {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE}; }}
   .crh-rec .quando {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; white-space: nowrap; }}
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
+  /* Data em três listas (campos.data_por_partes): o rótulo igual ao dos outros campos. */
+  .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
   /* Configurações, Segurança e Notificações (Figma 213:142 e 213:236; change configuracoes-seguranca-notificacoes). */
   .crh-regra.ok {{ color: {SUCESSO} !important; }}
   div[class*="st-key-cfg_sessao_"] {{ border: 1px solid {BORDA}; border-radius: 12px; padding: 10px 14px; justify-content: space-between; }}
