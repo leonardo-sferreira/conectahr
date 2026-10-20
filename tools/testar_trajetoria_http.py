@@ -7,12 +7,12 @@ Uso (na raiz do repositório):
     python tools/testar_trajetoria_http.py
 """
 
-import getpass
 import sys
 import tomllib
 from pathlib import Path
 
 import requests
+from ler_senha import ler_senha
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -51,7 +51,7 @@ def chamar(metodo, grupo, caminho, token=None, corpo=None):
 def entrar() -> str:
     print("\nConta com ficha de colaborador")
     email = input("  e-mail: ").strip()
-    senha = getpass.getpass("  senha (não aparece): ")
+    senha = ler_senha()
     st, d = chamar("POST", AUT, "auth/login", corpo={"email": email, "password": senha})
     if st != 200:
         sys.exit(f"  login recusado ({st}): {d.get('message')}")

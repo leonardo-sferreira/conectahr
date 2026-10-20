@@ -12,7 +12,6 @@ Uso (na raiz do repositório):
     python tools/testar_rep_p_http.py
 """
 
-import getpass
 import sys
 import tomllib
 from datetime import date, datetime, timedelta, timezone
@@ -26,6 +25,7 @@ if hasattr(sys.stdout, "reconfigure"):
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "frontend"))
 import rep_modelo as m  # noqa: E402
+from ler_senha import ler_senha
 
 SEGREDOS = tomllib.loads((RAIZ / ".streamlit" / "secrets.toml").read_text(encoding="utf-8"))
 BASE = SEGREDOS["xano"]["auth_base_url"].rstrip("/").rsplit("api:", 1)[0]
@@ -59,7 +59,7 @@ def chamar(metodo, grupo, caminho, token=None, corpo=None, params=None):
 def entrar(papel: str) -> tuple[str, dict]:
     print(f"\nConta {papel}")
     email = input("  e-mail: ").strip()
-    senha = getpass.getpass("  senha (não aparece): ")
+    senha = ler_senha()
     st, d = chamar("POST", AUT, "auth/login", corpo={"email": email, "password": senha})
     if st != 200:
         sys.exit(f"  login recusado ({st}): {d.get('message')}")
