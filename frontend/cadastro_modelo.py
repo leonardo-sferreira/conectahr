@@ -150,12 +150,17 @@ def validar_admissao(dados: dict, hoje: date) -> str | None:
         return "CPF inválido. Confira os 11 dígitos."
     nasc = dados.get("data_nascimento")
     if not nasc or nasc >= hoje:
-        return "Informe a data de nascimento."
+        return "Informe a data de nascimento (dia, mês e ano)."
     if not _RE_EMAIL.match((dados.get("email_pessoal") or "").strip()):
         return "Informe um e-mail pessoal válido."
     for campo, rotulo in (("telefone", "o telefone"), ("logradouro", "o logradouro"), ("numero", "o número"), ("bairro", "o bairro")):
         if not (dados.get(campo) or "").strip():
             return f"Informe {rotulo}."
+    # Só números (pedido do usuário, 20/10/2026; o backend confere o mesmo).
+    if not (dados["telefone"].strip().isdigit() and len(dados["telefone"].strip()) in (10, 11)):
+        return "O telefone aceita só números, com DDD (10 ou 11 dígitos)."
+    if not dados["numero"].strip().isdigit():
+        return "O número do endereço aceita só números. Use o complemento para letras (ex.: casa B)."
     if not dados.get("departamento_id"):
         return "Escolha o departamento."
     if not dados.get("cargo_id"):
@@ -180,6 +185,7 @@ def corpo_admissao(dados: dict) -> dict:
         "nome": dados["nome"].strip(), "cpf": re.sub(r"\D", "", dados["cpf"]), "email_pessoal": dados["email_pessoal"].strip().lower(),
         "data_nascimento": dados["data_nascimento"].isoformat(), "data_admissao": dados["data_admissao"].isoformat(),
         "telefone": dados["telefone"].strip(), "logradouro": dados["logradouro"].strip(), "numero": dados["numero"].strip(), "bairro": dados["bairro"].strip(),
+        "complemento": (dados.get("complemento") or "").strip() or None,
         "cargo_id": int(dados["cargo_id"]), "departamento_id": int(dados["departamento_id"]), "tipo_contrato": dados["tipo_contrato"],
         "nivel": dados["nivel"], "salario": float(dados["salario"]), "carga_horaria_semanal": float(dados["carga_horaria_semanal"]),
     }

@@ -865,6 +865,8 @@ _APP_CSS = f"""
   .crh-rec .nome {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE}; }}
   .crh-rec .quando {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; white-space: nowrap; }}
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
+  /* Data em três listas (campos.data_por_partes): o rótulo igual ao dos outros campos. */
+  .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
   /* Ciclo de metas (change ciclo-de-metas): etapa, pergunta com as respostas e a caixa de feedback. */
   .crh-cm-etapa {{ padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }}
   .crh-cm-cab {{ display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }}
