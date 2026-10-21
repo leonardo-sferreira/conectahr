@@ -1,10 +1,11 @@
 """Testes por HTTP do treinamento em vídeo (change treinamento-em-video), com login de verdade.
 
 Roda no seu terminal: pede e-mail, senha e o código que chega por e-mail. Precisa de uma conta do RH ou do Admin com
-ficha de colaborador. Cria um treinamento de teste (opcional, com um id de vídeo fictício: nada toca no Drive),
+ficha de colaborador. Cria um treinamento de teste (opcional, com um id de vídeo fictício: nada toca no Drive) e
+um com vídeo do YouTube (desativado logo depois),
 confere as validações do vídeo, o progresso (primeiro registro limitado, avanço rápido demais recusado, nunca
 diminui), "concluir" recusado antes do mínimo e aceito depois, com o progresso zerado em seguida. No fim, desativa o
-treinamento de teste. Fica gravado: o treinamento inativo "TESTE automático" e uma conclusão dele para a sua ficha.
+treinamento de teste. Fica gravado: os dois treinamentos inativos "TESTE automático" e uma conclusão para a sua ficha.
 
 Uso (na raiz do repositório):
     python tools/testar_treinamento_video_http.py
@@ -78,6 +79,15 @@ st, d = chamar("POST", "treinamentos", tok, treinamento(video_percentual_minimo=
 conferir(st == 400, "mínimo abaixo de 50%: 400", (st, d.get("message")))
 st, d = chamar("POST", "treinamentos", tok, treinamento(video_duracao=0))
 conferir(st == 400, "vídeo sem duração: 400", (st, d.get("message")))
+st, d = chamar("POST", "treinamentos", tok, treinamento(video_fonte="youtube", video_drive_id="curtoDemais00"))
+conferir(st == 400, "YouTube com id que não tem 11 caracteres: 400", (st, d.get("message")))
+st, d = chamar("POST", "treinamentos", tok, treinamento(video_fonte="vimeo"))
+conferir(st == 400, "fonte desconhecida: 400", (st, d.get("message")))
+st, d = chamar("POST", "treinamentos", tok, treinamento(video_fonte="youtube", video_drive_id="M7lc1UVf-VE"))
+yid = (d.get("treinamento") or {}).get("id")
+conferir(st == 200 and (d.get("treinamento") or {}).get("video_fonte") == "youtube", "cria com vídeo do YouTube", (st, d.get("message")))
+if yid:
+    chamar("PATCH", f"treinamentos/{yid}", tok, treinamento(video_fonte="youtube", video_drive_id="M7lc1UVf-VE", ativo=False))
 st, d = chamar("POST", "treinamentos", tok, treinamento())
 tid = (d.get("treinamento") or {}).get("id")
 conferir(st == 200 and tid and d["treinamento"].get("video_drive_id") == VIDEO and d["treinamento"].get("video_duracao") == 600, "cria com vídeo",

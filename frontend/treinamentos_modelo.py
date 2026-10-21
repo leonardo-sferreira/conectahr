@@ -6,8 +6,9 @@ O treinamento obrigatório vale para todos ou para alguns departamentos. A situa
 mais recente: em dia, vencendo (até 30 dias para vencer), vencido ou pendente (nunca registrado). Sem validade, uma
 conclusão basta.
 
-Vídeo (change treinamento-em-video): o RH cola o link do Google Drive; a pessoa assiste em "Meus treinamentos" e só
-conclui depois de assistir o mínimo pedido (95% por padrão). Conta o ponto mais longe assistido sem pular.
+Vídeo (change treinamento-em-video): o RH cola o link do Google Drive ou do YouTube (a fonte sai do link); a pessoa
+assiste em "Meus treinamentos" e só conclui depois de assistir o mínimo pedido (95% por padrão). Conta o ponto mais
+longe assistido sem pular.
 """
 
 import re
@@ -31,26 +32,40 @@ SUGERIDOS = [
 
 
 PERCENTUAL_PADRAO = 95
+FONTES_VIDEO = {"drive": "Google Drive", "youtube": "YouTube"}
 _ID_DRIVE = re.compile(r"^[A-Za-z0-9_-]{10,100}$")
+_ID_YOUTUBE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
 
-def drive_id(link: str | None) -> str | None:
-    """Id do arquivo num link do Google Drive (".../file/d/ID/view", "...open?id=ID", "...uc?id=ID") ou o próprio id."""
+def video_do_link(link: str | None) -> tuple[str, str] | None:
+    """(fonte, id) de um link do Google Drive (".../file/d/ID/view", "...open?id=ID") ou do YouTube ("watch?v=ID",
+    "youtu.be/ID", "/embed/ID", "/shorts/ID", "/live/ID"). None se não for de nenhum dos dois."""
     texto = (link or "").strip()
-    if not texto:
-        return None
-    achado = re.search(r"/file/d/([A-Za-z0-9_-]+)", texto) or re.search(r"[?&]id=([A-Za-z0-9_-]+)", texto)
-    candidato = achado.group(1) if achado else texto
-    return candidato if _ID_DRIVE.match(candidato) else None
+    host = re.match(r"^(?:https?://)?([^/?#]+)", texto)
+    host = (host.group(1).lower() if host else "").removeprefix("www.").removeprefix("m.")
+    if host in ("drive.google.com", "docs.google.com"):
+        achado = re.search(r"/file/d/([A-Za-z0-9_-]+)", texto) or re.search(r"[?&]id=([A-Za-z0-9_-]+)", texto)
+        if achado and _ID_DRIVE.match(achado.group(1)):
+            return "drive", achado.group(1)
+    elif host in ("youtube.com", "youtu.be", "youtube-nocookie.com"):
+        achado = (re.search(r"youtu\.be/([A-Za-z0-9_-]+)", texto) or re.search(r"[?&]v=([A-Za-z0-9_-]+)", texto)
+                  or re.search(r"/(?:embed|shorts|live)/([A-Za-z0-9_-]+)", texto))
+        if achado and _ID_YOUTUBE.match(achado.group(1)):
+            return "youtube", achado.group(1)
+    return None
 
 
-def link_drive(video_id: str | None) -> str:
-    return f"https://drive.google.com/file/d/{video_id}/view" if video_id else ""
+def link_video(fonte: str | None, video_id: str | None) -> str:
+    if not video_id:
+        return ""
+    if fonte == "youtube":
+        return f"https://www.youtube.com/watch?v={video_id}"
+    return f"https://drive.google.com/file/d/{video_id}/view"
 
 
 def validar_video(link: str | None, percentual) -> str | None:
-    if (link or "").strip() and not drive_id(link):
-        return "Link do vídeo inválido. Cole o link de compartilhamento do Google Drive (drive.google.com/file/d/…)."
+    if (link or "").strip() and not video_do_link(link):
+        return "Link do vídeo inválido. Cole o link do Google Drive (drive.google.com/file/d/…) ou do YouTube (youtube.com/watch?v=… ou youtu.be/…)."
     if not 50 <= int(percentual) <= 100:
         return "O mínimo assistido vai de 50% a 100%."
     return None
@@ -211,7 +226,7 @@ def meus(dados: dict) -> dict:
         obrigatorios.append({"nome": (t.get("nome") or "") + (" · vídeo" if com_video else ""), "detalhe": detalhe, "rotulo": rotulo, "tom": tom, "ordem": ordem})
         if com_video:
             prog = progressos.get(t["id"]) or {}
-            videos.append({"id": t["id"], "nome": t.get("nome") or "", "video_id": t["video_drive_id"], "duracao": int(t["video_duracao"]),
+            videos.append({"id": t["id"], "nome": t.get("nome") or "", "video_id": t["video_drive_id"], "fonte": t.get("video_fonte") or "drive", "duracao": int(t["video_duracao"]),
                            "minimo": int(t.get("video_percentual_minimo") or PERCENTUAL_PADRAO), "vistos": int(prog.get("segundos_vistos") or 0),
                            "posicao": int(prog.get("posicao") or 0), "ordem": ordem,
                            "detalhe": f"Vídeo de {duracao_legivel(t['video_duracao'])} · {validade_legivel(t.get('validade_meses')).lower()} · {rotulo.lower()}"})

@@ -4,8 +4,8 @@ Roda o app com o AppTest do Streamlit e uma API simulada (dados fictícios). Con
 conclusão mais recente, situação em dia, vencendo, vencido e pendente, matriz, indicadores, vencimentos, validade
 legível, validações e "Meus treinamentos") e as telas (matriz com filtro, catálogo vazio com o sugerido, novo e
 editar treinamento, registrar uma turma, vencimentos, acesso e a tela da pessoa). Vídeo (change treinamento-em-video):
-o id do link do Drive, o mínimo assistido, a duração lida do Drive ao salvar e "Concluir treinamento" só liberado
-depois do mínimo. O Google Drive também é simulado.
+o vídeo pelo link (Google Drive ou YouTube), o mínimo assistido, a duração lida do Drive ou da prévia do YouTube ao
+salvar e "Concluir treinamento" só liberado depois do mínimo. O Google Drive também é simulado.
 
 Uso (na raiz do repositório):
     python tools/testar_treinamentos.py
@@ -82,6 +82,7 @@ api_client.concluir_treinamento = lambda token, tid: chamadas.append(("concluir"
 drive_video.chave_api = lambda: estado.get("chave", "chave-de-teste")
 drive_video.duracao_video = lambda vid, chave: chamadas.append(("drive", vid)) or 1440
 ID_VIDEO = "1AbCdEfGhIjKlMnOpQrStUvWxYz_-123"
+ID_YT = "dQw4w9WgXcQ"
 MEUS_VIDEO = dict(MEUS, obrigatorios=[dict(MEUS["obrigatorios"][1], video_drive_id=ID_VIDEO, video_duracao=1440, video_percentual_minimo=95)],
                   progressos=[{"treinamento_id": 4, "segundos_vistos": 893, "posicao": 893}])
 
@@ -158,8 +159,13 @@ conferir("departamento" in m.validar_treinamento("NR-10", "seguranca", 24, 8, Tr
 mm = m.meus(MEUS)
 conferir([o["nome"] for o in mm["obrigatorios"]] == ["Integração de segurança (NR-1)", "Orientação sobre assédio e violência no trabalho"] and mm["obrigatorios"][0]["rotulo"] == "Pendente"
          and "SESMT" in mm["historico"][0]["titulo"], "meus treinamentos: pendente primeiro e histórico")
-conferir(m.drive_id(f"https://drive.google.com/file/d/{ID_VIDEO}/view?usp=sharing") == ID_VIDEO and m.drive_id(f"https://drive.google.com/open?id={ID_VIDEO}") == ID_VIDEO
-         and m.drive_id(ID_VIDEO) == ID_VIDEO and m.drive_id("https://youtube.com/watch") is None and m.drive_id("") is None, "vídeo: id do link do Drive")
+conferir(m.video_do_link(f"https://drive.google.com/file/d/{ID_VIDEO}/view?usp=sharing") == ("drive", ID_VIDEO)
+         and m.video_do_link(f"https://drive.google.com/open?id={ID_VIDEO}") == ("drive", ID_VIDEO) and m.video_do_link(ID_VIDEO) is None
+         and m.video_do_link("") is None and m.video_do_link("https://exemplo.com/drive.google.com/file/d/x") is None, "vídeo: link do Drive")
+conferir(all(m.video_do_link(l) == ("youtube", ID_YT) for l in (f"https://www.youtube.com/watch?v={ID_YT}&t=30", f"https://youtu.be/{ID_YT}?si=abc",
+                                                                f"youtube.com/shorts/{ID_YT}", f"https://m.youtube.com/watch?v={ID_YT}", f"https://www.youtube.com/embed/{ID_YT}"))
+         and m.video_do_link("https://www.youtube.com/watch?v=curto") is None and m.link_video("youtube", ID_YT) == f"https://www.youtube.com/watch?v={ID_YT}"
+         and m.link_video("drive", ID_VIDEO).startswith("https://drive.google.com/file/d/"), "vídeo: link do YouTube (watch, youtu.be, shorts, embed)")
 conferir("inválido" in m.validar_video("video.mp4", 95) and "50%" in m.validar_video("", 40) and m.validar_video(f"https://drive.google.com/file/d/{ID_VIDEO}/view", 95) is None,
          "vídeo: validações do link e do mínimo")
 conferir(m.percentual_visto(893, 1440) == 62 and not m.pode_concluir(1367, 1440, 95) and m.pode_concluir(1368, 1440, 95) and not m.pode_concluir(10, 0, 95)
@@ -201,7 +207,7 @@ at.selectbox(key="tr_form_cat").set_value("legal")
 at.text_input(key="tr_form_nome").set_value("Orientação sobre assédio")
 at.text_input(key="tr_form_video").set_value("https://exemplo.com/video.mp4")
 at = clicar(at.run(), "tr_form_ok")
-conferir("Link do vídeo inválido" in texto(at) and not any(c[0] in ("salvar", "drive") for c in chamadas), "vídeo: link que não é do Drive é recusado")
+conferir("Link do vídeo inválido" in texto(at) and not any(c[0] in ("salvar", "drive") for c in chamadas), "vídeo: link que não é do Drive nem do YouTube é recusado")
 at.text_input(key="tr_form_video").set_value(f"https://drive.google.com/file/d/{ID_VIDEO}/view?usp=sharing")
 at = at.run()
 at.number_input(key="tr_form_pct").set_value(90)
@@ -211,9 +217,17 @@ conferir(("drive", ID_VIDEO) in chamadas and any(c[0] == "salvar" and c[2]["vide
 at = clicar(app(chave=None), "tr_novo")
 at.selectbox(key="tr_form_cat").set_value("legal")
 at.text_input(key="tr_form_nome").set_value("Orientação sobre assédio")
-at.text_input(key="tr_form_video").set_value(ID_VIDEO)
+at.text_input(key="tr_form_video").set_value(f"https://drive.google.com/file/d/{ID_VIDEO}/view")
 at = clicar(at.run(), "tr_form_ok")
-conferir("Falta configurar o Google Drive" in texto(at) and not any(c[0] == "salvar" for c in chamadas), "vídeo: sem a chave da API, não salva e explica")
+conferir("Falta configurar o Google Drive" in texto(at) and not any(c[0] == "salvar" for c in chamadas), "vídeo: Drive sem a chave da API, não salva e explica")
+at.text_input(key="tr_form_video").set_value(f"https://youtu.be/{ID_YT}")
+at = clicar(at.run(), "tr_form_ok")
+conferir(not at.exception and "Espere a prévia do YouTube" in texto(at) and not any(c[0] == "salvar" for c in chamadas),
+         "vídeo: YouTube sem a duração da prévia ainda, não salva")
+at.session_state[f"tr_yt_dur_{ID_YT}"] = 212
+at = clicar(at.run(), "tr_form_ok")
+conferir(any(c[0] == "salvar" and c[2]["video_fonte"] == "youtube" and c[2]["video_drive_id"] == ID_YT and c[2]["video_duracao"] == 212 for c in chamadas)
+         and not any(c[0] == "drive" for c in chamadas), "vídeo: YouTube salva com a duração da prévia, sem chave e sem chamar o Drive")
 at = aba(app(), "Registrar conclusão")
 at.selectbox(key="tr_reg_treino").set_value(1)
 at.multiselect(key="tr_reg_pessoas").set_value([20, 21])
@@ -245,6 +259,9 @@ at = clicar(at, "mt_concluir_4")
 conferir(("concluir", 4) in chamadas and "Treinamento concluído" in aviso(at), "vídeo: conclui pelo endpoint da pessoa")
 at = app("meus-treinamentos", perfil="COLABORADOR", meus=MEUS_VIDEO, chave=None)
 conferir("falta configurar o Google Drive" in texto(at) and "mt_concluir_4" not in chaves(at), "vídeo: sem a chave da API, aviso no lugar do player")
+yt = dict(MEUS_VIDEO, obrigatorios=[dict(MEUS_VIDEO["obrigatorios"][0], video_drive_id=ID_YT, video_fonte="youtube")])
+at = app("meus-treinamentos", perfil="COLABORADOR", meus=yt, chave=None)
+conferir(not at.exception and "falta configurar" not in texto(at) and at.button(key="mt_concluir_4").disabled, "vídeo: YouTube toca sem a chave do Google")
 at = app("meus-treinamentos", perfil="COLABORADOR", colaborador_id=None)
 conferir("não tem ficha" in texto(at), "conta sem ficha: aviso")
 
