@@ -11,7 +11,7 @@
   - **Feito (21/10/2026):** publicados.
 - [x] 1.2 `treinamentos` POST e `{id}` PATCH com o vídeo, `meus_treinamentos` GET com o progresso, `meus_treinamentos/{id}/progresso` e `meus_treinamentos/{id}/concluir` (D1 a D3). Verificar: `checar_endpoints` e dry-run.
   - **Feito (21/10/2026):** publicados; `checar_endpoints` 272, 0 falhas. O publicado antes foi conferido igual ao git (só diferenças de formatação do Xano).
-- [ ] 1.3 Rodar `tools/testar_treinamento_video_http.py` com login (RH ou Admin com ficha).
+- [ ] 1.3 Rodar `tools/testar_treinamento_video_http.py` com login (RH ou Admin com ficha). Cobre também as validações do YouTube.
 
 ## 2. Frontend
 
@@ -27,6 +27,19 @@
   - um projeto no Google Cloud com a Drive API ligada;
   - a chave de API restrita à Drive API e ao endereço do app;
   - a chave em `[google] drive_api_key` nos secrets do Streamlit.
+
+## 4. YouTube como segunda fonte (pedido do usuário, 21/10/2026)
+
+- [x] 4.1 `treinamento.video_fonte` e as validações do YouTube nas rotas (D6). Verificar: dry-run com só o `ADD_FIELD` e os 3 `UPDATE`.
+  - **Feito (21/10/2026):** publicado; `checar_endpoints` 272, 0 falhas.
+- [x] 4.2 Link do Drive ou do YouTube no mesmo campo, prévia do YouTube no modal e player do YouTube (D6). Verificar: `tools/testar_treinamentos.py` e no Chrome.
+  - **Feito (21/10/2026):**
+    - testes: 39/39;
+    - no Chrome, a prévia leu a duração do vídeo de exemplo do YouTube (1344 s);
+    - o salto para 120 s voltou para o ponto já assistido;
+    - a velocidade ficou em 2x;
+    - o progresso foi enviado na pausa;
+    - o player do Drive, testado de novo, continua igual.
 
 ## 3. Documentação
 

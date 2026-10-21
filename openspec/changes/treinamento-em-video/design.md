@@ -70,9 +70,18 @@ Componente v2 do Streamlit (`st.components.v2.component`). Ele monta na própria
   - "Concluir treinamento", travado até o mínimo;
   - na lista dos obrigatórios, "· vídeo" no nome.
 
+### D6. YouTube como segunda fonte
+
+O Google Cloud pode parecer cobrado (o console oferece o teste pago), e o usuário pediu uma opção sem ele.
+- **O mesmo campo aceita os dois links.** A fonte sai do endereço: `drive.google.com` é Drive; `youtube.com`, `youtu.be` (watch, shorts, embed, live) é YouTube. Um id solto é recusado, porque não diz a fonte.
+- **`treinamento.video_fonte`** (`drive` ou `youtube`, padrão `drive`). A coluna `video_drive_id` guarda o id das duas fontes: renomear apagaria a coluna no Xano. O backend exige 11 caracteres no id do YouTube.
+- **Player:** IFrame Player API do YouTube, no domínio `youtube-nocookie.com`, dentro do mesmo componente. Ela não tem evento de tempo: o componente lê o tempo 4 vezes por segundo e aplica as mesmas regras (salto volta, até 2x, envios a cada 25 segundos, na pausa e no fim).
+- **Duração sem chave:** no modal do RH, o link do YouTube mostra a prévia do vídeo; o player lê a duração e o Python guarda até salvar. Sem a prévia carregada, não salva. Quem lê a duração é a sessão do RH, não a pessoa que assiste.
+- **Vídeo "não listado":** não aparece em buscas, mas quem tiver o link assiste, como no Drive. Vídeo privado não toca incorporado.
+
 ## Risks
 
 - **A chave de API é visível no navegador.** Mitigação: restrição por API e por endereço; cota do Google; trocar a chave se vazar.
 - **O link do arquivo fica aberto a quem tiver o link.** Mitigação: só vídeo de treinamento, sem dado pessoal; o RH pode tirar o compartilhamento depois do ciclo.
-- **O Google recebe o IP de quem assiste.** Ele passa a ser operador (docs/lgpd/operadores.md).
+- **O Google recebe o IP de quem assiste** (Drive ou YouTube). Ele passa a ser operador (docs/lgpd/operadores.md). No YouTube, o domínio `youtube-nocookie.com` evita cookies de rastreamento até a pessoa dar play.
 - **Arquivos grandes no Drive** podem ter limite de banda por dia. Mitigação: vídeos curtos e comprimidos (720p).

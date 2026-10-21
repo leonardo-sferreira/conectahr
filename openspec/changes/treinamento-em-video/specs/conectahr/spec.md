@@ -1,7 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Treinamento em vídeo com conclusão depois do mínimo assistido
-O RH SHALL poder ligar um vídeo do Google Drive a um treinamento, com o mínimo a assistir (de 50% a 100%, padrão 95%), e o sistema SHALL ler a duração do vídeo no Drive ao salvar. A pessoa SHALL assistir o vídeo em "Meus treinamentos", e o sistema SHALL contar só o trecho assistido sem pular, até 2x a velocidade. O backend SHALL recusar progresso mais rápido que 2x o tempo real e SHALL liberar a conclusão pela própria pessoa só quando o progresso gravado atingir o mínimo. A conclusão SHALL ter a validade do treinamento, SHALL ficar na auditoria e SHALL zerar o progresso.
+O RH SHALL poder ligar um vídeo do Google Drive ou do YouTube a um treinamento, com o mínimo a assistir (de 50% a 100%, padrão 95%), e o sistema SHALL ler a duração do vídeo ao salvar (na API do Drive ou na prévia do YouTube). A pessoa SHALL assistir o vídeo em "Meus treinamentos", e o sistema SHALL contar só o trecho assistido sem pular, até 2x a velocidade. O backend SHALL recusar progresso mais rápido que 2x o tempo real e SHALL liberar a conclusão pela própria pessoa só quando o progresso gravado atingir o mínimo. A conclusão SHALL ter a validade do treinamento, SHALL ficar na auditoria e SHALL zerar o progresso.
+
+#### Scenario: Vídeo do YouTube sem configuração
+- **WHEN** o RH cola o link de um vídeo não listado do YouTube e a prévia carrega
+- **THEN** o treinamento é salvo com a duração do vídeo, sem chave de API, e a pessoa assiste com as mesmas regras
 
 #### Scenario: Concluir antes do mínimo
 - **WHEN** a pessoa assistiu 62% de um vídeo que pede 95% e tenta concluir

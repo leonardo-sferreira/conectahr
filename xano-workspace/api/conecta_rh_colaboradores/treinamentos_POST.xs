@@ -15,6 +15,7 @@ query "treinamentos" verb=POST {
     text publico filters=trim|lower
     text? departamento_ids? filters=trim|max:500
     text? video_drive_id? filters=trim|max:100
+    text? video_fonte? filters=trim|lower
     int? video_duracao?
     int? video_percentual_minimo?
   }
@@ -124,9 +125,23 @@ query "treinamentos" verb=POST {
       value = ($input.video_percentual_minimo == null) ? 95 : $input.video_percentual_minimo
     }
 
+    var $fonte_final {
+      value = (($input.video_fonte == null) || ($input.video_fonte == "")) ? "drive" : $input.video_fonte
+    }
+
+    precondition (($fonte_final == "drive") || ($fonte_final == "youtube")) {
+      error_type = "inputerror"
+      error = "Fonte do video invalida. Use drive ou youtube."
+    }
+
     precondition (($video_final == null) || ((($video_final|strlen) >= 10) && (($video_final|strlen) <= 100) && (($video_final|contains:"/") == false) && (($video_final|contains:"?") == false) && (($video_final|contains:"&") == false) && (($video_final|contains:" ") == false))) {
       error_type = "inputerror"
-      error = "Link do video invalido. Cole o link de compartilhamento do Google Drive."
+      error = "Link do video invalido. Cole o link do Google Drive ou do YouTube."
+    }
+
+    precondition (($video_final == null) || ($fonte_final == "drive") || (($video_final|strlen) == 11)) {
+      error_type = "inputerror"
+      error = "Link do YouTube invalido."
     }
 
     precondition (($video_final == null) || (($duracao_final >= 10) && ($duracao_final <= 36000))) {
@@ -150,6 +165,7 @@ query "treinamentos" verb=POST {
         publico           : $input.publico
         departamento_ids  : $departamentos_final
         video_drive_id    : $video_final
+        video_fonte       : $fonte_final
         video_duracao     : $duracao_final
         video_percentual_minimo: $percentual_final
         ativo             : true

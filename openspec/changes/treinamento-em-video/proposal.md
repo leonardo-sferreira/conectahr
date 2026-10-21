@@ -2,7 +2,7 @@
 
 ## Why
 
-O usuário pediu (21/10/2026) que o RH possa publicar os treinamentos em vídeo pela plataforma, ligados ao Google Drive. Também pediu que o sistema meça se a pessoa assistiu e só libere "Concluir treinamento" quando o vídeo acabar.
+O usuário pediu (21/10/2026) que o RH possa publicar os treinamentos em vídeo pela plataforma, ligados ao Google Drive. Depois, como alternativa sem configurar nada no Google Cloud, pediu também o YouTube: as duas opções ficam disponíveis. Também pediu que o sistema meça se a pessoa assistiu e só libere "Concluir treinamento" quando o vídeo acabar.
 
 Hoje o treinamento acontece fora e o RH registra a conclusão de cada turma (change `treinamentos-obrigatorios`). Para a orientação anual sobre assédio (Lei 14.457/2022) e para os treinamentos de integração, um vídeo resolve, e a prova de que a pessoa assistiu vira um registro do próprio sistema.
 
@@ -12,6 +12,7 @@ Hoje o treinamento acontece fora e o RH registra a conclusão de cada turma (cha
 - **Progresso** (D2): tabela `treinamento_progresso` e `meus_treinamentos/{id}/progresso` POST. O backend recusa progresso mais rápido que 2x o tempo real e nunca diminui o que foi gravado.
 - **Conclusão pela pessoa** (D3): `meus_treinamentos/{id}/concluir` POST, só depois do mínimo assistido, com a validade calculada como no registro do RH. Depois, o progresso é zerado.
 - **Player** (D4): componente do Streamlit com o vídeo direto do Drive. Conta o ponto mais longe assistido sem pular, limita a velocidade a 2x e grava o progresso.
+- **YouTube** (D6): o mesmo campo aceita o link de um vídeo "não listado" do YouTube. O player oficial do YouTube faz o mesmo controle, sem chave de API; a duração vem da prévia no modal do RH.
 - **Telas** (D5):
   - o modal do treinamento (RH) ganha o link do Drive e o mínimo;
   - "Meus treinamentos" ganha o player e "Concluir treinamento".
@@ -19,7 +20,7 @@ Hoje o treinamento acontece fora e o RH registra a conclusão de cada turma (cha
 ## Non-goals
 
 - Upload do vídeo pelo ConectaRH: o arquivo fica no Drive da empresa, e o RH cola o link.
-- YouTube, Vimeo e outros serviços: só o Google Drive, como pedido.
+- Vimeo e outros serviços: só o Google Drive e o YouTube.
 - Prova ou questionário depois do vídeo.
 - Garantia de atenção: o sistema mede o tempo assistido, não se a pessoa prestou atenção. Uma aba tocando sozinha conta.
 
@@ -40,7 +41,7 @@ Hoje o treinamento acontece fora e o RH registra a conclusão de cada turma (cha
 - **Frontend:**
   - novos: `drive_video.py` e `video_player.py`;
   - alterados: `api_client.py`, `treinamentos_modelo.py`, `pagina_treinamentos.py` e `pagina_meus_treinamentos.py`.
-- **Configuração:** chave de API do Google em `st.secrets["google"]["drive_api_key"]` (fora do repositório; exemplo em `.streamlit/secrets.toml.example`).
+- **Configuração:** só para o Drive, chave de API do Google em `st.secrets["google"]["drive_api_key"]` (fora do repositório; exemplo em `.streamlit/secrets.toml.example`). O YouTube não pede configuração.
 - **Figma:** "Meus treinamentos — assistir o vídeo" (557:1383) e "Modal/Novo treinamento — com vídeo" (557:1477), na seção 22.
 - **Testes:**
   - `tools/testar_treinamentos.py`;

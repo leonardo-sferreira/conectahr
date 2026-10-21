@@ -2,7 +2,7 @@
 Página "Meus treinamentos" (Figma 550:1415 e 557:1383; changes treinamentos-obrigatorios e treinamento-em-video), no
 menu de todos os perfis.
 
-No alto, quando há treinamento obrigatório com vídeo: o player (`video_player`), o quanto a pessoa já assistiu e
+No alto, quando há treinamento obrigatório com vídeo (Google Drive ou YouTube): o player (`video_player`), o quanto a pessoa já assistiu e
 "Concluir treinamento", liberado só depois do mínimo pedido (o backend confere de novo). Com mais de um vídeo, a
 pessoa escolhe qual; o primeiro é o mais urgente. Depois, "Obrigatórios para você": cada treinamento obrigatório
 para todos ou para o setor da pessoa, com a situação (vencido, pendente, vencendo, em dia) e a validade;
@@ -37,13 +37,17 @@ def _cartao_video(videos: list[dict], token: str) -> None:
         else:
             atual = videos[0]
         st.html(f'<p class="crh-cfg-titulo">{html.escape(atual["nome"])}</p><p class="crh-meta">{html.escape(atual["detalhe"])}</p>')
-        chave = chave_api()
-        if not chave:
-            alerta(st.empty(), "atencao", "O vídeo ainda não pode tocar aqui: falta configurar o Google Drive no app. Avise o RH.")
-            return
+        src = None
+        if atual["fonte"] == "drive":
+            # Só o Drive precisa da chave de API; o YouTube toca sem configuração.
+            chave = chave_api()
+            if not chave:
+                alerta(st.empty(), "atencao", "O vídeo ainda não pode tocar aqui: falta configurar o Google Drive no app. Avise o RH.")
+                return
+            src = url_video(atual["video_id"], chave)
         guardado = f"mt_vistos_{atual['id']}"
         vistos = max(atual["vistos"], st.session_state.get(guardado, 0))
-        enviado = player_video(f'{atual["id"]}_{st.session_state.get("mt_rodada", 0)}', url_video(atual["video_id"], chave), atual["duracao"], atual["minimo"], vistos, atual["posicao"])
+        enviado = player_video(f'{atual["id"]}_{st.session_state.get("mt_rodada", 0)}', atual["fonte"], atual["video_id"], src, atual["duracao"], atual["minimo"], vistos, atual["posicao"])
         slot = st.empty()
         # Cada envio do navegador chega uma vez: o "n" muda a cada envio.
         if enviado and enviado.get("n") != st.session_state.get("mt_ultimo_envio"):
