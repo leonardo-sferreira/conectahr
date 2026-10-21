@@ -12,6 +12,26 @@ que faltavam estão em:
 
 ## Levantamento do Figma em 09/10/2026
 
+### Avaliações da equipe — F15 (tarefa 85)
+
+Implementação parcial autorizada em 21/10/2026, detalhada na change `avaliacoes-da-equipe`.
+Figma disponível e conferido: seção `248:722`, tela `248:744` e modal `248:1019`.
+`pagina_avaliacoes_equipe.py` entra na navegação como `/avaliacoes-da-equipe`. A fonte principal
+é `minhas_avaliacoes`, restrita ao `user_id` autenticado e à relação `gestor`; o organograma só
+resolve nome/cargo, sem autorizar ações nem aplicar o escopo do F14.
+
+Seleção de ciclo, notas de 1 a 5, comentários por competência, rascunho e envio usam os contratos
+existentes, reaproveitando as validações da Trajetória. O comentário geral é salvo somente no envio.
+O número de liderados conta pessoas distintas nas atribuições não canceladas do ciclo; enviadas
+e a fazer contam as avaliações correspondentes. Os indicadores não descrevem toda a equipe do F14.
+Sem autoavaliação confirmável ou contestações consultáveis pelo Gestor, a tela usa `—`, não zero.
+Não mostra um prazo do Gestor a partir da data genérica de fim do ciclo.
+
+**FIGMA:** Gestor responde contestação e pode manter/revisar nota.
+**BACKEND ATUAL:** somente RH/Admin revisa contestação e a revisão não altera a avaliação original.
+A aba Contestações é informativa, sem chamadas ou ações proibidas. Essa dependência permanece aberta;
+nenhum endpoint ou dado do Xano foi alterado. Evidência: `docs/evidencias/frontend-avaliacoes-equipe.md`.
+
 ### Implementação de Minha equipe (tarefa 57)
 
 Implementado em 20/10/2026, conforme o pedido: a tela do Gestor considera somente os subordinados diretos. A fonte é

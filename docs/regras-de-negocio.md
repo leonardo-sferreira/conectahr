@@ -579,6 +579,22 @@ O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) s
 - `avaliacoes/{id}/competencias` GET: as competências ativas do nível do avaliado (todas as ativas se o nível não tiver nenhuma) e as respostas já salvas (`xano-workspace/api/conecta_rh_colaboradores/avaliacoes/id/competencias_GET.xs`).
 - Na tela: enviar exige nota em todas as competências e a confirmação de que o envio é definitivo; a contestação só é oferecida para avaliação sem contestação aberta. Meta ou PDI com prazo vencido aparece como Atrasada/Atrasado.
 
+### 10.6.1 Avaliações da equipe — F15 parcial
+
+**Tela F15 do Gestor (21/10/2026, change `avaliacoes-da-equipe`):** a página "Avaliações da equipe"
+consulta `minhas_avaliacoes`, apresentando apenas atribuições do usuário autenticado com relação
+`gestor`, sem usar departamento ou a equipe do F14 como autorização. Nome e cargo vêm do organograma,
+quando disponíveis. Salvar persiste notas/comentários por competência; o comentário geral só é salvo
+no envio. Antes de escrever, consulta novamente a avaliação; o backend mantém a decisão de acesso
+e estado. Usa as mesmas validações de respostas e preenchimento da Trajetória.
+
+Os indicadores são por ciclo e por atribuição: liderados distintos sem as canceladas, avaliações
+enviadas e avaliações pendentes/em andamento. Autoavaliação confirmável, prazo específico do Gestor
+e contestações não estão disponíveis nesses contratos. Contestações abertas mostram `—`, nunca zero
+inferido. **Divergência pendente:** o Figma prevê Gestor respondendo e mantendo/revisando nota; o
+backend atual permite revisão só a RH/Admin, sem alterar a avaliação original. A aba do Gestor é
+informativa e não consulta os endpoints de contestações. Nenhuma regra ou endpoint de backend mudou.
+
 ### 10.7 Ciclo anual de metas (change `ciclo-de-metas`, desde 20/10/2026)
 
 - **Ciclo** (`ciclo_metas`): um por ano, com três janelas iguais para toda a empresa: 1) definir as metas, 2) acompanhamento, 3) fechamento. Sugestão da tela: fevereiro, junho e outubro, o mês inteiro. As datas são do ano do ciclo, cada fim é igual ou depois do início e cada etapa começa depois do fim da anterior. Só RH e Admin criam e alteram; as datas só mudam antes de a etapa 1 abrir (`xano-workspace/api/conecta_rh_colaboradores/ciclos_metas_POST.xs` e `ciclos_metas/id_PATCH.xs`).

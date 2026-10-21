@@ -865,6 +865,21 @@ def minha_trajetoria(token: str) -> dict:
     return _get("minha_trajetoria", token, GRUPO_COLABORADORES)
 
 
+def ciclos_avaliacao(token: str) -> dict:
+    """GET ciclos_avaliacao -> {ciclos} ativos (qualquer perfil autenticado)."""
+    return _get("ciclos_avaliacao", token, GRUPO_COLABORADORES)
+
+
+def minhas_avaliacoes(token: str) -> dict:
+    """GET minhas_avaliacoes -> {avaliacoes} atribuídas ao próprio avaliador."""
+    return _get("minhas_avaliacoes", token, GRUPO_COLABORADORES)
+
+
+def avaliacao(token: str, avaliacao_id: int) -> dict:
+    """GET avaliacoes/{id} -> {avaliacao, respostas}; acesso decidido pelo backend."""
+    return _get(f"avaliacoes/{int(avaliacao_id)}", token, GRUPO_COLABORADORES)
+
+
 def competencias_avaliacao(token: str, avaliacao_id: int) -> dict:
     """GET avaliacoes/{id}/competencias -> {competencias, respostas, avaliado_nome} (só o avaliador designado)."""
     return _get(f"avaliacoes/{int(avaliacao_id)}/competencias", token, GRUPO_COLABORADORES)

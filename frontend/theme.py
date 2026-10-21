@@ -730,6 +730,17 @@ _APP_CSS = f"""
   div[class*="st-key-rh_linf_me_"] {{ background: #FFFBF0 !important; }}
   .st-key-me_estado {{ padding: 22px; border: 1px solid {BORDA}; border-radius: 14px; background: white; }}
 
+  /* F15 (248:744/248:1019): abas e escala usam os mesmos tokens dos seletores existentes. */
+  .st-key-ae_aba [data-testid="stButtonGroup"] {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 4px; width: fit-content; }}
+  .st-key-ae_aba button {{ border: none !important; background: transparent; border-radius: 9px !important; padding: 8px 14px; }}
+  .st-key-ae_aba button p {{ font: 500 14px 'Manrope', sans-serif; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-ae_aba button[aria-checked="true"] {{ background: {AMBAR} !important; }}
+  .st-key-ae_aba button[aria-checked="true"] p {{ color: {GRAFITE}; font-weight: 600; }}
+  div[class*="st-key-ae_campo_nota_"] [data-testid="stButtonGroup"] > div {{ gap: 8px; }}
+  div[class*="st-key-ae_campo_nota_"] button {{ flex: 1; height: 41px; border-radius: 10px !important; border: 1px solid {BORDA} !important; background: white; color: {GRAFITE}; }}
+  div[class*="st-key-ae_campo_nota_"] button p {{ font: 600 14px 'Manrope', sans-serif; color: {GRAFITE}; }}
+  div[class*="st-key-ae_campo_nota_"] button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; }}
+
   /* Meu Perfil (Figma 202:175): cartões com campos em duas colunas, pendências e organograma. */
   div[class*="st-key-perfil_card_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 24px 28px; gap: 14px; }}
   .st-key-perfil_card_pendencias {{ border-color: {AMBAR} !important; }}
@@ -1149,6 +1160,12 @@ _ESCURO_CSS = f"""
   .st-key-doc_pendentes div[class*="st-key-doc_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
   .st-key-doc_pendentes div[class*="st-key-doc_lin"] {{ border-color: {ESC_BORDA}; }}
   .st-key-rh_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-ae_aba [data-testid="stButtonGroup"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
+  .st-key-ae_aba button p {{ color: {ESC_TEXTO_2}; }}
+  .st-key-ae_aba button[aria-checked="true"] p {{ color: {GRAFITE}; }}
+  div[class*="st-key-ae_campo_nota_"] button {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO}; }}
+  div[class*="st-key-ae_campo_nota_"] button p {{ color: {ESC_TEXTO}; }}
+  div[class*="st-key-ae_campo_nota_"] button[aria-checked="true"] {{ background: {ESC_AMBAR_SUAVE} !important; border-color: {AMBAR} !important; }}
   div[class*="st-key-perfil_card_"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA}; }}
   .st-key-ponto_card_hoje, .st-key-ponto_card_saldo, .st-key-ponto_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   div[class*="st-key-ferias_lin_"], div[class*="st-key-pg_lin_"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
