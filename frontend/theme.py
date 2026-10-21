@@ -947,6 +947,16 @@ _APP_CSS = f"""
   .crh-cd-msg .t, .crh-cd-relato .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; white-space: pre-wrap; }}
   .crh-cd-relato {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; margin: 10px 0; }}
   .crh-cd-resumo {{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+  /* Riscos psicossociais (Figma 545:1274): mapa de risco por dimensão e setor. */
+  .crh-nr1-mapa {{ width: 100%; border-collapse: collapse; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; margin: 8px 0; }}
+  .crh-nr1-mapa th {{ text-align: left; font-size: 12px; font-weight: 600; color: {GRAFITE_SECUNDARIO}; padding: 8px 6px; }}
+  .crh-nr1-mapa td {{ padding: 7px 6px; border-top: 1px solid {BORDA}; }}
+  .crh-nr1-mapa td.d {{ font-weight: 500; }}
+  .crh-nr1-cel {{ display: inline-block; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; }}
+  .crh-nr1-cel.ok {{ background: #DCFCE7; color: {SUCESSO}; }}
+  .crh-nr1-cel.amb {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-nr1-cel.err {{ background: #FEE2E2; color: {ERRO}; }}
+  .crh-nr1-cel.neu {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
   /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
   .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
   .crh-av360-barra .barra {{ flex: 1; height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
@@ -1111,6 +1121,12 @@ _ESCURO_CSS = f"""
   .crh-alerta-inline {{ background: #3A1F1F !important; color: #FCA5A5 !important; }}
   .crh-cd-codigo, .crh-cd-msg, .crh-cd-relato {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; }}
   .crh-cd-msg.meu {{ background: {ESC_AMBAR_SUAVE} !important; }}
+  .crh-nr1-mapa, .crh-nr1-mapa td.d {{ color: {ESC_TEXTO} !important; }}
+  .crh-nr1-mapa td {{ border-color: {ESC_BORDA} !important; }}
+  .crh-nr1-cel.ok {{ background: #14301F !important; color: #86EFAC !important; }}
+  .crh-nr1-cel.amb {{ background: {ESC_AMBAR_SUAVE} !important; color: {AMBAR} !important; }}
+  .crh-nr1-cel.err {{ background: #3A1F1F !important; color: #FCA5A5 !important; }}
+  .crh-nr1-cel.neu {{ background: {ESC_FUNDO} !important; color: {ESC_TEXTO} !important; }}
   .crh-cd-codigo .c, .crh-cd-msg .t, .crh-cd-relato .t {{ color: {ESC_TEXTO} !important; }}
   div[class*="st-key-rh_lin_"][class*="_alerta"] {{ background: {ESC_AMBAR_SUAVE} !important; }}
   .crh-lgpd-resumo {{ background: {ESC_FUNDO} !important; }}
