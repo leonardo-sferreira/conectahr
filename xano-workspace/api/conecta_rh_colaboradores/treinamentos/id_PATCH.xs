@@ -14,6 +14,9 @@ query "treinamentos/{id}" verb=PATCH {
     bool obrigatorio
     text publico filters=trim|lower
     text? departamento_ids? filters=trim|max:500
+    text? video_drive_id? filters=trim|max:100
+    int? video_duracao?
+    int? video_percentual_minimo?
     bool ativo
   }
 
@@ -120,6 +123,33 @@ query "treinamentos/{id}" verb=PATCH {
       error = "Escolha pelo menos um departamento."
     }
 
+    var $video_final {
+      value = (($input.video_drive_id == null) || ($input.video_drive_id == "")) ? null : $input.video_drive_id
+    }
+
+    var $duracao_final {
+      value = ($video_final == null) ? 0 : (($input.video_duracao == null) ? 0 : $input.video_duracao)
+    }
+
+    var $percentual_final {
+      value = ($input.video_percentual_minimo == null) ? 95 : $input.video_percentual_minimo
+    }
+
+    precondition (($video_final == null) || ((($video_final|strlen) >= 10) && (($video_final|strlen) <= 100) && (($video_final|contains:"/") == false) && (($video_final|contains:"?") == false) && (($video_final|contains:"&") == false) && (($video_final|contains:" ") == false))) {
+      error_type = "inputerror"
+      error = "Link do video invalido. Cole o link de compartilhamento do Google Drive."
+    }
+
+    precondition (($video_final == null) || (($duracao_final >= 10) && ($duracao_final <= 36000))) {
+      error_type = "inputerror"
+      error = "Duracao do video invalida (de 10 segundos a 10 horas)."
+    }
+
+    precondition (($percentual_final >= 50) && ($percentual_final <= 100)) {
+      error_type = "inputerror"
+      error = "O minimo assistido vai de 50% a 100%."
+    }
+
     db.edit treinamento {
       field_name = "id"
       field_value = $treinamento.id
@@ -132,6 +162,9 @@ query "treinamentos/{id}" verb=PATCH {
         obrigatorio     : $input.obrigatorio
         publico         : $input.publico
         departamento_ids: $departamentos_final
+        video_drive_id  : $video_final
+        video_duracao   : $duracao_final
+        video_percentual_minimo: $percentual_final
         ativo           : $input.ativo
         updated_at      : "now"
       }

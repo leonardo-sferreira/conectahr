@@ -2,7 +2,8 @@
 change concluir-frontend-streamlit; LGPD: o navegador não deve mandar o IP de quem usa ao Google).
 
 Verifica:
-- nenhum endereço do Google Fonts (`googleapis.com`, `gstatic.com`) no frontend nem na configuração;
+- nenhum endereço do Google Fonts (`fonts.googleapis.com`, `fonts.gstatic.com`) no frontend nem na configuração (a API do
+  Google Drive, `www.googleapis.com`, é outro serviço: vídeos dos treinamentos, change treinamento-em-video);
 - cada `@font-face` de `frontend/theme.py` aponta para um arquivo `.woff2` válido em `frontend/static/fonts`;
 - todo peso de fonte usado no CSS tem o arquivo correspondente;
 - `server.enableStaticServing = true` em `.streamlit/config.toml` e as licenças (OFL) junto das fontes.
@@ -31,7 +32,7 @@ def conferir(ok: bool, descricao: str) -> None:
 
 
 arquivos = [*FRONTEND.rglob("*.py"), RAIZ / ".streamlit" / "config.toml"]
-externos = [f"{a.relative_to(RAIZ)}" for a in arquivos if re.search(r"googleapis\.com|gstatic\.com", a.read_text(encoding="utf-8"))]
+externos = [f"{a.relative_to(RAIZ)}" for a in arquivos if re.search(r"fonts\.googleapis\.com|fonts\.gstatic\.com", a.read_text(encoding="utf-8"))]
 conferir(not externos, f"nenhum endereço do Google Fonts no frontend ({externos or 'nenhum'})")
 
 tema = (FRONTEND / "theme.py").read_text(encoding="utf-8")

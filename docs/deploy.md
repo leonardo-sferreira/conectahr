@@ -28,7 +28,15 @@ Variáveis de ambiente do Xano (painel *Settings → Environment variables*; nun
 | `SESSAO_RETENCAO_DIAS`, `EMAIL_RETENCAO_DIAS`, `DESLIGADO_RETENCAO_DIAS` | Prazos de retenção da rotina diária | Não (180, 180 e 1825) |
 
 Segredos do Streamlit (`.streamlit/secrets.toml` na máquina ou nos *Secrets* do serviço de
-hospedagem): `xano.auth_base_url`, a URL da API do grupo de autenticação.
+hospedagem): `xano.auth_base_url`, a URL da API do grupo de autenticação, e (opcional) `google.drive_api_key`,
+a chave de API do Google para os vídeos dos treinamentos (change `treinamento-em-video`). Sem ela, o resto funciona e
+"Meus treinamentos" mostra um aviso no lugar do vídeo. Para criar a chave:
+
+1. No Google Cloud (da conta da empresa), crie um projeto e ligue a **Google Drive API**.
+2. Em *Credenciais*, crie uma **chave de API**. Restrinja a chave à Google Drive API e, em *Restrições de aplicativo*,
+   a *Referenciadores HTTP* com o endereço do app (por exemplo `https://seu-app.streamlit.app/*`).
+3. Cole a chave nos *Secrets* da hospedagem, na seção `[google]`. Nunca no repositório.
+4. No Drive, cada vídeo fica como "qualquer pessoa com o link", em MP4 (H.264); 720p basta.
 
 ## Feature flags
 
