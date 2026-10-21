@@ -48,6 +48,7 @@ from pagina_meu_onboarding import pagina_meu_onboarding
 from pagina_minha_equipe import pagina_minha_equipe
 from pagina_avaliacoes_equipe import pagina_avaliacoes_equipe
 from pagina_delegacoes import pagina_delegacoes
+from pagina_indicadores_equipe import pagina_indicadores_equipe
 from pagina_metas_ciclo import pagina_metas_ciclo
 from pagina_metas_equipe import pagina_metas_equipe
 from pagina_meus_treinamentos import pagina_meus_treinamentos
@@ -218,6 +219,7 @@ PG_CENTRAL = st.Page(pagina_central, title="Central de Pendências", url_path="c
 PG_MINHA_EQUIPE = st.Page(pagina_minha_equipe, title="Minha equipe", url_path="minha-equipe")
 PG_AVALIACOES_EQUIPE = st.Page(pagina_avaliacoes_equipe, title="Avaliações da equipe", url_path="avaliacoes-da-equipe")
 PG_DELEGACOES = st.Page(pagina_delegacoes, title="Delegações", url_path="delegacoes")
+PG_INDICADORES_EQUIPE = st.Page(pagina_indicadores_equipe, title="Indicadores da equipe", url_path="indicadores-da-equipe")
 PG_AUSENCIAS = st.Page(pagina_ausencias, title="Ausências", url_path="ausencias")
 PG_COLABORADORES = st.Page(pagina_colaboradores, title="Colaboradores", url_path="colaboradores")
 PG_USUARIOS = st.Page(pagina_usuarios, title="Usuários e perfis", url_path="usuarios-e-perfis")
@@ -246,7 +248,7 @@ PG_MEUS_TREINAMENTOS = st.Page(pagina_meus_treinamentos, title="Meus treinamento
 PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AVALIACOES_EQUIPE, PG_DELEGACOES, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AVALIACOES_EQUIPE, PG_DELEGACOES, PG_INDICADORES_EQUIPE, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -286,6 +288,7 @@ _PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO
 _PAGINAS_DO_MENU["Minha equipe"] = PG_MINHA_EQUIPE
 _PAGINAS_DO_MENU["Avaliações da equipe"] = PG_AVALIACOES_EQUIPE
 _PAGINAS_DO_MENU["Delegações"] = PG_DELEGACOES
+_PAGINAS_DO_MENU["Indicadores da equipe"] = PG_INDICADORES_EQUIPE
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
