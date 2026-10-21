@@ -228,7 +228,7 @@ def pagina_treinamentos() -> None:
         with st.container(key="cfg_abas", width="content"):
             aba = st.segmented_control("Aba", ABAS, default=ABAS[0], required=True, key="tr_aba", label_visibility="collapsed")
         st.space("stretch")
-        if st.button("Novo treinamento", type="primary", key="tr_novo"):
+        if st.button("Novo treinamento", type="primary", key="tr_novo", width="content"):
             st.session_state.tr_modal = ("novo", None)
             st.rerun()
     {"Matriz": lambda: _aba_matriz(dados), "Catálogo": lambda: _aba_catalogo(dados, token), "Registrar conclusão": lambda: _aba_registrar(dados, token, hoje),

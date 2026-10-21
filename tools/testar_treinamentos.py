@@ -72,7 +72,7 @@ api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem o
 api_client.treinamentos = lambda token: copy.deepcopy(estado.get("dados", DADOS))
 api_client.salvar_treinamento = lambda token, dados, tid=None: chamadas.append(("salvar", tid, dados)) or {"sucesso": True}
 api_client.registrar_conclusao_treinamento = lambda token, *a: chamadas.append(("registrar", *a)) or {"registradas": 2, "puladas": 1, "valido_ate": iso(365)}
-api_client.meus_treinamentos = lambda token: copy.deepcopy(MEUS)
+api_client.meus_treinamentos = lambda token: copy.deepcopy(estado.get("meus", MEUS))
 
 falhas: list[str] = []
 total = 0
@@ -192,6 +192,9 @@ print("\nMeus treinamentos (Figma 550:1415)")
 at = app("meus-treinamentos", perfil="COLABORADOR")
 t = texto(at)
 conferir("Obrigatórios para você" in t and "Pendente" in t and "Em dia" in t and "Ver certificado" in t, "obrigatórios, situação e certificado")
+at = app("meus-treinamentos", perfil="COLABORADOR", meus={"hoje": HOJE.isoformat(), "obrigatorios": [], "conclusoes": []})
+conferir("Nenhum treinamento obrigatório para você agora." in texto(at) and "Nenhum treinamento registrado ainda." in texto(at) and not at.exception,
+         "sem obrigatórios nem histórico: mensagens, sem erro")
 at = app("meus-treinamentos", perfil="COLABORADOR", colaborador_id=None)
 conferir("não tem ficha" in texto(at), "conta sem ficha: aviso")
 
