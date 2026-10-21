@@ -1205,3 +1205,56 @@ def status_operacional(token: str) -> dict:
 def processar_rotina_diaria(token: str) -> dict:
     """POST rotinas/processar_diarias -> {aplicadas: contagens do que mudou}. Idempotente."""
     return _post("rotinas/processar_diarias", {}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Canal de denúncias (change canal-de-denuncias). As três primeiras são públicas: vão sem token, e nada liga a
+# denúncia a uma conta.
+# ---------------------------------------------------------------------------
+def enviar_denuncia(tipo: str, relato: str, quando: str | None, envolvidos: str | None, identificacao: str | None) -> dict:
+    """POST denuncias (público) -> {protocolo, codigo}. O código só existe nesta resposta."""
+    return _post("denuncias", {"tipo": tipo, "relato": relato, "quando": quando or None, "envolvidos": envolvidos or None,
+                               "identificacao": identificacao or None}, None, GRUPO_COLABORADORES)
+
+
+def acompanhar_denuncia(codigo: str) -> dict:
+    """POST denuncias/acompanhar (público) -> {protocolo, tipo, status, recebida_em, resultado, parecer, mensagens}."""
+    return _post("denuncias/acompanhar", {"codigo": codigo}, None, GRUPO_COLABORADORES)
+
+
+def responder_denuncia(codigo: str, texto: str) -> dict:
+    """POST denuncias/responder (público): quem denunciou escreve para a comissão."""
+    return _post("denuncias/responder", {"codigo": codigo, "texto": texto}, None, GRUPO_COLABORADORES)
+
+
+def denuncias(token: str) -> dict:
+    """GET denuncias -> {contagens, denuncias} (só a comissão de ética)."""
+    return _get("denuncias", token, GRUPO_COLABORADORES)
+
+
+def denuncia(token: str, denuncia_id: int) -> dict:
+    """GET denuncias/{id} -> {denuncia (com a identificação), mensagens}. Cada abertura fica na auditoria."""
+    return _get(f"denuncias/{int(denuncia_id)}", token, GRUPO_COLABORADORES)
+
+
+def mensagem_denuncia(token: str, denuncia_id: int, texto: str) -> dict:
+    """POST denuncias/{id}/mensagem: a comissão escreve para quem denunciou; a primeira passa a em apuração."""
+    return _post(f"denuncias/{int(denuncia_id)}/mensagem", {"texto": texto}, token, GRUPO_COLABORADORES)
+
+
+def concluir_denuncia(token: str, denuncia_id: int, resultado: str, parecer: str) -> dict:
+    """POST denuncias/{id}/concluir: procedente, improcedente ou inconclusiva, com o parecer final."""
+    return _post(f"denuncias/{int(denuncia_id)}/concluir", {"resultado": resultado, "parecer": parecer}, token, GRUPO_COLABORADORES)
+
+
+def comissao_etica(token: str) -> dict:
+    """GET comissao_etica -> {membros: [{id, user_id, nome, perfil}]} (só o Admin)."""
+    return _get("comissao_etica", token, GRUPO_COLABORADORES)
+
+
+def incluir_comissao_etica(token: str, user_id: int) -> dict:
+    return _post("comissao_etica", {"user_id": int(user_id)}, token, GRUPO_COLABORADORES)
+
+
+def remover_comissao_etica(token: str, membro_id: int) -> dict:
+    return _post(f"comissao_etica/{int(membro_id)}/remover", {}, token, GRUPO_COLABORADORES)

@@ -62,6 +62,20 @@ Dado comum, mas de **risco alto** porque monitora o trabalhador e pode embasar d
 
 **Risco residual:** baixo a médio.
 
+## 4. Canal de denúncias (Lei 14.457/2022)
+
+O relato é texto livre: pode trazer dado sensível e cita terceiros (a pessoa denunciada, testemunhas). Base: obrigação legal (Lei 14.457/2022) e legítimo interesse. Change `canal-de-denuncias` (20/10/2026).
+
+| Risco | Prob. | Imp. | Nível | Medida | Situação |
+|---|---|---|---|---|---|
+| **R4.1** Identificar quem fez uma denúncia anônima | 2 | 3 | Alto | Canal público, que não lê token nem guarda conta, horário ou IP; só a data; código de acompanhamento guardado como hash e mostrado uma vez; auditoria do envio sem usuário | **Feita** |
+| **R4.2** A denúncia ser lida por quem é denunciado ou por quem não deveria | 2 | 3 | Alto | Só membros ativos da comissão de ética (escolhidos pelo Admin) leem; RH e Admin não têm acesso por perfil; cada abertura na auditoria | **Feita**; a comissão precisa de membros de áreas diferentes (decisão da empresa) |
+| **R4.3** Retaliação contra quem se identificou | 2 | 3 | Alto | A identificação só aparece no detalhe, para a comissão; aviso no canal de que a retaliação é proibida | **Feita** na tela; a apuração de retaliação é do processo da empresa |
+| **R4.4** Perda do código e da conversa | 2 | 1 | Baixo | Aviso de que o código não aparece de novo; nova denúncia pode citar o protocolo | **Feita** |
+| **R4.5** Relato guardado além do necessário | 2 | 2 | Médio | Prazo de 5 anos da conclusão e anonimização do relato (retenção F20) | **Planejada** |
+
+**Risco residual:** médio (depende da composição da comissão).
+
 ## Riscos residuais gerais
 
 | Risco | Situação e decisão |

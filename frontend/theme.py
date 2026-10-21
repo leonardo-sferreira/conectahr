@@ -261,6 +261,7 @@ _BASE_CSS = f"""
 
   /* Link do aviso abaixo do cartão de login (Figma 282:868). */
   .st-key-crh_link_aviso {{ margin-top: 18px; align-items: center; gap: 6px; }}
+  .st-key-crh_link_canal {{ margin-top: 2px; align-items: center; gap: 6px; }}
   .crh-link-aviso-rotulo {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {CINZA_CLARO}; }}
   .st-key-btn_link_aviso button p {{ color: {AMBAR} !important; }}
 
@@ -936,6 +937,16 @@ _APP_CSS = f"""
   .crh-lgpd-detalhe {{ margin: 2px 0 12px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; white-space: pre-wrap; }}
   /* Admin — tela de integrações (Figma 249:7847): aviso em rosa do cartão Modelos. */
   .crh-alerta-inline {{ background: #FDE2E2; color: {ERRO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 10px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
+  /* Canal de denúncias (Figma 540:1194): código mostrado uma vez, conversa e relato. */
+  .crh-cd-codigo {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 14px 16px; text-align: center; margin: 8px 0 10px; }}
+  .crh-cd-codigo .r {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cd-codigo .c {{ margin: 4px 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: 1px; color: {GRAFITE}; }}
+  .crh-cd-msg {{ background: {MARFIM}; border-radius: 12px; padding: 10px 14px; margin: 8px 0; }}
+  .crh-cd-msg.meu {{ background: {AMBAR_BG}; }}
+  .crh-cd-msg .q, .crh-cd-relato .q {{ margin: 0 0 4px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-cd-msg .t, .crh-cd-relato .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; white-space: pre-wrap; }}
+  .crh-cd-relato {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; margin: 10px 0; }}
+  .crh-cd-resumo {{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
   /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
   .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
   .crh-av360-barra .barra {{ flex: 1; height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
@@ -1098,6 +1109,9 @@ _ESCURO_CSS = f"""
   .crh-av360-barra .v {{ color: {ESC_TEXTO} !important; }}
   .crh-nota-neutra {{ background: {ESC_FUNDO} !important; color: {ESC_TEXTO} !important; }}
   .crh-alerta-inline {{ background: #3A1F1F !important; color: #FCA5A5 !important; }}
+  .crh-cd-codigo, .crh-cd-msg, .crh-cd-relato {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; }}
+  .crh-cd-msg.meu {{ background: {ESC_AMBAR_SUAVE} !important; }}
+  .crh-cd-codigo .c, .crh-cd-msg .t, .crh-cd-relato .t {{ color: {ESC_TEXTO} !important; }}
   div[class*="st-key-rh_lin_"][class*="_alerta"] {{ background: {ESC_AMBAR_SUAVE} !important; }}
   .crh-lgpd-resumo {{ background: {ESC_FUNDO} !important; }}
   .crh-lgpd-resumo b, .crh-lgpd-detalhe {{ color: {ESC_TEXTO} !important; }}

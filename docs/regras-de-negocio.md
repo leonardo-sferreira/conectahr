@@ -25,6 +25,7 @@
 16. [Contratos específicos e compliance documental](#16-contratos-específicos-e-compliance-documental)
 17. [Experiência e produtividade](#17-experiência-e-produtividade)
 18. [Proteção de dados (LGPD)](#18-proteção-de-dados-lgpd)
+19. [Canal de denúncias](#19-canal-de-denúncias)
 
 ---
 
@@ -899,6 +900,26 @@ A spec principal (`openspec/specs/conectahr/spec.md`) tem os requisitos de prote
 **Já implementado e descrito acima:** guarda de acesso e sessão (2.7), anonimato da pesquisa de clima por agregação (11.6) alerta de troca de e-mail, mascaramento de dados pessoais na auditoria (dados bancários, salário e e-mail) e motivo de ausência em lista fechada com recusa de CID (2.7). **Ainda não implementado:** auditoria de acesso a arquivos sensíveis e confirmação de que as imagens são privadas, só em parte (tarefas 4.10 e 4.12), hash dos códigos de acesso (4.13), mínimo de pessoas nos indicadores (4.14), direitos do titular (4.16 a 4.19) e retenção e anonimização (4.20 a 4.23). A documentação de governança está em [`docs/lgpd/`](lgpd/): registro de operações, aviso de privacidade, plano de incidentes, RIPD, operadores e teste de legítimo interesse.
 
 ---
+
+## 19. Canal de denúncias
+
+Change `canal-de-denuncias` (desde 20/10/2026), para a Lei 14.457/2022: canal com anonimato, acompanhamento e apuração por uma comissão. Figma: seção 20 (540:1194).
+
+### 19.1 Entidades
+
+- **denuncia** (`xano-workspace/table/denuncia.xs`): protocolo (`DEN-<id>`), `codigo_hash` (HMAC-SHA256 do código de acompanhamento, índice único), `tipo` (`assedio_moral`, `assedio_sexual`, `discriminacao`, `conduta_antietica`, `fraude`, `seguranca`, `outro`), `relato` (20 a 4000), `quando` e `envolvidos` (opcionais), `identificada` e `identificacao` (nome e contato digitados, opcionais), `recebida_em` (só a data), `status` (`nova`, `em_apuracao`, `concluida`), `resultado` (`procedente`, `improcedente`, `inconclusiva`), `parecer` e `concluida_em`. **Sem conta, colaborador, `created_at` nem horário.**
+- **denuncia_mensagem**: `autor` (`denunciante` ou `comissao`), `texto` e `enviada_em` (só a data), sem conta de quem escreveu.
+- **comissao_etica**: `user_id` (único), `incluido_por_user_id`, `ativo`.
+
+### 19.2 Regras
+
+- **Canal público** (`denuncias` POST, `denuncias/acompanhar` e `denuncias/responder`): funciona sem login, também pelo link da tela Entrar. A tela chama sempre sem token, mesmo logada; o backend não lê token. O envio devolve o protocolo e o código de 16 sinais (alfabeto sem sinais parecidos), que só existe nessa resposta; o banco guarda só o hash. O código vale com ou sem hífens, em maiúsculas ou minúsculas. Acompanhar devolve situação, resultado, parecer e a conversa (sem a identificação); responder só antes da conclusão. Cada envio e cada resposta ficam na auditoria **sem usuário**, e a comissão recebe aviso no sino, sem detalhe.
+- **Comissão** (`denuncias` GET, `denuncias/{id}` GET, `denuncias/{id}/mensagem` e `denuncias/{id}/concluir`): só membro ativo de `comissao_etica`, qualquer que seja o perfil; RH e Admin não têm acesso por perfil. Cada abertura do detalhe fica na auditoria (`abrir_denuncia`). A primeira mensagem passa a denúncia de `nova` para `em_apuracao`. Concluir exige o resultado e o parecer (10+ caracteres) e não reabre; a auditoria guarda o resultado, sem o texto.
+- **Membros** (`comissao_etica` GET e POST e `comissao_etica/{id}/remover`): só o Admin inclui uma conta ativa (reativa quem já foi membro) e remove (só desativa); ambos auditados; quem entra recebe aviso. `auth/me` devolve `membro_comissao_etica`, e o menu mostra "Denúncias" só aos membros.
+
+### 19.3 Telas
+
+"Canal de denúncias" (menu de todos e público): formulário com "Quero me identificar" (desligado: anônima), "Acompanhar uma denúncia" pelo código e "Como funciona"; o código aparece num modal que só fecha em "Já guardei o código". "Denúncias" (comissão): indicadores, abas "Em aberto" e "Concluídas", filtro de tipo, "Abrir →" com relato, identificação, conversa e mensagem, e "Concluir apuração". "Usuários e perfis" (Admin): cartão "Comissão de ética".
 
 ## Lacunas de escopo conhecidas (fora deste levantamento)
 

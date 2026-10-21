@@ -113,6 +113,9 @@ jobs:
       - name: Testes de Integrações e e-mails
         run: python tools/testar_integracoes.py
 
+      - name: Testes do Canal de denúncias
+        run: python tools/testar_denuncias.py
+
       - name: Testes da Trajetória
         run: python tools/testar_trajetoria.py
 
