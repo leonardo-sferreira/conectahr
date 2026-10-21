@@ -12,6 +12,46 @@ que faltavam estão em:
 
 ## Levantamento do Figma em 09/10/2026
 
+### Implementação de Minha equipe (tarefa 57)
+
+Implementado em 20/10/2026, conforme o pedido: a tela do Gestor considera somente os subordinados diretos. A fonte é
+`folha_ponto/pessoas`: identifica o colaborador autenticado pela linha `e_voce` e seleciona quem tem
+`superior_colaborador_id` igual ao seu `id`, excluindo a própria pessoa e desligados. Não usa `minha_equipe`
+nem inclui pessoas apenas pelo departamento. Este filtro de apresentação não amplia a autorização do backend.
+
+O ponto usa `folha_ponto/mes` nos meses abrangidos pela semana de segunda a domingo, no horário de Brasília,
+e reaproveita `folha_modelo.espelho_da_pessoa`. O indicador conta pessoas com ao menos um dia anterior a hoje
+com situação `INCOMPLETO`, `SEM REGISTRO` ou `FALTA INJUSTIFICADA` (inclusive na parte da semana que está
+em mês encerrado); uma jornada em andamento hoje não é incompleta. Só aparece "Completo" com registro completo
+ou ajustado na semana e sem problema anterior; sem evidência aplicável, aparece "—". As pendências cruzam as filas
+de férias e ausências de `central_de_tarefas` e `correcoes_ponto`, sempre pelos IDs dos subordinados diretos.
+Desligamentos (decisão exclusiva do RH), documentos pessoais e avaliações não compõem pedidos para decidir.
+
+Cada consulta complementar pode falhar isoladamente: dado indisponível aparece como indisponível, sem virar
+zero nem esconder a lista de pessoas. O cache curto fica restrito à sessão e é invalidado na troca de conta.
+O filtro `contains` em lista nas filas de `central_de_tarefas` permanece uma limitação conhecida: mesmo com
+HTTP 200, pode omitir férias e ausências pendentes do Gestor e subcontar "Pedidos para decidir". Os números
+refletem apenas as filas recebidas; não há compensação por outra fonte nem alteração de endpoint nesta tarefa.
+
+`pagina_minha_equipe.py` está registrada no `app.py` como `/minha-equipe`, com acesso de apresentação só ao
+perfil Gestor. "Ver →" usa `ir_central`, sem filtro por liderado e sem mudar a Central. A autorização das
+consultas continua no backend. O cabeçalho resolve o departamento da ficha do Gestor pelo organograma, sem
+usá-lo para ampliar a equipe. Se a fonte falhar ou não tiver sido consultada por não haver liderados, usa "—".
+
+Férias da tabela e do bloco de próximos 90 dias vêm de `ferias_equipe`, da data de hoje até hoje + 89 dias,
+com interseção inclusiva do período, só dos IDs dos liderados e com status `Aprovada` ou `Pendente`.
+"De férias agora" conta pessoas distintas com férias aprovadas que cobrem hoje; períodos pendentes não contam.
+O filtro Situação usa os status presentes nos liderados; a busca filtra o nome. Os indicadores e o bloco de férias
+mantêm o conjunto completo da equipe. As linhas com ponto incompleto ou ausência em análise ganham destaque,
+e pedidos recebidos aparecem em etiquetas. Nenhum dado bancário, CPF ou documento pessoal é renderizado.
+
+O F14 (seção 248:386 e tela 248:409) foi lido pelo MCP e conferido visualmente em 20/10/2026. A tela reutiliza
+hero, indicadores, tabela e cartões do `theme.py`, com ajustes restritos a esta página e cores escuras dos tokens
+existentes. O menu e a barra da conta preservam diferenças já existentes no aplicativo (itens adicionais e controle
+de tema). Não foi introduzido filtro de pessoa na Central. Evidências e diferenças em
+`docs/evidencias/frontend-minha-equipe.md`. A validação local usa exclusivamente contas e respostas fictícias;
+HTTP autenticado contra o Xano real permanece não verificado.
+
 Arquivo `fph1M5tB4rA4gqfIysSmkn`. O levantamento de 08/10 listava 20 telas como "A desenhar". Em 09/10 o
 Figma foi conferido de novo (nomes de frames e textos) e comparado com a spec principal e com `docs/lgpd/`.
 

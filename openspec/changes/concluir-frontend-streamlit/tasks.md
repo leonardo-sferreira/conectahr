@@ -158,8 +158,12 @@
   - **Figma (09/10/2026):** existe: Gestor — Delegações, 248:2235 (F17). Não precisa desenhar.
 - [ ] 56 (origem: `concluir-mvp-conectarh` 2.53) [CB 4.3] Tela "Calendário": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `calendario GET` → testar os 6 estados de UI e o escopo por perfil.
   - **Figma (09/10/2026):** existe: Calendário, 233:2394 (F07). Não precisa desenhar.
-- [ ] 57 (origem: `concluir-mvp-conectarh` 2.54) [CB 4.3] Tela "Minha equipe e dashboard do gestor": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `minha_equipe GET` (tarefa 3.24) e o dashboard em `central_de_tarefas` (tarefa 3.25) → testar os 6 estados de UI e o escopo por perfil.
+- [ ] 57 (origem: `concluir-mvp-conectarh` 2.54) [CB 4.3] Tela "Minha equipe e dashboard do gestor": construir conforme o F14, integrar com `folha_ponto/pessoas`, `folha_ponto/mes`, `ferias_equipe`, `central_de_tarefas` e `correcoes_ponto`, usando os subordinados diretos (decisão de 20/10/2026 no `design.md`), e testar os 6 estados de UI e o escopo por perfil. `minha_equipe GET` permanece inalterado.
   - **Figma (09/10/2026):** existe: Gestor — Minha equipe, 248:409 (F14). Não precisa desenhar.
+  - **Escopo autorizado em 20/10/2026:** somente subordinados diretos, usando `folha_ponto/pessoas`; ver decisão no `design.md`. Sem mudanças no Xano.
+  - **Implementado (20/10/2026):** página e navegação reais; quatro indicadores; busca e filtro por situação; tabela com cargo/nível, ponto semanal, férias e pendências; destaque de ponto que pede atenção; "Ver →" para a Central; férias nos próximos 90 dias, inclusive pendentes, só dos liderados. Cache por sessão e limpeza ao sair da conta. Layout conferido com Figma 248:409, sem CSS fora do tema.
+  - **Verificado localmente:** 31 testes em `tools/testar_minha_equipe.py` com API simulada (escopo, desligados, menu por perfil, dois meses, férias atuais/futuras, pendências, falhas parciais, permissões, 401/403/404/429, busca, filtro, navegação e ausência de campos sensíveis). Teste incluído no CI. Regressões: folha 46, ponto mensal 97, decisões 64, férias 93, login 52; sintaxe validada. Streamlit e Chrome com dados fictícios, busca, filtro, ida/volta da Central e comparação visual; evidência em `docs/evidencias/frontend-minha-equipe.md`.
+  - **Pendente para concluir:** HTTP autenticado contra o Xano real, com casos permitidos e negados por perfil. A limitação existente de `contains` na Central pode subcontar pedidos; não foi alterada nem compensada no frontend. A ação "Ver →" abre a Central sem filtro do liderado.
 
 ## 3. Telas desenhadas em 09/10/2026 e pendências do levantamento
 

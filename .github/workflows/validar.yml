@@ -74,6 +74,9 @@ jobs:
       - name: Testes da folha de ponto e da hierarquia
         run: python tools/testar_folha_ponto.py
 
+      - name: Testes de Minha equipe
+        run: python tools/testar_minha_equipe.py
+
       - name: Testes de Benefícios
         run: python tools/testar_beneficios.py
 
