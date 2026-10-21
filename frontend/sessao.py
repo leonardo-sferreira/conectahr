@@ -147,6 +147,10 @@ def encerrar_com_aviso() -> None:
 def limpar_sessao() -> None:
     for chave in _CHAVES_SESSAO:
         st.session_state.pop(chave, None)
+    # F15/F17: consultas, seleção, modal e campos pertencem exclusivamente à sessão atual.
+    for chave in list(st.session_state):
+        if str(chave).startswith(("ae_", "dg_")):
+            st.session_state.pop(chave, None)
     st.session_state.pop("sessao_expirada", None)
 
 
