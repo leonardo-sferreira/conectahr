@@ -15,7 +15,15 @@ table pergunta_clima {
     // Escala da resposta (change pesquisa-clima-e-avaliacao-360, D1): concordancia = 1 a 5
     // (discordo totalmente a concordo totalmente); nps = 0 a 10 (recomendaria a empresa).
     enum escala?=concordancia {
-      values = ["concordancia", "nps"]
+      values = ["concordancia", "nps", "frequencia"]
+    }
+
+    // Avaliacao psicossocial (change riscos-psicossociais, D1): a dimensao da NR-1 e o sentido
+    // da pergunta. risco = quanto mais frequente, maior o risco; protecao = o contrario.
+    // frequencia = 1 a 5 (nunca, raramente, as vezes, frequentemente, sempre).
+    text? dimensao filters=trim|max:60
+    enum? sentido {
+      values = ["risco", "protecao"]
     }
   }
 

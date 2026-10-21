@@ -14,6 +14,9 @@ from onboarding_modelo import data_br
 ESCALAS = {
     "concordancia": {"notas": list(range(1, 6)), "min": "Discordo totalmente", "max": "Concordo totalmente", "nome": "Concordância (1 a 5)"},
     "nps": {"notas": list(range(0, 11)), "min": "Nada provável", "max": "Muito provável", "nome": "Recomendação (0 a 10)"},
+    # Avaliação psicossocial (NR-1; change riscos-psicossociais): frequência, com o nome de cada nota.
+    "frequencia": {"notas": list(range(1, 6)), "min": "Com que frequência isso acontece?", "max": "", "nome": "Frequência (nunca a sempre)",
+                   "rotulos": {1: "Nunca", 2: "Raramente", 3: "Às vezes", 4: "Frequentemente", 5: "Sempre"}},
 }
 PERGUNTA_NPS = "De 0 a 10, quanto você recomendaria a empresa como lugar para trabalhar?"
 PERGUNTAS_SUGERIDAS = [

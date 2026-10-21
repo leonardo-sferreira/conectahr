@@ -227,7 +227,9 @@ def pagina_pesquisas_clima() -> None:
     except ApiError as erro:
         alerta(st.empty(), "erro", erro.message)
         return
-    pesquisas, elegiveis, hoje = dados.get("pesquisas") or [], dados.get("elegiveis") or 0, _hoje(dados)
+    # As avaliações psicossociais (NR-1) têm tela própria: "Riscos psicossociais".
+    pesquisas = [p for p in dados.get("pesquisas") or [] if p.get("tipo") != "psicossocial"]
+    elegiveis, hoje = dados.get("elegiveis") or 0, _hoje(dados)
     with st.container(horizontal=True, vertical_alignment="center"):
         with st.container(key="cfg_abas", width="content"):
             aba = st.segmented_control("Aba", list(ABAS_RH), default="Em andamento", required=True, key="pcr_aba", label_visibility="collapsed")

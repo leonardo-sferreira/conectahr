@@ -10,6 +10,8 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
     text texto filters=trim|max:500
     int? ordem?
     text? escala? filters=trim|lower
+    text? dimensao? filters=trim|max:60
+    text? sentido? filters=trim|lower
   }
 
   stack {
@@ -96,9 +98,18 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
       value = (($input.escala == null) || ($input.escala == "")) ? "concordancia" : $input.escala
     }
 
-    precondition (($escala_final == "concordancia") || ($escala_final == "nps")) {
+    precondition (($escala_final == "concordancia") || ($escala_final == "nps") || ($escala_final == "frequencia")) {
       error_type = "inputerror"
-      error = "Escala invalida. Use concordancia ou nps."
+      error = "Escala invalida. Use concordancia, nps ou frequencia."
+    }
+
+    var $sentido_final {
+      value = (($input.sentido == null) || ($input.sentido == "")) ? null : $input.sentido
+    }
+
+    precondition (($sentido_final == null) || ($sentido_final == "risco") || ($sentido_final == "protecao")) {
+      error_type = "inputerror"
+      error = "Sentido invalido. Use risco ou protecao."
     }
 
     // "!= null" trata 0 como igual a null nesta plataforma (ver
@@ -118,6 +129,8 @@ query "pesquisas_clima/{id}/perguntas" verb=POST {
         texto            : $input.texto
         ordem            : $ordem_final
         escala           : $escala_final
+        dimensao         : $input.dimensao
+        sentido          : $sentido_final
       }
     } as $pergunta_criada
   }

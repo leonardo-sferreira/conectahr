@@ -26,6 +26,7 @@
 17. [Experiência e produtividade](#17-experiência-e-produtividade)
 18. [Proteção de dados (LGPD)](#18-proteção-de-dados-lgpd)
 19. [Canal de denúncias](#19-canal-de-denúncias)
+20. [Riscos psicossociais (NR-1)](#20-riscos-psicossociais-nr-1)
 
 ---
 
@@ -920,6 +921,15 @@ Change `canal-de-denuncias` (desde 20/10/2026), para a Lei 14.457/2022: canal co
 ### 19.3 Telas
 
 "Canal de denúncias" (menu de todos e público): formulário com "Quero me identificar" (desligado: anônima), "Acompanhar uma denúncia" pelo código e "Como funciona"; o código aparece num modal que só fecha em "Já guardei o código". "Denúncias" (comissão): indicadores, abas "Em aberto" e "Concluídas", filtro de tipo, "Abrir →" com relato, identificação, conversa e mensagem, e "Concluir apuração". "Usuários e perfis" (Admin): cartão "Comissão de ética".
+
+## 20. Riscos psicossociais (NR-1)
+
+Change `riscos-psicossociais` (desde 20/10/2026). Desde 26/05/2026 a NR-1 exige que o gerenciamento de riscos ocupacionais (GRO/PGR) inclua os riscos psicossociais: identificar, avaliar, controlar e monitorar, com inventário, plano de ação e participação dos trabalhadores. Figma: seção 21 (545:1272).
+
+- **Avaliação:** é uma pesquisa de clima do tipo `psicossocial` (`pesquisa_clima.tipo`), com o mesmo anonimato (contador por pergunta, setor e nota; mínimo por grupo, 5 por padrão). O questionário padrão tem 16 perguntas em 8 dimensões (carga e ritmo, autonomia e controle, apoio da liderança, apoio dos colegas, relacionamentos e respeito, clareza do papel, mudanças e comunicação, reconhecimento e justiça), na escala `frequencia` (1 = nunca a 5 = sempre), cada uma com `dimensao` e `sentido` (`risco` ou `protecao`) em `pergunta_clima`. Pode ter uma pergunta extra, sem dimensão. A pessoa responde pela tela "Pesquisa de clima"; a tela "Pesquisas de clima" do RH não mostra as avaliações psicossociais.
+- **Resultado** (calculado na tela, a partir de `pesquisas_clima/{id}/resultados`): risco de cada pergunta de 0 a 100 pela média (`risco`: (média − 1) / 4; `protecao`: (5 − média) / 4), e da dimensão pela média das perguntas, por setor e na empresa; até 33 baixo, de 34 a 66 moderado, a partir de 67 alto. Setor abaixo do mínimo não aparece. O questionário é uma referência inicial; o responsável pelo PGR valida o método.
+- **Plano de ação** (`acao_psicossocial`; `acoes_psicossociais` GET, POST e `{id}` PATCH, só RH e Admin, auditados): avaliação, setor (0 = empresa), dimensão, nível do risco, medida, responsável, prazo e situação (`planejada`, `em_andamento`, `concluida`, `cancelada`; concluir grava a data). Aberta com prazo vencido aparece como "Atrasada". A tela lista os riscos altos sem ação, com "Criar ação" já preenchido.
+- **Relatório PGR:** Markdown com a participação (adesão geral e por setor), o inventário (mapa de risco) e o plano de ação, para baixar e anexar ao PGR.
 
 ## Lacunas de escopo conhecidas (fora deste levantamento)
 
