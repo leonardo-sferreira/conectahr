@@ -11,7 +11,8 @@
   - **Feito (21/10/2026):** publicados.
 - [x] 1.2 `treinamentos` POST e `{id}` PATCH com o vídeo, `meus_treinamentos` GET com o progresso, `meus_treinamentos/{id}/progresso` e `meus_treinamentos/{id}/concluir` (D1 a D3). Verificar: `checar_endpoints` e dry-run.
   - **Feito (21/10/2026):** publicados; `checar_endpoints` 272, 0 falhas. O publicado antes foi conferido igual ao git (só diferenças de formatação do Xano).
-- [ ] 1.3 Rodar `tools/testar_treinamento_video_http.py` com login (RH ou Admin com ficha). Cobre também as validações do YouTube.
+- [x] 1.3 Rodar `tools/testar_treinamento_video_http.py` com login (RH ou Admin com ficha). Cobre também as validações do YouTube.
+  - **Feito (21/10/2026):** 22/22 com conta do Admin: validações do vídeo (Drive e YouTube), progresso (primeiro registro, avanço rápido demais, nunca diminui, além da duração), concluir antes e depois do mínimo, progresso zerado e limpeza.
 
 ## 2. Frontend
 
