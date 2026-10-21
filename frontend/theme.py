@@ -709,6 +709,27 @@ _APP_CSS = f"""
   .st-key-rh_barra .stSelectbox div, .st-key-rh_barra .stSelectbox input {{ color: {GRAFITE} !important; }}
   .crh-campos-direita .v {{ text-align: right; }}
 
+  /* Minha equipe (F14, 248:409): composição dos cartões e da tabela existentes. */
+  .st-key-me_cabecalho .crh-hero-titulo p {{ line-height: 33px; }}
+  .st-key-me_cabecalho .crh-hero-sub {{ line-height: 19px; }}
+  .st-key-me_resumo .crh-stat {{ padding: 16px 18px; gap: 4px; box-shadow: none; }}
+  .st-key-me_resumo .crh-stat-rotulo {{ font-size: 13px; font-weight: 400; line-height: 18px; }}
+  .st-key-me_resumo .crh-stat-valor {{ font-size: 26px; line-height: 33px; }}
+  .st-key-rh_barra:has(.st-key-me_busca) {{ min-height: 100px; }}
+  .st-key-me_busca [data-testid="stTextInputRootElement"] {{ background: white !important; }}
+  .st-key-me_tabela .crh-doc-cab {{ line-height: 16px; }}
+  .st-key-me_tabela .crh-doc-cel .t, .st-key-me_tabela .crh-doc-prazo {{ line-height: 19px; }}
+  .st-key-me_tabela .crh-doc-cel .d {{ line-height: 16px; }}
+  .st-key-me_tabela [data-testid="stHorizontalBlock"] {{ gap: 12px; }}
+  .crh-me-card {{ padding: 22px; box-shadow: none; }}
+  .crh-me-card .crh-card-h .t {{ line-height: 23px; }}
+  .crh-me-card .crh-linha-onb .t {{ line-height: 19px; }}
+  .crh-me-card .crh-linha-onb .d {{ line-height: 16px; }}
+  .crh-me-card .crh-linha-onb .crh-selo:empty {{ display: none; }}
+  .crh-me-card .crh-meta {{ margin: 0; line-height: 18px; }}
+  div[class*="st-key-rh_linf_me_"] {{ background: #FFFBF0 !important; }}
+  .st-key-me_estado {{ padding: 22px; border: 1px solid {BORDA}; border-radius: 14px; background: white; }}
+
   /* Meu Perfil (Figma 202:175): cartões com campos em duas colunas, pendências e organograma. */
   div[class*="st-key-perfil_card_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 24px 28px; gap: 14px; }}
   .st-key-perfil_card_pendencias {{ border-color: {AMBAR} !important; }}
@@ -1097,6 +1118,9 @@ ESC_AMBAR_SUAVE = "#2A2417"
 _ESCURO_CSS = f"""
 <style>
   /* crh-tema-escuro */
+  .st-key-me_estado {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .st-key-me_busca [data-testid="stTextInputRootElement"] {{ background: {ESC_FUNDO} !important; }}
+  div[class*="st-key-rh_linf_me_"] {{ background: {ESC_AMBAR_SUAVE} !important; }}
   .stApp {{ background: {ESC_FUNDO} !important; }}
   /* Faixa do título: no escuro ela some no fundo (Figma 108:870). */
   .crh-hero {{ background: transparent; padding-left: 0; padding-right: 0; }}

@@ -76,6 +76,11 @@ _CHAVES_SESSAO = (
     # Folha de ponto da equipe e do RH.
     "folha_cache",
     "modal_folha",
+    # Minha equipe: dados e seleção do Gestor, descartados ao sair da conta.
+    "minha_equipe_cache",
+    "me_liderado",
+    "me_busca",
+    "me_situacao",
     # Superior direto sem o perfil Gestor (tarefa 83).
     "tem_equipe",
     # Benefícios.
