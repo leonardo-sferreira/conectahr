@@ -6,7 +6,8 @@ Abas:
 - Matriz: indicadores (em dia, vencendo em 30 dias, vencidos, pendentes) e pessoa × treinamento obrigatório, com o
   filtro de departamento e a busca; célula vazia = não obrigatório para o setor da pessoa.
 - Catálogo: os treinamentos com categoria, validade, carga horária e para quem; "Novo treinamento" e "Editar" (com
-  o vídeo opcional no Google Drive e quanto assistir para concluir; Figma 557:1477, change treinamento-em-video);
+  o vídeo opcional no Google Drive ou no YouTube e quanto assistir para concluir; Figma 557:1477, change
+  treinamento-em-video). Com link do YouTube, o modal mostra a prévia, que lê a duração;
   sem nenhum, "Usar o catálogo sugerido" (a orientação anual sobre assédio da Lei 14.457/2022 e outros).
 - Registrar conclusão: treinamento, data, quem concluiu (uma turma de uma vez), instrutor e link do certificado.
 - Vencimentos: vencidos e vencendo, dos mais urgentes para os demais.
@@ -23,8 +24,9 @@ from api_client import ApiError, registrar_conclusao_treinamento, salvar_treinam
 from campos import campo
 from drive_video import ErroDrive, chave_api, duracao_video
 from theme import alerta, render_hero, render_indicadores, render_topbar
-from treinamentos_modelo import (ABAS, CATEGORIAS, PERCENTUAL_PADRAO, SUGERIDOS, drive_id, ids_departamentos, indicadores, link_drive, matriz,
-                                 publico_legivel, validade_legivel, validar_conclusao, validar_treinamento, validar_video, vencimentos)
+from treinamentos_modelo import (ABAS, CATEGORIAS, FONTES_VIDEO, PERCENTUAL_PADRAO, SUGERIDOS, ids_departamentos, indicadores, link_video, matriz,
+                                 publico_legivel, validade_legivel, validar_conclusao, validar_treinamento, validar_video, vencimentos, video_do_link)
+from video_player import previa_youtube
 
 _VALIDADE_CACHE_S = 20
 
@@ -39,7 +41,7 @@ def _carregar(token: str) -> dict:
 
 
 def _fechar() -> None:
-    for chave in [k for k in st.session_state if str(k).startswith(("tr_modal", "tr_form_"))]:
+    for chave in [k for k in st.session_state if str(k).startswith(("tr_modal", "tr_form_", "tr_yt_dur_"))]:
         st.session_state.pop(chave, None)
 
 
@@ -65,7 +67,7 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
                          ("tr_form_validade", int(atual.get("validade_meses") or 0)), ("tr_form_horas", int(atual.get("carga_horas") or 0)),
                          ("tr_form_obrig", bool(atual.get("obrigatorio", True))), ("tr_form_publico", atual.get("publico") or "todos"),
                          ("tr_form_deps", [int(x) for x in (atual.get("departamento_ids") or "").split(",") if x.strip().isdigit()]),
-                         ("tr_form_ativo", bool(atual.get("ativo", True))), ("tr_form_video", link_drive(atual.get("video_drive_id"))),
+                         ("tr_form_ativo", bool(atual.get("ativo", True))), ("tr_form_video", link_video(atual.get("video_fonte"), atual.get("video_drive_id"))),
                          ("tr_form_pct", int(atual.get("video_percentual_minimo") or PERCENTUAL_PADRAO))):
         st.session_state.setdefault(chave, valor)
     st.html(f'<p class="crh-cfg-titulo">{"Editar treinamento" if atual else "Novo treinamento"}</p>')
@@ -83,10 +85,17 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
                            horizontal=True, key="tr_form_publico")
         if publico == "departamentos":
             departamentos = st.multiselect("Departamentos", list(deps), format_func=deps.get, key="tr_form_deps")
-    video = st.text_input("Vídeo no Google Drive (link, opcional)", key="tr_form_video", max_chars=300,
-                          placeholder="https://drive.google.com/file/d/…/view")
+    video = st.text_input("Vídeo no Google Drive ou no YouTube (link, opcional)", key="tr_form_video", max_chars=300,
+                          placeholder="https://drive.google.com/file/d/…/view ou https://youtu.be/…")
+    achado = video_do_link(video)
     percentual = st.number_input("Assistir pelo menos (%)", min_value=50, max_value=100, step=5, key="tr_form_pct") if (video or "").strip() else PERCENTUAL_PADRAO
-    if (video or "").strip():
+    if achado and achado[0] == "youtube":
+        # A prévia confere o vídeo e lê a duração (sem chave de API); fica guardada até salvar.
+        if duracao_yt := previa_youtube(achado[1]):
+            st.session_state[f"tr_yt_dur_{achado[1]}"] = duracao_yt
+        st.html('<p class="crh-meta">Vídeo do YouTube: deixe como "não listado" (não privado). A pessoa assiste em "Meus treinamentos" '
+                'e conclui sozinha depois do mínimo.</p>')
+    elif (video or "").strip():
         st.html('<p class="crh-meta">Com vídeo, a pessoa assiste em "Meus treinamentos" e conclui sozinha depois do mínimo. '
                 'No Drive, compartilhe o arquivo como "qualquer pessoa com o link", em MP4.</p>')
     ativo = st.toggle("Ativo", key="tr_form_ativo") if atual else True
@@ -101,9 +110,15 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
             if erro:
                 alerta(slot, "erro", erro)
                 return
-            video_id, duracao = drive_id(video), 0
+            fonte, video_id = achado or ("drive", None)
+            duracao = 0
             if video_id and video_id == atual.get("video_drive_id") and int(atual.get("video_duracao") or 0) > 0:
                 duracao = int(atual["video_duracao"])
+            elif video_id and fonte == "youtube":
+                duracao = int(st.session_state.get(f"tr_yt_dur_{video_id}") or 0)
+                if not duracao:
+                    alerta(slot, "erro", "Espere a prévia do YouTube carregar (ela lê a duração do vídeo) e salve de novo.")
+                    return
             elif video_id:
                 chave = chave_api()
                 if not chave:
@@ -118,7 +133,7 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
             dados = {"nome": nome.strip(), "descricao": (descricao or "").strip() or None, "categoria": categoria, "carga_horas": int(horas),
                      "validade_meses": int(validade), "obrigatorio": bool(obrigatorio), "publico": publico if obrigatorio else "todos",
                      "departamento_ids": ids_departamentos(departamentos) if obrigatorio and publico == "departamentos" else None,
-                     "video_drive_id": video_id, "video_duracao": duracao, "video_percentual_minimo": int(percentual)}
+                     "video_drive_id": video_id, "video_fonte": fonte, "video_duracao": duracao, "video_percentual_minimo": int(percentual)}
             if atual:
                 dados["ativo"] = bool(ativo)
             try:
@@ -175,7 +190,7 @@ def _aba_catalogo(dados: dict, token: str) -> None:
         for i, t in enumerate(lista):
             with st.container(key=f"rh_lin_{i}"):
                 col = st.columns(pesos, vertical_alignment="center")
-                marcas = ([] if t.get("ativo", True) else ["Inativo"]) + (["Com vídeo"] if t.get("video_drive_id") else [])
+                marcas = ([] if t.get("ativo", True) else ["Inativo"]) + ([f"Vídeo no {FONTES_VIDEO.get(t.get('video_fonte') or 'drive', 'Drive')}"] if t.get("video_drive_id") else [])
                 inativo = f'<p class="d">{" · ".join(marcas)}</p>' if marcas else ""
                 col[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(t.get("nome") or "")}</p>{inativo}</div>')
                 col[1].html(f'<p class="crh-doc-prazo">{html.escape(CATEGORIAS.get(t.get("categoria"), "—"))}</p>')

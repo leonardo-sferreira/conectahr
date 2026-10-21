@@ -38,6 +38,9 @@ a chave de API do Google para os vídeos dos treinamentos (change `treinamento-e
 3. Cole a chave nos *Secrets* da hospedagem, na seção `[google]`. Nunca no repositório.
 4. No Drive, cada vídeo fica como "qualquer pessoa com o link", em MP4 (H.264); 720p basta.
 
+Sem o Google Cloud, a outra opção é o **YouTube**: o RH sobe o vídeo como "não listado" e cola o link no mesmo
+campo. Não precisa de chave nem de configuração.
+
 ## Feature flags
 
 O sistema não tem um mecanismo de feature flag. O equivalente hoje é:
