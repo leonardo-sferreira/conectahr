@@ -47,6 +47,7 @@ from pagina_inicio import pagina_inicio
 from pagina_meu_onboarding import pagina_meu_onboarding
 from pagina_metas_ciclo import pagina_metas_ciclo
 from pagina_metas_equipe import pagina_metas_equipe
+from pagina_meus_treinamentos import pagina_meus_treinamentos
 from pagina_onboarding import pagina_onboarding
 from pagina_organograma import pagina_organograma
 from pagina_pagamento import pagina_lancamento_pagamentos, pagina_pagamento
@@ -63,6 +64,7 @@ from pagina_riscos_psicossociais import pagina_riscos_psicossociais
 from pagina_ponto import pagina_ponto
 from pagina_solicitacoes import pagina_solicitacoes
 from pagina_trajetoria import pagina_trajetoria
+from pagina_treinamentos import pagina_treinamentos
 from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
 from theme import definir_sino, inject_base_styles, render_nav_ativo, render_sidebar_logo
@@ -80,6 +82,8 @@ _MENU = [
     ("Trajetória", False),
     # Responder a pesquisa de clima: qualquer perfil (change pesquisa-clima-e-avaliacao-360; o menu do Figma 225:4668 não tem o item).
     ("Pesquisa de clima", False),
+    # Treinamentos obrigatórios da própria pessoa (change treinamentos-obrigatorios).
+    ("Meus treinamentos", False),
     # Canal de denúncias (Lei 14.457/2022; change canal-de-denuncias): qualquer perfil, e também sem login.
     ("Canal de denúncias", False),
     # Vagas internas: o sistema de vagas fica em outro endereço, ainda não ligado; a opção só aparece no menu.
@@ -101,6 +105,8 @@ _MENU_RH = [
     "Pesquisas de clima",
     # Avaliação de riscos psicossociais, inventário e plano de ação para o PGR (NR-1; change riscos-psicossociais).
     "Riscos psicossociais",
+    # Catálogo, matriz e conclusões dos treinamentos obrigatórios (NRs e Lei 14.457/2022; change treinamentos-obrigatorios).
+    "Treinamentos",
     "Ciclos de avaliação",
     "Pedidos LGPD",
     # Feriados, níveis da hierarquia e cargos (change organograma-hierarquia): o RH também mantém.
@@ -229,10 +235,12 @@ PG_INTEGRACOES = st.Page(pagina_integracoes, title="Integrações e e-mails", ur
 PG_CANAL = st.Page(pagina_canal_denuncias, title="Canal de denúncias", url_path="canal-de-denuncias")
 PG_DENUNCIAS = st.Page(pagina_denuncias, title="Denúncias", url_path="denuncias")
 PG_NR1 = st.Page(pagina_riscos_psicossociais, title="Riscos psicossociais", url_path="riscos-psicossociais")
+PG_TREINAMENTOS = st.Page(pagina_treinamentos, title="Treinamentos", url_path="treinamentos")
+PG_MEUS_TREINAMENTOS = st.Page(pagina_meus_treinamentos, title="Meus treinamentos", url_path="meus-treinamentos")
 PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -266,7 +274,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1, "Treinamentos": PG_TREINAMENTOS, "Meus treinamentos": PG_MEUS_TREINAMENTOS}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).

@@ -27,6 +27,7 @@
 18. [Proteção de dados (LGPD)](#18-proteção-de-dados-lgpd)
 19. [Canal de denúncias](#19-canal-de-denúncias)
 20. [Riscos psicossociais (NR-1)](#20-riscos-psicossociais-nr-1)
+21. [Treinamentos obrigatórios](#21-treinamentos-obrigatórios)
 
 ---
 
@@ -930,6 +931,15 @@ Change `riscos-psicossociais` (desde 20/10/2026). Desde 26/05/2026 a NR-1 exige 
 - **Resultado** (calculado na tela, a partir de `pesquisas_clima/{id}/resultados`): risco de cada pergunta de 0 a 100 pela média (`risco`: (média − 1) / 4; `protecao`: (5 − média) / 4), e da dimensão pela média das perguntas, por setor e na empresa; até 33 baixo, de 34 a 66 moderado, a partir de 67 alto. Setor abaixo do mínimo não aparece. O questionário é uma referência inicial; o responsável pelo PGR valida o método.
 - **Plano de ação** (`acao_psicossocial`; `acoes_psicossociais` GET, POST e `{id}` PATCH, só RH e Admin, auditados): avaliação, setor (0 = empresa), dimensão, nível do risco, medida, responsável, prazo e situação (`planejada`, `em_andamento`, `concluida`, `cancelada`; concluir grava a data). Aberta com prazo vencido aparece como "Atrasada". A tela lista os riscos altos sem ação, com "Criar ação" já preenchido.
 - **Relatório PGR:** Markdown com a participação (adesão geral e por setor), o inventário (mapa de risco) e o plano de ação, para baixar e anexar ao PGR.
+
+## 21. Treinamentos obrigatórios
+
+Change `treinamentos-obrigatorios` (desde 20/10/2026). A Lei 14.457/2022 pede orientação sobre assédio pelo menos uma vez por ano, e as NRs pedem treinamentos com validade (NR-35, NR-10...). Figma: seção 22 (549:1319).
+
+- **Catálogo** (`treinamento`; `treinamentos` GET e POST e `treinamentos/{id}` PATCH, só RH e Admin, auditados): nome (3 a 200), categoria (`legal`, `seguranca`, `compliance`, `integracao`, `desenvolvimento`), carga horária (0 a 1000 h), validade em meses (0 a 120; 0 = sem validade), obrigatório ou opcional, e para quem (`todos` ou os departamentos de `departamento_ids`, como ",1,4,"; pelo menos um). Desativar não apaga as conclusões. Com o catálogo vazio, a tela oferece o sugerido: orientação sobre assédio (anual), integração de segurança NR-1 (sem validade) e LGPD (2 anos).
+- **Conclusão** (`treinamento_conclusao`; `treinamentos/{id}/conclusoes` POST, só RH e Admin): uma turma de uma vez (lista de pessoas), data não futura, instrutor e link do certificado opcionais. A validade é a data mais a validade em meses, por ano e mês, com o dia limitado a 28. Pessoa desligada ou já registrada na mesma data é pulada. Só inclusão (corrigir = registrar de novo). Cada pessoa recebe um aviso no sino; a auditoria guarda uma linha por turma, com as quantidades.
+- **Situação** (calculada na tela, pela conclusão mais recente): pendente (nunca registrado), em dia, vencendo (até 30 dias) ou vencido; sem validade, uma conclusão basta. A matriz do RH mostra pessoa × treinamento obrigatório (vazio: não obrigatório para o setor), com indicadores e a aba Vencimentos.
+- **Meus treinamentos** (`meus_treinamentos` GET, qualquer perfil com ficha): os obrigatórios para a pessoa, com a situação, e o histórico com o certificado.
 
 ## Lacunas de escopo conhecidas (fora deste levantamento)
 

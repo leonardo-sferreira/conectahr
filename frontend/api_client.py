@@ -1281,3 +1281,31 @@ def atualizar_acao_psicossocial(token: str, acao_id: int, status: str, medida: s
                                 prazo: str | None = None) -> dict:
     return _request("PATCH", f"acoes_psicossociais/{int(acao_id)}", token, GRUPO_COLABORADORES,
                     {"status": status, "medida": medida or None, "responsavel": responsavel or None, "prazo": prazo or None})
+
+
+# ---------------------------------------------------------------------------
+# Treinamentos obrigatórios (change treinamentos-obrigatorios)
+# ---------------------------------------------------------------------------
+def treinamentos(token: str) -> dict:
+    """GET treinamentos -> {hoje, treinamentos, conclusoes, pessoas, departamentos} (RH e Admin)."""
+    return _get("treinamentos", token, GRUPO_COLABORADORES)
+
+
+def salvar_treinamento(token: str, dados: dict, treinamento_id: int | None = None) -> dict:
+    """POST treinamentos (novo) ou PATCH treinamentos/{id} (editar, com `ativo`)."""
+    if treinamento_id:
+        return _request("PATCH", f"treinamentos/{int(treinamento_id)}", token, GRUPO_COLABORADORES, dados)
+    return _post("treinamentos", dados, token, GRUPO_COLABORADORES)
+
+
+def registrar_conclusao_treinamento(token: str, treinamento_id: int, colaborador_ids: list[int], concluido_em: str, instrutor: str | None,
+                                    certificado_url: str | None) -> dict:
+    """POST treinamentos/{id}/conclusoes -> {registradas, puladas, valido_ate}: uma turma de uma vez."""
+    return _post(f"treinamentos/{int(treinamento_id)}/conclusoes", {"colaborador_ids": [int(c) for c in colaborador_ids], "concluido_em": concluido_em,
+                                                                     "instrutor": instrutor or None, "certificado_url": certificado_url or None},
+                 token, GRUPO_COLABORADORES)
+
+
+def meus_treinamentos(token: str) -> dict:
+    """GET meus_treinamentos -> {hoje, obrigatorios, conclusoes} (a própria pessoa)."""
+    return _get("meus_treinamentos", token, GRUPO_COLABORADORES)

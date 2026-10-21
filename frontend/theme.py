@@ -957,6 +957,8 @@ _APP_CSS = f"""
   .crh-nr1-cel.amb {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
   .crh-nr1-cel.err {{ background: #FEE2E2; color: {ERRO}; }}
   .crh-nr1-cel.neu {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
+  /* Treinamentos (Figma 549:1321): a matriz pode ter muitas colunas e rola na horizontal. */
+  .crh-tr-matriz {{ overflow-x: auto; }}
   /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
   .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
   .crh-av360-barra .barra {{ flex: 1; height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}

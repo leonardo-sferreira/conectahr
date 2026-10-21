@@ -119,6 +119,9 @@ jobs:
       - name: Testes dos Riscos psicossociais (NR-1)
         run: python tools/testar_riscos_psicossociais.py
 
+      - name: Testes dos Treinamentos obrigatórios
+        run: python tools/testar_treinamentos.py
+
       - name: Testes da Trajetória
         run: python tools/testar_trajetoria.py
 
