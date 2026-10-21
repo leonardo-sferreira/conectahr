@@ -31,10 +31,12 @@ def pagina_meus_treinamentos() -> None:
         return
     with st.container(key="cfg_card_mt"):
         st.html('<p class="crh-cfg-titulo">Obrigatórios para você</p>')
+        # st.html com texto vazio dá erro no Streamlit: a lista só é desenhada quando tem itens.
         if not dados["obrigatorios"]:
             st.html('<p class="crh-meta">Nenhum treinamento obrigatório para você agora.</p>')
-        st.html("".join(f'<div class="crh-pc-item"><p class="t">{html.escape(o["nome"] or "")}</p><p class="d">{html.escape(o["detalhe"])}</p>'
-                        f'<span class="crh-selo {o["tom"]}">{html.escape(o["rotulo"])}</span></div>' for o in dados["obrigatorios"]))
+        else:
+            st.html("".join(f'<div class="crh-pc-item"><p class="t">{html.escape(o["nome"] or "")}</p><p class="d">{html.escape(o["detalhe"])}</p>'
+                            f'<span class="crh-selo {o["tom"]}">{html.escape(o["rotulo"])}</span></div>' for o in dados["obrigatorios"]))
         st.html('<p class="crh-cfg-titulo" style="margin-top:18px">Histórico</p>')
         if not dados["historico"]:
             st.html('<p class="crh-meta">Nenhum treinamento registrado ainda.</p>')

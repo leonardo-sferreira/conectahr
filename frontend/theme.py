@@ -1029,6 +1029,36 @@ _APP_CSS = f"""
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea {{ -webkit-text-fill-color: {GRAFITE}; }}
   [data-testid="stDialog"] input::placeholder, [data-testid="stDialog"] textarea::placeholder {{ color: {GRAFITE_SECUNDARIO}; -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; opacity: 0.8; }}
   [data-testid="stDialog"] input, [data-testid="stDialog"] textarea, [data-testid="stDialog"] [data-baseweb="select"] div {{ color: {GRAFITE} !important; background: transparent !important; }}
+  /* Campos dentro dos cartões (cfg_card_*): o mesmo visual dos modais. O tema base do Streamlit é escuro, e sem isto
+     a caixa de seleção e a área de texto ficavam grafite num cartão branco (canal de denúncias, 20/10/2026). */
+  div[class*="st-key-cfg_card_"] [data-testid="stWidgetLabel"] p, div[class*="st-key-cfg_card_"] label p {{
+    font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE} !important;
+  }}
+  div[class*="st-key-cfg_card_"] [data-testid="stCaptionContainer"] p, div[class*="st-key-cfg_card_"] .stRadio [data-testid="stCaptionContainer"] {{ color: {GRAFITE_SECUNDARIO} !important; }}
+  div[class*="st-key-cfg_card_"] [data-baseweb="select"] > div, div[class*="st-key-cfg_card_"] [data-baseweb="input"], div[class*="st-key-cfg_card_"] [data-baseweb="textarea"],
+  div[class*="st-key-cfg_card_"] [data-testid="stDateInputField"], div[class*="st-key-cfg_card_"] [data-testid="stTextInputRootElement"] {{
+    background: {MARFIM} !important; border: 1px solid {BORDA} !important; border-radius: 10px !important; color: {GRAFITE} !important;
+  }}
+  div[class*="st-key-cfg_card_"] .stSelectbox div:has(> input[role="combobox"]), div[class*="st-key-cfg_card_"] .stSelectbox div:has(> div > input[role="combobox"]) {{ background: transparent !important; }}
+  div[class*="st-key-cfg_card_"] .stSelectbox [data-testid="stSelectboxVirtualDropdown"], div[class*="st-key-cfg_card_"] .stSelectbox > div > div {{ background: {MARFIM} !important; color: {GRAFITE} !important; border-radius: 10px; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTextAreaRootElement"], div[class*="st-key-cfg_card_"] [data-testid="stNumberInputContainer"] {{
+    background: {MARFIM} !important; border: 1px solid {BORDA} !important; border-radius: 10px !important;
+  }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTextAreaRootElement"] > div, div[class*="st-key-cfg_card_"] [data-testid="stNumberInputContainer"] > div {{ background: transparent !important; }}
+  div[class*="st-key-cfg_card_"] .stSelectbox > div > div {{ border: 1px solid {BORDA} !important; }}
+  div[class*="st-key-cfg_card_"] .stDateInput span {{ color: {GRAFITE} !important; }}
+  div[class*="st-key-cfg_card_"] input:disabled {{ -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; color: {GRAFITE_SECUNDARIO} !important; opacity: 1; cursor: default; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTimeInputTimeDisplay"] {{ background: {MARFIM} !important; border: 1px solid {BORDA}; border-radius: 10px; color: {GRAFITE} !important; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTimeInputTimeDisplay"] * {{ color: {GRAFITE} !important; }}
+  /* Bolinha do radio não marcado: anel cinza e miolo branco (o tema base escuro a pinta de preto). */
+  div[class*="st-key-cfg_card_"] [role="radiogroup"] label:not(:has(input:checked)) div:has(> div:empty) {{ background: #C9C7C1 !important; }}
+  div[class*="st-key-cfg_card_"] [role="radiogroup"] label:not(:has(input:checked)) div:empty {{ background: white !important; }}
+  div[class*="st-key-cfg_card_"] input, div[class*="st-key-cfg_card_"] textarea {{ -webkit-text-fill-color: {GRAFITE}; }}
+  div[class*="st-key-cfg_card_"] input::placeholder, div[class*="st-key-cfg_card_"] textarea::placeholder {{ color: {GRAFITE_SECUNDARIO}; -webkit-text-fill-color: {GRAFITE_SECUNDARIO}; opacity: 0.8; }}
+  div[class*="st-key-cfg_card_"] input, div[class*="st-key-cfg_card_"] textarea, div[class*="st-key-cfg_card_"] [data-baseweb="select"] div {{ color: {GRAFITE} !important; background: transparent !important; }}
+  div[class*="st-key-cfg_card_"] label:has(input[role="switch"]:not(:checked)) > div:not([data-testid]) {{ background: #C9C7C1 !important; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTooltipIcon"] svg {{ color: {GRAFITE_SECUNDARIO} !important; }}
+  div[class*="st-key-cfg_card_"] .stSelectbox svg {{ color: {GRAFITE_SECUNDARIO} !important; fill: {GRAFITE_SECUNDARIO} !important; }}
   /* Calendário do seletor de data (13/10/2026): abre com o fundo escuro do Streamlit, e o mês, o ano (que são caixas de
      seleção) e as setas ‹ › herdavam o grafite da regra acima, sumindo no tema claro. Ficam claros, em qualquer tela. */
   [data-baseweb="calendar"] [data-baseweb="select"] div, [data-testid="stDialog"] [data-baseweb="calendar"] [data-baseweb="select"] div,
@@ -1232,6 +1262,24 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] [data-testid="stTimeInputTimeDisplay"] * {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:has(> div:empty) {{ background: {ESC_TEXTO_2} !important; }}
   [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:empty {{ background: {ESC_CARTAO} !important; }}
+  /* Campos dentro dos cartões, no escuro. */
+  div[class*="st-key-cfg_card_"] [data-testid="stWidgetLabel"] p, div[class*="st-key-cfg_card_"] label p {{ color: {ESC_TEXTO} !important; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stCaptionContainer"] p {{ color: {ESC_TEXTO_2} !important; }}
+  div[class*="st-key-cfg_card_"] [data-baseweb="select"] > div, div[class*="st-key-cfg_card_"] [data-baseweb="input"], div[class*="st-key-cfg_card_"] [data-baseweb="textarea"],
+  div[class*="st-key-cfg_card_"] [data-testid="stDateInputField"], div[class*="st-key-cfg_card_"] [data-testid="stTextInputRootElement"],
+  div[class*="st-key-cfg_card_"] .stSelectbox > div > div {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
+  div[class*="st-key-cfg_card_"] input, div[class*="st-key-cfg_card_"] textarea, div[class*="st-key-cfg_card_"] [data-baseweb="select"] div {{ color: {ESC_TEXTO} !important; -webkit-text-fill-color: {ESC_TEXTO}; }}
+  div[class*="st-key-cfg_card_"] input::placeholder, div[class*="st-key-cfg_card_"] textarea::placeholder {{ color: {ESC_TEXTO_2}; -webkit-text-fill-color: {ESC_TEXTO_2}; }}
+  div[class*="st-key-cfg_card_"] .stSelectbox > div > div {{ border-color: {ESC_BORDA} !important; }}
+  div[class*="st-key-cfg_card_"] .stDateInput span {{ color: {ESC_TEXTO} !important; }}
+  div[class*="st-key-cfg_card_"] input:disabled {{ -webkit-text-fill-color: {ESC_TEXTO_2}; color: {ESC_TEXTO_2} !important; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTimeInputTimeDisplay"] {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA}; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTimeInputTimeDisplay"] * {{ color: {ESC_TEXTO} !important; }}
+  div[class*="st-key-cfg_card_"] [role="radiogroup"] label:not(:has(input:checked)) div:has(> div:empty) {{ background: {ESC_TEXTO_2} !important; }}
+  div[class*="st-key-cfg_card_"] [role="radiogroup"] label:not(:has(input:checked)) div:empty {{ background: {ESC_CARTAO} !important; }}
+  div[class*="st-key-cfg_card_"] label:has(input[role="switch"]:not(:checked)) > div:not([data-testid]) {{ background: {ESC_BORDA} !important; }}
+  div[class*="st-key-cfg_card_"] [data-testid="stTooltipIcon"] svg {{ color: {ESC_TEXTO_2} !important; }}
+  div[class*="st-key-cfg_card_"] .stSelectbox svg {{ color: {ESC_TEXTO_2} !important; fill: {ESC_TEXTO_2} !important; }}
   [data-testid="stDialog"] button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] button[aria-label="Close"] svg {{ fill: {ESC_TEXTO_2}; color: {ESC_TEXTO_2}; }}
@@ -1309,10 +1357,11 @@ def inject_base_styles(area: str = "auth") -> None:
     #    ADD_TAGS: ['script','style'], preservando o <style>. Nao
     #    precisamos de JS de verdade aqui, so desse efeito colateral da
     #    flag para o CSS sobreviver.
-    area_css = {"app": _APP_CSS, "aviso": _AVISO_CSS}.get(area, _AUTH_CSS)
-    # O tema escuro vale para a área logada e para o aviso; a tela Entrar já é grafite.
-    if tema_atual() == "escuro" and area in ("app", "aviso"):
-        area_css += _ESCURO_CSS + (_AVISO_ESCURO_CSS if area == "aviso" else "")
+    # "canal" = canal de denúncias sem login: os estilos do app (cartões, faixa do título, campos) mais a faixa do aviso.
+    area_css = {"app": _APP_CSS, "aviso": _AVISO_CSS, "canal": _APP_CSS + _AVISO_CSS}.get(area, _AUTH_CSS)
+    # O tema escuro vale para a área logada, para o aviso e para o canal; a tela Entrar já é grafite.
+    if tema_atual() == "escuro" and area in ("app", "aviso", "canal"):
+        area_css += _ESCURO_CSS + (_AVISO_ESCURO_CSS if area in ("aviso", "canal") else "")
     st.html(
         '<div id="crh-styles-marker" style="display:none"></div>' + _BASE_CSS + area_css,
         unsafe_allow_javascript=True,

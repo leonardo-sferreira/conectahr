@@ -100,8 +100,7 @@ def _formulario() -> None:
         c1, c2 = st.columns(2)
         quando = campo(c1, "Quando aconteceu (opcional)", "texto", "cd_form_quando", max_chars=100, placeholder="Ex.: desde agosto de 2026")
         envolvidos = campo(c2, "Pessoas envolvidas (opcional)", "texto", "cd_form_envolvidos", max_chars=200, placeholder="Ex.: gestor da equipe")
-        identificar = st.toggle("Quero me identificar", key="cd_form_identificar",
-                                help="Desligado: a denúncia é anônima. Ligado: só a comissão vê seu nome, e ele não é repassado a ninguém.")
+        identificar = st.toggle("Quero me identificar", key="cd_form_identificar")
         st.html('<p class="crh-meta">Desligado: a denúncia é anônima. Ligado: só a comissão vê seu nome, e ele não é repassado a ninguém.</p>')
         identificacao = ""
         if identificar:
@@ -166,7 +165,7 @@ def pagina_canal_denuncias() -> None:
 
 
 def pagina_canal_publico() -> None:
-    inject_base_styles("aviso")
+    inject_base_styles("canal")
     with st.container(horizontal=True, key="aviso_faixa"):
         render_logo_faixa()
         if st.button("Entrar", type="primary", key="btn_cd_entrar"):
