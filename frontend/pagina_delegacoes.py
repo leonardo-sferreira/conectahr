@@ -15,7 +15,7 @@ def _fechar() -> None:
 
 
 @st.dialog("Nova delegação", width="small", on_dismiss=_fechar)
-def _nova() -> None:
+def _modal_nova_delegacao() -> None:
     st.selectbox("Substituto", [], placeholder="Seleção de substituto indisponível", disabled=True, key="dg_substituto")
     alerta(st.empty(), "atencao", "Não é possível selecionar um substituto nesta versão. A criação de delegações depende da disponibilização dessa seleção.")
     with st.container(horizontal=True, horizontal_alignment="right"):
@@ -120,4 +120,4 @@ def pagina_delegacoes() -> None:
             'A vigência segue a data de referência do sistema (UTC).</p>')
     _cartoes()
     if st.session_state.get("dg_modal") == "nova":
-        _nova()
+        _modal_nova_delegacao()

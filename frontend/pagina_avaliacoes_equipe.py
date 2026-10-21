@@ -26,7 +26,7 @@ def _abrir(alvo: dict, ciclo: dict) -> None:
     st.rerun()
 
 
-def _modal(alvo: dict, ciclo: dict) -> None:
+def _conteudo_avaliacao(alvo: dict, ciclo: dict) -> None:
     usuario_id = st.session_state.usuario.get("id")
     token = st.session_state.token
     try:
@@ -171,9 +171,16 @@ def pagina_avaliacoes_equipe() -> None:
     if modal := st.session_state.get("ae_modal"):
         # O alvo precisa continuar entre as atribuições da sessão; o backend confirma novamente a cada operação.
         alvo = next((a for a in avaliacoes if a["id"] == modal["alvo"].get("id")), None)
+
         if alvo and editavel(alvo):
             pessoa = linhas([alvo], dados["organograma"])[0]["nome"]
-            st.dialog(f"Avaliar {pessoa}", width="small", on_dismiss=fechar)(_modal)(alvo, ciclo)
+
+            @st.dialog(f"Avaliar {pessoa}", width="small", on_dismiss=fechar)
+            def _modal_avaliacao() -> None:
+                _conteudo_avaliacao(alvo, ciclo)
+
+            _modal_avaliacao()
+
         else:
             fechar()
             alerta(st.empty(), "atencao", "Esta avaliação não está disponível para edição.")
