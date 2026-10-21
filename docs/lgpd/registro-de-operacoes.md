@@ -27,7 +27,7 @@
 | F09 | Ausências e atestados | Tipo, período, **motivo (lista fechada)**; o arquivo do atestado **não é guardado no sistema** | Colaborador | **Sim** (saúde) | Obrigação legal (art. 11, II, "a") | Próprio, RH, Admin. **Gestor vê só tipo, período e status** | Xano (armazenamento do arquivo) | Prazo legal (a confirmar) | Arquivo privado; Gestor sem acesso ao atestado; ver RIPD |
 | F10 | Saúde e segurança do trabalho (SST) | Tipo de evento, **resultado do ASO**, médico responsável, documento; laudo de deficiência | Colaborador | **Sim** (saúde) | Obrigação legal: NR-7, eSocial e cota de PcD (art. 11, II, "a") | RH e Admin (laudo: também o próprio) | Xano | Longo, definido por norma (a confirmar) | Só metadados operacionais, nunca prontuário; acesso restrito; ver RIPD |
 | F11 | Desligamento | Solicitação, motivo, decisão, data efetiva | Colaborador | Não | Execução de contrato e obrigação legal | Próprio (a sua), Gestor (da equipe), RH, Admin | Xano | Prazo legal trabalhista | Decisão por outra pessoa; conta desativada e sessões revogadas |
-| F12 | Avaliação e desenvolvimento | Avaliações, respostas, metas, check-ins, PDI, contestações, reuniões individuais; **ciclo anual de metas** (metas, o que foi alcançado, autoavaliação e feedback do superior, change `ciclo-de-metas`, 20/10/2026) | Colaborador | Não | Legítimo interesse (art. 7º, IX); ver [legitimo-interesse.md](legitimo-interesse.md) | Participantes e RH; feedback privado só do autor e do RH. Ciclo de metas: a própria pessoa, o superior direto, o gestor do departamento, RH e Admin | Xano | Ciclo + prazo a confirmar | Revisão humana; nenhuma decisão automática de promoção ou punição |
+| F12 | Avaliação e desenvolvimento | Avaliações, respostas, metas, check-ins, PDI, contestações, reuniões individuais; **treinamentos concluídos** (data, validade, instrutor, link do certificado); **ciclo anual de metas** (metas, o que foi alcançado, autoavaliação e feedback do superior, change `ciclo-de-metas`, 20/10/2026) | Colaborador | Não | Legítimo interesse (art. 7º, IX); ver [legitimo-interesse.md](legitimo-interesse.md) | Participantes e RH; feedback privado só do autor e do RH. Ciclo de metas: a própria pessoa, o superior direto, o gestor do departamento, RH e Admin | Xano | Ciclo + prazo a confirmar | Revisão humana; nenhuma decisão automática de promoção ou punição |
 | F13 | Reconhecimento (mural) | Mensagem de reconhecimento, remetente, destinatário | Colaborador | Não | Legítimo interesse (art. 7º, IX) | **Todos os colaboradores** (mural público) | Xano | Prazo a confirmar | Só reconhecimento positivo; moderação; opção de sair do mural |
 | F14 | Aniversariantes do mês | Nome e dia/mês de nascimento | Colaborador | Não | Legítimo interesse (art. 7º, IX) | Todos os colaboradores | Xano | Enquanto vínculo | Só dia e mês; opção de sair da lista |
 | F15 | Pesquisa de clima e avaliação de riscos psicossociais da NR-1 (anônimas) | Nota por pergunta e departamento (escala de 1 a 5, de 0 a 10 ou de frequência); na avaliação psicossocial, o plano de ação é por setor (sem pessoa); comentário opcional sem autor, departamento ou data; participação separada | Colaborador | Não (se anônima) | Legítimo interesse (art. 7º, IX) | RH e Admin, **só o agregado**; a adesão (quantos responderam, no geral e por departamento) e os comentários em ordem alfabética, sem id, só com o mínimo de respostas | Xano | Agregado: prazo a confirmar | Resposta gravada só como contagem; grupo abaixo do mínimo suprimido; a tela pede para não escrever nomes no comentário; ver limitação conhecida no RIPD |
@@ -41,7 +41,7 @@
 
 O sistema **não coleta nem armazena** raça, sexo, religião, filiação sindical ou biometria. Nenhuma funcionalidade do escopo precisa desses dados. Criar qualquer campo desse tipo exige atualizar este registro e o [RIPD](ripd.md) antes.
 
-## Cobertura: 62 das 72 tabelas
+## Cobertura: 64 das 74 tabelas
 
 A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalidade. "Sem dado pessoal" significa que a tabela guarda só regras, catálogos ou conteúdo geral.
 
@@ -70,6 +70,7 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `desligamento_checklist` | F11 | `comentario_clima` | F15 |
 | `denuncia` | F20 | `denuncia_mensagem` | F20 |
 | `comissao_etica` | F20 | `acao_psicossocial` | F15 |
+| `treinamento` | Sem dado pessoal | `treinamento_conclusao` | F12 |
 | `ferias` | F08 | `solicitacao_rh` | F16 |
 | `historico_gestor_departamento` | F06 | `user` | F01 |
 | `historico_profissional` | F06 | `instrumento_normativo` | F18 |

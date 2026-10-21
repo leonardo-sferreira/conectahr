@@ -1,0 +1,158 @@
+// Edita um treinamento do catalogo, inclusive desativar (change treinamentos-obrigatorios, D2). As conclusoes ja
+// registradas nao mudam. Auditado. So RH e Admin.
+query "treinamentos/{id}" verb=PATCH {
+  api_group = "ConectaRH — Colaboradores"
+  auth = "user"
+
+  input {
+    int id
+    text nome filters=trim
+    text? descricao? filters=trim|max:1000
+    text categoria filters=trim|lower
+    int carga_horas
+    int validade_meses
+    bool obrigatorio
+    text publico filters=trim|lower
+    text? departamento_ids? filters=trim|max:500
+    bool ativo
+  }
+
+  stack {
+    db.get user {
+      field_name = "id"
+      field_value = $auth.id
+    } as $usuario_autenticado
+
+    precondition ($usuario_autenticado != null) {
+      error_type = "unauthorized"
+      error = "Usuario autenticado nao encontrado."
+    }
+
+    precondition ($usuario_autenticado.ativo) {
+      error_type = "unauthorized"
+      error = "Usuario inativo."
+    }
+
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
+
+    // Sessao do token: precisa existir, ser do usuario, estar ativa e no prazo.
+    db.get sessao {
+      field_name = "id"
+      field_value = $auth.extras.sessao_id
+    } as $sessao_token
+
+    precondition ($sessao_token.ativa) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.user_id == $auth.id) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.revogada_em == null) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    precondition ($sessao_token.expira_em > now) {
+      error_type = "unauthorized"
+      error = "Sessao encerrada ou expirada. Faca login novamente."
+    }
+
+    var $perfil_autenticado {
+      value = $usuario_autenticado.perfil|trim|to_upper
+    }
+
+    var $hoje {
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
+    }
+
+    precondition (($perfil_autenticado == "RH") || ($perfil_autenticado == "ADMIN")) {
+      error_type = "accessdenied"
+      error = "Somente RH ou Admin podem fazer isso."
+    }
+
+    db.get treinamento {
+      field_name = "id"
+      field_value = $input.id
+    } as $treinamento
+
+    precondition ($treinamento != null) {
+      error_type = "notfound"
+      error = "Treinamento nao encontrado."
+    }
+
+    precondition ((($input.nome|strlen) >= 3) && (($input.nome|strlen) <= 200)) {
+      error_type = "inputerror"
+      error = "O nome precisa ter de 3 a 200 caracteres."
+    }
+
+    var $categoria_agulha {
+      value = "," ~ $input.categoria ~ ","
+    }
+
+    precondition (",legal,seguranca,compliance,integracao,desenvolvimento,"|contains:$categoria_agulha) {
+      error_type = "inputerror"
+      error = "Categoria invalida."
+    }
+
+    precondition (($input.validade_meses >= 0) && ($input.validade_meses <= 120) && ($input.carga_horas >= 0) && ($input.carga_horas <= 1000)) {
+      error_type = "inputerror"
+      error = "Validade de 0 a 120 meses e carga horaria de 0 a 1000 horas."
+    }
+
+    precondition (($input.publico == "todos") || ($input.publico == "departamentos")) {
+      error_type = "inputerror"
+      error = "Publico invalido. Use todos ou departamentos."
+    }
+
+    var $departamentos_final {
+      value = ($input.publico == "todos") ? null : (($input.departamento_ids == null) ? "" : $input.departamento_ids)
+    }
+
+    precondition (($input.publico == "todos") || (($departamentos_final|strlen) >= 3)) {
+      error_type = "inputerror"
+      error = "Escolha pelo menos um departamento."
+    }
+
+    db.edit treinamento {
+      field_name = "id"
+      field_value = $treinamento.id
+      data = {
+        nome            : $input.nome
+        descricao       : $input.descricao
+        categoria       : $input.categoria
+        carga_horas     : $input.carga_horas
+        validade_meses  : $input.validade_meses
+        obrigatorio     : $input.obrigatorio
+        publico         : $input.publico
+        departamento_ids: $departamentos_final
+        ativo           : $input.ativo
+        updated_at      : "now"
+      }
+    } as $treinamento_editado
+
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "editar_treinamento"
+        recurso    : "treinamento"
+        registro_id: $treinamento.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
+  }
+
+  response = {
+    sucesso    : true
+    mensagem   : "Treinamento atualizado."
+    treinamento: $treinamento_editado
+  }
+
+  guid = "conectahr-treinamentos-id-patch-0001"
+}
