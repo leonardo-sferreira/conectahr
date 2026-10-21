@@ -959,6 +959,13 @@ _APP_CSS = f"""
   .crh-pcr-kv {{ display: flex; justify-content: space-between; gap: 12px; margin: 10px 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-pcr-kv b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
   .crh-pcr-kv b.ambar {{ color: {AMBAR_ESCURO}; }}
+  /* F18 (248:2766): série mensal; ausências usam as barras horizontais existentes. */
+  .crh-ie-serie {{ display: flex; gap: 10px; align-items: end; margin-top: 18px; }}
+  .crh-ie-mes {{ flex: 1; min-width: 0; text-align: center; font-family: 'Manrope', sans-serif; }}
+  .crh-ie-coluna {{ height: 160px; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 6px; }}
+  .crh-ie-valor {{ font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-ie-barra {{ width: 28px; max-width: 100%; background: {AMBAR}; border-radius: 4px; }}
+  .crh-ie-rotulo {{ margin: 6px 0 0; font-size: 11px; color: {GRAFITE_SECUNDARIO}; }}
   /* RH — Pedidos LGPD (Figma 249:5709 e 249:5955): linha vencendo, resumo e detalhe do modal. */
   div[class*="st-key-rh_lin_"][class*="_alerta"] {{ background: #FFFBEB; }}
   .crh-lgpd-resumo {{ background: {MARFIM}; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; }}
@@ -1135,6 +1142,7 @@ _ESCURO_CSS = f"""
   .stApp {{ background: {ESC_FUNDO} !important; }}
   /* Faixa do título: no escuro ela some no fundo (Figma 108:870). */
   .crh-hero {{ background: transparent; padding-left: 0; padding-right: 0; }}
+  .crh-ie-valor, .crh-ie-rotulo {{ color: {ESC_TEXTO_2}; }}
   .crh-painel, .st-key-onb_voce, .st-key-onb_rh, .st-key-onb_gestor, .st-key-onb_inicio, .st-key-onb_pendencias,
   div[class*="st-key-cfg_card_"], .st-key-doc_lista, .st-key-doc_pendentes, .crh-aviso-pg .bloco {{
     background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; box-shadow: none;
@@ -1678,6 +1686,31 @@ def render_indicadores(indicadores: list[tuple[str, str, str]]) -> None:
         )
         + "</div>"
     )
+
+
+def render_horas_mensais(serie: list[dict]) -> None:
+    """F18: valores de horas já calculados pelo backend; None nunca é desenhado como zero."""
+    maximo = max((i["valor"] for i in serie if i["valor"] is not None), default=0) or 1
+    colunas = []
+    for item in serie:
+        altura = round(item["valor"] / maximo * 120, 2) if item["valor"] is not None else 0
+        descricao = f'{item["rotulo"]}: {item["texto"]} · {item["situacao"]}'
+        colunas.append(f'<div class="crh-ie-mes" title="{html.escape(descricao, quote=True)}">'
+                       f'<div class="crh-ie-coluna"><span class="crh-ie-valor">{html.escape(item["texto"])}</span>'
+                       f'<div class="crh-ie-barra" style="height:{altura}px"></div></div>'
+                       f'<p class="crh-ie-rotulo">{html.escape(item["rotulo"])}</p></div>')
+    st.html('<div class="crh-painel crh-bloco"><p class="crh-bloco-titulo">Horas extras por mês</p>'
+            '<div class="crh-ie-serie">' + ''.join(colunas) + '</div></div>')
+
+
+def render_barras_indicadores(titulo: str, linhas: list[tuple[str, int]] | None, nota: str) -> None:
+    """Reutiliza as barras de clima do tema para agregados sem identificação de pessoas."""
+    total = sum(n for _, n in linhas) if linhas else 0
+    corpo = ''.join(f'<div class="crh-pcr-barra"><div class="r"><span>{html.escape(nome)}</span><span>{n}</span></div>'
+                    f'<div class="barra"><span style="width:{round(n / total * 100)}%"></span></div></div>' for nome, n in linhas or [])
+    if not corpo:
+        corpo = f'<p class="crh-meta">{html.escape(nota if linhas is None else "Nenhuma solicitação aprovada ou registrada no período.")}</p>'
+    st.html(f'<div class="crh-painel crh-bloco"><p class="crh-bloco-titulo">{html.escape(titulo)}</p>{corpo}</div>')
 
 
 def render_titulo_cartao(titulo: str, subtitulo: str | None = None) -> None:

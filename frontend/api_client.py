@@ -219,6 +219,11 @@ def meu_banco_horas(token: str) -> dict:
     return _get("meu_banco_horas", token, GRUPO_PONTO)
 
 
+def banco_horas_colaborador(token: str, colaborador_id: int) -> dict:
+    """GET colaboradores/{id}/banco_horas: saldo corrente autorizado pelo backend, sem filtro temporal."""
+    return _get(f"colaboradores/{int(colaborador_id)}/banco_horas", token, GRUPO_PONTO)
+
+
 def aniversariantes(token: str) -> dict:
     """GET colaboradores/aniversariantes -> {mes, aniversariantes: [{id, nome, aniversario}]}."""
     return _get("colaboradores/aniversariantes", token, GRUPO_COLABORADORES)

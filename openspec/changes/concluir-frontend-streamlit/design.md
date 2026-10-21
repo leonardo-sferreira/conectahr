@@ -446,3 +446,30 @@ Figma conferido pelo MCP: tela `248:2235` e modal `248:2465`.
   pelo frontend. `pagina_central.py` e Xano permanecem inalterados.
 - HTTP real por perfil continua não verificado sem sessão de teste. A tarefa 55 e as dependências
   do F17 completo continuam abertas; as verificações locais cobrem somente o escopo parcial.
+
+## Indicadores da equipe — F18 parcial (21/10/2026, tarefa 49)
+
+Change `indicadores-da-equipe`, evidência em `docs/evidencias/frontend-indicadores-equipe.md`.
+Figma conferido pelo MCP: seção 248:2671, tela 248:2694, escuro 315:3925.
+
+- Página `/indicadores-da-equipe`, só Gestor, usando topbar, hero, cards e barras do tema.
+- Única opção verificada: Últimos 6 meses (mês corrente e cinco anteriores, até hoje em Brasília).
+  Somar `horas_extras` gravadas por mês, sem substituir por saldo diário. Sem registros válidos
+  para todos os membros do recorte, mostrar `—`. Isso não afirma fechamento da folha.
+- Folha: snapshot das pessoas autorizadas por `folha_ponto/pessoas`, exceto próprio/desligados.
+  Não é automaticamente o F14 nem o departamento inteiro. Ausências contam solicitações
+  Aprovada/Registrado que tocam o período, uma vez por ID, não dias/pessoas nem férias; a unidade
+  aparece na tela. Um mês indisponível impede a contagem global, sem total parcial disfarçado.
+- Banco: departamento cujo gestor é o colaborador autenticado, resolvido pelo organograma;
+  pessoas não desligadas, exceto próprio. Cada saldo vem de `colaboradores/{id}/banco_horas`.
+  Total só se todas as consultas forem válidas; corrente, sem filtro dos seis meses. O recorte
+  e a quantidade aparecem separados da folha. Falha nessa fonte não derruba os gráficos.
+- Piso padrão de cinco pessoas da spec de indicadores aplicado a cada grupo na apresentação.
+  Sem acesso à configuração administrativa; isso não altera autorização ou mínimo no Xano.
+- **Figma prevê:** absenteísmo, horas extras, banco, clima/eNPS e CSV. **Backend atual:** permite
+  agregação parcial de horas/ausências da folha e banco autorizado, mas não sustenta a precisão
+  e interpretação do absenteísmo, clima ao Gestor, cobertura departamental completa ou CSV
+  auditado do F18. Absenteísmo/clima ficam `—`; CSV desabilitado, sem download local.
+- Não consultar calendário, indicadores globais, resultados de clima nem catálogo restrito.
+  Cache de 60 s por sessão, somente campos necessários; limpar no logout e oferecer Atualizar.
+  A tarefa geral e as dependências continuam abertas; HTTP real sem sessão não verificado.

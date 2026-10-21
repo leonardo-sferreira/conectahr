@@ -846,6 +846,35 @@ RH/ADMIN, com filtro opcional de período (`data_inicio`/`data_fim`, padrão úl
 
 Mesmos dados do painel, formatados como texto CSV. Audita `exportar_indicadores_csv`. **Gap consciente:** exportação em PDF não implementada — XanoScript nesta plataforma não tem filtro/primitiva nativa de renderização de PDF; exigiria serviço externo via `api.request`, fora do escopo até aqui (`xano-workspace/api/conecta_rh_colaboradores/indicadores/exportar_csv_GET.xs`).
 
+### Indicadores parciais do Gestor — F18 (21/10/2026)
+
+Change `indicadores-da-equipe`. A página do Gestor não usa `indicadores` nem `indicadores/exportar_csv`,
+que continuam RH/Admin. Folha e banco têm coberturas diferentes, indicadas separadamente:
+
+- **Folha:** pessoas autorizadas por `folha_ponto/pessoas`, exceto próprio e desligados, sem
+  reduzir automaticamente aos subordinados diretos nem afirmar departamento completo. Últimos
+  seis meses inclui o corrente até hoje em Brasília. Horas extras são a soma de `horas_extras`
+  gravadas em `folha_ponto/mes`, não saldo diário nem créditos do banco. Mês sem registros de
+  algum membro ou valor inválido fica indisponível; zero só com valores válidos que somem zero.
+  Não equivale a fechamento de jornada ou aprovação de uma rubrica de horas extras.
+- **Ausências:** solicitações Aprovada/Registrado retornadas pela folha que sobrepõem o período,
+  deduplicadas por ID e agrupadas por tipo. A unidade é registro/solicitação, não dias ou pessoas;
+  férias não entram. Qualquer mês sem cobertura impede a contagem global; vazio confirmado é
+  mostrado como nenhuma solicitação, diferente de falha.
+- **Banco:** soma de `saldo_horas` retornados por `colaboradores/{id}/banco_horas` para pessoas
+  do departamento gerenciado (organograma), exceto próprio/desligados. Identificação ambígua,
+  catálogo incompleto ou falha individual impede o total. É saldo corrente sem recorte temporal,
+  preservando sinais; não aplicar expiração ou regra nova aos lançamentos.
+- **Privacidade:** piso padrão de cinco pessoas por grupo na apresentação, conforme a spec
+  Indicadores sem identificação de pessoas; sem consulta à configuração administrativa e sem
+  alterar autorização no backend. Não expor nomes individuais, IDs, documentos ou dados bancários.
+- **Indisponíveis:** Absenteísmo (a fórmula administrativa conta ausências/headcount, sem jornada
+  histórica nem precisão do Figma), clima/eNPS (resultado restrito a RH/Admin) e CSV (auditoria
+  exigida, contrato restrito). Clima mantém o texto do mínimo de cinco pessoas, sem consultar
+  notas/comentários. CSV desabilitado, sem arquivo local fingindo auditoria.
+
+O F18 completo continua pendente. Sem mudanças de backend ou permissões.
+
 ### 15.2.1 Notificações internas (sino do topo, desde 12/10/2026)
 
 Entidade `notificacao_interna`: `destinatario_user_id`, `tipo`, `titulo`, `mensagem`, `recurso`, `registro_id`, `lida`, `lida_em`. `minhas_notificacoes` GET devolve as 50 mais recentes do próprio usuário, com `criada_em`, e o total de não lidas; `notificacoes/{id}/marcar_lida` e `notificacoes/marcar_todas_lidas` POST só mexem nas do próprio usuário. Ninguém recebe aviso de uma ação própria.
