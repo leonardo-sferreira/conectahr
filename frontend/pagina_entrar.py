@@ -151,6 +151,12 @@ def pagina_entrar() -> None:
             if st.button("Aviso de privacidade →", type="tertiary", key="btn_link_aviso"):
                 st.session_state.ir_aviso = True
                 st.rerun()
+        # Canal de denúncias, também sem login (Lei 14.457/2022; change canal-de-denuncias).
+        with st.container(horizontal=True, horizontal_alignment="center", key="crh_link_canal"):
+            st.html('<p class="crh-link-aviso-rotulo">Algo errado no trabalho?</p>', width="content")
+            if st.button("Canal de denúncias →", type="tertiary", key="btn_link_canal"):
+                st.session_state.ir_canal = True
+                st.rerun()
 
         # Aviso deixado pela etapa anterior. Fica na sessão porque um aviso seguido de
         # st.rerun() some na hora. Alertas ficam dentro do card, abaixo do título

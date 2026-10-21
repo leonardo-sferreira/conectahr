@@ -36,6 +36,7 @@
 | F17 | E-mail transacional (`email_outbox`) | 6 meses para mensagens enviadas | Do envio | Anular destinatário e corpo | Limpeza na rotina diária (tarefa 4.21) |
 | F18 | Regras e instrumentos normativos | Prazo legal do instrumento | Do fim da vigência | Mantidos (sem dado pessoal direto) | Em vigor |
 | F19 | Onboarding, pendências de documento e delegações | 2 anos | Da conclusão | Anonimizar | A implementar |
+| F20 | Canal de denúncias (`denuncia`, `denuncia_mensagem`) | 5 anos | Da conclusão da apuração | Anonimizar o relato, a identificação e a conversa; manter o tipo, as datas e o resultado | A implementar |
 
 ## Como o sistema aplica os prazos
 

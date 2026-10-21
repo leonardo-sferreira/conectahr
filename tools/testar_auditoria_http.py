@@ -10,8 +10,8 @@ import sys
 import tomllib
 from pathlib import Path
 
-import requests
 from ler_senha import ler_senha
+from limite_http import pedir
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -33,7 +33,7 @@ def conferir(ok, descricao, detalhe=None):
 
 
 def chamar(metodo, caminho, token=None, corpo=None, grupo=COLAB, params=None):
-    r = requests.request(metodo, f"{BASE}api:{grupo}/{caminho}", json=corpo, params=params,
+    r = pedir(metodo, f"{BASE}api:{grupo}/{caminho}", json=corpo, params=params,
                          headers={"Authorization": f"Bearer {token}"} if token else {}, timeout=30)
     try:
         return r.status_code, r.json()

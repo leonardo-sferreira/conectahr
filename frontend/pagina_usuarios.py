@@ -16,6 +16,7 @@ import streamlit as st
 from api_client import ApiError, alterar_status_usuario, aprovar_pedido_acesso, recusar_pedido_acesso, trocar_perfil, vincular_colaborador
 from cadastro_modelo import (PERFIS, SITUACOES_USUARIO, fichas_sem_conta, linhas_pedidos_acesso, linhas_usuarios, perfil, resumo_usuarios,
                              validar_recusa_acesso)
+from comissao_etica_ui import cartao_comissao_etica
 from pagina_colaboradores import carregar, concluir, fechar, modal_criar_acesso, pedidos_acesso
 from theme import alerta, render_hero, render_indicadores, render_topbar
 
@@ -243,6 +244,8 @@ def pagina_usuarios() -> None:
     linhas = linhas_usuarios(lista, colabs, usuario.get("id"), meu_perfil, busca, filtro, situacao)
     _tabela(linhas, token)
     st.html('<p class="crh-meta">Toda troca de perfil, desativação e vínculo fica na auditoria. Ninguém troca o próprio perfil nem vincula a própria conta. Conta sem ficha não marca ponto nem pede férias: use "Vincular ficha".</p>')
+    # Comissão de ética do canal de denúncias (change canal-de-denuncias).
+    cartao_comissao_etica(token, lista)
 
     modal = st.session_state.get("modal_cadastro")
     if not modal:

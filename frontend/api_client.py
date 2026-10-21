@@ -1122,10 +1122,11 @@ def pesquisas_clima_rh(token: str) -> dict:
     return _get("pesquisas_clima_rh", token, GRUPO_COLABORADORES)
 
 
-def criar_pesquisa_clima(token: str, titulo: str, descricao: str | None, data_inicio: str, data_fim: str, minimo: int, perguntas: list[dict]) -> dict:
-    """POST pesquisas_clima: a pesquisa e as perguntas ([{texto, escala}]) numa chamada."""
+def criar_pesquisa_clima(token: str, titulo: str, descricao: str | None, data_inicio: str, data_fim: str, minimo: int, perguntas: list[dict],
+                         tipo: str = "clima") -> dict:
+    """POST pesquisas_clima: a pesquisa e as perguntas ([{texto, escala, dimensao?, sentido?}]) numa chamada. tipo: clima ou psicossocial."""
     return _post("pesquisas_clima", {"titulo": titulo, "descricao": descricao or None, "data_inicio": data_inicio, "data_fim": data_fim,
-                                     "minimo_respostas": int(minimo), "perguntas": perguntas}, token, GRUPO_COLABORADORES)
+                                     "minimo_respostas": int(minimo), "perguntas": perguntas, "tipo": tipo}, token, GRUPO_COLABORADORES)
 
 
 def adicionar_pergunta_clima(token: str, pesquisa_id: int, texto: str, escala: str, ordem: int) -> dict:
@@ -1205,3 +1206,106 @@ def status_operacional(token: str) -> dict:
 def processar_rotina_diaria(token: str) -> dict:
     """POST rotinas/processar_diarias -> {aplicadas: contagens do que mudou}. Idempotente."""
     return _post("rotinas/processar_diarias", {}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Canal de denúncias (change canal-de-denuncias). As três primeiras são públicas: vão sem token, e nada liga a
+# denúncia a uma conta.
+# ---------------------------------------------------------------------------
+def enviar_denuncia(tipo: str, relato: str, quando: str | None, envolvidos: str | None, identificacao: str | None) -> dict:
+    """POST denuncias (público) -> {protocolo, codigo}. O código só existe nesta resposta."""
+    return _post("denuncias", {"tipo": tipo, "relato": relato, "quando": quando or None, "envolvidos": envolvidos or None,
+                               "identificacao": identificacao or None}, None, GRUPO_COLABORADORES)
+
+
+def acompanhar_denuncia(codigo: str) -> dict:
+    """POST denuncias/acompanhar (público) -> {protocolo, tipo, status, recebida_em, resultado, parecer, mensagens}."""
+    return _post("denuncias/acompanhar", {"codigo": codigo}, None, GRUPO_COLABORADORES)
+
+
+def responder_denuncia(codigo: str, texto: str) -> dict:
+    """POST denuncias/responder (público): quem denunciou escreve para a comissão."""
+    return _post("denuncias/responder", {"codigo": codigo, "texto": texto}, None, GRUPO_COLABORADORES)
+
+
+def denuncias(token: str) -> dict:
+    """GET denuncias -> {contagens, denuncias} (só a comissão de ética)."""
+    return _get("denuncias", token, GRUPO_COLABORADORES)
+
+
+def denuncia(token: str, denuncia_id: int) -> dict:
+    """GET denuncias/{id} -> {denuncia (com a identificação), mensagens}. Cada abertura fica na auditoria."""
+    return _get(f"denuncias/{int(denuncia_id)}", token, GRUPO_COLABORADORES)
+
+
+def mensagem_denuncia(token: str, denuncia_id: int, texto: str) -> dict:
+    """POST denuncias/{id}/mensagem: a comissão escreve para quem denunciou; a primeira passa a em apuração."""
+    return _post(f"denuncias/{int(denuncia_id)}/mensagem", {"texto": texto}, token, GRUPO_COLABORADORES)
+
+
+def concluir_denuncia(token: str, denuncia_id: int, resultado: str, parecer: str) -> dict:
+    """POST denuncias/{id}/concluir: procedente, improcedente ou inconclusiva, com o parecer final."""
+    return _post(f"denuncias/{int(denuncia_id)}/concluir", {"resultado": resultado, "parecer": parecer}, token, GRUPO_COLABORADORES)
+
+
+def comissao_etica(token: str) -> dict:
+    """GET comissao_etica -> {membros: [{id, user_id, nome, perfil}]} (só o Admin)."""
+    return _get("comissao_etica", token, GRUPO_COLABORADORES)
+
+
+def incluir_comissao_etica(token: str, user_id: int) -> dict:
+    return _post("comissao_etica", {"user_id": int(user_id)}, token, GRUPO_COLABORADORES)
+
+
+def remover_comissao_etica(token: str, membro_id: int) -> dict:
+    return _post(f"comissao_etica/{int(membro_id)}/remover", {}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Riscos psicossociais (NR-1; change riscos-psicossociais). A avaliação usa as rotas da pesquisa de clima com
+# tipo "psicossocial"; o plano de ação tem rotas próprias.
+# ---------------------------------------------------------------------------
+def acoes_psicossociais(token: str, pesquisa_id: int | None = None) -> dict:
+    """GET acoes_psicossociais -> {hoje, acoes} (RH e Admin)."""
+    caminho = f"acoes_psicossociais?pesquisa_id={int(pesquisa_id)}" if pesquisa_id else "acoes_psicossociais"
+    return _get(caminho, token, GRUPO_COLABORADORES)
+
+
+def criar_acao_psicossocial(token: str, pesquisa_id: int, departamento_id: int | None, dimensao: str, nivel: str | None, medida: str,
+                            responsavel: str, prazo: str) -> dict:
+    return _post("acoes_psicossociais", {"pesquisa_id": int(pesquisa_id), "departamento_id": departamento_id or 0, "dimensao": dimensao,
+                                         "nivel_risco": nivel or None, "medida": medida, "responsavel": responsavel, "prazo": prazo}, token, GRUPO_COLABORADORES)
+
+
+def atualizar_acao_psicossocial(token: str, acao_id: int, status: str, medida: str | None = None, responsavel: str | None = None,
+                                prazo: str | None = None) -> dict:
+    return _request("PATCH", f"acoes_psicossociais/{int(acao_id)}", token, GRUPO_COLABORADORES,
+                    {"status": status, "medida": medida or None, "responsavel": responsavel or None, "prazo": prazo or None})
+
+
+# ---------------------------------------------------------------------------
+# Treinamentos obrigatórios (change treinamentos-obrigatorios)
+# ---------------------------------------------------------------------------
+def treinamentos(token: str) -> dict:
+    """GET treinamentos -> {hoje, treinamentos, conclusoes, pessoas, departamentos} (RH e Admin)."""
+    return _get("treinamentos", token, GRUPO_COLABORADORES)
+
+
+def salvar_treinamento(token: str, dados: dict, treinamento_id: int | None = None) -> dict:
+    """POST treinamentos (novo) ou PATCH treinamentos/{id} (editar, com `ativo`)."""
+    if treinamento_id:
+        return _request("PATCH", f"treinamentos/{int(treinamento_id)}", token, GRUPO_COLABORADORES, dados)
+    return _post("treinamentos", dados, token, GRUPO_COLABORADORES)
+
+
+def registrar_conclusao_treinamento(token: str, treinamento_id: int, colaborador_ids: list[int], concluido_em: str, instrutor: str | None,
+                                    certificado_url: str | None) -> dict:
+    """POST treinamentos/{id}/conclusoes -> {registradas, puladas, valido_ate}: uma turma de uma vez."""
+    return _post(f"treinamentos/{int(treinamento_id)}/conclusoes", {"colaborador_ids": [int(c) for c in colaborador_ids], "concluido_em": concluido_em,
+                                                                     "instrutor": instrutor or None, "certificado_url": certificado_url or None},
+                 token, GRUPO_COLABORADORES)
+
+
+def meus_treinamentos(token: str) -> dict:
+    """GET meus_treinamentos -> {hoje, obrigatorios, conclusoes} (a própria pessoa)."""
+    return _get("meus_treinamentos", token, GRUPO_COLABORADORES)

@@ -111,7 +111,7 @@ query "pesquisas_clima_rh" verb=GET {
             conditional {
               if ($pergunta.pesquisa_clima_id == $pesquisa.id) {
                 var.update $perguntas_da_pesquisa {
-                  value = $perguntas_da_pesquisa|push:{id: $pergunta.id, texto: $pergunta.texto, ordem: $pergunta.ordem, escala: $pergunta.escala}
+                  value = $perguntas_da_pesquisa|push:{id: $pergunta.id, texto: $pergunta.texto, ordem: $pergunta.ordem, escala: $pergunta.escala, dimensao: $pergunta.dimensao, sentido: $pergunta.sentido}
                 }
               }
             }
@@ -223,6 +223,7 @@ query "pesquisas_clima_rh" verb=GET {
           value = $pesquisas|push:{
             id               : $pesquisa.id
             titulo           : $pesquisa.titulo
+            tipo             : $pesquisa.tipo
             descricao        : $pesquisa.descricao
             data_inicio      : $pesquisa.data_inicio
             data_fim         : $pesquisa.data_fim

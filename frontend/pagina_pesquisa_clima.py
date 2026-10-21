@@ -56,8 +56,9 @@ def _questionario(token: str, pesquisa: dict) -> None:
                 f'<div class="crh-pc-progresso"><p>{html.escape(rotulo)}</p><div class="barra"><span style="width:{pct}%"></span></div></div>'
                 f'<p class="crh-pc-pergunta">{html.escape(pergunta.get("texto") or "")}</p>')
         notas = _notas(pesquisa)
+        rotulos = esc.get("rotulos") or {}
         notas[pergunta["id"]] = st.segmented_control("Nota", esc["notas"], default=notas.get(pergunta["id"]), key=f"pc_nota_{pesquisa['id']}_{pergunta['id']}",
-                                                     label_visibility="collapsed")
+                                                     format_func=lambda n: rotulos.get(n, str(n)), label_visibility="collapsed")
         st.html(f'<div class="crh-pc-extremos"><span>{html.escape(esc["min"])}</span><span>{html.escape(esc["max"])}</span></div>')
         ultima = passo == total - 1
         comentario = ""

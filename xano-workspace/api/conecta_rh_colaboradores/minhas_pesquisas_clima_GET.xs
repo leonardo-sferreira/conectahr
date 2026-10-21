@@ -161,6 +161,7 @@ query "minhas_pesquisas_clima" verb=GET {
           value = $pesquisas|push:{
             id               : $pesquisa.id
             titulo           : $pesquisa.titulo
+            tipo             : $pesquisa.tipo
             descricao        : $pesquisa.descricao
             data_inicio      : $pesquisa.data_inicio
             data_fim         : $pesquisa.data_fim

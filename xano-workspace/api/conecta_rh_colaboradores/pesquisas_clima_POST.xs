@@ -1,7 +1,9 @@
 // RH/ADMIN cria uma pesquisa de clima. As perguntas podem vir juntas em `perguntas`
 // (lista de {texto, escala}; change pesquisa-clima-e-avaliacao-360, D3), numa chamada so,
 // ou ser adicionadas depois via `pesquisas_clima/{id}/perguntas`, antes de a pesquisa abrir.
-// escala: concordancia (1 a 5, o padrao) ou nps (0 a 10).
+// escala: concordancia (1 a 5, o padrao), nps (0 a 10) ou frequencia (1 a 5, nunca a sempre).
+// tipo psicossocial (change riscos-psicossociais, D1): a avaliacao de riscos da NR-1; cada pergunta
+// traz a dimensao e o sentido (risco ou protecao).
 query pesquisas_clima verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -13,6 +15,7 @@ query pesquisas_clima verb=POST {
     date data_fim
     int? minimo_respostas? filters=min:2
     json? perguntas?
+    text? tipo? filters=trim|lower
   }
 
   stack {
@@ -101,11 +104,29 @@ query pesquisas_clima verb=POST {
           error = "Cada pergunta precisa ter de 5 a 500 caracteres."
         }
 
-        precondition (($escala_pergunta == "") || ($escala_pergunta == "concordancia") || ($escala_pergunta == "nps")) {
+        precondition (($escala_pergunta == "") || ($escala_pergunta == "concordancia") || ($escala_pergunta == "nps") || ($escala_pergunta == "frequencia")) {
           error_type = "inputerror"
-          error = "Escala invalida. Use concordancia ou nps."
+          error = "Escala invalida. Use concordancia, nps ou frequencia."
+        }
+
+        var $sentido_pergunta {
+          value = (($pergunta_entrada|get:"sentido")|to_text)|trim
+        }
+
+        precondition (($sentido_pergunta == "") || ($sentido_pergunta == "risco") || ($sentido_pergunta == "protecao")) {
+          error_type = "inputerror"
+          error = "Sentido invalido. Use risco ou protecao."
         }
       }
+    }
+
+    var $tipo_final {
+      value = (($input.tipo == null) || ($input.tipo == "")) ? "clima" : $input.tipo
+    }
+
+    precondition (($tipo_final == "clima") || ($tipo_final == "psicossocial")) {
+      error_type = "inputerror"
+      error = "Tipo invalido. Use clima ou psicossocial."
     }
 
     var $minimo_final {
@@ -121,6 +142,7 @@ query pesquisas_clima verb=POST {
         minimo_respostas               : $minimo_final
         criado_por_user_id                : $usuario_autenticado.id
         ativo                                : true
+        tipo                                    : $tipo_final
         updated_at                              : "now"
       }
     } as $pesquisa_criada
@@ -139,12 +161,22 @@ query pesquisas_clima verb=POST {
           value = (($pergunta_nova|get:"escala")|to_text)|trim
         }
 
+        var $dimensao_nova {
+          value = (($pergunta_nova|get:"dimensao")|to_text)|trim
+        }
+
+        var $sentido_novo {
+          value = (($pergunta_nova|get:"sentido")|to_text)|trim
+        }
+
         db.add pergunta_clima {
           data = {
             pesquisa_clima_id: $pesquisa_criada.id
             texto            : (($pergunta_nova|get:"texto")|to_text)|trim
             ordem            : $ordem_pergunta
-            escala           : ($escala_nova == "nps" ? "nps" : "concordancia")
+            escala           : ($escala_nova == "nps" ? "nps" : ($escala_nova == "frequencia" ? "frequencia" : "concordancia"))
+            dimensao         : (($dimensao_nova == "") ? null : $dimensao_nova)
+            sentido          : (($sentido_novo == "") ? null : $sentido_novo)
           }
         } as $pergunta_criada
       }

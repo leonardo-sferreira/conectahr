@@ -16,6 +16,12 @@ table pesquisa_clima {
       table = "user"
     }
     bool ativo?=true
+
+    // Tipo (change riscos-psicossociais, D1): clima (o padrao) ou psicossocial (avaliacao de
+    // riscos psicossociais da NR-1, com o questionario padrao por dimensao).
+    enum tipo?=clima {
+      values = ["clima", "psicossocial"]
+    }
   }
 
   index = [

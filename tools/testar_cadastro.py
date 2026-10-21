@@ -14,6 +14,7 @@ Uso (na raiz do repositório):
     python tools/testar_cadastro.py
 """
 
+import copy
 import html as html_lib
 import logging
 import re
@@ -98,6 +99,10 @@ def _instalar():
     api_client.meus_comunicados = lambda token: {"comunicados": []}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.organograma = lambda token: ORGANOGRAMA
+    # Cartão "Comissão de ética" de Usuários e perfis (change canal-de-denuncias).
+    api_client.comissao_etica = lambda token: {"membros": copy.deepcopy(estado.get("membros", []))}
+    api_client.incluir_comissao_etica = lambda token, uid: chamadas.append(("incluir_comissao", uid)) or {"sucesso": True}
+    api_client.remover_comissao_etica = lambda token, mid: chamadas.append(("remover_comissao", mid)) or {"sucesso": True}
     api_client.colaboradores = lambda token: chamadas.append(("colaboradores",)) or _falha_ou("colaboradores", {"colaboradores": estado["colabs"]})
     api_client.usuarios = lambda token: chamadas.append(("usuarios",)) or _falha_ou("usuarios", {"usuarios": estado["usuarios"]})
     # Documentos da ficha (pedido de 13/10/2026): todos, a ficha filtra pela pessoa.
@@ -582,6 +587,21 @@ for _arq in sorted((RAIZ / "frontend").glob("pagina_*.py")):
             if _e_dialogo != _f.name.lstrip("_").startswith("modal"):
                 _trocados.append(f"{_arq.name}:{_f.name}")
 conferir(not _trocados, "toda função de modal tem @st.dialog, e nenhuma outra tem" + (f" (trocados: {_trocados})" if _trocados else ""))
+
+print("\nComissão de ética (change canal-de-denuncias)")
+at = app("ADMIN", "usuarios-e-perfis")
+conferir("Comissão de ética" in texto(at) and "Ninguém na comissão ainda" in texto(at), "sem membros: aviso para incluir")
+at = app("ADMIN", "usuarios-e-perfis", membros=[{"id": 1, "user_id": 2, "nome": "Ana Ribeiro", "perfil": "RH"}])
+conferir("Ana Ribeiro" in texto(at) and "ce_remover_1" in chaves(at) and "Ana Ribeiro" not in at.selectbox(key="ce_incluir_conta").options, "membro listado e fora da lista de inclusão")
+at.button(key="ce_remover_1").click()
+at = at.run()
+conferir(("remover_comissao", 1) in chamadas, "remover da comissão")
+at = app("ADMIN", "usuarios-e-perfis")
+opcao = next(u["id"] for u in usuarios() if u.get("ativo"))
+at.selectbox(key="ce_incluir_conta").set_value(opcao)
+at.button(key="ce_incluir").click()
+at = at.run()
+conferir(("incluir_comissao", opcao) in chamadas, "incluir na comissão")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:
