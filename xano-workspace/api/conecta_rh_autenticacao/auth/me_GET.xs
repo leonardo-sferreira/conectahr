@@ -94,10 +94,21 @@ query "auth/me" verb=GET {
         }
       }
     }
+
+    // Membro ativo da comissao de etica (change canal-de-denuncias, D5): o menu mostra "Denuncias".
+    db.query comissao_etica {
+      where = $db.comissao_etica.user_id == $user.id && $db.comissao_etica.ativo == true
+      return = {type: "single"}
+    } as $membro_comissao
+
+    var $membro_comissao_etica {
+      value = ($membro_comissao != null)
+    }
   }
 
   response = {
     autenticado          : true
+    membro_comissao_etica: $membro_comissao_etica
     id                   : $user.id
     nome                 : $user.nome
     email                : $user.email

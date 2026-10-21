@@ -35,12 +35,13 @@
 | F17 | Envio de e-mail transacional | Nome, e-mail, conteúdo da mensagem (código, avisos) | Usuário | Não | Execução de contrato e legítimo interesse | Sistema; RH e Admin processam a fila | **Brevo** | Mensagens enviadas: 6 a 12 meses (a confirmar) | Fila com chave de idempotência; avisos de segurança não podem ser desativados |
 | F18 | Regras e conformidade trabalhista | Instrumentos normativos, regras e exceções por contrato, regra aplicada a cada colaborador | Colaborador (vínculo) | Não | Obrigação legal (art. 7º, II) | RH e Admin | Xano | Prazo legal | Aprovação por outra pessoa; versionamento |
 | F19 | Onboarding, documentos pendentes e delegações | Etapas e responsáveis, pendências de documento, delegações de aprovação | Colaborador, Gestor | Não | Execução de contrato | Próprio, Gestor, RH, Admin | Xano | Prazo a confirmar | Delegação com vigência e bloqueio de autodelegação |
+| F20 | Canal de denúncias (Lei 14.457/2022) | Tipo, relato, quando e envolvidos (texto livre, pode citar terceiros); **identificação só se a pessoa quiser** (nome e contato digitados); conversa com a comissão; resultado e parecer | Denunciante (anônimo ou identificado) e pessoas citadas | Pode conter (o relato é livre) | Obrigação legal (Lei 14.457/2022, art. 23) e legítimo interesse | **Só a comissão de ética** (membros escolhidos pelo Admin; nem RH nem Admin sem ser membro); quem denunciou, pelo código | Xano | 5 anos da conclusão (a confirmar) | Canal público, sem vínculo com conta nem horário (só a data); código de acompanhamento guardado só como hash e mostrado uma vez; cada abertura na auditoria; retaliação proibida |
 
 ## Decisão de minimização
 
 O sistema **não coleta nem armazena** raça, sexo, religião, filiação sindical ou biometria. Nenhuma funcionalidade do escopo precisa desses dados. Criar qualquer campo desse tipo exige atualizar este registro e o [RIPD](ripd.md) antes.
 
-## Cobertura: 58 das 68 tabelas
+## Cobertura: 61 das 71 tabelas
 
 A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalidade. "Sem dado pessoal" significa que a tabela guarda só regras, catálogos ou conteúdo geral.
 
@@ -67,6 +68,8 @@ A tabela abaixo liga cada tabela do Xano (`xano-workspace/table/`) a uma finalid
 | `evento_sst` | F10 | `sessao` | F01 |
 | `feriado` | Sem dado pessoal | `solicitacao_desligamento` | F11 |
 | `desligamento_checklist` | F11 | `comentario_clima` | F15 |
+| `denuncia` | F20 | `denuncia_mensagem` | F20 |
+| `comissao_etica` | F20 | | |
 | `ferias` | F08 | `solicitacao_rh` | F16 |
 | `historico_gestor_departamento` | F06 | `user` | F01 |
 | `historico_profissional` | F06 | `instrumento_normativo` | F18 |

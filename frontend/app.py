@@ -32,6 +32,7 @@ from pagina_ausencias import pagina_ausencias
 from pagina_aviso import pagina_aviso_logado, pagina_aviso_publico
 from pagina_beneficios import pagina_beneficios
 from pagina_central import pagina_central
+from pagina_canal_denuncias import pagina_canal_denuncias, pagina_canal_publico
 from pagina_ciclos_avaliacao import pagina_ciclos_avaliacao
 from pagina_colaboradores import pagina_colaboradores
 from pagina_conferencia_documentos import pagina_conferencia_documentos
@@ -49,6 +50,7 @@ from pagina_metas_equipe import pagina_metas_equipe
 from pagina_onboarding import pagina_onboarding
 from pagina_organograma import pagina_organograma
 from pagina_pagamento import pagina_lancamento_pagamentos, pagina_pagamento
+from pagina_denuncias import pagina_denuncias
 from pagina_desligamentos import pagina_desligamentos
 from pagina_pedir_desligamento import pagina_pedir_desligamento
 from pagina_integracoes import pagina_integracoes
@@ -77,6 +79,8 @@ _MENU = [
     ("Trajetória", False),
     # Responder a pesquisa de clima: qualquer perfil (change pesquisa-clima-e-avaliacao-360; o menu do Figma 225:4668 não tem o item).
     ("Pesquisa de clima", False),
+    # Canal de denúncias (Lei 14.457/2022; change canal-de-denuncias): qualquer perfil, e também sem login.
+    ("Canal de denúncias", False),
     # Vagas internas: o sistema de vagas fica em outro endereço, ainda não ligado; a opção só aparece no menu.
     ("Vagas internas", False),
     ("Auditoria", True),
@@ -153,9 +157,12 @@ if logado and st.session_state.pop("sair_da_conta", False):
 if not logado:
     PG_ENTRAR = st.Page(pagina_entrar, title="Entrar", url_path="entrar", default=True)
     PG_AVISO_PUBLICO = st.Page(pagina_aviso_publico, title="Aviso de privacidade", url_path="aviso-de-privacidade")
-    pagina_publica = st.navigation([PG_ENTRAR, PG_AVISO_PUBLICO], position="hidden")
+    PG_CANAL_PUBLICO = st.Page(pagina_canal_publico, title="Canal de denúncias", url_path="canal-de-denuncias")
+    pagina_publica = st.navigation([PG_ENTRAR, PG_AVISO_PUBLICO, PG_CANAL_PUBLICO], position="hidden")
     if st.session_state.pop("ir_aviso", False):
         st.switch_page(PG_AVISO_PUBLICO)
+    if st.session_state.pop("ir_canal", False):
+        st.switch_page(PG_CANAL_PUBLICO)
     if st.session_state.pop("ir_entrar", False):
         st.switch_page(PG_ENTRAR)
     pagina_publica.run()
@@ -166,8 +173,10 @@ if not logado:
 # 401 marca "sessao_expirada" e a pessoa volta ao login com aviso.
 if not st.session_state.get("sessao_validada"):
     try:
-        auth_me(st.session_state.token)
+        resposta_me = auth_me(st.session_state.token)
         st.session_state.sessao_validada = True
+        # Membro da comissão de ética vê o item "Denúncias" (change canal-de-denuncias); a fila é protegida no backend.
+        st.session_state.membro_comissao = bool((resposta_me or {}).get("membro_comissao_etica"))
     except ApiError:
         pass
     if sessao_terminou():
@@ -214,10 +223,12 @@ PG_CLIMA = st.Page(pagina_pesquisa_clima, title="Pesquisa de clima", url_path="p
 PG_CLIMA_RH = st.Page(pagina_pesquisas_clima, title="Pesquisas de clima", url_path="pesquisas-de-clima")
 PG_LGPD = st.Page(pagina_pedidos_lgpd, title="Pedidos LGPD", url_path="pedidos-lgpd")
 PG_INTEGRACOES = st.Page(pagina_integracoes, title="Integrações e e-mails", url_path="integracoes-e-emails")
+PG_CANAL = st.Page(pagina_canal_denuncias, title="Canal de denúncias", url_path="canal-de-denuncias")
+PG_DENUNCIAS = st.Page(pagina_denuncias, title="Denúncias", url_path="denuncias")
 PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -251,7 +262,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Integrações e e-mails": PG_INTEGRACOES}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS}
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
@@ -284,6 +295,12 @@ with st.sidebar:
                 st.toast("Vagas internas: em breve, as vagas abertas da empresa vão abrir aqui.")
             else:
                 st.toast(f"A tela {rotulo} ainda está em construção.")
+    # Só a comissão de ética vê "Denúncias", qualquer que seja o perfil (change canal-de-denuncias).
+    if st.session_state.get("membro_comissao"):
+        if ativo_no_menu == "Denúncias":
+            render_nav_ativo("Denúncias")
+        elif st.button("Denúncias", key="nav_Denúncias", type="tertiary"):
+            st.switch_page(PG_DENUNCIAS)
     if perfil in ("RH", "ADMIN"):
         st.html('<p class="crh-nav-grupo">RH</p>')
         for rotulo in _MENU_RH:
