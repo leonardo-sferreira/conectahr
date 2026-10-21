@@ -1307,5 +1307,16 @@ def registrar_conclusao_treinamento(token: str, treinamento_id: int, colaborador
 
 
 def meus_treinamentos(token: str) -> dict:
-    """GET meus_treinamentos -> {hoje, obrigatorios, conclusoes} (a própria pessoa)."""
+    """GET meus_treinamentos -> {hoje, obrigatorios, conclusoes, progressos} (a própria pessoa)."""
     return _get("meus_treinamentos", token, GRUPO_COLABORADORES)
+
+
+def progresso_treinamento(token: str, treinamento_id: int, segundos_vistos: int, posicao: int) -> dict:
+    """POST meus_treinamentos/{id}/progresso -> {segundos_vistos, duracao} (change treinamento-em-video)."""
+    return _post(f"meus_treinamentos/{int(treinamento_id)}/progresso", {"segundos_vistos": int(segundos_vistos), "posicao": int(posicao)},
+                 token, GRUPO_COLABORADORES)
+
+
+def concluir_treinamento(token: str, treinamento_id: int) -> dict:
+    """POST meus_treinamentos/{id}/concluir -> {valido_ate}: só com o mínimo do vídeo assistido."""
+    return _post(f"meus_treinamentos/{int(treinamento_id)}/concluir", {}, token, GRUPO_COLABORADORES)

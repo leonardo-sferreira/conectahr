@@ -1,6 +1,7 @@
 // Treinamentos da propria pessoa (change treinamentos-obrigatorios, D4): os ativos obrigatorios para ela (para
 // todos ou para o departamento dela) e as conclusoes dela, com o nome do treinamento. As situacoes (em dia,
-// vencendo, vencido, pendente) saem na tela. Qualquer perfil com ficha.
+// vencendo, vencido, pendente) saem na tela. Com video (change treinamento-em-video): o id no Drive, a duracao,
+// o minimo a assistir e o progresso da pessoa em cada um. Qualquer perfil com ficha.
 query "meus_treinamentos" verb=GET {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -96,7 +97,7 @@ query "meus_treinamentos" verb=GET {
         conditional {
           if (($t.obrigatorio == true) && (($t.publico == "todos") || ($ids_texto|contains:$meu_departamento))) {
             var.update $obrigatorios {
-              value = $obrigatorios|push:{id: $t.id, nome: $t.nome, categoria: $t.categoria, carga_horas: $t.carga_horas, validade_meses: $t.validade_meses}
+              value = $obrigatorios|push:{id: $t.id, nome: $t.nome, categoria: $t.categoria, carga_horas: $t.carga_horas, validade_meses: $t.validade_meses, video_drive_id: $t.video_drive_id, video_duracao: $t.video_duracao, video_percentual_minimo: $t.video_percentual_minimo}
             }
           }
         }
@@ -126,6 +127,12 @@ query "meus_treinamentos" verb=GET {
         }
       }
     }
+
+    db.query treinamento_progresso {
+      where = $db.treinamento_progresso.colaborador_id == $colaborador_autenticado.id
+      return = {type: "list"}
+      output = ["treinamento_id", "segundos_vistos", "posicao"]
+    } as $progressos
   }
 
   response = {
@@ -133,6 +140,7 @@ query "meus_treinamentos" verb=GET {
     hoje        : $hoje
     obrigatorios: $obrigatorios
     conclusoes  : $conclusoes
+    progressos  : $progressos
   }
 
   guid = "conectahr-meus-treinamentos-get-0001"
