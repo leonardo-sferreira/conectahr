@@ -9,7 +9,6 @@ gestor. Endpoints: `meu_ciclo_metas`, `meu_ciclo_metas/{ciclo_id}/respostas` e `
 """
 
 import html
-import time
 from datetime import date
 
 import streamlit as st
@@ -18,22 +17,17 @@ from api_client import ApiError, enviar_etapa_meta, meu_ciclo_metas, responder_m
 from ciclo_metas_modelo import (ESCALA, ETAPAS, ciclo_em_foco, enviadas_do, etapa_editavel, perguntas_do_formulario, periodo, proxima_abertura,
                                 respostas_alteradas, situacao_ciclo, validar_envio)
 from formulario_metas_ui import etapa_leitura, trilha_etapas
+from metas_equipe_dados import consultar
 from onboarding_modelo import data_br
 from theme import alerta, render_hero, render_topbar
 
 CACHE = "cm_cache"
-_VALIDADE_CACHE_S = 20
 _SEM_FICHA = "Sua conta não tem ficha de colaborador, então não há metas para preencher. Se isso estiver errado, fale com o RH."
 
 
 def carregar(token: str) -> dict:
     """`meu_ciclo_metas` guardado por 20 s (a Trajetória usa o mesmo); o erro sobe."""
-    guardado = st.session_state.get(CACHE)
-    if guardado and time.time() - guardado["em"] < _VALIDADE_CACHE_S:
-        return guardado["dados"]
-    dados = meu_ciclo_metas(token)
-    st.session_state[CACHE] = {"em": time.time(), "dados": dados}
-    return dados
+    return consultar(token, CACHE, lambda: meu_ciclo_metas(token))
 
 
 def _limpar(ciclo_id) -> None:

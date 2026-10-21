@@ -83,6 +83,11 @@ _CHAVES_SESSAO = (
     "me_situacao",
     # Superior direto sem o perfil Gestor (tarefa 83).
     "tem_equipe",
+    # Metas: identidade do cache anual e destinos de notificações da sessão.
+    "metas_sessao",
+    "me_ciclo",
+    "ir_metas_equipe",
+    "ir_metas_ciclo",
     # Benefícios.
     "beneficios_cache",
     "modal_beneficio",
@@ -147,9 +152,9 @@ def encerrar_com_aviso() -> None:
 def limpar_sessao() -> None:
     for chave in _CHAVES_SESSAO:
         st.session_state.pop(chave, None)
-    # F15/F17/F18: consultas, seleção, modal e campos pertencem exclusivamente à sessão atual.
+    # F15/F16/F17/F18 e ciclo anual: dados, seleção, modal e campos são da sessão atual.
     for chave in list(st.session_state):
-        if str(chave).startswith(("ae_", "dg_", "ie_")):
+        if str(chave).startswith(("ae_", "dg_", "ie_", "cm_", "mf_", "mp_")):
             st.session_state.pop(chave, None)
     st.session_state.pop("sessao_expirada", None)
 
