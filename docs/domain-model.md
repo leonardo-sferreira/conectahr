@@ -306,8 +306,12 @@ cada um com responsável definido (RH, colaborador ou gestor).
 Delegação temporária de um titular (User) para um substituto, por escopo (férias, ausência,
 documento, desligamento, correção de ponto, solicitação RH, ou todas).
 
-- **Regras estruturais:** bloqueia autodelegação; hoje é CRUD isolado — nenhum fluxo de
-  aprovação consulta a delegação para trocar o aprovador automaticamente (trabalho futuro).
+- **Regras estruturais:** bloqueia autodelegação. Aprovação/rejeição de férias e correção de
+  ponto reconhecem delegação vigente do gestor departamental (`ferias`/`correcao_ponto` ou
+  `todas`). As filas da Central não incorporam delegações; os demais escopos não têm
+  consumidores. A hierarquia normal por superior direto diverge da autorização delegada.
+  No F17 parcial, o Gestor consulta/cancela as próprias delegações, mas não cria sem catálogo
+  autorizado de substitutos (`user_id`, não `colaborador_id`). Ver seção 8 de `regras-de-negocio.md`.
 
 ## 9. Auditoria
 

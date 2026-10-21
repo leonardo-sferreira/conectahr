@@ -423,3 +423,26 @@ Evidência em `docs/evidencias/frontend-perfil.md`.
 - **Backend.** `meu_perfil_colaborador` PATCH, que já existia, passou a validar telefone (10 ou 11 dígitos, guardado só com os números), CEP (8 dígitos, guardado como 00000-000), UF, e-mail e os campos obrigatórios do endereço, e a gravar na auditoria (`atualizar_contato_endereco`) os valores mascarados: telefone com os 4 últimos dígitos, e-mail com a primeira letra e o domínio, endereço só com cidade e UF. A resposta devolve só os campos de contato, não o cadastro inteiro.
 - **Pedidos antigos.** O RH ainda consegue aplicar pedidos de telefone, e-mail ou endereço que já estavam abertos (`solicitacoes_modelo.CAMPO_PARA_CADASTRO` não mudou).
 - **Figma.** Seção 6: cartão "Contato e endereço" (459:822) na tela Perfil (202:175), tela nova "Perfil — Editar contato e endereço" (459:1152, modal 459:1331) e o modal do pedido ao RH (202:509) só com nome, CPF e data de nascimento, sem o comprovante. No escuro, o cartão está no Perfil 108:1195.
+
+## Delegações do Gestor — F17 parcial (21/10/2026, tarefa 55)
+
+Change `delegacoes-do-gestor`, com evidência em `docs/evidencias/frontend-delegacoes.md`.
+Figma conferido pelo MCP: tela `248:2235` e modal `248:2465`.
+
+- Página `/delegacoes`, somente no menu Gestor. Lista `GET minhas_delegacoes` como titular ou
+  substituto, usando `usuario.id`, sem confundir com `colaborador_id`. Abas Ativas e futuras /
+  Encerradas, com vigência derivada das datas UTC e cancelamento com precedência.
+- `POST delegacoes/{id}/cancelar`: ação só para titular e registro ainda não cancelado. Consulta
+  atual antes do POST; sucesso exige confirmação do backend. Não simular exclusão, edição ou
+  reativação. O contrato também permite cancelar uma delegação cujo período já terminou.
+- **Figma:** seleciona substituto por nome/cargo e cria delegação. **Backend atual:** exige
+  `substituto_user_id`, sem catálogo autorizado ao Gestor. Modal informa indisponibilidade;
+  criação e seletor desabilitados. Nenhum POST de criação, entrada manual de ID ou cruzamento
+  com colaboradores. Os nomes na listagem ficam neutros pelo mesmo motivo.
+- **Figma:** promete entrega à Central e vários escopos. **Backend atual:** as filas da Central
+  não incorporam delegações. Só férias e correção de ponto têm consumidores; `todas` se limita
+  a esses dois. Os demais registros são exibidos com aviso. A autorização normal usa superior
+  direto ou gestor departamental; a delegada usa gestor departamental, divergência não corrigida
+  pelo frontend. `pagina_central.py` e Xano permanecem inalterados.
+- HTTP real por perfil continua não verificado sem sessão de teste. A tarefa 55 e as dependências
+  do F17 completo continuam abertas; as verificações locais cobrem somente o escopo parcial.

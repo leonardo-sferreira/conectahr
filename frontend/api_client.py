@@ -696,6 +696,16 @@ def alterar_status_usuario(token: str, usuario_id: int, ativo: bool) -> dict:
     return _request("PATCH", f"usuarios/{int(usuario_id)}/status", token, GRUPO_USUARIOS, {"ativo": bool(ativo)})
 
 
+def minhas_delegacoes(token: str) -> dict:
+    """GET minhas_delegacoes -> {delegacoes}, como titular ou substituto da sessão."""
+    return _get("minhas_delegacoes", token, GRUPO_USUARIOS)
+
+
+def cancelar_delegacao(token: str, delegacao_id: int) -> dict:
+    """POST delegacoes/{id}/cancelar: só titular ou RH/Admin; sem edição ou exclusão."""
+    return _post(f"delegacoes/{int(delegacao_id)}/cancelar", {}, token, GRUPO_USUARIOS)
+
+
 def vincular_colaborador(token: str, usuario_id: int, colaborador_id: int) -> dict:
     """POST usuarios/{id}/vincular_colaborador: liga uma conta sem ficha a uma ficha sem conta."""
     return _post(f"usuarios/{int(usuario_id)}/vincular_colaborador", {"colaborador_id": int(colaborador_id)}, token, GRUPO_USUARIOS)
