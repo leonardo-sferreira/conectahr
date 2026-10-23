@@ -174,6 +174,7 @@ def app(perfil: str = "RH", colaborador_id=7, **extra) -> AppTest:
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 1, "nome": "Ana Ribeiro", "email": "ana@empresa.com", "perfil": perfil, "colaborador_id": colaborador_id}
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     at = at.run()
     return abrir(at, "conferencia-de-documentos")
 

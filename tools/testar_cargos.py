@@ -110,6 +110,7 @@ def app(perfil: str = "RH", pagina: str = "estrutura-da-empresa", **extra) -> Ap
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 1, "nome": "Rita RH", "email": "rh@empresa.com", "perfil": perfil, "colaborador_id": 5}
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     at = at.run()
     at._page_hash = next(h for h, info in at._registered_pages.items() if info.get("url_pathname") == pagina)
     return at.run()

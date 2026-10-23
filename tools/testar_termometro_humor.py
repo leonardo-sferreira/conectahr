@@ -108,6 +108,7 @@ def app(pagina: str = "inicio", perfil: str = "COLABORADOR", colaborador_id=8, *
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 10, "nome": "Leonardo dos Santos", "email": "leo@empresa.com", "perfil": perfil, "colaborador_id": colaborador_id}
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     at.session_state["tem_equipe"] = False
     at = at.run()
     if pagina != "inicio":

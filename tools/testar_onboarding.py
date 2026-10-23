@@ -126,7 +126,7 @@ def html(at: AppTest) -> str:
 SESSAO = {
     "token": "tok-ficticio",
     "usuario": {"id": 1, "nome": "Leonardo dos Santos", "email": "novo@teste.com", "perfil": "COLABORADOR", "colaborador_id": 9},
-    "sessao_validada": True,
+    "sessao_validada": True, "menu_grupos": {"RH": True, "Equipe": True, "Admin": True},
 }
 
 

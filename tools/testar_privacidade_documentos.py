@@ -163,6 +163,7 @@ def app_logado(destino: str, perfil: str = "COLABORADOR", colaborador_id=9, **ex
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 1, "nome": "Leonardo dos Santos", "email": "leonardo@empresa.com", "perfil": perfil, "colaborador_id": colaborador_id}
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     if destino == "configuracoes":
         at.session_state["cfg_aba"] = "Privacidade"  # a aba padrão é Segurança (change configuracoes-seguranca-notificacoes)
     return abrir(at.run(), destino)
