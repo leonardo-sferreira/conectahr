@@ -449,7 +449,9 @@ Não há estados no banco de horas — cada lançamento é imutável desde a cri
 
 ### 8.4 Delegação — estados e escopo
 
-`criada` → (opcional) `cancelada` via `cancelada_em`/`cancelada_por_user_id`; sem reversão de cancelamento; a vigência é lida pelas datas `data_inicio`/`data_fim`, mas nenhum endpoint lido consome a delegação para de fato substituir um aprovador em outro fluxo (ferias/aprovar, correcoes_ponto/aprovar etc. não fazem lookup em `delegacao_aprovacao`) — apenas CRUD de criação/listagem/cancelamento foi encontrado; o consumo efetivo da delegação em fluxos de terceiros é **não mapeado** (`xano-workspace/api/conecta_rh_gestao_de_usuarios/delegacoes/id/cancelar_POST.xs`).
+Sem status persistido: `cancelada_em`/`cancelada_por_user_id` registram o cancelamento, sem reversão. A vigência é lida de `data_inicio`/`data_fim`, por data UTC. Agendada antes do início; Ativa entre as duas datas, inclusive; Encerrada depois do fim; Cancelada prevalece quando há `cancelada_em`. O endpoint de cancelamento não exige período ainda vigente (`xano-workspace/api/conecta_rh_gestao_de_usuarios/delegacoes/id/cancelar_POST.xs`).
+
+**Consumo real confirmado na revisão do F17 (21/10/2026):** `ferias/{id}/aprovar|rejeitar` e `correcoes_ponto/{id}/aprovar|rejeitar` consultam `delegacao_aprovacao` vigente, não cancelada, com escopo específico ou `todas`, cujo titular seja o gestor do departamento da pessoa. Os demais escopos não têm consumidor. A autorização normal considera superior direto ou, na ausência dele, gestor departamental; a delegada considera o gestor departamental. Essa divergência permanece no backend. As filas de férias, ausências e correções e a abertura das abas da Central não incorporam delegações; autorização final em alguns endpoints não significa encaminhamento funcional de pedidos.
 
 ### 8.5 Tabela de autorização (perfil × ação)
 
@@ -468,6 +470,12 @@ Não há estados no banco de horas — cada lançamento é imutável desde a cri
 ### 8.6 O que é auditado
 
 `lancar_banco_horas` (com `valor_novo` = tipo:horas, `justificativa=origem`); `criar_delegacao_aprovacao`; `cancelar_delegacao_aprovacao`. Consultas de saldo (GET) não geram auditoria.
+
+### 8.7 Apresentação parcial no F17 (21/10/2026)
+
+Somente Gestor recebe a página/menu nesta entrega, sem ampliar os perfis do backend. `GET minhas_delegacoes` lista titular ou substituto por `user_id`; a interface distingue Delegada por mim / Recebida por mim, sem usar `colaborador_id` nem expor IDs. Datas incompletas não são classificadas como vigentes. Só o titular vê Cancelar, com consulta atual antes de `POST delegacoes/{id}/cancelar` e confirmação do backend antes do sucesso.
+
+**Figma:** permite escolher substituto por nome/cargo, criar e encaminhar vários tipos de decisão à Central do substituto. **Backend atual:** criação exige `substituto_user_id`, mas não oferece catálogo autorizado ao Gestor; a criação fica indisponível, sem entrada manual de IDs nem POST. Nomes de titulares/substitutos ficam neutros. A Central não entrega filas delegadas e só férias/correção de ponto têm consumidores; `todas` não transfere todos os poderes. Registros de outros escopos são exibidos com aviso, sem alteração. Decisões continuam auditadas pelo backend; consulta geral de auditoria é RH/Admin e não há `delegacao_id` estruturado em todas as decisões. Não há histórico local. O F17 completo permanece pendente.
 
 ---
 
@@ -579,6 +587,22 @@ O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) s
 - **Anonimato:** o nome do avaliador só sai para `gestor` e `rh`; `par` e `subordinado` vêm sem nome. Pendência conhecida: `avaliacoes/{id}` GET ainda devolve o `user_id` do avaliador ao avaliado (a tela não usa).
 - `avaliacoes/{id}/competencias` GET: as competências ativas do nível do avaliado (todas as ativas se o nível não tiver nenhuma) e as respostas já salvas (`xano-workspace/api/conecta_rh_colaboradores/avaliacoes/id/competencias_GET.xs`).
 - Na tela: enviar exige nota em todas as competências e a confirmação de que o envio é definitivo; a contestação só é oferecida para avaliação sem contestação aberta. Meta ou PDI com prazo vencido aparece como Atrasada/Atrasado.
+
+### 10.6.1 Avaliações da equipe — F15 parcial
+
+**Tela F15 do Gestor (21/10/2026, change `avaliacoes-da-equipe`):** a página "Avaliações da equipe"
+consulta `minhas_avaliacoes`, apresentando apenas atribuições do usuário autenticado com relação
+`gestor`, sem usar departamento ou a equipe do F14 como autorização. Nome e cargo vêm do organograma,
+quando disponíveis. Salvar persiste notas/comentários por competência; o comentário geral só é salvo
+no envio. Antes de escrever, consulta novamente a avaliação; o backend mantém a decisão de acesso
+e estado. Usa as mesmas validações de respostas e preenchimento da Trajetória.
+
+Os indicadores são por ciclo e por atribuição: liderados distintos sem as canceladas, avaliações
+enviadas e avaliações pendentes/em andamento. Autoavaliação confirmável, prazo específico do Gestor
+e contestações não estão disponíveis nesses contratos. Contestações abertas mostram `—`, nunca zero
+inferido. **Divergência pendente:** o Figma prevê Gestor respondendo e mantendo/revisando nota; o
+backend atual permite revisão só a RH/Admin, sem alterar a avaliação original. A aba do Gestor é
+informativa e não consulta os endpoints de contestações. Nenhuma regra ou endpoint de backend mudou.
 
 ### 10.7 Ciclo anual de metas (change `ciclo-de-metas`, desde 20/10/2026)
 
@@ -823,6 +847,35 @@ RH/ADMIN, com filtro opcional de período (`data_inicio`/`data_fim`, padrão úl
 
 Mesmos dados do painel, formatados como texto CSV. Audita `exportar_indicadores_csv`. **Gap consciente:** exportação em PDF não implementada — XanoScript nesta plataforma não tem filtro/primitiva nativa de renderização de PDF; exigiria serviço externo via `api.request`, fora do escopo até aqui (`xano-workspace/api/conecta_rh_colaboradores/indicadores/exportar_csv_GET.xs`).
 
+### Indicadores parciais do Gestor — F18 (21/10/2026)
+
+Change `indicadores-da-equipe`. A página do Gestor não usa `indicadores` nem `indicadores/exportar_csv`,
+que continuam RH/Admin. Folha e banco têm coberturas diferentes, indicadas separadamente:
+
+- **Folha:** pessoas autorizadas por `folha_ponto/pessoas`, exceto próprio e desligados, sem
+  reduzir automaticamente aos subordinados diretos nem afirmar departamento completo. Últimos
+  seis meses inclui o corrente até hoje em Brasília. Horas extras são a soma de `horas_extras`
+  gravadas em `folha_ponto/mes`, não saldo diário nem créditos do banco. Mês sem registros de
+  algum membro ou valor inválido fica indisponível; zero só com valores válidos que somem zero.
+  Não equivale a fechamento de jornada ou aprovação de uma rubrica de horas extras.
+- **Ausências:** solicitações Aprovada/Registrado retornadas pela folha que sobrepõem o período,
+  deduplicadas por ID e agrupadas por tipo. A unidade é registro/solicitação, não dias ou pessoas;
+  férias não entram. Qualquer mês sem cobertura impede a contagem global; vazio confirmado é
+  mostrado como nenhuma solicitação, diferente de falha.
+- **Banco:** soma de `saldo_horas` retornados por `colaboradores/{id}/banco_horas` para pessoas
+  do departamento gerenciado (organograma), exceto próprio/desligados. Identificação ambígua,
+  catálogo incompleto ou falha individual impede o total. É saldo corrente sem recorte temporal,
+  preservando sinais; não aplicar expiração ou regra nova aos lançamentos.
+- **Privacidade:** piso padrão de cinco pessoas por grupo na apresentação, conforme a spec
+  Indicadores sem identificação de pessoas; sem consulta à configuração administrativa e sem
+  alterar autorização no backend. Não expor nomes individuais, IDs, documentos ou dados bancários.
+- **Indisponíveis:** Absenteísmo (a fórmula administrativa conta ausências/headcount, sem jornada
+  histórica nem precisão do Figma), clima/eNPS (resultado restrito a RH/Admin) e CSV (auditoria
+  exigida, contrato restrito). Clima mantém o texto do mínimo de cinco pessoas, sem consultar
+  notas/comentários. CSV desabilitado, sem arquivo local fingindo auditoria.
+
+O F18 completo continua pendente. Sem mudanças de backend ou permissões.
+
 ### 15.2.1 Notificações internas (sino do topo, desde 12/10/2026)
 
 Entidade `notificacao_interna`: `destinatario_user_id`, `tipo`, `titulo`, `mensagem`, `recurso`, `registro_id`, `lida`, `lida_em`. `minhas_notificacoes` GET devolve as 50 mais recentes do próprio usuário, com `criada_em`, e o total de não lidas; `notificacoes/{id}/marcar_lida` e `notificacoes/marcar_todas_lidas` POST só mexem nas do próprio usuário. Ninguém recebe aviso de uma ação própria.
@@ -971,7 +1024,7 @@ Change `termometro-de-humor` (desde 21/10/2026). Uma pergunta anônima a cada 10
 Por decisão registrada em `design.md` deste change, este documento cobre apenas domínios com backend já implementado. Ficam explicitamente fora, por não terem endpoints de API publicados:
 
 - **Cancelamento de pendência de documento**: a tabela `pendencia_documento` tem status `cancelada` no enum, mas nenhum endpoint de cancelamento foi encontrado — ver seção 7.3.
-- **Consumo efetivo de `delegacao_aprovacao`** nos fluxos de aprovação de terceiros (férias, correção de ponto etc.): só CRUD da delegação em si foi encontrado, nenhum fluxo de aprovação faz lookup nela — ver seção 8.4.
+- **Delegações além dos consumidores existentes:** só férias e correção de ponto consultam a delegação. Catálogo seguro de substitutos para o Gestor, filas delegadas da Central e consumidores dos demais escopos continuam ausentes; a hierarquia normal e delegada divergem — ver seções 8.4 e 8.7.
 - **Conclusão de `onboarding`**: a transição do `onboarding.status` para `concluido` ao concluir o último item não foi encontrada — ver seção 12.7.
 
 ---

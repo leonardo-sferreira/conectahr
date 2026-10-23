@@ -85,7 +85,7 @@ def _instalar():
     api_client.central_de_tarefas = lambda token: {}
     api_client.aniversariantes = lambda token: {"aniversariantes": []}
     api_client.meus_comunicados = lambda token: {"comunicados": []}
-api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
+    api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.meu_ponto = lambda token: chamadas.append(("meu_ponto",)) or _falha_ou("ponto", {"registros": [], "marcacoes": estado["marcacoes"], "tratamentos": []})
     api_client.comprovantes_ponto = lambda token: _falha_ou("comprovantes", {"marcacoes": estado["marcacoes"], "empregador": EMPREGADOR, "trabalhador": TRABALHADOR,

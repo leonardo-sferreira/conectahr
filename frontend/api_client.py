@@ -219,6 +219,11 @@ def meu_banco_horas(token: str) -> dict:
     return _get("meu_banco_horas", token, GRUPO_PONTO)
 
 
+def banco_horas_colaborador(token: str, colaborador_id: int) -> dict:
+    """GET colaboradores/{id}/banco_horas: saldo corrente autorizado pelo backend, sem filtro temporal."""
+    return _get(f"colaboradores/{int(colaborador_id)}/banco_horas", token, GRUPO_PONTO)
+
+
 def aniversariantes(token: str) -> dict:
     """GET colaboradores/aniversariantes -> {mes, aniversariantes: [{id, nome, aniversario}]}."""
     return _get("colaboradores/aniversariantes", token, GRUPO_COLABORADORES)
@@ -696,6 +701,16 @@ def alterar_status_usuario(token: str, usuario_id: int, ativo: bool) -> dict:
     return _request("PATCH", f"usuarios/{int(usuario_id)}/status", token, GRUPO_USUARIOS, {"ativo": bool(ativo)})
 
 
+def minhas_delegacoes(token: str) -> dict:
+    """GET minhas_delegacoes -> {delegacoes}, como titular ou substituto da sessão."""
+    return _get("minhas_delegacoes", token, GRUPO_USUARIOS)
+
+
+def cancelar_delegacao(token: str, delegacao_id: int) -> dict:
+    """POST delegacoes/{id}/cancelar: só titular ou RH/Admin; sem edição ou exclusão."""
+    return _post(f"delegacoes/{int(delegacao_id)}/cancelar", {}, token, GRUPO_USUARIOS)
+
+
 def vincular_colaborador(token: str, usuario_id: int, colaborador_id: int) -> dict:
     """POST usuarios/{id}/vincular_colaborador: liga uma conta sem ficha a uma ficha sem conta."""
     return _post(f"usuarios/{int(usuario_id)}/vincular_colaborador", {"colaborador_id": int(colaborador_id)}, token, GRUPO_USUARIOS)
@@ -863,6 +878,21 @@ def definir_prazo_correcao(token: str, prazo_dias: int | None) -> dict:
 def minha_trajetoria(token: str) -> dict:
     """GET minha_trajetoria -> plano de carreira, 360 do ciclo, a_preencher, recebidas, metas, pdi e reconhecimentos."""
     return _get("minha_trajetoria", token, GRUPO_COLABORADORES)
+
+
+def ciclos_avaliacao(token: str) -> dict:
+    """GET ciclos_avaliacao -> {ciclos} ativos (qualquer perfil autenticado)."""
+    return _get("ciclos_avaliacao", token, GRUPO_COLABORADORES)
+
+
+def minhas_avaliacoes(token: str) -> dict:
+    """GET minhas_avaliacoes -> {avaliacoes} atribuídas ao próprio avaliador."""
+    return _get("minhas_avaliacoes", token, GRUPO_COLABORADORES)
+
+
+def avaliacao(token: str, avaliacao_id: int) -> dict:
+    """GET avaliacoes/{id} -> {avaliacao, respostas}; acesso decidido pelo backend."""
+    return _get(f"avaliacoes/{int(avaliacao_id)}", token, GRUPO_COLABORADORES)
 
 
 def competencias_avaliacao(token: str, avaliacao_id: int) -> dict:

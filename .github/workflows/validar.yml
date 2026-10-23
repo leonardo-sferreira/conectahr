@@ -128,8 +128,20 @@ jobs:
       - name: Testes da Trajetória
         run: python tools/testar_trajetoria.py
 
+      - name: Testes de Avaliações da equipe
+        run: python tools/testar_avaliacoes_equipe.py
+
+      - name: Testes de Delegações do Gestor
+        run: python tools/testar_delegacoes.py
+
+      - name: Testes dos Indicadores da equipe
+        run: python tools/testar_indicadores_equipe.py
+
       - name: Testes do ciclo de metas
         run: python tools/testar_ciclo_metas.py
+
+      - name: Testes de Metas e PDI da equipe (F16 parcial)
+        run: python tools/testar_metas_equipe.py
 
       - name: Testes de Configurações (Segurança e Notificações)
         run: python tools/testar_configuracoes.py
