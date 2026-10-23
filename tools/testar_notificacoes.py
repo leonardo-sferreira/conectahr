@@ -140,6 +140,7 @@ def app(**extra) -> AppTest:
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 1, "nome": "Leonardo dos Santos", "email": "leonardo@empresa.com", "perfil": "COLABORADOR", "colaborador_id": 9}
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     return at.run()
 
 

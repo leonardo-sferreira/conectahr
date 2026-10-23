@@ -153,6 +153,7 @@ def app(perfil: str = "COLABORADOR", pagina: str | None = None, **extra) -> AppT
     else:
         at.session_state["usuario"] = {"id": 2, "nome": "Ana Ribeiro", "email": "ana@empresa.com", "perfil": perfil, "colaborador_id": 7}
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     return abrir(at.run(), pagina or ("pagamento" if perfil == "COLABORADOR" else "lancamento-de-pagamentos"))
 
 

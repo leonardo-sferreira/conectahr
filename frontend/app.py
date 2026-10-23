@@ -74,27 +74,25 @@ from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
 from theme import definir_sino, inject_base_styles, render_nav_ativo, render_sidebar_logo
 
-# (rótulo, restrito a RH/ADMIN) na ordem do Figma.
+# Menu principal, igual para todos os perfis, na ordem do Figma. Auditoria e Regras (só RH e Admin) ficam no grupo RH.
 _MENU = [
-    ("Início", False),
-    ("Perfil", False),
-    ("Ponto", False),
-    ("Férias", False),
-    ("Documentos", False),
-    ("Pagamento", False),
-    ("Benefícios", False),
-    ("Central de Pendências", False),
-    ("Trajetória", False),
+    "Início",
+    "Perfil",
+    "Ponto",
+    "Férias",
+    "Documentos",
+    "Pagamento",
+    "Benefícios",
+    "Central de Pendências",
+    "Trajetória",
     # Responder a pesquisa de clima: qualquer perfil (change pesquisa-clima-e-avaliacao-360; o menu do Figma 225:4668 não tem o item).
-    ("Pesquisa de clima", False),
+    "Pesquisa de clima",
     # Treinamentos obrigatórios da própria pessoa (change treinamentos-obrigatorios).
-    ("Meus treinamentos", False),
+    "Meus treinamentos",
     # Canal de denúncias (Lei 14.457/2022; change canal-de-denuncias): qualquer perfil, e também sem login.
-    ("Canal de denúncias", False),
+    "Canal de denúncias",
     # Vagas internas: o sistema de vagas fica em outro endereço, ainda não ligado; a opção só aparece no menu.
-    ("Vagas internas", False),
-    ("Auditoria", True),
-    ("Regras", True),
+    "Vagas internas",
 ]
 # Grupo "RH" do menu (Figma 418:1108 e Design System 314:786), só para RH e Admin.
 _MENU_RH = [
@@ -118,6 +116,9 @@ _MENU_RH = [
     "Pedidos LGPD",
     # Feriados, níveis da hierarquia e cargos (change organograma-hierarquia): o RH também mantém.
     "Estrutura da empresa",
+    # Só RH e Admin; saíram do menu principal para ele ficar igual para todos (change menu-grupos-recolhiveis).
+    "Auditoria",
+    "Regras",
 ]
 # Grupo "Equipe" do menu (Figma 241:560): o Gestor vê todo; quem é superior direto sem o perfil Gestor (tarefa 83) vê só a folha.
 _MENU_EQUIPE = [
@@ -313,53 +314,55 @@ menu_equipe = _MENU_EQUIPE if perfil == "GESTOR" else ["Folha de ponto da equipe
 if ativo_no_menu == "Folha de ponto" and menu_equipe:
     ativo_no_menu = "Folha de ponto da equipe"
 
+
+
+def _item_menu(rotulo: str) -> None:
+    if rotulo == ativo_no_menu:
+        render_nav_ativo(rotulo)
+    elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
+        if rotulo in _PAGINAS_DO_MENU:
+            st.switch_page(_PAGINAS_DO_MENU[rotulo])
+        if rotulo == "Vagas internas":
+            st.toast("Vagas internas: em breve, as vagas abertas da empresa vão abrir aqui.")
+        else:
+            st.toast(f"A tela {rotulo} ainda está em construção.")
+
+
+def _grupo_menu(nome: str, itens: list[str]) -> None:
+    """Cabeçalho clicável do grupo (Figma 567:862): fechado mostra só o nome com a seta; aberto, os itens embaixo."""
+    aberto = st.session_state.menu_grupos.get(nome, False)
+    with st.container(key=f"{'grpaberto' if aberto else 'grpfechado'}_{nome}"):
+        if st.button(nome, key=f"navgrupo_{nome}", type="tertiary"):
+            st.session_state.menu_grupos[nome] = not aberto
+            st.rerun()
+    if aberto:
+        for rotulo in itens:
+            _item_menu(rotulo)
+
+
+# Grupos recolhíveis (change menu-grupos-recolhiveis): começam fechados e abrem independentes uns dos outros; o grupo
+# da tela aberta abre sozinho quando a pessoa chega nela. A escolha fica guardada na sessão. O Colaborador não tem grupo.
+grupos_menu = ([("RH", _MENU_RH)] if perfil in ("RH", "ADMIN") else []) + ([("Equipe", menu_equipe)] if menu_equipe else []) \
+    + ([("Admin", _MENU_ADMIN)] if perfil == "ADMIN" else [])
+st.session_state.setdefault("menu_grupos", {})
+if st.session_state.get("menu_pagina") != ativo_no_menu:
+    st.session_state.menu_pagina = ativo_no_menu
+    for nome_grupo, itens_grupo in grupos_menu:
+        if ativo_no_menu in itens_grupo:
+            st.session_state.menu_grupos[nome_grupo] = True
+
 with st.sidebar:
     render_sidebar_logo()
-    for rotulo, restrito in _MENU:
-        if restrito and perfil not in ("RH", "ADMIN"):
-            continue
-        if rotulo == ativo_no_menu:
-            render_nav_ativo(rotulo)
-        elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
-            if rotulo in _PAGINAS_DO_MENU:
-                st.switch_page(_PAGINAS_DO_MENU[rotulo])
-            if rotulo == "Vagas internas":
-                st.toast("Vagas internas: em breve, as vagas abertas da empresa vão abrir aqui.")
-            else:
-                st.toast(f"A tela {rotulo} ainda está em construção.")
+    for rotulo in _MENU:
+        _item_menu(rotulo)
     # Só a comissão de ética vê "Denúncias", qualquer que seja o perfil (change canal-de-denuncias).
     if st.session_state.get("membro_comissao"):
         if ativo_no_menu == "Denúncias":
             render_nav_ativo("Denúncias")
         elif st.button("Denúncias", key="nav_Denúncias", type="tertiary"):
             st.switch_page(PG_DENUNCIAS)
-    if perfil in ("RH", "ADMIN"):
-        st.html('<p class="crh-nav-grupo">RH</p>')
-        for rotulo in _MENU_RH:
-            if rotulo == ativo_no_menu:
-                render_nav_ativo(rotulo)
-            elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
-                if rotulo in _PAGINAS_DO_MENU:
-                    st.switch_page(_PAGINAS_DO_MENU[rotulo])
-                st.toast(f"A tela {rotulo} ainda está em construção.")
-    if menu_equipe:
-        st.html('<p class="crh-nav-grupo">Equipe</p>')
-        for rotulo in menu_equipe:
-            if rotulo == ativo_no_menu:
-                render_nav_ativo(rotulo)
-            elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
-                if rotulo in _PAGINAS_DO_MENU:
-                    st.switch_page(_PAGINAS_DO_MENU[rotulo])
-                st.toast(f"A tela {rotulo} ainda está em construção.")
-    if perfil == "ADMIN":
-        st.html('<p class="crh-nav-grupo">Admin</p>')
-        for rotulo in _MENU_ADMIN:
-            if rotulo == ativo_no_menu:
-                render_nav_ativo(rotulo)
-            elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
-                if rotulo in _PAGINAS_DO_MENU:
-                    st.switch_page(_PAGINAS_DO_MENU[rotulo])
-                st.toast(f"A tela {rotulo} ainda está em construção.")
+    for nome_grupo, itens_grupo in grupos_menu:
+        _grupo_menu(nome_grupo, itens_grupo)
 
 pagina_atual.run()
 
