@@ -29,6 +29,7 @@
 20. [Riscos psicossociais (NR-1)](#20-riscos-psicossociais-nr-1)
 21. [Treinamentos obrigatórios](#21-treinamentos-obrigatórios)
 22. [Termômetro de humor](#22-termômetro-de-humor)
+23. [Avisos de publicação](#23-avisos-de-publicação)
 24. [Foto de perfil](#24-foto-de-perfil)
 
 ---
@@ -1019,6 +1020,23 @@ Change `termometro-de-humor` (desde 21/10/2026). Uma pergunta anônima a cada 10
   - **O que mostra:** os últimos 9 ciclos, os setores no ciclo atual e no anterior, os motivos do ciclo atual e a participação (respondentes e pessoas ativas no escopo).
   - **Supressão:** grupo abaixo de `INDICADORES_MINIMO_PESSOAS` (padrão 5) sai sem distribuição. Se, num ciclo, só um setor ficar abaixo do mínimo, o menor dos outros também sai sem, para a subtração do total não revelar o pequeno.
   - **Na tela:** a média e os percentuais saem da distribuição. Um setor pede atenção com média abaixo de 3 ou queda de 0,3 ponto sobre o ciclo anterior.
+
+## 23. Avisos de publicação
+
+Change `notificacoes-de-publicacao` (desde 23/10/2026).
+
+- **Treinamento novo:**
+  - `treinamentos` POST e a reativação em `treinamentos/{id}` PATCH avisam o público do treinamento (todos ou os departamentos), menos quem publicou;
+  - tipo `treinamento_novo`, assunto de preferência `treinamentos`;
+  - editar um treinamento já ativo não avisa de novo.
+- **Pesquisa nova:**
+  - pesquisa de clima e avaliação psicossocial da NR-1: um convite por pesquisa no dia em que ela abre (ativa, no período e com perguntas), marcado em `pesquisa_clima.convite_enviado_em`;
+  - termômetro de humor: um convite por ciclo de 10 dias, marcado em `humor_convite`;
+  - os convites saem no primeiro acesso ao Início do dia (`humor` GET) e na rotina diária (`ConectaHR/enviar_convites_pesquisa`);
+  - tipo `pesquisa_nova`, assunto `pesquisas`;
+  - o convite não tem vínculo com a resposta: lê-lo não registra participação.
+- **Delegação:** o substituto recebe o aviso ao ser escolhido. Durante a delegação ativa (no escopo do pedido ou "todas"), ele também recebe os pedidos do titular, em `ConectaHR/notificar_decisores`.
+- **Público:** `ConectaHR/notificar_publico` avisa os colaboradores não desligados com conta ativa do público, menos quem desligou o assunto em "Na plataforma" e quem publicou.
 
 ## 24. Foto de perfil
 

@@ -4,7 +4,7 @@
 //   quem = "rh": as contas RH ativas;
 //   quem = "superior_e_rh": os dois (ex.: ausencia, que o RH decide e o superior acompanha).
 // Quem fez o pedido (autor_user_id) nunca e avisado do proprio pedido; colaborador inexistente nao avisa
-// ninguem. Devolve quantos avisos criou.
+// ninguem. Durante uma delegacao ativa, o substituto tambem e avisado. Devolve quantos avisos criou.
 function "ConectaHR/notificar_decisores" {
   input {
     int colaborador_id
@@ -99,6 +99,71 @@ function "ConectaHR/notificar_decisores" {
           }
         }
       }
+    }
+
+    // Substitutos com delegacao ativa de algum decisor, no escopo do pedido ou em "todas" (change
+    // notificacoes-de-publicacao, D4). O escopo da delegacao usa o nome do recurso, menos desligamento.
+    var $escopo_pedido {
+      value = ($input.recurso == "solicitacao_desligamento") ? "desligamento" : $input.recurso
+    }
+
+    var $hoje_delegacao {
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
+    }
+
+    var $com_substitutos {
+      value = $destinatarios
+    }
+
+    // Quem ja esta na lista, como texto ",1,4,", para nao repetir ninguem.
+    var $na_lista_texto {
+      value = ","
+    }
+
+    foreach ($destinatarios) {
+      each as $ja_id {
+        var.update $na_lista_texto {
+          value = $na_lista_texto ~ ($ja_id|to_text) ~ ","
+        }
+      }
+    }
+
+    foreach ($destinatarios) {
+      each as $decisor_id {
+        db.query delegacao_aprovacao {
+          where = $db.delegacao_aprovacao.titular_user_id == $decisor_id && $db.delegacao_aprovacao.cancelada_em == null && $db.delegacao_aprovacao.data_inicio <= $hoje_delegacao && $db.delegacao_aprovacao.data_fim >= $hoje_delegacao
+          return = {type: "list"}
+          output = ["substituto_user_id", "escopo"]
+        } as $delegacoes_ativas
+
+        foreach ($delegacoes_ativas) {
+          each as $delegacao {
+            var $agulha_substituto {
+              value = "," ~ ($delegacao.substituto_user_id|to_text) ~ ","
+            }
+
+            var $ja_na_lista {
+              value = $na_lista_texto|contains:$agulha_substituto
+            }
+
+            conditional {
+              if ((($delegacao.escopo == $escopo_pedido) || ($delegacao.escopo == "todas")) && ($delegacao.substituto_user_id != $input.autor_user_id) && ($ja_na_lista == false)) {
+                var.update $com_substitutos {
+                  value = $com_substitutos|push:$delegacao.substituto_user_id
+                }
+
+                var.update $na_lista_texto {
+                  value = $na_lista_texto ~ ($delegacao.substituto_user_id|to_text) ~ ","
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    var.update $destinatarios {
+      value = $com_substitutos
     }
 
     foreach ($destinatarios) {

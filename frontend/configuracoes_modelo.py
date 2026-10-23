@@ -14,11 +14,14 @@ ASSUNTOS = [
     ("documentos", "Documentos", "Documento recusado, pedido ou vencendo", True),
     ("avaliacoes_metas", "Avaliações e metas", "Avaliação atribuída, etapa do ciclo e feedback", True),
     ("solicitacoes", "Solicitações ao RH", "Sua solicitação atendida ou indeferida", True),
+    # Publicações para um público (change notificacoes-de-publicacao, D6): só na plataforma, ainda sem modelo de e-mail.
+    ("treinamentos", "Treinamentos", "Treinamento novo para você e conclusão registrada", False),
+    ("pesquisas", "Pesquisas", "Pesquisa de clima, avaliação da NR-1 e termômetro de humor abertos", False),
 ]
 SEMPRE_LIGADOS = [
     ("Benefícios", "Benefício novo, alterado, com pergunta nova ou encerrado"),
     ("Alertas de segurança", "Novo acesso, troca de senha, e-mail da conta alterado"),
-    ("Pedidos para você decidir", "Férias, ausências, correções e documentos da sua equipe"),
+    ("Pedidos para você decidir", "Férias, ausências, correções, documentos da sua equipe e delegações recebidas"),
 ]
 
 

@@ -34,6 +34,8 @@ _ROTINA = {
     "sessoes_ip_dispositivo_limpos": "sessões antigas com IP e dispositivo apagados",
     "emails_enviados_limpos": "e-mails enviados antigos apagados",
     "desligados_prazo_cumprido": "desligados com prazo de guarda cumprido",
+    "convites_pesquisa": "convites de pesquisa enviados",
+    "convite_termometro": "convite do termômetro de humor enviado",
 }
 BREVO_PAINEL = "https://app.brevo.com/templates/listing"
 

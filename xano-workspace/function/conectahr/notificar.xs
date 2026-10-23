@@ -83,6 +83,23 @@ function "ConectaHR/notificar" {
             }
           }
         }
+
+        // Publicacoes (change notificacoes-de-publicacao, D6).
+        conditional {
+          if ($input.recurso == "treinamento") {
+            var.update $assunto {
+              value = "treinamentos"
+            }
+          }
+        }
+
+        conditional {
+          if (($input.recurso == "pesquisa_clima") || ($input.recurso == "humor")) {
+            var.update $assunto {
+              value = "pesquisas"
+            }
+          }
+        }
       }
     }
 

@@ -175,6 +175,9 @@ conferir("Avisos que você recebe" in t and "Férias e ausências" in t and "Sol
          and not any(str(k).startswith("cfg_av_comunic") for k in at.session_state), "assuntos configuráveis (sem Comunicados)")
 conferir(at.toggle(key="cfg_av_documentos_em").value is False and at.toggle(key="cfg_av_ferias_ausencias_pl").value is True, "interruptores com o que está gravado")
 conferir("Sem e-mail" in t and not any(tg.key == "cfg_av_ponto_em" for tg in at.toggle), "ponto não tem e-mail")
+conferir("Treinamentos" in t and "Pesquisas" in t and any(tg.key == "cfg_av_treinamentos_pl" for tg in at.toggle)
+         and not any(tg.key in ("cfg_av_treinamentos_em", "cfg_av_pesquisas_em") for tg in at.toggle),
+         "treinamentos e pesquisas: só na plataforma (change notificacoes-de-publicacao)")
 conferir(t.count("Sempre ligado") == 3 and all(tg.disabled for tg in at.toggle if str(tg.key).startswith("cfg_av_sempre_")), "benefícios, segurança e pedidos: sempre ligados")
 conferir(at.button(key="cfg_av_salvar").disabled, "sem mudança, 'Salvar' fica desligado")
 at.toggle(key="cfg_av_ponto_pl").set_value(False)
