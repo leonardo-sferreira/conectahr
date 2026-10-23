@@ -182,6 +182,7 @@ def app(perfil: str = "RH", pagina: str = "colaboradores", **extra) -> AppTest:
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = dict(USUARIOS[perfil], email="pessoa@empresa.com")
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     return abrir(at.run(), pagina)
 
 
