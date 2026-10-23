@@ -284,6 +284,10 @@ _ATALHOS = {
     "ir_desligamentos": PG_DESLIGAMENTOS,
     "ir_metas_ciclo": PG_METAS_CICLO,
     "ir_metas_equipe": PG_METAS_EQUIPE,
+    # Destinos dos avisos de publicação e de delegação (change notificacoes-de-publicacao).
+    "ir_meus_treinamentos": PG_MEUS_TREINAMENTOS,
+    "ir_pesquisa_clima": PG_CLIMA,
+    "ir_delegacoes": PG_DELEGACOES,
 }
 for marca, destino in _ATALHOS.items():
     if st.session_state.pop(marca, False):

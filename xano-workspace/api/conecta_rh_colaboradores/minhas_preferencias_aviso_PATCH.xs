@@ -66,7 +66,7 @@ query "minhas_preferencias_aviso" verb=PATCH {
       value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
-    precondition (($input.assunto == "ferias_ausencias") || ($input.assunto == "ponto") || ($input.assunto == "documentos") || ($input.assunto == "avaliacoes_metas") || ($input.assunto == "solicitacoes")) {
+    precondition (($input.assunto == "ferias_ausencias") || ($input.assunto == "ponto") || ($input.assunto == "documentos") || ($input.assunto == "avaliacoes_metas") || ($input.assunto == "solicitacoes") || ($input.assunto == "treinamentos") || ($input.assunto == "pesquisas")) {
       error_type = "inputerror"
       error = "Assunto invalido ou sempre ligado. Avisos de beneficios e alertas de seguranca nao podem ser desligados."
     }

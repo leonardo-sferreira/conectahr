@@ -24,6 +24,8 @@ _DESTINO_TIPO = {
     "cadastro_atualizado": "ir_perfil",
     "documento_pedido": "ir_documentos",
     "holerite_disponivel": "ir_pagamento",
+    # Publicações (change notificacoes-de-publicacao).
+    "treinamento_novo": "ir_meus_treinamentos",
 }
 # Pedido novo, para quem decide: a tela onde a decisão acontece.
 _DESTINO_PEDIDO_NOVO = {
@@ -35,6 +37,8 @@ _DESTINO_PEDIDO_NOVO = {
     "solicitacao_desligamento": "ir_desligamentos",
     # Etapa do ciclo de metas enviada: o superior abre a equipe (change ciclo-de-metas).
     "formulario_meta": "ir_metas_equipe",
+    # Delegação recebida (change notificacoes-de-publicacao, D4).
+    "delegacao": "ir_delegacoes",
 }
 # Retorno do pedido, para quem pediu: a tela onde ela acompanha.
 _DESTINO_PEDIDO_DECIDIDO = {
@@ -54,6 +58,10 @@ _DESTINO_RECURSO = {
     "documento": "ir_documentos",
     "pendencia_documento": "ir_documentos",
     "avaliacao": "ir_trajetoria",
+    "treinamento": "ir_meus_treinamentos",
+    # Convite de pesquisa: a pesquisa de clima ou, no termômetro de humor, o Início (change notificacoes-de-publicacao).
+    "pesquisa_clima": "ir_pesquisa_clima",
+    "humor": "ir_inicio",
 }
 
 
@@ -69,6 +77,8 @@ def destino(n: dict, perfil: str | None = None) -> str:
         return _DESTINO_PEDIDO_DECIDIDO.get(recurso, "ir_central")
     if recurso == "formulario_meta":
         return "ir_metas_ciclo"  # feedback do gestor nas próprias metas
+    if tipo == "pesquisa_nova":
+        return _DESTINO_RECURSO.get(recurso, "ir_inicio")
     return _DESTINO_TIPO.get(tipo) or _DESTINO_RECURSO.get(recurso) or "ir_inicio"
 
 

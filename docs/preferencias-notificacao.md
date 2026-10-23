@@ -79,3 +79,12 @@ testado ao vivo.
   (`GET minhas_notificacoes` retornou o evento `ferias_aprovada` id 9) — confirma
   que a garantia "notificação interna nunca é opcional" se mantém mesmo com o
   e-mail desativado.
+
+## Avisos de publicação (change `notificacoes-de-publicacao`, 23/10/2026)
+
+- **Assuntos novos em `preferencia_aviso`:** `treinamentos` e `pesquisas`, só "Na plataforma" (a coluna de e-mail mostra "Sem e-mail": não há modelo no Brevo).
+- **`treinamentos`** cobre o aviso de treinamento novo (`treinamento_novo`) e o "Treinamento registrado" da conclusão pelo RH (recurso `treinamento`).
+- **`pesquisas`** cobre o convite da pesquisa de clima, da avaliação psicossocial da NR-1 e do termômetro de humor (`pesquisa_nova`).
+- **A delegação recebida** é um `pedido_novo` (recurso `delegacao`) e fica sempre ligada, como os outros pedidos para decidir.
+- **`ConectaHR/notificar_publico`** respeita a preferência numa consulta só, para o público inteiro.
+

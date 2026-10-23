@@ -2,7 +2,7 @@
 // substituto por um escopo e periodo definidos. Bloqueia autoaprovacao
 // (titular nao pode delegar para si mesmo). RH/ADMIN podem criar em
 // nome de qualquer titular; o proprio usuario pode criar delegando a
-// propria autoridade.
+// propria autoridade. O substituto e avisado no sino (change notificacoes-de-publicacao, D4).
 query delegacoes verb=POST {
   api_group = "ConectaRH — Gestão de Usuários"
   auth = "user"
@@ -150,6 +150,19 @@ query delegacoes verb=POST {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Avisa o substituto (change notificacoes-de-publicacao, D4): ele passa a receber os pedidos do titular no periodo.
+    var $escopo_legivel {
+      value = ($input.escopo == "todas") ? "todas as aprovações" : ("as aprovações de " ~ ($input.escopo|replace:"_":" "))
+    }
+
+    var $mensagem_delegacao {
+      value = ($titular.nome ~ " delegou a você " ~ $escopo_legivel ~ " de " ~ ($input.data_inicio|format_timestamp:"d/m":"UTC") ~ " a " ~ ($input.data_fim|format_timestamp:"d/m":"UTC") ~ ".")|substr:0:1000
+    }
+
+    function.run "ConectaHR/notificar" {
+      input = {destinatario_user_id: $substituto.id, autor_user_id: $usuario_autenticado.id, tipo: "pedido_novo", titulo: "Você recebeu uma delegação de aprovação", mensagem: $mensagem_delegacao, recurso: "delegacao", registro_id: $delegacao_criada.id}
+    } as $aviso_substituto
   }
 
   response = {
