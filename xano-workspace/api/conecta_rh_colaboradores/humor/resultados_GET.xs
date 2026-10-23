@@ -420,8 +420,17 @@ query "humor/resultados" verb=GET {
           value = $notas_c_total + $q_notas_c_5
         }
 
+        // A expressao fica fora do push: o Xano recusa ternario dentro do argumento de um filtro.
+        var $notas_c_visiveis {
+          value = ($notas_c_total >= $minimo) ? $notas_c : null
+        }
+
+        var $item_ciclo {
+          value = {ciclo: $c, respostas: $notas_c_total, notas: $notas_c_visiveis}
+        }
+
         var.update $ciclos {
-          value = $ciclos|push:{ciclo: $c, respostas: $notas_c_total, notas: ($notas_c_total >= $minimo) ? $notas_c : null}
+          value = $ciclos|push:$item_ciclo
         }
 
         conditional {
@@ -754,8 +763,20 @@ query "humor/resultados" verb=GET {
           value = ($b.p_total >= $minimo) && (($pequenos_p != 1) || ($b.id != $menor_p_id))
         }
 
+        var $notas_a_visiveis {
+          value = $mostra_a ? $b.a_notas : null
+        }
+
+        var $notas_p_visiveis {
+          value = $mostra_p ? $b.p_notas : null
+        }
+
+        var $item_dep {
+          value = {id: $b.id, nome: $b.nome, atual: {respostas: $b.a_total, notas: $notas_a_visiveis}, anterior: {respostas: $b.p_total, notas: $notas_p_visiveis}}
+        }
+
         var.update $departamentos {
-          value = $departamentos|push:{id: $b.id, nome: $b.nome, atual: {respostas: $b.a_total, notas: $mostra_a ? $b.a_notas : null}, anterior: {respostas: $b.p_total, notas: $mostra_p ? $b.p_notas : null}}
+          value = $departamentos|push:$item_dep
         }
       }
     }
