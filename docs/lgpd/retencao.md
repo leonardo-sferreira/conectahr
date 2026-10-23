@@ -31,7 +31,7 @@
 | F12 | Avaliações, metas, PDI e reuniões | 2 anos depois do ciclo, ou 5 anos do desligamento, o que vier primeiro | Do fim do ciclo | Anonimizar; manter notas agregadas | Anonimização na tarefa 4.22 |
 | F13 | Reconhecimento (mural) | 1 ano | Da publicação | Anonimizar remetente e destinatário | A implementar; o titular já pode sair do mural (tarefa 4.18) |
 | F14 | Aniversariantes do mês | Enquanto houver vínculo | Do desligamento | Sai da lista ao desligar | Em vigor (filtra desligados); preferência de ocultar na tarefa 4.18 |
-| F15 | Pesquisa de clima | Resultado agregado: 5 anos | Do encerramento da pesquisa | Manter só o agregado; não há dado individual | Em vigor (resposta gravada só como contagem) |
+| F15 | Pesquisa de clima e termômetro de humor | Resultado agregado: 5 anos. Termômetro: a participação (quem respondeu qual ciclo) só serve para barrar a segunda resposta e pode ser apagada depois do ciclo | Do encerramento da pesquisa; no termômetro, do fim do ciclo de 10 dias | Manter só o agregado; não há dado individual | Em vigor (resposta gravada só como contagem); limpeza da participação do termômetro a implementar |
 | F16 | Solicitações ao RH, comunicados e notificações | 2 anos | Da decisão ou do envio | Anonimizar o texto livre | A implementar |
 | F17 | E-mail transacional (`email_outbox`) | 6 meses para mensagens enviadas | Do envio | Anular destinatário e corpo | Limpeza na rotina diária (tarefa 4.21) |
 | F18 | Regras e instrumentos normativos | Prazo legal do instrumento | Do fim da vigência | Mantidos (sem dado pessoal direto) | Em vigor |

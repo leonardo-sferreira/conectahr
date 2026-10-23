@@ -28,6 +28,7 @@
 19. [Canal de denúncias](#19-canal-de-denúncias)
 20. [Riscos psicossociais (NR-1)](#20-riscos-psicossociais-nr-1)
 21. [Treinamentos obrigatórios](#21-treinamentos-obrigatórios)
+22. [Termômetro de humor](#22-termômetro-de-humor)
 
 ---
 
@@ -999,6 +1000,24 @@ Change `treinamentos-obrigatorios` (desde 20/10/2026). A Lei 14.457/2022 pede or
     - **YouTube:** o modal mostra a prévia do vídeo, que lê a duração; sem a prévia carregada, não salva. O vídeo fica como "não listado" (privado não toca). Não precisa de configuração.
   - **Progresso** (`treinamento_progresso`; `meus_treinamentos/{id}/progresso` POST): conta o ponto mais longe assistido sem pular, até 2x a velocidade, nas duas fontes. Nunca diminui e não passa da duração. O primeiro registro tem no máximo 90 segundos, e cada aumento cabe em 2 × o tempo real desde o último, mais 15 segundos; fora disso, recusa.
   - **Conclusão pela pessoa** (`meus_treinamentos/{id}/concluir` POST): só com o progresso gravado no mínimo (vistos × 100 ≥ mínimo × duração). Data de hoje, validade calculada como no registro do RH, instrutor "Vídeo no ConectaRH", auditada; no mesmo dia, não repete. Depois, o progresso volta a zero, para a renovação pedir o vídeo de novo.
+
+## 22. Termômetro de humor
+
+Change `termometro-de-humor` (desde 21/10/2026). Uma pergunta anônima a cada 10 dias, com o resultado só agregado por setor. Figma: seção 23 (563:850).
+
+- **Ciclos de 10 dias:** o ciclo 0 vai de 21/10/2026 a 30/10/2026; o ciclo n começa 10 × n dias depois. O backend calcula o ciclo de hoje pelo dia juliano da data de São Paulo (`floor((dia juliano − 2461335) / 10)`).
+- **Responder** (`humor` GET e POST, qualquer perfil com ficha, não desligado):
+  - nota de 1 (muito mal) a 5 (muito bem);
+  - motivo opcional de uma lista fechada: carga de trabalho, reconhecimento, liderança, colegas, comunicação, estrutura e ferramentas;
+  - uma vez por ciclo. A chave única de `humor_participacao` (ciclo, pessoa) barra a segunda resposta;
+  - a nota só soma em `humor_contagem` (ciclo, setor, nota) e o motivo em `humor_motivo_contagem` (ciclo, setor, motivo), sem pessoa, data ou hora;
+  - sem auditoria individual, de propósito.
+- **No Início:** o cartão aparece enquanto a pessoa não respondeu o ciclo. "Agora não" esconde até a próxima sessão. Depois de responder, aparece "Obrigado!" com a data do próximo ciclo.
+- **Resultados** (`humor/resultados`):
+  - **Quem vê:** RH e Admin, todos os setores (com filtro); Gestor, só os setores em que é `gestor_colaborador_id` (outro setor: 403).
+  - **O que mostra:** os últimos 9 ciclos, os setores no ciclo atual e no anterior, os motivos do ciclo atual e a participação (respondentes e pessoas ativas no escopo).
+  - **Supressão:** grupo abaixo de `INDICADORES_MINIMO_PESSOAS` (padrão 5) sai sem distribuição. Se, num ciclo, só um setor ficar abaixo do mínimo, o menor dos outros também sai sem, para a subtração do total não revelar o pequeno.
+  - **Na tela:** a média e os percentuais saem da distribuição. Um setor pede atenção com média abaixo de 3 ou queda de 0,3 ponto sobre o ciclo anterior.
 
 ## Lacunas de escopo conhecidas (fora deste levantamento)
 

@@ -62,7 +62,7 @@ class ApiFicticia:
                     "feedbacks": copy.deepcopy(self.feedbacks), "pode_dar_feedback": self.pode_feedback}
         if path == "minhas_notificacoes":
             return {"total_nao_lidas": 0, "notificacoes": []}
-        if path in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados"):
+        if path in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados", "humor"):
             return {}
         if path == "folha_ponto/pessoas":
             return {"pessoas": []}

@@ -79,7 +79,7 @@ class ApiFicticia:
             return {"saldo_horas": self.bancos.get(int(m[1])), "lancamentos": [{"observacao": "NAO_EXIBIR"}]}
         if path == "minhas_notificacoes":
             return {"notificacoes": [], "total_nao_lidas": 0}
-        if path in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados"):
+        if path in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados", "humor"):
             return {}
         if path == "colaboradores/12/onboarding":
             raise ApiError("Sem onboarding.", 404)

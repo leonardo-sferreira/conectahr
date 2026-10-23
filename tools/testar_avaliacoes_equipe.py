@@ -94,7 +94,7 @@ class ApiFicticia:
         # Consultas comuns do app real durante a navegação, sem acesso à rede.
         if rota == "minhas_notificacoes":
             return {"notificacoes": [], "total_nao_lidas": 0}
-        if rota in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados"):
+        if rota in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados", "humor"):
             return {}
         if rota == "folha_ponto/pessoas":
             return {"pessoas": []}

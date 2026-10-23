@@ -78,7 +78,7 @@ class ApiFicticia:
         # Somente consultas comuns do Início/topbar durante a navegação do app real.
         if rota == "minhas_notificacoes":
             return {"notificacoes": [], "total_nao_lidas": 0}
-        if rota in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados"):
+        if rota in ("auth/me", "central_de_tarefas", "meu_banco_horas", "colaboradores/aniversariantes", "meus_comunicados", "humor"):
             return {}
         if rota == "folha_ponto/pessoas":
             return {"pessoas": []}

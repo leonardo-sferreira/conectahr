@@ -1350,3 +1350,22 @@ def progresso_treinamento(token: str, treinamento_id: int, segundos_vistos: int,
 def concluir_treinamento(token: str, treinamento_id: int) -> dict:
     """POST meus_treinamentos/{id}/concluir -> {valido_ate}: só com o mínimo do vídeo assistido."""
     return _post(f"meus_treinamentos/{int(treinamento_id)}/concluir", {}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Termômetro de humor (change termometro-de-humor)
+# ---------------------------------------------------------------------------
+def meu_humor(token: str) -> dict:
+    """GET humor -> {hoje, ciclo, respondeu}: o ciclo de 10 dias de hoje e se a pessoa já respondeu."""
+    return _get("humor", token, GRUPO_COLABORADORES)
+
+
+def responder_humor(token: str, nota: int, motivo: str | None) -> dict:
+    """POST humor: nota de 1 a 5 e o motivo opcional; uma vez por ciclo. Fica só a contagem anônima."""
+    return _post("humor", {"nota": int(nota), "motivo": motivo or None}, token, GRUPO_COLABORADORES)
+
+
+def resultados_humor(token: str, departamento_id: int | None = None) -> dict:
+    """GET humor/resultados -> {ciclo, minimo, ciclos, departamentos, motivos, participacao, pode_filtrar} (RH, Admin e Gestor)."""
+    caminho = f"humor/resultados?departamento_id={int(departamento_id)}" if departamento_id else "humor/resultados"
+    return _get(caminho, token, GRUPO_COLABORADORES)
