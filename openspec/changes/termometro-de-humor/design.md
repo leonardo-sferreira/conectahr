@@ -51,6 +51,7 @@ Ver proposal.md. O termômetro segue o desenho de anonimato da pesquisa de clima
 ### D5. Telas
 
 - **Início (Figma 563:853):**
+  - o cartão fica abaixo dos comunicados e acima da FAQ (ajuste de 23/10/2026), com um emoji em cada opção;
   - o cartão "Como você está se sentindo no trabalho?", com 5 opções, o motivo opcional, "Agora não" (some até a próxima sessão) e "Enviar";
   - depois de responder, "Obrigado!" com a data do próximo ciclo (563:971), só nesta sessão;
   - respondido o ciclo, o Início não chama mais a rota até a sessão acabar.

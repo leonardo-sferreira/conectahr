@@ -1005,12 +1005,14 @@ _APP_CSS = f"""
   .crh-hm-ciclo {{ background: {AMBAR_BG}; color: #92400E; border-radius: 999px; padding: 4px 10px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; white-space: nowrap; margin: 0; }}
   .st-key-hm_nota [data-testid="stButtonGroup"] > div {{ gap: 12px; flex-wrap: nowrap; width: 100%; }}
   .st-key-hm_nota button {{ flex: 1; display: flex; flex-direction: column; height: auto; padding: 14px 6px !important; border-radius: 12px !important; border: 1px solid {BORDA} !important; background: {MARFIM} !important; }}
-  .st-key-hm_nota button::before {{ content: ""; display: block; width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 8px; }}
-  .st-key-hm_nota button:nth-of-type(1)::before {{ background: {ERRO}; }}
-  .st-key-hm_nota button:nth-of-type(2)::before {{ background: #EA580C; }}
-  .st-key-hm_nota button:nth-of-type(3)::before {{ background: {AMBAR}; }}
-  .st-key-hm_nota button:nth-of-type(4)::before {{ background: #84CC16; }}
-  .st-key-hm_nota button:nth-of-type(5)::before {{ background: {SUCESSO}; }}
+  /* Um emoji em cada opção, no lugar da bolinha de cor (pedido do usuário, 23/10/2026). */
+  .st-key-hm_nota button::before {{ display: block; margin: 0 auto 6px; font-size: 30px; line-height: 1;
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif; }}
+  .st-key-hm_nota button:nth-of-type(1)::before {{ content: "😣"; }}
+  .st-key-hm_nota button:nth-of-type(2)::before {{ content: "🙁"; }}
+  .st-key-hm_nota button:nth-of-type(3)::before {{ content: "😐"; }}
+  .st-key-hm_nota button:nth-of-type(4)::before {{ content: "🙂"; }}
+  .st-key-hm_nota button:nth-of-type(5)::before {{ content: "😄"; }}
   .st-key-hm_nota button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border: 2px solid {AMBAR} !important; }}
   .st-key-hm_nota button p {{ font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
   .crh-hm-ok {{ display: flex; gap: 16px; align-items: center; border: 1px solid {BORDA}; border-radius: 16px; padding: 20px 24px; background: #FFFFFF; }}
