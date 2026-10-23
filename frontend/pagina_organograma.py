@@ -14,6 +14,7 @@ import time
 import streamlit as st
 
 from api_client import ApiError, organograma
+from foto_modelo import avatar_data_uri, avatar_html
 from organograma_modelo import abaixo, buscar, montar, topo
 from theme import alerta, render_hero, render_topbar
 
@@ -45,12 +46,15 @@ def _linhas(p: dict) -> list[str]:
 
 def _cartao_destaque(p: dict, voce: bool) -> None:
     detalhes = "".join(f'<p class="d">{html.escape(x)}</p>' for x in _linhas(p))
-    st.html(f'<div class="crh-org-foco"><p class="t">{html.escape(p["nome"])}{" (você)" if voce else ""}</p>{detalhes}</div>')
+    st.html(f'<div class="crh-org-foco">{avatar_html(p["nome"], p.get("foto_url"), 56, "crh-org-foco-av")}<div><p class="t">{html.escape(p["nome"])}'
+            f'{" (você)" if voce else ""}</p>{detalhes}</div></div>')
 
 
 def _cartao(p: dict, meu_id, chave: str) -> None:
     """Cartão clicável: o nome em negrito e, embaixo, o cargo e a área (quebra de linha pelo CSS `pre-line`)."""
-    rotulo = f'**{p["nome"]}{" (você)" if p["id"] == meu_id else ""}**\n' + "\n".join(_linhas(p))
+    # A foto (ou o círculo das iniciais) entra como imagem no rótulo, que é Markdown (change foto-de-perfil).
+    imagem = p.get("foto_url") or avatar_data_uri(p["nome"])
+    rotulo = f'![]({imagem}) **{p["nome"]}{" (você)" if p["id"] == meu_id else ""}**\n' + "\n".join(_linhas(p))
     st.button(rotulo, key=chave, on_click=_focar, args=(p["id"],), width="content")
 
 

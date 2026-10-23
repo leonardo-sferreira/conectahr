@@ -42,6 +42,7 @@ def montar(org: dict) -> dict:
             "cargo": cargo.get("nome") or "", "nivel": (nivel or {}).get("nome") or "",
             "ordem_nivel": int((nivel or {}).get("ordem") or _ORDEM_SEM_NIVEL), "departamento": deps.get(c.get("departamento_id")) or "",
             "departamento_id": c.get("departamento_id"), "superior_id": c.get("superior_colaborador_id"),
+            "foto_url": c.get("foto_url"),
         }
     for p in pessoas.values():
         if p["superior_id"] not in pessoas or p["superior_id"] == p["id"]:

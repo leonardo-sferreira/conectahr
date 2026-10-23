@@ -188,7 +188,7 @@ def organograma_pessoal(org: dict, meu_colaborador_id, departamento: dict | None
         partes = [p for p in nome.split() if p[:1].isalpha()]
         iniciais = (partes[0][0] + (partes[-1][0] if len(partes) > 1 else "")).upper() if partes else ""
         detalhe = " — ".join(p for p in (cargos.get(c.get("cargo_id")), deps.get(c.get("departamento_id"))) if p)
-        return {"nome": nome, "detalhe": detalhe or "—", "iniciais": iniciais}
+        return {"nome": nome, "detalhe": detalhe or "—", "iniciais": iniciais, "foto_url": c.get("foto_url")}
 
     eu = pessoas.get(meu_colaborador_id)
     gestor_id = (departamento or {}).get("gestor_colaborador_id")

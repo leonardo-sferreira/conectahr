@@ -30,6 +30,7 @@
 21. [Treinamentos obrigatórios](#21-treinamentos-obrigatórios)
 22. [Termômetro de humor](#22-termômetro-de-humor)
 23. [Avisos de publicação](#23-avisos-de-publicação)
+24. [Foto de perfil](#24-foto-de-perfil)
 
 ---
 
@@ -1036,6 +1037,27 @@ Change `notificacoes-de-publicacao` (desde 23/10/2026).
   - o convite não tem vínculo com a resposta: lê-lo não registra participação.
 - **Delegação:** o substituto recebe o aviso ao ser escolhido. Durante a delegação ativa (no escopo do pedido ou "todas"), ele também recebe os pedidos do titular, em `ConectaHR/notificar_decisores`.
 - **Público:** `ConectaHR/notificar_publico` avisa os colaboradores não desligados com conta ativa do público, menos quem desligou o assunto em "Na plataforma" e quem publicou.
+
+## 24. Foto de perfil
+
+Change `foto-de-perfil` (desde 23/10/2026). Figma: seção 25 (571:870).
+
+- **Opcional.** A própria pessoa envia, troca e remove em "Meu Perfil".
+  - Aceita JPG, PNG ou WebP de até 2 MB.
+  - O servidor do app trata a imagem: corrige a rotação, recorta em quadrado, reduz para 256 × 256 e grava em WebP sem metadados.
+- **Envio:**
+  1. `minha_foto/envio` POST devolve um endereço de uso único no bucket privado `fotos-perfil` (e cria o bucket na primeira vez);
+  2. a tela manda o arquivo direto para o armazenamento;
+  3. `minha_foto` POST grava o caminho (`{uuid}.webp`, conferido no armazenamento), apaga a foto anterior e audita `alterar_foto_perfil`.
+  - `minha_foto` DELETE remove e audita `remover_foto_perfil`.
+  - As rotas agem só sobre a ficha de quem está logado.
+- **RH e Admin** removem a foto de qualquer pessoa em `colaboradores/{id}/foto` DELETE: com justificativa de 10 a 500 caracteres, auditada e avisada à pessoa no sino.
+- **Onde aparece:**
+  - no perfil (`meu_perfil_colaborador`);
+  - no organograma (`organograma`: só a `foto_url`, nunca o caminho);
+  - no menu da conta (`minha_foto` GET, chamada só quando o login disse `tem_foto`).
+  - As URLs são assinadas e valem 10 minutos. Sem foto, ou com a URL vencida, aparecem as iniciais.
+- **Na anonimização do desligado,** a foto é apagada do armazenamento.
 
 ## Lacunas de escopo conhecidas (fora deste levantamento)
 

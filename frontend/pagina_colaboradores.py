@@ -25,7 +25,7 @@ from datetime import date, datetime
 import streamlit as st
 
 from api_client import (ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, documentos_rh, organograma, pedir_acesso,
-                        solicitacoes_acesso, trocar_perfil, usuarios)
+                        remover_foto_colaborador, solicitacoes_acesso, trocar_perfil, usuarios)
 from cadastro_modelo import (
     CONTRATOS,
     JORNADA_SEMANAL,
@@ -354,6 +354,32 @@ def _modal_superior(colab: dict, colabs: list[dict], deps: dict) -> None:
             concluir(f"Superior direto de {colab.get('nome')} atualizado.")
 
 
+@st.dialog("Remover foto de perfil", width="small", on_dismiss=fechar)
+def _modal_remover_foto(colab: dict) -> None:
+    """Foto inadequada (Figma 571:1179; change foto-de-perfil, D4): com justificativa, auditada e avisada à pessoa."""
+    st.html(f'<p class="crh-meta">A foto de <b>{html.escape(colab.get("nome") or "")}</b> sai do perfil e do organograma. '
+            'A pessoa recebe a justificativa no sino e pode enviar outra foto depois.</p>')
+    justificativa = campo(st, "Justificativa", "texto", "col_foto_just", area=True, max_chars=500, height=90,
+                          placeholder="Ex.: a imagem não é uma foto da pessoa.")
+    alerta(st.empty(), "atencao", "A remoção fica na auditoria.")
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="col_foto_cancelar"):
+            fechar()
+            st.rerun()
+        if st.button("Remover foto", type="primary", key="col_foto_ok"):
+            if len((justificativa or "").strip()) < 10:
+                alerta(slot, "erro", "Escreva a justificativa (pelo menos 10 caracteres).")
+                return
+            try:
+                remover_foto_colaborador(st.session_state.token, colab.get("id"), justificativa.strip())
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            st.session_state.pop("col_foto_just", None)
+            concluir(f"Foto de perfil de {colab.get('nome')} removida.")
+
+
 def _documentos_rh(token: str) -> list[dict] | str:
     """Todos os documentos (`documentos`, RH e Admin), guardados por 60 s; carregados só quando uma ficha é aberta."""
     guardado = st.session_state.get("col_docs_cache")
@@ -418,6 +444,10 @@ def _ficha(colab: dict, dados: dict) -> None:
                     st.rerun()
             if st.button("Definir superior", key="col_definir_superior"):
                 st.session_state.modal_cadastro = ("superior", colab.get("id"))
+                st.rerun()
+            # Foto inadequada: só aparece quando a pessoa tem foto (change foto-de-perfil).
+            if colab.get("foto_path") and st.button("Remover foto", key="col_remover_foto"):
+                st.session_state.modal_cadastro = ("foto", colab.get("id"))
                 st.rerun()
             if not colab.get("user_id") and str(colab.get("status") or "").upper() != "DESLIGADO":
                 if st.button("Criar acesso", type="primary", key="col_criar_acesso"):
@@ -506,5 +536,11 @@ def pagina_colaboradores() -> None:
             fechar()
         else:
             _modal_superior(alvo_colab, colabs, deps)
+    elif acao == "foto":
+        alvo_colab = next((c for c in colabs if c.get("id") == alvo), None)
+        if alvo_colab is None or not alvo_colab.get("foto_path"):
+            fechar()
+        else:
+            _modal_remover_foto(alvo_colab)
     else:
         fechar()

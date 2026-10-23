@@ -170,6 +170,11 @@ query "colaboradores/{id}/anonimizar" verb=POST {
 
     db.transaction {
       stack {
+        // A foto de perfil sai do armazenamento antes da anonimizacao (change foto-de-perfil, D6).
+        function.run "ConectaHR/apagar_foto" {
+          input = {caminho: $alvo.foto_path}
+        } as $foto_apagada
+
         db.edit colaborador {
           field_name = "id"
           field_value = $alvo.id
@@ -191,6 +196,7 @@ query "colaboradores/{id}/anonimizar" verb=POST {
             conta          : null
             digito         : null
             tipo_conta     : null
+            foto_path      : null
             anonimizado_em : "now"
             updated_at     : "now"
           }

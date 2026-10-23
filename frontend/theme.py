@@ -47,6 +47,8 @@ from pathlib import Path
 
 import streamlit as st
 
+from foto_modelo import avatar_html
+
 # Tokens extraídos do Figma (docs/figma-prototipo.md + inspeção direta dos nós).
 GRAFITE = "#16181D"
 GRAFITE_SECUNDARIO = "#4B5563"
@@ -781,6 +783,15 @@ _APP_CSS = f"""
   .crh-org {{ display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }}
   .crh-org-linha {{ display: flex; gap: 10px; flex-wrap: wrap; }}
   .crh-org-seta {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  /* Avatar com foto de perfil (Figma 571:870; change foto-de-perfil): as iniciais embaixo e a foto por cima; se a
+     foto não carregar, as iniciais continuam à vista. */
+  .crh-avatar-foto {{ position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 999px;
+    overflow: hidden; background: {GRAFITE}; color: {AMBAR}; font-family: 'Manrope', sans-serif; font-weight: 600; line-height: 1; }}
+  .crh-avatar-foto img {{ position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }}
+  /* Cartões do organograma: a foto (ou as iniciais) à esquerda do nome, cargo e área. */
+  .st-key-org_card button p:has(img) {{ display: block !important; position: relative; padding-left: 46px; min-height: 36px; text-align: left; }}
+  .st-key-org_card button p img {{ position: absolute; left: 0; top: 2px; width: 36px !important; height: 36px !important; max-height: none !important;
+    border-radius: 999px; object-fit: cover; }}
   .crh-org-pessoa {{ display: flex; gap: 10px; align-items: center; background: {MARFIM}; border: 1px solid transparent; border-radius: 10px; padding: 10px 14px 10px 12px; }}
   .crh-org-pessoa.voce {{ background: {AMBAR_BG}; border-color: {AMBAR}; }}
   .crh-org-pessoa .a {{ width: 30px; height: 30px; border-radius: 999px; background: {GRAFITE}; color: {AMBAR}; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }}
@@ -856,7 +867,7 @@ _APP_CSS = f"""
   .st-key-org_arvore button[kind="secondary"] p, .st-key-org_res_fileira button[kind="secondary"] p {{ white-space: pre-line; font-family: 'Manrope', sans-serif; font-size: 13px; line-height: 1.45; color: {GRAFITE_SECUNDARIO}; text-align: left; }}
   .st-key-org_arvore button[kind="secondary"] p strong, .st-key-org_res_fileira button[kind="secondary"] p strong {{ font-weight: 600; font-size: 15px; color: {GRAFITE}; }}
   .crh-org-conector {{ width: 2px; height: 28px; background: {BORDA}; margin: 0 auto; }}
-  .crh-org-foco {{ min-width: 300px; width: fit-content; margin: 0 auto; background: {AMBAR_BG}; border: 1px solid {AMBAR}; border-radius: 4px; padding: 14px 20px; }}
+  .crh-org-foco {{ display: flex; align-items: center; gap: 14px; min-width: 300px; width: fit-content; margin: 0 auto; background: {AMBAR_BG}; border: 1px solid {AMBAR}; border-radius: 4px; padding: 14px 20px; }}
   .crh-org-foco .t {{ margin: 0; font: 600 15px 'Manrope', sans-serif; color: {GRAFITE}; }}
   .crh-org-foco .d {{ margin: 2px 0 0; font: 400 13px 'Manrope', sans-serif; line-height: 1.45; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-faq_card_comunicados [data-testid="stExpander"] summary p, .st-key-faq_card_perguntas [data-testid="stExpander"] summary p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
@@ -1542,6 +1553,15 @@ def iniciais(nome: str) -> str:
 _SINO = None
 
 
+_FOTO_CONTA = None
+
+
+def definir_foto_conta(funcao) -> None:
+    """O app.py registra aqui quem devolve a URL da foto de perfil da conta (change foto-de-perfil); sem foto, None."""
+    global _FOTO_CONTA
+    _FOTO_CONTA = funcao
+
+
 def definir_sino(funcao) -> None:
     """O app.py registra aqui o sino de notificações (`notificacoes.render_sino`), que fala com a API; o tema só o desenha."""
     global _SINO
@@ -1564,7 +1584,7 @@ def render_topbar(nome: str) -> None:
             st.html(
                 f"""
                 <div class="crh-menu-conta">
-                  <div class="crh-avatar-g">{html.escape(iniciais(nome))}</div>
+                  {avatar_html(nome, _FOTO_CONTA() if _FOTO_CONTA else None, 40, "crh-avatar-g")}
                   <div><p class="t">{html.escape(nome)}</p><p class="s">Perfil: {html.escape(perfil)}</p></div>
                 </div>
                 """
