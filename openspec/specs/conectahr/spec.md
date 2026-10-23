@@ -1416,3 +1416,119 @@ Ao concluir ou cancelar um ciclo de avaliação, as avaliações ainda pendentes
 #### Scenario: Concluir com avaliações pendentes
 - **WHEN** o RH conclui um ciclo em fechamento com duas avaliações pendentes
 - **THEN** as duas ficam canceladas e a resposta informa a quantidade
+
+### Requirement: Treinamento em vídeo com conclusão depois do mínimo assistido
+O RH SHALL poder ligar um vídeo do Google Drive ou do YouTube a um treinamento, com o mínimo a assistir (de 50% a 100%, padrão 95%), e o sistema SHALL ler a duração do vídeo ao salvar (na API do Drive ou na prévia do YouTube). A pessoa SHALL assistir o vídeo em "Meus treinamentos", e o sistema SHALL contar só o trecho assistido sem pular, até 2x a velocidade. O backend SHALL recusar progresso mais rápido que 2x o tempo real e SHALL liberar a conclusão pela própria pessoa só quando o progresso gravado atingir o mínimo. A conclusão SHALL ter a validade do treinamento, SHALL ficar na auditoria e SHALL zerar o progresso.
+
+#### Scenario: Vídeo do YouTube sem configuração
+- **WHEN** o RH cola o link de um vídeo não listado do YouTube e a prévia carrega
+- **THEN** o treinamento é salvo com a duração do vídeo, sem chave de API, e a pessoa assiste com as mesmas regras
+
+#### Scenario: Concluir antes do mínimo
+- **WHEN** a pessoa assistiu 62% de um vídeo que pede 95% e tenta concluir
+- **THEN** o botão "Concluir treinamento" está travado e o backend recusa a conclusão
+
+#### Scenario: Pular para o fim do vídeo
+- **WHEN** a pessoa arrasta o vídeo para o fim sem assistir
+- **THEN** o player volta para o ponto mais longe já assistido e o progresso não aumenta
+
+#### Scenario: Progresso forjado
+- **WHEN** uma chamada diz que a pessoa assistiu 5 minutos a mais 30 segundos depois da última
+- **THEN** o backend recusa e mantém o progresso anterior
+
+#### Scenario: Concluir depois de assistir
+- **WHEN** a pessoa assistiu 95% de um treinamento anual e clica em "Concluir treinamento" em 21/10/2026
+- **THEN** a conclusão fica registrada com validade até 21/10/2027 e o progresso volta a zero
+
+### Requirement: Termômetro de humor anônimo a cada 10 dias
+O sistema SHALL perguntar a cada pessoa com ficha, uma vez por ciclo de 10 dias, como ela está se sentindo no trabalho, numa escala de 1 a 5 com um motivo opcional de uma lista fechada. O sistema SHALL guardar só contagens por ciclo, setor e nota (e por ciclo, setor e motivo), sem pessoa, data ou hora, e SHALL recusar uma segunda resposta no mesmo ciclo. RH e Admin SHALL ver os resultados de todos os setores, e o Gestor só os dos setores que gerencia. Nenhum grupo com menos respostas que o mínimo SHALL aparecer, nem por subtração.
+
+#### Scenario: Responder uma vez por ciclo
+- **WHEN** a pessoa responde o termômetro em 22/10/2026 e tenta responder de novo em 25/10/2026
+- **THEN** a segunda resposta é recusada, e o cartão volta no Início em 31/10/2026
+
+#### Scenario: Setor pequeno
+- **WHEN** só um setor tem menos de 5 respostas no ciclo
+- **THEN** esse setor e o menor dos outros aparecem como suprimidos, e o total da empresa continua visível
+
+#### Scenario: Gestor de outro setor
+- **WHEN** um gestor pede o resultado de um setor que não gerencia
+- **THEN** o backend recusa
+
+### Requirement: Menu lateral com grupos recolhíveis
+O menu lateral SHALL mostrar os grupos RH, Equipe e Admin, conforme o perfil, como cabeçalhos clicáveis que começam fechados e abrem ou fecham independentes uns dos outros. O grupo que contém a tela aberta SHALL abrir sozinho quando a pessoa chega nela. Auditoria e Regras SHALL ficar no grupo RH, e o menu principal SHALL ser igual para todos os perfis.
+
+#### Scenario: Admin entra no sistema
+- **WHEN** um Admin abre o app
+- **THEN** vê o menu principal e os cabeçalhos "RH" e "Admin" fechados, sem os itens deles
+
+#### Scenario: Abrir dois grupos
+- **WHEN** o Admin abre o grupo RH e depois o grupo Admin
+- **THEN** os dois ficam abertos
+
+#### Scenario: Chegar numa tela de grupo
+- **WHEN** o RH abre a tela Treinamentos
+- **THEN** o grupo RH aparece aberto, com "Treinamentos" destacado
+
+#### Scenario: Colaborador
+- **WHEN** um Colaborador sem equipe abre o app
+- **THEN** o menu não tem grupo nenhum, nem Auditoria ou Regras
+
+### Requirement: Aviso de treinamento novo
+O sistema SHALL avisar no sino o público de um treinamento quando ele é criado ativo ou reativado: todos os colaboradores ativos, ou só os dos departamentos escolhidos. O sistema SHALL deixar de fora quem publicou e quem desligou o assunto "Treinamentos" nas preferências.
+
+#### Scenario: Treinamento para um departamento
+- **WHEN** o RH cria um treinamento ativo para o departamento Operações
+- **THEN** cada colaborador ativo de Operações recebe "Novo treinamento disponível", e ninguém de TI recebe
+
+#### Scenario: Quem publicou
+- **WHEN** o RH que criou o treinamento também é do público
+- **THEN** ele não recebe o aviso
+
+#### Scenario: Preferência desligada
+- **WHEN** a pessoa desligou "Treinamentos" em Configurações → Notificações
+- **THEN** ela não recebe o aviso no sino
+
+### Requirement: Convite de pesquisa sem vínculo com a resposta
+O sistema SHALL avisar o público uma única vez, quando uma pesquisa de clima ou uma avaliação psicossocial fica disponível para resposta, e no início de cada ciclo do termômetro de humor. Ler ou abrir o convite SHALL NOT registrar participação, e nenhuma consulta SHALL ligar o convite à resposta.
+
+#### Scenario: Pesquisa aberta
+- **WHEN** o RH adiciona as perguntas a uma pesquisa de clima que já está no período
+- **THEN** cada colaborador ativo recebe "Nova pesquisa", uma vez só
+
+#### Scenario: Anonimato
+- **WHEN** a pessoa abre o convite e responde a pesquisa
+- **THEN** a resposta continua só na contagem anônima, e o convite não guarda nada sobre ela
+
+### Requirement: Aviso para quem decide
+Toda solicitação que espera a decisão de alguém SHALL gerar um aviso `pedido_novo` para quem decide, conforme a tabela "evento → quem recebe" do design. Uma delegação SHALL avisar o substituto, e o substituto com delegação ativa SHALL receber os pedidos do titular.
+
+#### Scenario: Delegação
+- **WHEN** um gestor delega as aprovações de férias a um colega de 01/11 a 15/11
+- **THEN** o colega recebe o aviso da delegação, e os pedidos de férias do período avisam também o colega
+
+### Requirement: Foto de perfil opcional
+O colaborador SHALL poder enviar, trocar e remover a própria foto de perfil (JPG, PNG ou WebP de até 2 MB, gravada quadrada em 256 × 256, sem metadados). O sistema SHALL guardar a foto num bucket privado e SHALL mostrá-la, por URL assinada de curta duração, no perfil, no organograma e no avatar do topo. Sem foto, SHALL mostrar as iniciais. Ninguém SHALL trocar a foto de outra pessoa.
+
+#### Scenario: Enviar a foto
+- **WHEN** a pessoa envia uma foto JPG de 1 MB no "Meu perfil"
+- **THEN** a foto aparece no perfil dela e, para outro usuário, no organograma
+
+#### Scenario: Arquivo recusado
+- **WHEN** a pessoa tenta enviar um PDF ou uma imagem de 5 MB
+- **THEN** o envio é recusado com uma mensagem que diz o formato e o tamanho aceitos
+
+#### Scenario: Foto de outra pessoa
+- **WHEN** um colaborador tenta gravar a foto na ficha de outra pessoa
+- **THEN** o backend recusa com 403
+
+#### Scenario: Link temporário
+- **WHEN** alguém guarda a URL da foto e tenta abrir depois que ela expirou
+- **THEN** o Supabase recusa o acesso
+
+### Requirement: Remoção de foto inadequada
+RH e Admin SHALL poder remover a foto de qualquer colaborador, com justificativa. A remoção SHALL ficar na auditoria e SHALL avisar a pessoa.
+
+#### Scenario: Remoção pelo RH
+- **WHEN** o RH remove uma foto com a justificativa "Imagem não é do colaborador"
+- **THEN** a pessoa passa a aparecer com as iniciais, recebe o aviso com a justificativa e a auditoria registra a remoção
