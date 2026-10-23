@@ -16,6 +16,8 @@ table pesquisa_clima {
       table = "user"
     }
     bool ativo?=true
+    // Quando o convite saiu para o publico (change notificacoes-de-publicacao, D3): uma vez so.
+    timestamp? convite_enviado_em?
 
     // Tipo (change riscos-psicossociais, D1): clima (o padrao) ou psicossocial (avaliacao de
     // riscos psicossociais da NR-1, com o questionario padrao por dimensao).

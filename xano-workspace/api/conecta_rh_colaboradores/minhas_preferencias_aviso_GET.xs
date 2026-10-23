@@ -64,7 +64,7 @@ query "minhas_preferencias_aviso" verb=GET {
     }
 
     var $assuntos {
-      value = ["ferias_ausencias", "ponto", "documentos", "avaliacoes_metas", "solicitacoes"]
+      value = ["ferias_ausencias", "ponto", "documentos", "avaliacoes_metas", "solicitacoes", "treinamentos", "pesquisas"]
     }
 
     var $preferencias {

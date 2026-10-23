@@ -1,5 +1,6 @@
 // Termometro de humor da propria pessoa (change termometro-de-humor, D3): o ciclo de 10 dias de hoje (ciclo 0 =
-// 21/10/2026 a 30/10/2026) e se ela ja respondeu. Qualquer perfil com ficha.
+// 21/10/2026 a 30/10/2026) e se ela ja respondeu. Tambem dispara os convites de pesquisa pendentes
+// (change notificacoes-de-publicacao, D3). Qualquer perfil com ficha.
 query "humor" verb=GET {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -111,6 +112,11 @@ query "humor" verb=GET {
     var $ciclo {
       value = (($dia_juliano - 2461335) / 10)|floor
     }
+
+    // Convites pendentes saem no primeiro acesso ao Inicio do dia (change notificacoes-de-publicacao, D3).
+    function.run "ConectaHR/enviar_convites_pesquisa" {
+      input = {aplicar: true, autor_user_id: null, incluir_termometro: true}
+    } as $convites_pendentes
 
     db.query humor_participacao {
       where = $db.humor_participacao.ciclo == $ciclo && $db.humor_participacao.colaborador_id == $colaborador_autenticado.id

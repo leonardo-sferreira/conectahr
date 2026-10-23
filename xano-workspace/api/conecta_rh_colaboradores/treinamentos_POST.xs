@@ -1,6 +1,6 @@
 // Cria um treinamento no catalogo (change treinamentos-obrigatorios, D2): nome, categoria, carga horaria,
 // validade em meses (0 = sem validade), se e obrigatorio e para quem (todos ou departamentos, como ",1,4,").
-// Auditado. So RH e Admin.
+// Auditado. Avisa o publico no sino (change notificacoes-de-publicacao). So RH e Admin.
 query "treinamentos" verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -183,6 +183,15 @@ query "treinamentos" verb=POST {
         resultado  : "sucesso"
       }
     } as $evento_auditoria
+
+    // Aviso ao publico do treinamento (change notificacoes-de-publicacao, D2): todos ou os departamentos, sem quem publicou.
+    var $titulo_aviso {
+      value = ("Novo treinamento disponível: " ~ $treinamento.nome)|substr:0:150
+    }
+
+    function.run "ConectaHR/notificar_publico" {
+      input = {publico: $treinamento.publico, departamento_ids: $treinamento.departamento_ids, autor_user_id: $usuario_autenticado.id, tipo: "treinamento_novo", assunto: "treinamentos", titulo: $titulo_aviso, mensagem: "Veja em Meus treinamentos.", recurso: "treinamento", registro_id: $treinamento.id}
+    } as $avisados
   }
 
   response = {

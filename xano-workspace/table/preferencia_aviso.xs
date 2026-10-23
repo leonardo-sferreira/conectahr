@@ -16,7 +16,7 @@ table preferencia_aviso {
     }
 
     enum assunto {
-      values = ["ferias_ausencias", "ponto", "documentos", "avaliacoes_metas", "solicitacoes"]
+      values = ["ferias_ausencias", "ponto", "documentos", "avaliacoes_metas", "solicitacoes", "treinamentos", "pesquisas"]
     }
 
     bool plataforma?=true

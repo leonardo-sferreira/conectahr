@@ -579,6 +579,11 @@ function "ConectaHR/processar_transicoes_diarias" {
       output = ["id", "data_desligamento"]
     } as $desligados_prazo_cumprido
 
+    // ---------- 10. Convites de pesquisa e do termometro (change notificacoes-de-publicacao, D3) ----------
+    function.run "ConectaHR/enviar_convites_pesquisa" {
+      input = {aplicar: $input.aplicar, autor_user_id: null, incluir_termometro: true}
+    } as $convites
+
     var $contagens {
       value = {
         desligamentos_concluidos: $n_desligamentos
@@ -591,6 +596,8 @@ function "ConectaHR/processar_transicoes_diarias" {
         sessoes_ip_dispositivo_limpos: $n_sessoes_limpas
         emails_enviados_limpos     : $n_emails_limpos
         desligados_prazo_cumprido  : $desligados_prazo_cumprido
+        convites_pesquisa          : $convites.pesquisas
+        convite_termometro         : $convites.termometro
       }
     }
   }

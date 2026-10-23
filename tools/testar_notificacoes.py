@@ -171,6 +171,11 @@ decidido = lambda r: {"tipo": "pedido_decidido", "recurso": r}  # noqa: E731
 conferir([m.destino(novo(r)) for r in ("correcao_ponto", "ferias", "solicitacao_rh", "documento", "solicitacao_desligamento")]
          == ["ir_central", "ir_central", "ir_solicitacoes", "ir_conferencia", "ir_desligamentos"], "pedido novo: a tela de quem decide")
 conferir(m.destino(decidido("solicitacao_desligamento")) == "ir_pedir_desligamento", "desligamento decidido: quem pediu abre Pedir desligamento")
+# Publicações e delegação (change notificacoes-de-publicacao).
+conferir(m.destino({"tipo": "treinamento_novo", "recurso": "treinamento"}) == "ir_meus_treinamentos"
+         and m.destino({"tipo": "pesquisa_nova", "recurso": "pesquisa_clima"}) == "ir_pesquisa_clima"
+         and m.destino({"tipo": "pesquisa_nova", "recurso": "humor"}) == "ir_inicio"
+         and m.destino(novo("delegacao")) == "ir_delegacoes", "treinamento novo, convite de pesquisa, termômetro e delegação recebida")
 conferir(m.destino(novo("ausencia"), "RH") == "ir_ausencias" and m.destino(novo("ausencia"), "GESTOR") == "ir_central",
          "ausência nova: o RH vai a Ausências; o gestor, à Central de Pendências")
 conferir([m.destino(decidido(r)) for r in ("correcao_ponto", "ferias", "ausencia", "documento")] == ["ir_ponto", "ir_ferias", "ir_central", "ir_documentos"],
