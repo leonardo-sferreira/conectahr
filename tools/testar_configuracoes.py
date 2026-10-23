@@ -110,6 +110,7 @@ def app(aba: str | None = None, **extra) -> AppTest:
     at.session_state["token"] = "tok-teste"
     at.session_state["usuario"] = {"id": 3, "nome": "Leonardo Teste", "email": "leo@empresa.com", "perfil": "COLABORADOR", "colaborador_id": 7}
     at.session_state["sessao_validada"] = True
+    at.session_state["menu_grupos"] = {"RH": True, "Equipe": True, "Admin": True}  # grupos do menu abertos (o fechado é testado em testar_menu)
     at.session_state["tem_equipe"] = False
     if aba:
         at.session_state["cfg_aba"] = aba

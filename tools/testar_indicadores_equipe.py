@@ -252,7 +252,7 @@ class TelaENavegacao(Base):
     def app(self, perfil="GESTOR", tema="claro"):
         at = AppTest.from_file(str(RAIZ / "frontend/app.py"), default_timeout=30)
         for k, v in dict(token="sessao-ficticia", usuario=dict(USUARIO, perfil=perfil), tema=tema,
-                         sessao_validada=True, tem_equipe=False).items():
+                         sessao_validada=True, menu_grupos={"RH": True, "Equipe": True, "Admin": True}, tem_equipe=False).items():
             at.session_state[k] = v
         at.run()
         self.assertFalse(list(at.exception))
@@ -381,7 +381,7 @@ def previa():
     api_client._request = st.session_state.api_f18_ficticia.responder
     pagina_indicadores_equipe.hoje_brasilia = lambda: HOJE
     if "token" not in st.session_state:
-        st.session_state.update(token="sessao-ficticia", usuario=copy.deepcopy(USUARIO), sessao_validada=True,
+        st.session_state.update(token="sessao-ficticia", usuario=copy.deepcopy(USUARIO), sessao_validada=True, menu_grupos={"RH": True, "Equipe": True, "Admin": True},
                                 tem_equipe=False, tema="claro")
     runpy.run_path(str(RAIZ / "frontend/app.py"), run_name="__main__")
 

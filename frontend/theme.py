@@ -477,6 +477,27 @@ _APP_CSS = f"""
   }}
   div[class*="st-key-nav_"] button:hover {{ background: rgba(255,255,255,0.06); }}
   div[class*="st-key-nav_"] button:hover p {{ color: white; }}
+  /* Grupos recolhíveis do menu (Figma 567:862; change menu-grupos-recolhiveis): o cabeçalho tem o estilo do rótulo
+     de grupo e uma seta feita com duas bordas, para a direita fechado e para baixo aberto. */
+  div[class*="st-key-grpfechado_"], div[class*="st-key-grpaberto_"] {{ margin-top: 10px; }}
+  div[class*="st-key-navgrupo_"], div[class*="st-key-navgrupo_"] .stButton {{ width: 100% !important; }}
+  div[class*="st-key-navgrupo_"] button {{
+    width: 100%; min-height: 0; padding: 8px 12px !important; border-radius: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }}
+  div[class*="st-key-navgrupo_"] button > div {{ justify-content: flex-start; }}
+  div[class*="st-key-navgrupo_"] button p {{
+    font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em;
+    color: #737A85; text-transform: uppercase; line-height: normal;
+  }}
+  div[class*="st-key-navgrupo_"] button::after {{
+    content: ""; flex: none; width: 6px; height: 6px; margin-right: 4px;
+    border-right: 1.6px solid #737A85; border-bottom: 1.6px solid #737A85; transform: rotate(-45deg);
+  }}
+  div[class*="st-key-grpaberto_"] div[class*="st-key-navgrupo_"] button::after {{ transform: rotate(45deg); margin-top: -4px; }}
+  div[class*="st-key-navgrupo_"] button:hover {{ background: rgba(255,255,255,0.06); }}
+  div[class*="st-key-navgrupo_"] button:hover p {{ color: white; }}
+  div[class*="st-key-navgrupo_"] button:hover::after {{ border-color: white; }}
 
   .crh-topbar {{ display: flex; justify-content: flex-end; align-items: center; gap: 16px; }}
   .crh-topbar .crh-bell {{ width: 40px; height: 40px; }}
