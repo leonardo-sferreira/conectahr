@@ -89,6 +89,7 @@ def _instalar_api_simulada():
     api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
     api_client.aniversariantes = lambda token: {"aniversariantes": []}
     api_client.meus_comunicados = lambda token: {"comunicados": []}
+api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.minhas_preferencias_privacidade = lambda token: chamadas.append(("prefs",)) or _falha_ou(
         "prefs", dict(estado["preferencias"], padrao=False, menor_de_idade=False)

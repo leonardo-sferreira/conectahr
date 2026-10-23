@@ -65,6 +65,7 @@ from pagina_riscos_psicossociais import pagina_riscos_psicossociais
 from pagina_ponto import pagina_ponto
 from pagina_solicitacoes import pagina_solicitacoes
 from pagina_trajetoria import pagina_trajetoria
+from pagina_termometro_humor import pagina_termometro_humor
 from pagina_treinamentos import pagina_treinamentos
 from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
@@ -104,6 +105,8 @@ _MENU_RH = [
     "Desligamentos",
     "Comunicados e FAQ",
     "Pesquisas de clima",
+    # Humor anônimo a cada 10 dias, agregado por setor (change termometro-de-humor).
+    "Termômetro de humor",
     # Avaliação de riscos psicossociais, inventário e plano de ação para o PGR (NR-1; change riscos-psicossociais).
     "Riscos psicossociais",
     # Catálogo, matriz e conclusões dos treinamentos obrigatórios (NRs e Lei 14.457/2022; change treinamentos-obrigatorios).
@@ -120,6 +123,8 @@ _MENU_EQUIPE = [
     "Avaliações da equipe",
     # Ciclo anual de metas da equipe, com o feedback de cada etapa (change ciclo-de-metas).
     "Metas da equipe",
+    # Humor dos setores que o gestor gerencia, só agregado (change termometro-de-humor).
+    "Termômetro de humor",
     "Delegações",
     "Indicadores da equipe",
 ]
@@ -239,10 +244,11 @@ PG_DENUNCIAS = st.Page(pagina_denuncias, title="Denúncias", url_path="denuncias
 PG_NR1 = st.Page(pagina_riscos_psicossociais, title="Riscos psicossociais", url_path="riscos-psicossociais")
 PG_TREINAMENTOS = st.Page(pagina_treinamentos, title="Treinamentos", url_path="treinamentos")
 PG_MEUS_TREINAMENTOS = st.Page(pagina_meus_treinamentos, title="Meus treinamentos", url_path="meus-treinamentos")
+PG_HUMOR = st.Page(pagina_termometro_humor, title="Termômetro de humor", url_path="termometro-de-humor")
 PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS, PG_HUMOR], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -277,7 +283,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1, "Treinamentos": PG_TREINAMENTOS, "Meus treinamentos": PG_MEUS_TREINAMENTOS}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1, "Treinamentos": PG_TREINAMENTOS, "Meus treinamentos": PG_MEUS_TREINAMENTOS, "Termômetro de humor": PG_HUMOR}
 
 _PAGINAS_DO_MENU["Minha equipe"] = PG_MINHA_EQUIPE
 

@@ -10,17 +10,22 @@ derrubar a tela inteira):
 - Comunicados: meus_comunicados (já filtrados por vigência e público-alvo).
 - Dias de férias: ainda não existe endpoint de saldo de férias no backend,
   então o card mostra "—" até ele existir.
+- Termômetro de humor (Figma 563:932 e 563:971; change termometro-de-humor): humor (GET e POST). O cartão aparece
+  enquanto a pessoa não respondeu o ciclo de 10 dias; "Agora não" esconde até a próxima sessão. Respondido o ciclo,
+  a rota não é chamada de novo nesta sessão.
 """
 
 import html
+import time
 from datetime import date
 
 import streamlit as st
 
-from api_client import ApiError, aniversariantes, central_de_tarefas, meu_banco_horas, meus_comunicados
+from api_client import ApiError, aniversariantes, central_de_tarefas, meu_banco_horas, meu_humor, meus_comunicados, responder_humor
+from humor_modelo import MOTIVOS, OPCOES, periodo, proximo, validar_resposta
 from onboarding_dados import carregar as carregar_onboarding
 from onboarding_modelo import card_inicio
-from theme import render_barra_progresso, render_linhas_onboarding, render_titulo_cartao, render_topbar
+from theme import alerta, render_barra_progresso, render_linhas_onboarding, render_titulo_cartao, render_topbar
 
 _DIAS_SEMANA = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
 _MESES = [
@@ -95,6 +100,59 @@ def _card_onboarding(token: str, usuario: dict) -> None:
                 st.html('<p class="crh-meta">Nenhuma pendência de documento.</p>')
 
 
+_HUMOR_CACHE_S = 60
+
+
+def _card_humor(token: str, usuario: dict) -> None:
+    """Termômetro de humor: a pergunta do ciclo de 10 dias, enquanto a pessoa não respondeu."""
+    if not usuario.get("colaborador_id") or st.session_state.get("hm_oculto"):
+        return
+    if obrigado := st.session_state.get("hm_obrigado"):
+        st.html('<div class="crh-hm-ok"><div class="bola"></div><div><p class="t">Obrigado! Sua resposta entrou no termômetro deste ciclo.</p>'
+                f'<p class="s">O próximo abre em {html.escape(obrigado)}. Se precisar conversar, use o Canal de denúncias ou fale com o RH.</p></div></div>')
+        return
+    estado = st.session_state.get("hm_estado")
+    if estado is None or (not estado["respondeu"] and time.time() - estado["em"] > _HUMOR_CACHE_S):
+        try:
+            dados = meu_humor(token)
+        except ApiError:
+            return
+        estado = {"em": time.time(), "ciclo": int(dados.get("ciclo") or 0), "respondeu": bool(dados.get("respondeu"))}
+        st.session_state.hm_estado = estado
+    if estado["respondeu"]:
+        return
+    rotulos = {n: r for n, r, _ in OPCOES}
+    with st.container(key="cfg_card_hm"):
+        st.html(f'<div class="crh-hm-topo"><div><p class="crh-cfg-titulo">Como você está se sentindo no trabalho?</p>'
+                '<p class="crh-meta">Termômetro de humor · anônimo · leva 5 segundos. Ninguém vê sua resposta: o RH e o gestor só veem a média do setor.</p></div>'
+                f'<p class="crh-hm-ciclo">Ciclo de {html.escape(periodo(estado["ciclo"]))}</p></div>')
+        nota = st.segmented_control("Como você está", list(rotulos), format_func=rotulos.get, key="hm_nota", label_visibility="collapsed",
+                                  width="stretch")
+        with st.container(horizontal=True, vertical_alignment="bottom"):
+            motivo = st.selectbox("O que mais pesou? (opcional)", list(MOTIVOS), index=None, format_func=MOTIVOS.get, placeholder="Escolha, se quiser",
+                                  key="hm_motivo")
+            if st.button("Agora não", key="hm_agora"):
+                st.session_state.hm_oculto = True
+                st.rerun()
+            enviar = st.button("Enviar", type="primary", key="hm_enviar")
+        slot = st.empty()
+        if enviar:
+            erro = validar_resposta(nota, motivo)
+            if erro:
+                alerta(slot, "erro", erro)
+                return
+            try:
+                responder_humor(token, nota, motivo)
+            except ApiError as erro_api:
+                alerta(slot, "erro", erro_api.message)
+                return
+            st.session_state.hm_estado = dict(estado, respondeu=True)
+            st.session_state.hm_obrigado = proximo(estado["ciclo"])
+            for chave in ("hm_nota", "hm_motivo"):
+                st.session_state.pop(chave, None)
+            st.rerun()
+
+
 def pagina_inicio() -> None:
     token = st.session_state.token
     usuario = st.session_state.usuario
@@ -123,6 +181,7 @@ def pagina_inicio() -> None:
     )
 
     _card_onboarding(token, usuario)
+    _card_humor(token, usuario)
 
     lista_aniv = aniv.get("aniversariantes", []) if aniv else []
     pendencias = str(_total_pendencias(central)) if central else "—"

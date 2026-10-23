@@ -926,8 +926,8 @@ _APP_CSS = f"""
   .crh-pc-pergunta {{ margin: 18px 0 0; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; color: {GRAFITE}; }}
   .crh-pc-extremos {{ display: flex; justify-content: space-between; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; margin: -4px 0 8px; }}
   .st-key-cfg_card_pc [data-testid="stButtonGroup"] > div {{ gap: 8px; flex-wrap: wrap; }}
-  .st-key-cfg_card_pc button[kind^="segmented_control"] {{ min-width: 44px; height: 41px; border-radius: 8px !important; border: 1px solid {BORDA} !important; background: #FFFFFF; color: {GRAFITE}; }}
-  .st-key-cfg_card_pc button[kind="segmented_controlActive"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; color: {GRAFITE} !important; }}
+  .st-key-cfg_card_pc button[kind^="segmented_control"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button {{ min-width: 44px; height: 41px; border-radius: 8px !important; border: 1px solid {BORDA} !important; background: #FFFFFF; color: {GRAFITE}; }}
+  .st-key-cfg_card_pc button[kind="segmented_controlActive"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; color: {GRAFITE} !important; }}
   .crh-pc-item {{ border: 1px solid {BORDA}; border-radius: 10px; padding: 12px 15px; margin-top: 12px; }}
   .crh-pc-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: {GRAFITE}; }}
   .crh-pc-item .d {{ margin: 4px 0 8px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
@@ -980,6 +980,40 @@ _APP_CSS = f"""
   .crh-nr1-cel.neu {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
   /* Treinamentos (Figma 549:1321): a matriz pode ter muitas colunas e rola na horizontal. */
   .crh-tr-matriz {{ overflow-x: auto; }}
+  /* Termômetro de humor (Figma 563:932, 563:971 e 564:855): as 5 opções em caixas com a cor da nota, o cartão
+     depois de responder e, nos resultados, as barras por ciclo, os setores e os motivos. */
+  .st-key-cfg_card_hm {{ border: 1.5px solid {AMBAR} !important; }}
+  .crh-hm-topo {{ display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }}
+  .crh-hm-ciclo {{ background: {AMBAR_BG}; color: #92400E; border-radius: 999px; padding: 4px 10px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; white-space: nowrap; margin: 0; }}
+  .st-key-hm_nota [data-testid="stButtonGroup"] > div {{ gap: 12px; flex-wrap: nowrap; width: 100%; }}
+  .st-key-hm_nota button {{ flex: 1; display: flex; flex-direction: column; height: auto; padding: 14px 6px !important; border-radius: 12px !important; border: 1px solid {BORDA} !important; background: {MARFIM} !important; }}
+  .st-key-hm_nota button::before {{ content: ""; display: block; width: 28px; height: 28px; border-radius: 50%; margin: 0 auto 8px; }}
+  .st-key-hm_nota button:nth-of-type(1)::before {{ background: {ERRO}; }}
+  .st-key-hm_nota button:nth-of-type(2)::before {{ background: #EA580C; }}
+  .st-key-hm_nota button:nth-of-type(3)::before {{ background: {AMBAR}; }}
+  .st-key-hm_nota button:nth-of-type(4)::before {{ background: #84CC16; }}
+  .st-key-hm_nota button:nth-of-type(5)::before {{ background: {SUCESSO}; }}
+  .st-key-hm_nota button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border: 2px solid {AMBAR} !important; }}
+  .st-key-hm_nota button p {{ font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
+  .crh-hm-ok {{ display: flex; gap: 16px; align-items: center; border: 1px solid {BORDA}; border-radius: 16px; padding: 20px 24px; background: #FFFFFF; }}
+  .crh-hm-ok .bola {{ width: 28px; height: 28px; border-radius: 50%; background: #84CC16; flex: none; }}
+  .crh-hm-ok .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-hm-ok .s {{ margin: 2px 0 0; font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-hm-barras {{ display: flex; align-items: flex-end; gap: 18px; padding-top: 8px; }}
+  .crh-hm-barras .col {{ flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }}
+  .crh-hm-barras .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-hm-barras .b {{ width: 48px; max-width: 100%; border-radius: 6px; background: #FCD381; }}
+  .crh-hm-barras .col.atual .b {{ background: {AMBAR}; }}
+  .crh-hm-barras .col.vazio .b {{ background: {BORDA}; }}
+  .crh-hm-barras .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-hm-dep {{ display: flex; align-items: center; gap: 12px; background: {MARFIM}; border-radius: 12px; padding: 10px 14px; margin-top: 10px; }}
+  .crh-hm-dep .n {{ flex: 1; margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-hm-dep .m {{ margin: 0; font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800; color: {GRAFITE}; }}
+  .crh-hm-dep .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-hm-mot {{ margin-top: 12px; }}
+  .crh-hm-mot .l {{ display: flex; justify-content: space-between; margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; color: {GRAFITE}; }}
+  .crh-hm-mot .barra {{ height: 6px; border-radius: 999px; background: {BORDA}; margin-top: 4px; overflow: hidden; }}
+  .crh-hm-mot .barra span {{ display: block; height: 100%; background: {AMBAR}; border-radius: 999px; }}
   /* RH — Ciclos de avaliação (Figma F27 249:5068): % enviado em barra na tabela e o aviso do modal. */
   .crh-av360-barra {{ display: flex; align-items: center; gap: 8px; }}
   .crh-av360-barra .barra {{ flex: 1; height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
@@ -1173,6 +1207,16 @@ _ESCURO_CSS = f"""
   .crh-pcr-kv b.ambar {{ color: {AMBAR} !important; }}
   .crh-av360-barra .barra {{ background: {ESC_BORDA} !important; }}
   .crh-av360-barra .v {{ color: {ESC_TEXTO} !important; }}
+  .crh-hm-ok {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-hm-ok .t, .crh-hm-barras .v, .crh-hm-dep .n, .crh-hm-dep .m, .crh-hm-mot .l {{ color: {ESC_TEXTO} !important; }}
+  .crh-hm-ok .s, .crh-hm-barras .d, .crh-hm-dep .v {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-hm-dep {{ background: {ESC_FUNDO}; }}
+  .crh-hm-mot .barra, .crh-hm-barras .col.vazio .b {{ background: {ESC_BORDA}; }}
+  .crh-hm-barras .b {{ background: #7A5A1E; }}
+  .crh-hm-ciclo {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
+  .st-key-hm_nota button {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; }}
+  .st-key-hm_nota button[aria-checked="true"] {{ background: {ESC_AMBAR_SUAVE} !important; border-color: {AMBAR} !important; }}
+  .st-key-hm_nota button p {{ color: {ESC_TEXTO} !important; }}
   .crh-nota-neutra {{ background: {ESC_FUNDO} !important; color: {ESC_TEXTO} !important; }}
   .crh-alerta-inline {{ background: #3A1F1F !important; color: #FCA5A5 !important; }}
   .crh-cd-codigo, .crh-cd-msg, .crh-cd-relato {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; }}
@@ -1188,8 +1232,8 @@ _ESCURO_CSS = f"""
   .crh-lgpd-resumo {{ background: {ESC_FUNDO} !important; }}
   .crh-lgpd-resumo b, .crh-lgpd-detalhe {{ color: {ESC_TEXTO} !important; }}
   .crh-lgpd-resumo b.ambar {{ color: {AMBAR} !important; }}
-  .st-key-cfg_card_pc button[kind^="segmented_control"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
-  .st-key-cfg_card_pc button[kind="segmented_controlActive"] {{ background: {ESC_AMBAR_SUAVE} !important; border-color: {AMBAR} !important; }}
+  .st-key-cfg_card_pc button[kind^="segmented_control"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
+  .st-key-cfg_card_pc button[kind="segmented_controlActive"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button[aria-checked="true"] {{ background: {ESC_AMBAR_SUAVE} !important; border-color: {AMBAR} !important; }}
   .crh-pd-passo .t {{ color: {ESC_TEXTO} !important; }}
   .crh-pd-passo .d {{ color: {ESC_TEXTO_2} !important; }}
   div[class*="st-key-reg_card_"], .st-key-reg_sim_conflitos {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}

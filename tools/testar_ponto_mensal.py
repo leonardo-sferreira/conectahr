@@ -251,6 +251,7 @@ api_client.prazo_correcao = lambda token: _falha_ou("prazo", {"prazo_dias": esta
 api_client.central_de_tarefas = lambda token: {}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
 api_client.meus_comunicados = lambda token: {"comunicados": []}
+api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
 # Dia só com uma marcação incluída por correção (18:00 (I)), como na tela do usuário (12/10/2026).
 D_INC = dias_uteis[2]

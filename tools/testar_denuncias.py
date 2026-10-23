@@ -65,6 +65,7 @@ api_client.central_de_tarefas = lambda token: {}
 api_client.meu_banco_horas = lambda token: {"saldo_horas": 0}
 api_client.aniversariantes = lambda token: {"aniversariantes": []}
 api_client.meus_comunicados = lambda token: {"comunicados": []}
+api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
 api_client.enviar_denuncia = lambda *a: chamadas.append(("enviar", *a)) or _falha_ou("enviar", {"protocolo": "DEN-8", "codigo": CODIGO})
 api_client.acompanhar_denuncia = lambda codigo: chamadas.append(("acompanhar", codigo)) or _falha_ou("acompanhar", copy.deepcopy(estado.get("acomp", ACOMP)))
