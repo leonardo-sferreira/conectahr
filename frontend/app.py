@@ -23,7 +23,9 @@ real continua sendo do backend.
 
 import streamlit as st
 
-from api_client import ApiError, auth_me, folha_pessoas, logout
+import time
+
+from api_client import ApiError, auth_me, folha_pessoas, logout, minha_foto
 from campos import instalar as instalar_campos
 from campos import nova_rodada
 from notificacoes import render_sino
@@ -72,7 +74,7 @@ from pagina_termometro_humor import pagina_termometro_humor
 from pagina_treinamentos import pagina_treinamentos
 from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
-from theme import definir_sino, inject_base_styles, render_nav_ativo, render_sidebar_logo
+from theme import definir_foto_conta, definir_sino, inject_base_styles, render_nav_ativo, render_sidebar_logo
 
 # Menu principal, igual para todos os perfis, na ordem do Figma. Auditoria e Regras (só RH e Admin) ficam no grupo RH.
 _MENU = [
@@ -142,6 +144,26 @@ _MENU_ADMIN = [
 
 # O sino do topo fala com a API; o tema só o desenha (render_topbar).
 definir_sino(render_sino)
+
+
+def _foto_da_conta() -> str | None:
+    """URL assinada da foto da conta para o menu (change foto-de-perfil). Só busca se o login disse que há foto; a URL
+    vale 10 minutos no Supabase e fica guardada por 8."""
+    usuario = st.session_state.get("usuario") or {}
+    if not usuario.get("tem_foto") or not st.session_state.get("token"):
+        return None
+    item = st.session_state.get("minha_foto")
+    if item and time.time() - item["em"] < 480:
+        return item["url"]
+    try:
+        url = minha_foto(st.session_state.token).get("foto_url")
+    except ApiError:
+        url = None
+    st.session_state.minha_foto = {"em": time.time(), "url": url}
+    return url
+
+
+definir_foto_conta(_foto_da_conta)
 # Nenhum campo de texto aceita emoji e cada campo aceita só o seu tipo (pedido do usuário, 20/10/2026; campos.py):
 # aviso embaixo do campo e o botão principal não grava. Sem callback: dentro de st.dialog ele apagava a página.
 instalar_campos()

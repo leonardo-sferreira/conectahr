@@ -149,10 +149,12 @@ conferir(m.validar_nivel("X", 1) and m.validar_nivel("Coordenação", 0) and m.v
 caso("Organograma (modelo em coluna pedido em 13/10/2026)")
 at = app()
 t = texto(at)
-rotulo = lambda chave: at.button(key=chave).label  # noqa: E731
+# O rótulo começa pela foto (ou o círculo das iniciais) em Markdown (change foto-de-perfil); a imagem sai da comparação.
+rotulo = lambda chave: re.sub(r"^!\[\]\([^)]*\) ", "", at.button(key=chave).label)  # noqa: E731
 conferir(not at.exception and "Leonardo dos Santos (você)" in t and "Analista de RH" in t and "Recursos Humanos" in t, "começa na própria pessoa, em destaque")
 conferir(rotulo("org_sup_2") == "**Ana Ribeiro**\nGestora de RH\nRecursos Humanos", "o superior em cima: nome, cargo e área, sem 'Ver detalhes'")
 conferir(rotulo("org_eq_p_4") == "**Aprendiz Teste**\nAprendiz\nRecursos Humanos", "quem está abaixo, no mesmo cartão")
+conferir(at.button(key="org_sup_2").label.startswith("![](data:image/svg+xml;base64,"), "sem foto: o cartão mostra o círculo das iniciais (change foto-de-perfil)")
 conferir("Analista ·" not in t and "Ver detalhes" not in t, "o cartão mostra só nome, cargo e área")
 at.button(key="org_sup_2").click()
 at = at.run()

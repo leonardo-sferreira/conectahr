@@ -29,6 +29,7 @@
 20. [Riscos psicossociais (NR-1)](#20-riscos-psicossociais-nr-1)
 21. [Treinamentos obrigatórios](#21-treinamentos-obrigatórios)
 22. [Termômetro de humor](#22-termômetro-de-humor)
+24. [Foto de perfil](#24-foto-de-perfil)
 
 ---
 
@@ -1018,6 +1019,27 @@ Change `termometro-de-humor` (desde 21/10/2026). Uma pergunta anônima a cada 10
   - **O que mostra:** os últimos 9 ciclos, os setores no ciclo atual e no anterior, os motivos do ciclo atual e a participação (respondentes e pessoas ativas no escopo).
   - **Supressão:** grupo abaixo de `INDICADORES_MINIMO_PESSOAS` (padrão 5) sai sem distribuição. Se, num ciclo, só um setor ficar abaixo do mínimo, o menor dos outros também sai sem, para a subtração do total não revelar o pequeno.
   - **Na tela:** a média e os percentuais saem da distribuição. Um setor pede atenção com média abaixo de 3 ou queda de 0,3 ponto sobre o ciclo anterior.
+
+## 24. Foto de perfil
+
+Change `foto-de-perfil` (desde 23/10/2026). Figma: seção 25 (571:870).
+
+- **Opcional.** A própria pessoa envia, troca e remove em "Meu Perfil".
+  - Aceita JPG, PNG ou WebP de até 2 MB.
+  - O servidor do app trata a imagem: corrige a rotação, recorta em quadrado, reduz para 256 × 256 e grava em WebP sem metadados.
+- **Envio:**
+  1. `minha_foto/envio` POST devolve um endereço de uso único no bucket privado `fotos-perfil` (e cria o bucket na primeira vez);
+  2. a tela manda o arquivo direto para o armazenamento;
+  3. `minha_foto` POST grava o caminho (`{uuid}.webp`, conferido no armazenamento), apaga a foto anterior e audita `alterar_foto_perfil`.
+  - `minha_foto` DELETE remove e audita `remover_foto_perfil`.
+  - As rotas agem só sobre a ficha de quem está logado.
+- **RH e Admin** removem a foto de qualquer pessoa em `colaboradores/{id}/foto` DELETE: com justificativa de 10 a 500 caracteres, auditada e avisada à pessoa no sino.
+- **Onde aparece:**
+  - no perfil (`meu_perfil_colaborador`);
+  - no organograma (`organograma`: só a `foto_url`, nunca o caminho);
+  - no menu da conta (`minha_foto` GET, chamada só quando o login disse `tem_foto`).
+  - As URLs são assinadas e valem 10 minutos. Sem foto, ou com a URL vencida, aparecem as iniciais.
+- **Na anonimização do desligado,** a foto é apagada do armazenamento.
 
 ## Lacunas de escopo conhecidas (fora deste levantamento)
 

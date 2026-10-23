@@ -64,6 +64,8 @@ table colaborador {
     text? agencia filters=trim|max:10
     text? conta filters=trim|max:20
     text? digito filters=trim|max:2
+    // Foto de perfil (change foto-de-perfil, D1): o caminho no bucket privado fotos-perfil ({uuid}.webp), nunca uma URL.
+    text? foto_path filters=trim|max:60
     enum? tipo_conta {
       values = ["corrente", "poupanca"]
     }

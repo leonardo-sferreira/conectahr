@@ -84,7 +84,13 @@ def _instalar():
     api_client.meu_perfil_colaborador = lambda token: chamadas.append(("perfil",)) or _falha_ou("perfil", {
         "colaborador": estado["colaborador"], "cargo": {"id": 2, "nome": "Desenvolvedor"},
         "departamento": {"id": 2, "nome": "TI", "gestor_colaborador_id": 3}, "nivel": "l2", "tempo_empresa_dias": 282,
+        "foto_url": estado.get("foto_url"),
     })
+    # Foto de perfil (change foto-de-perfil): o armazenamento também é simulado.
+    api_client.preparar_envio_foto = lambda token: chamadas.append(("envio_foto",)) or {"upload_url": "https://armazenamento.exemplo/envio", "caminho": "a" * 36 + ".webp"}
+    api_client.subir_arquivo = lambda url, conteudo, tipo: chamadas.append(("subir", url, len(conteudo), tipo))
+    api_client.salvar_minha_foto = lambda token, caminho: chamadas.append(("salvar_foto", caminho)) or {"foto_url": "https://armazenamento.exemplo/foto"}
+    api_client.remover_minha_foto = lambda token: chamadas.append(("remover_foto",)) or {"sucesso": True}
     api_client.central_de_tarefas = lambda token: {"meu_ponto_status_hoje": "Aberto", "minhas_ferias_pendentes": [{"data_inicio": "2026-12-01", "data_fim": "2026-12-15"}]}
     api_client.minhas_pendencias_documento = lambda token: {"pendencias": [{"tipo_documento": "cnh", "status": "pendente", "prazo": "2026-12-31"}, {"tipo_documento": "rg", "status": "atendida"}]}
     api_client.organograma = lambda token: ORGANOGRAMA
@@ -188,7 +194,7 @@ pend = m.pendencias({"meu_ponto_status_hoje": "Aberto", "minhas_ferias_pendentes
 conferir([p["titulo"] for p in pend] == ["Envio de CNH", "Jornada de hoje sem marcação de saída", "Férias solicitadas", "Completar o cadastro"], "pendências: documentos, ponto, férias e cadastro")
 org = m.organograma_pessoal(ORGANOGRAMA, 9, {"id": 2, "gestor_colaborador_id": 3})
 conferir(org["gestor"]["nome"] == "Rafael Lima" and [c["nome"] for c in org["colegas"]] == ["Juliana Prado"], "organograma: gestor e colegas do mesmo departamento")
-conferir(set(org["colegas"][0]) == {"nome", "detalhe", "iniciais"}, "organograma: só nome, cargo/departamento e iniciais")
+conferir(set(org["colegas"][0]) == {"nome", "detalhe", "iniciais", "foto_url"}, "organograma: só nome, cargo/departamento, iniciais e a foto (change foto-de-perfil)")
 conferir(set(m.validar_bancarios("", "1a", "", "123", "x")) == {"banco", "agencia", "conta", "digito", "tipo"}, "dados bancários: erro em cada campo inválido")
 conferir(m.validar_bancarios("341 — Itaú Unibanco", "0001", "123456", "7", "corrente") == {} and m.validar_bancarios("Banco X", "1", "1", "X", "poupanca") == {}, "dados bancários válidos (dígito X aceito)")
 conferir(m.conta_mascarada("123456") == "****3456", "conta mascarada como na auditoria")
@@ -321,6 +327,41 @@ at = app(perfil="ADMIN", erro_perfil=ApiError("Nao existe um colaborador vincula
 conferir("Sua conta não tem cadastro de colaborador" in texto(at) and not at.exception, "conta sem colaborador: mensagem, sem erro")
 at = app(erro_perfil=ApiError("Erro inesperado. Tente novamente.", 500))
 conferir("Erro inesperado" in texto(at) and not at.exception, "erro do backend vira alerta")
+
+# ---------------------------------------------------------------------------
+caso("Foto de perfil (change foto-de-perfil; Figma 571:1042)")
+import io as _io  # noqa: E402
+
+import foto_modelo as fm  # noqa: E402
+from PIL import Image as _Image  # noqa: E402
+
+conferir(fm.validar_arquivo("doc.pdf", 1000, "application/pdf") is not None and fm.validar_arquivo("foto.jpg", 5 * 1024 * 1024, "image/jpeg") is not None
+         and fm.validar_arquivo("foto.PNG", 500_000, "image/png") is None and fm.validar_arquivo("foto.webp", 0, "image/webp") is not None,
+         "aceita só JPG, PNG ou WebP de até 2 MB, e recusa arquivo vazio")
+_original = _Image.new("RGB", (4000, 3000), (200, 120, 60))
+_exif = _Image.Exif()
+_exif[0x010F] = "Fabricante de exemplo"
+_buffer = _io.BytesIO()
+_original.save(_buffer, format="JPEG", exif=_exif.tobytes())
+_tratada = _Image.open(_io.BytesIO(fm.tratar(_buffer.getvalue())))
+conferir(_tratada.format == "WEBP" and _tratada.size == (256, 256) and not _tratada.getexif(), "a foto vira 256 × 256 WebP, sem metadados")
+try:
+    fm.tratar(b"%PDF-1.4 isto nao e imagem")
+    conferir(False, "um arquivo que não é imagem é recusado")
+except ValueError:
+    conferir(True, "um arquivo que não é imagem é recusado")
+conferir("<img" not in fm.avatar_html("Leonardo dos Santos", None) and ">LS<" in fm.avatar_html("Leonardo dos Santos", None)
+         and 'src="https://x/foto"' in fm.avatar_html("Ana", "https://x/foto") and fm.avatar_data_uri("Ana Ribeiro").startswith("data:image/svg+xml;base64,"),
+         "sem foto, as iniciais; com foto, a imagem por cima")
+at = app()
+conferir("Foto de perfil" in texto(at) and at.button(key="pf_foto_enviar").disabled and not [b for b in at.button if b.key == "pf_foto_remover"],
+         "sem foto: cartão com 'Enviar foto' desligado até escolher o arquivo, sem 'Remover'")
+at = app(foto_url="https://armazenamento.exemplo/foto")
+conferir([b for b in at.button if b.key == "pf_foto_remover"] and "Trocar foto" in [b.label for b in at.button], "com foto: 'Trocar foto' e 'Remover foto'")
+at.button(key="pf_foto_remover").click()
+at = at.run()
+conferir(("remover_foto",) in chamadas and at.session_state["usuario"].get("tem_foto") is False and "Foto removida" in str(at.session_state["aviso_toast"] if "aviso_toast" in at.session_state else [x.value for x in at.toast]),
+         "remover a foto: chama o backend e o menu volta às iniciais")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

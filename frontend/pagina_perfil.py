@@ -29,9 +29,13 @@ from api_client import (
     meu_perfil_colaborador,
     minhas_pendencias_documento,
     organograma,
+    preparar_envio_foto,
+    remover_minha_foto,
     salvar_contato_endereco,
     salvar_dados_bancarios,
+    salvar_minha_foto,
     solicitar_alteracao_cadastral,
+    subir_arquivo,
 )
 from cep import CepErro
 from cep import consultar as consultar_cep
@@ -52,6 +56,7 @@ from perfil_modelo import (
     validar_contato,
 )
 from campos import campo, limpar
+from foto_modelo import EXTENSOES, avatar_html, tratar, validar_arquivo
 from theme import alerta, render_hero, render_topbar
 
 _CACHE = "perfil_cache"
@@ -280,6 +285,59 @@ def _cartao_campos(chave: str, titulo: str, pares, acao=None) -> None:
         st.html(_campos(pares))
 
 
+def _atualizar_foto_da_conta(url: str | None) -> None:
+    """O menu da conta passa a mostrar a foto nova (ou as iniciais) sem esperar o cache de 8 minutos."""
+    st.session_state.usuario = dict(st.session_state.usuario, tem_foto=bool(url))
+    st.session_state.minha_foto = {"em": time.time(), "url": url}
+    st.session_state.pop("pf_foto_arquivo", None)
+    _invalidar()
+    st.session_state.pop("org_cache", None)
+
+
+def _cartao_foto(token: str, nome: str, foto_url: str | None) -> None:
+    """Foto de perfil (Figma 571:1042; change foto-de-perfil): opcional, tratada no servidor do app (256 × 256 WebP, sem
+    metadados) e enviada direto ao armazenamento privado."""
+    with st.container(key="cfg_card_pf_foto"):
+        with st.container(horizontal=True, vertical_alignment="center", gap="medium"):
+            st.html(avatar_html(nome, foto_url, 96, "crh-pf-avatar"), width="content")
+            with st.container():
+                st.html('<p class="crh-cfg-titulo">Foto de perfil</p><p class="crh-meta">Opcional. Aparece no seu perfil, no organograma e no menu '
+                        'da conta. JPG, PNG ou WebP de até 2 MB; a foto é recortada quadrada.</p>')
+                arquivo = st.file_uploader("Escolher a foto", type=list(EXTENSOES), key="pf_foto_arquivo", label_visibility="collapsed")
+                slot = st.empty()
+                with st.container(horizontal=True):
+                    enviar = st.button("Trocar foto" if foto_url else "Enviar foto", type="primary", key="pf_foto_enviar", disabled=arquivo is None)
+                    remover = st.button("Remover foto", key="pf_foto_remover") if foto_url else False
+    if enviar and arquivo is not None:
+        erro = validar_arquivo(arquivo.name, arquivo.size, arquivo.type)
+        if erro:
+            alerta(slot, "erro", erro)
+            return
+        try:
+            conteudo = tratar(arquivo.getvalue())
+            envio = preparar_envio_foto(token)
+            subir_arquivo(envio["upload_url"], conteudo, "image/webp")
+            r = salvar_minha_foto(token, envio["caminho"])
+        except ValueError as erro_imagem:
+            alerta(slot, "erro", str(erro_imagem))
+            return
+        except ApiError as erro_api:
+            alerta(slot, "erro", erro_api.message)
+            return
+        _atualizar_foto_da_conta(r.get("foto_url"))
+        st.session_state.aviso_toast = "Foto atualizada."
+        st.rerun()
+    if remover:
+        try:
+            remover_minha_foto(token)
+        except ApiError as erro_api:
+            alerta(slot, "erro", erro_api.message)
+            return
+        _atualizar_foto_da_conta(None)
+        st.session_state.aviso_toast = "Foto removida. Agora aparecem as suas iniciais."
+        st.rerun()
+
+
 def _cartao_organograma(org: dict | None) -> None:
     with st.container(key="perfil_card_org"):
         with st.container(horizontal=True, vertical_alignment="center"):
@@ -294,7 +352,7 @@ def _cartao_organograma(org: dict | None) -> None:
 
         def cartao(p, destaque=False):
             return (
-                f'<div class="crh-org-pessoa{" voce" if destaque else ""}"><span class="a">{html.escape(p["iniciais"])}</span>'
+                f'<div class="crh-org-pessoa{" voce" if destaque else ""}">{avatar_html(p["nome"], p.get("foto_url"), 30)}'
                 f'<div><p class="t">{html.escape(p["nome"])}{" (você)" if destaque else ""}</p><p class="d">{html.escape(p["detalhe"])}</p></div></div>'
             )
 
@@ -339,6 +397,8 @@ def pagina_perfil() -> None:
     departamento = perfil.get("departamento") or {}
     org = organograma_pessoal(org_bruto, colaborador.get("id"), departamento) if dados["org"] else None
     nome_gestor = org["gestor"]["nome"] if org and org["gestor"] else None
+
+    _cartao_foto(token, usuario["nome"], perfil.get("foto_url"))
 
     _cartao_pendencias(pendencias(dados["central"], (dados["docs"] or {}).get("pendencias") or [], date.today()))
 

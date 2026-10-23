@@ -1,7 +1,7 @@
 // Organograma da empresa: visao hierarquica sobre dados ja existentes
 // (departamento, cargo, vinculo gestor-colaborador). Nao expõe dados
-// sensiveis: cada colaborador aparece apenas com nome, cargo e
-// departamento. A montagem da hierarquia (departamento -> gestor ->
+// sensiveis: cada colaborador aparece apenas com nome, cargo,
+// departamento e a URL assinada da foto de perfil, quando houver (change foto-de-perfil). A montagem da hierarquia (departamento -> gestor ->
 // colaboradores) fica a cargo do consumidor, cruzando as tres listas
 // planas retornadas por id.
 query organograma verb=GET {
@@ -88,8 +88,46 @@ query organograma verb=GET {
       where = $db.colaborador.status != "Desligado"
       sort = {colaborador.nome: "asc"}
       return = {type: "list"}
-      output = ["id", "nome", "cargo_id", "departamento_id", "superior_colaborador_id"]
-    } as $colaboradores
+      output = ["id", "nome", "cargo_id", "departamento_id", "superior_colaborador_id", "foto_path"]
+    } as $colaboradores_brutos
+
+    // Foto de perfil (change foto-de-perfil, D5): URL assinada de 10 minutos, numa chamada so ao Supabase. O caminho
+    // no bucket nao sai na resposta; so a URL, e mais nenhum dado pessoal.
+    var $caminhos_fotos {
+      value = []
+    }
+
+    foreach ($colaboradores_brutos) {
+      each as $c {
+        conditional {
+          if ($c.foto_path != null) {
+            var.update $caminhos_fotos {
+              value = $caminhos_fotos|push:$c.foto_path
+            }
+          }
+        }
+      }
+    }
+
+    function.run "ConectaHR/assinar_fotos" {
+      input = {caminhos: $caminhos_fotos}
+    } as $urls_fotos
+
+    var $colaboradores {
+      value = []
+    }
+
+    foreach ($colaboradores_brutos) {
+      each as $c {
+        var $url_foto {
+          value = ($c.foto_path == null) ? null : ($urls_fotos|get:$c.foto_path)
+        }
+
+        var.update $colaboradores {
+          value = $colaboradores|push:{id: $c.id, nome: $c.nome, cargo_id: $c.cargo_id, departamento_id: $c.departamento_id, superior_colaborador_id: $c.superior_colaborador_id, foto_url: $url_foto}
+        }
+      }
+    }
   }
 
   response = {

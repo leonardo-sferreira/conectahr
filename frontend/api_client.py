@@ -1369,3 +1369,31 @@ def resultados_humor(token: str, departamento_id: int | None = None) -> dict:
     """GET humor/resultados -> {ciclo, minimo, ciclos, departamentos, motivos, participacao, pode_filtrar} (RH, Admin e Gestor)."""
     caminho = f"humor/resultados?departamento_id={int(departamento_id)}" if departamento_id else "humor/resultados"
     return _get(caminho, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Foto de perfil (change foto-de-perfil)
+# ---------------------------------------------------------------------------
+def preparar_envio_foto(token: str) -> dict:
+    """POST minha_foto/envio -> {upload_url, caminho}: endereço de envio de uso único no bucket privado fotos-perfil."""
+    return _post("minha_foto/envio", {}, token, GRUPO_COLABORADORES)
+
+
+def salvar_minha_foto(token: str, caminho: str) -> dict:
+    """POST minha_foto -> {foto_url}: grava o caminho enviado; a foto anterior é apagada."""
+    return _post("minha_foto", {"caminho": caminho}, token, GRUPO_COLABORADORES)
+
+
+def remover_minha_foto(token: str) -> dict:
+    """DELETE minha_foto: remove a própria foto; depois aparecem as iniciais."""
+    return _request("DELETE", "minha_foto", token, GRUPO_COLABORADORES)
+
+
+def minha_foto(token: str) -> dict:
+    """GET minha_foto -> {foto_url}: URL assinada de 10 minutos (ou nula), para o menu da conta."""
+    return _get("minha_foto", token, GRUPO_COLABORADORES)
+
+
+def remover_foto_colaborador(token: str, colaborador_id: int, justificativa: str) -> dict:
+    """DELETE colaboradores/{id}/foto (RH e Admin), com justificativa: auditado e avisado à pessoa."""
+    return _request("DELETE", f"colaboradores/{int(colaborador_id)}/foto?justificativa={quote(justificativa, safe='')}", token, GRUPO_COLABORADORES)

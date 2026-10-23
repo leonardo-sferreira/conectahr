@@ -156,6 +156,7 @@ query "auth/otp/validar" verb=POST {
         perfil: $user.perfil
         ativo: $user.ativo
         colaborador_id: ($colaborador != null ? $colaborador.id : null)
+        tem_foto: ($colaborador != null ? ($colaborador.foto_path != null) : false)
       }
       ```
   }

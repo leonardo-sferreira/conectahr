@@ -13,6 +13,7 @@ Como o ConectaRH usa os seus dados, em linguagem simples. Ele segue a Lei Geral 
 | **Entrar no sistema com segurança** | Seu nome, e-mail, senha (guardada de forma que ninguém consegue ler), código de acesso temporário, a data e hora dos acessos e o **endereço IP e o dispositivo** de cada login | Para executar o seu contrato de trabalho e para proteger a sua conta | F01 |
 | **Registrar o que acontece no sistema** | Quem fez cada ação importante, quando, e o que mudou | Para a segurança e a prestação de contas. Dados como conta bancária e CPF aparecem mascarados | F02 |
 | **Manter o seu cadastro** | Nome, CPF, e-mail pessoal, telefone, endereço, data de nascimento | Contrato de trabalho e obrigações legais | F03 |
+| **Mostrar a sua foto (se você quiser)** | A foto de perfil que você envia: aparece no seu perfil, no organograma e no menu da conta, só para quem usa o sistema. Não é usada para reconhecer rostos | O envio é opcional: você troca ou remove quando quiser | F03 |
 | **Guardar documentos obrigatórios** | RG, CPF, CNH, carteira de trabalho, reservista, documentos de estrangeiro e, para menores de 18 anos, o documento do responsável legal | Obrigações legais | F04 |
 | **Pagar você** | Salário, banco, agência, conta, holerite e informe de rendimentos | Contrato de trabalho e obrigações legais. **Seu gestor não vê esses dados** | F05 |
 | **Registrar contrato, cargo e carreira** | Cargo, departamento e histórico profissional | Contrato de trabalho e obrigações legais | F06 |

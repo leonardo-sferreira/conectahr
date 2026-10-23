@@ -103,11 +103,33 @@ query meu_perfil_colaborador verb=GET {
         }
       }
     }
+
+    // Foto de perfil (change foto-de-perfil, D5): URL assinada de 10 minutos.
+    var $foto_url {
+      value = null
+    }
+
+    conditional {
+      if ($colaborador.foto_path != null) {
+        var $lista_caminho {
+          value = [$colaborador.foto_path]
+        }
+
+        function.run "ConectaHR/assinar_fotos" {
+          input = {caminhos: $lista_caminho}
+        } as $assinadas
+
+        var.update $foto_url {
+          value = $assinadas|get:$colaborador.foto_path
+        }
+      }
+    }
   }
 
   response = {
     sucesso           : true
     colaborador       : $colaborador
+    foto_url          : $foto_url
     cargo             : $cargo
     departamento      : $departamento
     nivel             : $colaborador.nivel

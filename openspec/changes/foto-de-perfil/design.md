@@ -30,7 +30,7 @@ A chave do Supabase fica só no ambiente do Xano (`SUPABASE_URL`, `SUPABASE_SERV
 
 ### D3. Endpoints da própria pessoa
 
-- **`minha_foto/envio` POST:** devolve o endereço de envio de uso único para um caminho novo.
+- **`minha_foto/envio` POST:** devolve o endereço de envio de uso único para um caminho novo. **Na implementação (23/10/2026):** ela também cria o bucket `fotos-perfil` na primeira vez (privado, só WebP, até 1 MB), porque a chave do Supabase só existe no Xano; depois, o Supabase responde que o bucket já existe e a rota segue.
 - **`minha_foto` POST `{caminho}`:**
   - grava `foto_path`;
   - apaga a foto anterior do bucket;
@@ -50,7 +50,9 @@ A chave do Supabase fica só no ambiente do Xano (`SUPABASE_URL`, `SUPABASE_SERV
 
 - **URL assinada de curta duração:** 10 minutos, gerada na leitura. **Decisão:** é mais que os 5 minutos dos documentos, porque a tela de perfil e o organograma ficam abertos mais tempo; mesmo assim, não é um link público permanente.
 - **No organograma**, as URLs saem numa chamada só ao Supabase (assinatura em lote, `object/sign/fotos-perfil` com a lista de caminhos), para não fazer uma chamada por pessoa. A lista `colaboradores` ganha só `foto_url`; o `output` explícito continua sem nenhum outro dado pessoal.
-- **Em `meu_perfil_colaborador` GET e `auth/me`:** a `foto_url` da própria pessoa.
+- **Em `meu_perfil_colaborador` GET:** a `foto_url` da própria pessoa.
+- **No menu da conta (topo), decisão na implementação:** o `auth/me` roda uma vez por sessão, e a URL vence em 10 minutos, então ele não serve. O login (`auth/otp/validar`) passa a dizer `tem_foto`, e o app só chama `minha_foto` GET quando há foto, guardando a URL por 8 minutos. Quem não tem foto não gera chamada nenhuma.
+- **Nos cartões do organograma**, que são botões com Markdown, a foto entra como imagem no rótulo; sem foto, entra o círculo das iniciais como imagem SVG.
 - **Na tela:** um componente `avatar(nome, foto_url, tamanho)` em `theme.py`; sem URL, mostra as iniciais. O cache de 20 segundos das telas não guarda a URL por mais que a validade dela.
 
 ### D6. LGPD
@@ -58,7 +60,7 @@ A chave do Supabase fica só no ambiente do Xano (`SUPABASE_URL`, `SUPABASE_SERV
 - **A foto é dado pessoal, não sensível:** não há tratamento biométrico, e o uso de reconhecimento facial fica proibido no registro.
 - **Base legal:** consentimento implícito pelo envio voluntário. **Decisão:** o envio é opcional; quem não quer aparecer não envia, ou remove a qualquer momento.
 - **Quem vê a foto:** só pessoas logadas no sistema (o organograma já é interno).
-- **Retenção:** a foto sai do bucket ao remover, e no desligamento entra na anonimização da ficha (o `foto_path` é anulado e o objeto, apagado).
+- **Retenção:** a foto sai do bucket ao remover, e no desligamento entra na anonimização da ficha (`colaboradores/{id}/anonimizar` apaga o objeto e anula o `foto_path`).
 - **Supabase recebe a foto** (operador já listado), na mesma região do bucket `documentos`.
 
 ## Risks
