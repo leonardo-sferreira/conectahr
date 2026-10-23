@@ -786,7 +786,7 @@ _APP_CSS = f"""
   /* Avatar com foto de perfil (Figma 571:870; change foto-de-perfil): as iniciais embaixo e a foto por cima; se a
      foto não carregar, as iniciais continuam à vista. */
   .crh-avatar-foto {{ position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; border-radius: 999px;
-    overflow: hidden; background: {GRAFITE}; color: {AMBAR}; font-family: 'Manrope', sans-serif; font-weight: 700; line-height: 1; }}
+    overflow: hidden; background: {GRAFITE}; color: {AMBAR}; font-family: 'Manrope', sans-serif; font-weight: 600; line-height: 1; }}
   .crh-avatar-foto img {{ position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }}
   /* Cartões do organograma: a foto (ou as iniciais) à esquerda do nome, cargo e área. */
   .st-key-org_card button p:has(img) {{ display: block !important; position: relative; padding-left: 46px; min-height: 36px; text-align: left; }}
