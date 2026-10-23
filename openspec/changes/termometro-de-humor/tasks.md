@@ -25,3 +25,8 @@
 ## 3. Documentação
 
 - [x] 3.1 `docs/regras-de-negocio.md` (seção 22), `docs/lgpd/registro-de-operacoes.md` (F15 e cobertura), `docs/lgpd/retencao.md` e `docs/figma-pendencias.md`. Verificar: `openspec validate termometro-de-humor`.
+
+## 4. Ajustes pedidos pelo usuário (23/10/2026)
+
+- [x] 4.1 O cartão no Início vai para baixo dos comunicados e acima da FAQ, que fica por último; cada opção ganha um emoji (😣 🙁 😐 🙂 😄) no lugar da bolinha de cor. Verificar: Figma 563:853 atualizado, `tools/testar_termometro_humor.py` (posição) e prints no Chrome nos dois temas.
+  - **Feito (23/10/2026):** 23/23. No Figma, os emojis são rostinhos em SVG (o renderizador do Figma não desenha emoji colorido); no app, são os emojis do sistema.

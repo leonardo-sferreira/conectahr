@@ -11,7 +11,7 @@ derrubar a tela inteira):
 - Dias de férias: ainda não existe endpoint de saldo de férias no backend,
   então o card mostra "—" até ele existir.
 - Termômetro de humor (Figma 563:932 e 563:971; change termometro-de-humor): humor (GET e POST). O cartão aparece
-  enquanto a pessoa não respondeu o ciclo de 10 dias; "Agora não" esconde até a próxima sessão. Respondido o ciclo,
+  abaixo dos comunicados e acima da FAQ, com um emoji em cada opção, enquanto a pessoa não respondeu o ciclo de 10 dias; "Agora não" esconde até a próxima sessão. Respondido o ciclo,
   a rota não é chamada de novo nesta sessão.
 """
 
@@ -181,7 +181,6 @@ def pagina_inicio() -> None:
     )
 
     _card_onboarding(token, usuario)
-    _card_humor(token, usuario)
 
     lista_aniv = aniv.get("aniversariantes", []) if aniv else []
     pendencias = str(_total_pendencias(central)) if central else "—"
@@ -241,6 +240,9 @@ def pagina_inicio() -> None:
         </div>
         """
     )
+
+    # Termômetro de humor entre os comunicados e a FAQ, que fica por último (pedido do usuário, 23/10/2026; Figma 563:853).
+    _card_humor(token, usuario)
 
     with st.container(horizontal=True, vertical_alignment="center", key="inicio_faq"):
         st.html('<div class="crh-faq" style="padding:0"><div><p class="crh-faq-titulo">Dúvidas sobre férias, ponto ou documentos?</p>'

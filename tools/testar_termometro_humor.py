@@ -148,6 +148,8 @@ at = app()
 t = texto(at)
 conferir(not at.exception and "Como você está se sentindo no trabalho?" in t and "Ciclo de 21/10 a 30/10" in t and "hm_enviar" in chaves(at),
          "cartão no Início enquanto não respondeu")
+pos_com, pos_hm, pos_faq = t.find("Comunicados internos"), t.find("Como você está se sentindo"), t.find("Dúvidas sobre férias")
+conferir(-1 < pos_com < pos_hm < pos_faq, "o cartão fica abaixo dos comunicados e acima da FAQ, que é a última")
 at = clicar(at, "hm_enviar")
 conferir("Escolha como você está" in texto(at) and not any(c[0] == "responder" for c in chamadas), "sem escolher: não envia")
 at.button_group(key="hm_nota").set_value(4)
