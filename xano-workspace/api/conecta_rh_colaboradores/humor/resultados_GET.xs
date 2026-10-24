@@ -237,7 +237,8 @@ query "humor/resultados" verb=GET {
       return = {type: "list"}
     } as $linhas
 
-    // Mapas: "ciclo|nota" (escopo inteiro) e "ciclo|departamento|nota".
+    // Mapas: "k{ciclo}_{nota}" (escopo inteiro) e "k{ciclo}_{departamento}_{nota}". A chave nao pode ter "|":
+    // o Xano le o resto como filtro e da 500 ("Invalid syntax").
     var $por_ciclo {
       value = {}
     }
@@ -255,7 +256,7 @@ query "humor/resultados" verb=GET {
         conditional {
           if ($escopo_texto|contains:$agulha_dep) {
             var $chave_c {
-              value = ($l.ciclo|to_text) ~ "|" ~ ($l.nota|to_text)
+              value = "k" ~ ($l.ciclo|to_text) ~ "_" ~ ($l.nota|to_text)
             }
 
             var $atual_c {
@@ -271,7 +272,7 @@ query "humor/resultados" verb=GET {
             }
 
             var $chave_d {
-              value = ($l.ciclo|to_text) ~ "|" ~ ($l.departamento_id|to_text) ~ "|" ~ ($l.nota|to_text)
+              value = "k" ~ ($l.ciclo|to_text) ~ "_" ~ ($l.departamento_id|to_text) ~ "_" ~ ($l.nota|to_text)
             }
 
             var $atual_d {
@@ -309,7 +310,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $prefixo_c {
-          value = $c|to_text
+          value = "k" ~ ($c|to_text)
         }
 
         var $notas_c {
@@ -321,7 +322,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_c_1 {
-          value = $prefixo_c ~ "|1"
+          value = $prefixo_c ~ "_1"
         }
 
         var $bruto_notas_c_1 {
@@ -341,7 +342,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_c_2 {
-          value = $prefixo_c ~ "|2"
+          value = $prefixo_c ~ "_2"
         }
 
         var $bruto_notas_c_2 {
@@ -361,7 +362,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_c_3 {
-          value = $prefixo_c ~ "|3"
+          value = $prefixo_c ~ "_3"
         }
 
         var $bruto_notas_c_3 {
@@ -381,7 +382,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_c_4 {
-          value = $prefixo_c ~ "|4"
+          value = $prefixo_c ~ "_4"
         }
 
         var $bruto_notas_c_4 {
@@ -401,7 +402,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_c_5 {
-          value = $prefixo_c ~ "|5"
+          value = $prefixo_c ~ "_5"
         }
 
         var $bruto_notas_c_5 {
@@ -455,7 +456,7 @@ query "humor/resultados" verb=GET {
     foreach ($deps_escopo) {
       each as $d {
         var $prefixo_a {
-          value = ($ciclo|to_text) ~ "|" ~ ($d.id|to_text)
+          value = "k" ~ ($ciclo|to_text) ~ "_" ~ ($d.id|to_text)
         }
 
         var $notas_a {
@@ -467,7 +468,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_a_1 {
-          value = $prefixo_a ~ "|1"
+          value = $prefixo_a ~ "_1"
         }
 
         var $bruto_notas_a_1 {
@@ -487,7 +488,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_a_2 {
-          value = $prefixo_a ~ "|2"
+          value = $prefixo_a ~ "_2"
         }
 
         var $bruto_notas_a_2 {
@@ -507,7 +508,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_a_3 {
-          value = $prefixo_a ~ "|3"
+          value = $prefixo_a ~ "_3"
         }
 
         var $bruto_notas_a_3 {
@@ -527,7 +528,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_a_4 {
-          value = $prefixo_a ~ "|4"
+          value = $prefixo_a ~ "_4"
         }
 
         var $bruto_notas_a_4 {
@@ -547,7 +548,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_a_5 {
-          value = $prefixo_a ~ "|5"
+          value = $prefixo_a ~ "_5"
         }
 
         var $bruto_notas_a_5 {
@@ -567,7 +568,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $prefixo_p {
-          value = ($ciclo_anterior|to_text) ~ "|" ~ ($d.id|to_text)
+          value = "k" ~ ($ciclo_anterior|to_text) ~ "_" ~ ($d.id|to_text)
         }
 
         var $notas_p {
@@ -579,7 +580,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_p_1 {
-          value = $prefixo_p ~ "|1"
+          value = $prefixo_p ~ "_1"
         }
 
         var $bruto_notas_p_1 {
@@ -599,7 +600,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_p_2 {
-          value = $prefixo_p ~ "|2"
+          value = $prefixo_p ~ "_2"
         }
 
         var $bruto_notas_p_2 {
@@ -619,7 +620,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_p_3 {
-          value = $prefixo_p ~ "|3"
+          value = $prefixo_p ~ "_3"
         }
 
         var $bruto_notas_p_3 {
@@ -639,7 +640,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_p_4 {
-          value = $prefixo_p ~ "|4"
+          value = $prefixo_p ~ "_4"
         }
 
         var $bruto_notas_p_4 {
@@ -659,7 +660,7 @@ query "humor/resultados" verb=GET {
         }
 
         var $chave_notas_p_5 {
-          value = $prefixo_p ~ "|5"
+          value = $prefixo_p ~ "_5"
         }
 
         var $bruto_notas_p_5 {
