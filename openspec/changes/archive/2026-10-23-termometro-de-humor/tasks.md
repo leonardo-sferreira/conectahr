@@ -11,7 +11,8 @@
   - **Feito (21/10/2026):** publicadas.
 - [x] 1.2 `humor` GET e POST e `humor/resultados` (D1, D3, D4). Verificar: `checar_endpoints`, dry-run só com `CREATE` e a fórmula do ciclo.
   - **Feito (21/10/2026):** publicados; `checar_endpoints` 275, 0 falhas. As expressões publicadas foram conferidas iguais às do git. A fórmula do dia juliano dá o mesmo ciclo que a conta por datas em todos os dias de 2026 a 2030.
-- [ ] 1.3 Rodar `tools/testar_termometro_humor_http.py` com login (uma conta do RH ou Gestor com ficha; outra de Colaborador, se der).
+- [x] 1.3 Rodar `tools/testar_termometro_humor_http.py` com login (uma conta do RH ou Gestor com ficha; outra de Colaborador, se der).
+  - **Feito (23/10/2026):** 15/15 com uma conta do RH/Admin com ficha (a de Colaborador ficou para depois). A primeira rodada deu 500 em `humor/resultados`: as chaves dos mapas tinham `|`, que o Xano lê como filtro. Trocadas por `k{ciclo}_{nota}` (PR #105).
 
 ## 2. Frontend
 

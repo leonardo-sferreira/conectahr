@@ -104,7 +104,9 @@ st, tid2, corpo2 = treinamento(tok_rh, "departamentos", f",{outro},", "outro set
 criados.append((tid2, corpo2))
 conferir(st in (200, 400), "o RH publica para outro setor", st)
 if tid2:
-    conferir(len(avisos(tok_col, tid2)) == 0, "o Colaborador de outro setor não recebe")
+    # Filtra pelo tipo: um aviso de outra coisa (delegação, pedido) pode ter o mesmo registro_id.
+    recebidos = avisos(tok_col, tid2, "treinamento_novo")
+    conferir(len(recebidos) == 0, "o Colaborador de outro setor não recebe", [n.get("titulo") for n in recebidos])
 
 print("\nPreferência desligada")
 st, prefs = chamar("GET", "minhas_preferencias_aviso", tok_col)
@@ -113,7 +115,8 @@ st, d = chamar("PATCH", "minhas_preferencias_aviso", tok_col, {"assunto": "trein
 conferir(st == 200, "o Colaborador desliga Treinamentos", (st, d.get("message")))
 st, tid3, corpo3 = treinamento(tok_rh, sufixo="preferência")
 criados.append((tid3, corpo3))
-conferir(st == 200 and len(avisos(tok_col, tid3)) == 0, "com a preferência desligada, não recebe")
+recebidos = avisos(tok_col, tid3, "treinamento_novo")
+conferir(st == 200 and len(recebidos) == 0, "com a preferência desligada, não recebe", (st, [n.get("titulo") for n in recebidos]))
 chamar("PATCH", "minhas_preferencias_aviso", tok_col, {"assunto": "treinamentos", "plataforma": bool(antes.get("plataforma", True)), "email": bool(antes.get("email", True))})
 
 print("\nTermômetro de humor")

@@ -31,12 +31,15 @@ Cada tarefa tem o critério de verificação. Os testes por HTTP rodam contra o 
 As três primeiras rodam juntas em `tools/testar_notificacoes_publicacao_http.py`, que pede uma conta do RH ou Admin e uma de Colaborador. A pesquisa de clima (3.2) depende de uma pesquisa real abrindo; o script confere o convite do termômetro, que usa a mesma função.
 
 
-- [ ] 3.1 HTTP, treinamento:
+- [x] 3.1 HTTP, treinamento:
   - **passa:** o RH publica para o departamento X; uma pessoa de X recebe; o RH que publicou não recebe;
   - **falha:** a pessoa de Y não recebe, e a pessoa que desligou "Treinamentos" não recebe.
+  - **Feito (23/10/2026):** `testar_notificacoes_publicacao_http` 12/12 (RH + Colaborador). A primeira rodada deu 10/12 por defeito do teste: ele contava avisos de qualquer tipo com o mesmo `registro_id`; agora filtra por `treinamento_novo` (PR #105).
 - [ ] 3.2 HTTP, pesquisa:
   - **passa:** a pesquisa aberta gera o convite uma vez só;
   - **falha:** rodar a rotina de novo não gera outro; marcar o convite como lido não cria participação (a contagem da pesquisa não muda).
+  - **Em parte (23/10/2026):** o convite do termômetro, que usa a mesma função, sai uma vez só e a rotina não reenvia. Falta com uma pesquisa de clima real abrindo.
 - [ ] 3.3 HTTP, decisões: para cada linha da tabela do D4, o decisor certo recebe `pedido_novo` e o autor não recebe. Delegação: o substituto recebe.
+  - **Em parte (23/10/2026):** a delegação foi conferida (o substituto recebe). Faltam as linhas do D4.
 - [x] 3.4 `docs/regras-de-negocio.md`, `docs/preferencias-notificacao.md` e `docs/lgpd/registro-de-operacoes.md` (F16) atualizados depois da implementação. Verificar: `openspec validate notificacoes-de-publicacao`.
   - **Feito (23/10/2026):** seção 23 das regras de negócio, o documento de preferências e a F16.
