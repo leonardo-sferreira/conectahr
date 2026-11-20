@@ -11,7 +11,8 @@
   - **Feito (20/10/2026):** publicadas.
 - [x] 1.2 `treinamentos` GET e POST, `treinamentos/{id}` PATCH, `treinamentos/{id}/conclusoes` e `meus_treinamentos` (D2 a D4). Verificar: `checar_endpoints` e dry-run só com `CREATE`.
   - **Feito (20/10/2026):** publicados; `checar_endpoints` 270, 0 falhas.
-- [ ] 1.3 Rodar `tools/testar_conformidade_http.py` com login (conta do RH ou Admin) e registrar uma conclusão de teste para conferir a validade calculada.
+- [x] 1.3 Rodar `tools/testar_conformidade_http.py` com login (conta do RH ou Admin) e registrar uma conclusão de teste para conferir a validade calculada.
+  - **Feito (20/11/2026):** `testar_conformidade_http` 13/13 com RH e 8/8 com Colaborador. Conclusão de teste no treinamento 4 ("teste", 12 meses) para a ficha do próprio RH, em 31/01/2026: validade 28/01/2027 (dia 31 vira 28), igual no catálogo do RH e em "Meus treinamentos"; data futura recusada (400). 5/5.
 
 ## 2. Frontend
 
