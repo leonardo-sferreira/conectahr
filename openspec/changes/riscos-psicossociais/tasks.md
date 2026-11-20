@@ -11,7 +11,8 @@
   - **Feito (20/10/2026):** publicadas.
 - [x] 1.2 `pesquisas_clima` POST e `perguntas` com tipo, dimensão e sentido; `minhas_pesquisas_clima` e `pesquisas_clima_rh` com o tipo; `acoes_psicossociais` GET, POST e `{id}` PATCH (D1, D3). Verificar: `checar_endpoints`, conferência com o que está no ar e dry-run.
   - **Feito (20/10/2026):** antes, conferido igual ao git; publicados; `checar_endpoints` 265, 0 falhas.
-- [ ] 1.3 Testar com login de verdade: criar uma avaliação psicossocial de teste, responder, encerrar, ver o mapa, criar e atualizar uma ação, baixar o relatório.
+- [x] 1.3 Testar com login de verdade: criar uma avaliação psicossocial de teste, responder, encerrar, ver o mapa, criar e atualizar uma ação, baixar o relatório.
+  - **Feito (20/11/2026):** pelo `api_client` e pelo `psicossocial_modelo` da tela, com uma conta do RH e uma de Colaborador. Avaliação 6 ("TESTE tarefa 1.3", abre e fecha no dia, mínimo 2): 16 perguntas na escala de frequência para as duas contas, segunda resposta recusada (400), Colaborador sem criar, sem ver o resultado e sem mudar a ação (403), 2 participantes, mapa com as 8 dimensões no setor e na empresa, ação criada e passada a "em andamento", relatório PGR gerado com participação, mapa e plano. 21/23: as 2 falhas eram do roteiro, que procurava a dimensão na lista da pessoa (ela só traz texto e escala, de propósito) e por isso respondeu tudo com 3 (risco 50 em todas); o caminho do risco alto e de "riscos sem ação" segue coberto por `tools/testar_riscos_psicossociais.py`.
 
 ## 2. Frontend
 
