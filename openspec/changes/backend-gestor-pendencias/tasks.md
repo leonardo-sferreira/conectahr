@@ -6,7 +6,8 @@
 
 ## 2. Competências de avaliação
 
-- [ ] 2.1 Cadastro de competências de avaliação (RH/Admin), com nível e ativo, e as competências iniciais. Verificar: uma avaliação atribuída mostra o formulário com competências; o Gestor salva rascunho e envia.
+- [x] 2.1 Cadastro de competências de avaliação (RH/Admin), com nível e ativo, e as competências iniciais. Verificar: uma avaliação atribuída mostra o formulário com competências; o Gestor salva rascunho e envia.
+  - **Feito (20/11/2026):** `competencias_avaliacao` GET e POST e `competencias_avaliacao/{id}` PATCH publicados (dry-run só com 3 `CREATE`; `checar_endpoints` 283, 0 falhas); seção "Competências avaliadas" na aba "Avaliações de desempenho", desenhada antes no Figma (F27, etapas 4 e 5); `tools/testar_clima_avaliacao.py` 64/64. Com login, 19/19: Colaborador recebe 403 para listar, cadastrar e editar; categoria, nível e nome inválidos recebem 400; o RH cadastrou as 5 iniciais (D1) e desativou e reativou uma delas. Num ciclo de teste (4, cancelado no fim), com a conta de teste como Gestor só durante o teste: o formulário trouxe as 5, o rascunho foi salvo, quem não é o avaliador recebeu 403 ao responder e ao enviar, nota 6 recebeu 400, o Gestor enviou, e a avaliação enviada não aceitou mudança (400).
 
 ## 3. Indicadores da equipe (F18)
 

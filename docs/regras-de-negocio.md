@@ -580,6 +580,7 @@ O enum `relacao_avaliador` (`autoavaliacao`/`gestor`/`par`/`subordinado`/`rh`) s
 | Contestar avaliação | Somente o colaborador avaliado, e somente se `enviada` |
 | Listar/revisar contestações | RH, ADMIN |
 | Mudar a situação do ciclo; atribuir em lote; ver a visão do RH e as avaliações do ciclo (10.8) | RH, ADMIN |
+| Listar, cadastrar, editar, desativar e reativar competências (`competencias_avaliacao`, 10.8.1) | RH, ADMIN |
 
 ### 10.5 O que é auditado
 
@@ -623,6 +624,16 @@ informativa e não consulta os endpoints de contestações. Nenhuma regra ou end
 - **Visão do RH** (`ciclos_avaliacao_rh` GET, uma chamada): os ciclos ativos com as contagens (`total`, `enviadas`, `abertas` = pendente ou em andamento, `canceladas`, e `auto_total`, `auto_enviadas`, `gestor_total` e `gestor_enviadas`, sem as canceladas), as contestações abertas com os nomes do avaliado, do avaliador e do ciclo, a relação e a nota, os departamentos ativos e as pessoas não desligadas. `ciclos_avaliacao/{id}/avaliacoes` GET lista as avaliações do ciclo com avaliado (nome e departamento), avaliador, relação, situação, nota e data de envio.
 - **Atribuição em lote** (`ciclos_avaliacao/{id}/atribuir` POST): só com o ciclo `em_andamento`; de um departamento ou de todos; autoavaliação e/ou gestor para cada ficha não desligada com conta. O gestor é o superior direto (`superior_colaborador_id`); sem ele, o gestor do departamento; quem seria o próprio gestor fica sem essa avaliação (contado em `sem_gestor`). Avaliação já existente no ciclo (mesma pessoa, avaliador e relação, não cancelada) é pulada. Cada avaliador recebe, uma vez por lote, um aviso no sino (`avaliacao_disponivel`, recurso `avaliacao`) e um e-mail, pela preferência "Avaliações e metas". Auditado como `atribuir_avaliacoes_lote` (quantas criadas e quantas já existiam). Par, subordinado e RH seguem um a um por `avaliacoes` POST.
 - **Encerramento:** ao concluir ou cancelar o ciclo, as avaliações ainda em aberto ficam `cancelada`; a resposta informa quantas.
+
+### 10.8.1 Competências avaliadas (change `backend-gestor-pendencias`, D1, desde 20/11/2026)
+
+- **Por quê:** até 20/11/2026 não havia competência ativa nem rota para cadastrar uma. O formulário das avaliações (`avaliacoes/{id}/competencias`) voltava vazio para qualquer avaliador, e nenhum reconhecimento podia ser criado, porque `reconhecimentos` POST exige `competencia_avaliacao_id`.
+- **Rotas:** `competencias_avaliacao` GET (todas, ativas e inativas, por nome), `competencias_avaliacao` POST (entra ativa) e `competencias_avaliacao/{id}` PATCH (edita, desativa ou reativa). Só RH e Admin; os demais perfis recebem 403.
+- **Validação:** nome de 3 a 200 caracteres; descrição até 1000 (vazia vira ""); categoria `tecnica`, `comportamental`, `lideranca` ou `valor_empresa`; nível `l1` a `l5`; peso maior que 0 e até 100 (vazio vira 1).
+- **Sem exclusão:** desativar tira a competência do formulário das próximas respostas. As respostas e os reconhecimentos já gravados continuam apontando para ela.
+- **Auditoria:** `criar_competencia_avaliacao`, `editar_competencia_avaliacao` e `desativar_competencia_avaliacao` (quando passa de ativa para inativa).
+- **Iniciais (20/11/2026):** Comunicação, Trabalho em equipe, Qualidade das entregas, Conhecimento técnico e Ética e responsabilidade, todas no nível L1 e com peso 1. Enquanto um nível não tiver competências próprias, o formulário usa todas as ativas.
+- **Tela:** no fim da aba "Avaliações de desempenho" de "Ciclos de avaliação", a tabela "Competências avaliadas", com "Nova competência" e "Editar" (o mesmo modal, com "Salvar"). Figma: F27, etapas 4 e 5.
 
 ### 10.9 O que é auditado (complemento)
 

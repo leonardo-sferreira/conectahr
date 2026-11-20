@@ -25,6 +25,44 @@ _CONFIRMACAO = {
 RELACOES = {"autoavaliacao": "Autoavaliação", "gestor": "Gestor", "par": "Par", "subordinado": "Subordinado", "rh": "RH"}
 STATUS_AVALIACAO = {"pendente": ("Pendente", "amb"), "em_andamento": ("Em andamento", "azul"), "enviada": ("Enviada", "ok"), "cancelada": ("Cancelada", "neu")}
 
+# Competências avaliadas (change backend-gestor-pendencias, D1; Figma F27, etapas 4 e 5).
+CATEGORIAS_COMPETENCIA = {"tecnica": "Técnica", "comportamental": "Comportamental", "lideranca": "Liderança", "valor_empresa": "Valor da empresa"}
+NIVEIS_COMPETENCIA = ["l1", "l2", "l3", "l4", "l5"]
+TEXTO_COMPETENCIAS = ("Competências avaliadas: o formulário de cada avaliação usa as ativas do nível da pessoa (ou todas as ativas, "
+                      "se o nível não tiver nenhuma)")
+NOTA_COMPETENCIA = 'Não há exclusão: para tirar do formulário, desmarque "Ativa". As respostas já dadas continuam.'
+
+
+def nivel_legivel(nivel) -> str:
+    return str(nivel or "—").upper()
+
+
+def peso_legivel(peso) -> str:
+    if peso is None:
+        return "—"
+    numero = float(peso)
+    return str(int(numero)) if numero.is_integer() else f"{numero:.1f}".replace(".", ",")
+
+
+def competencias_ordenadas(competencias: list[dict]) -> list[dict]:
+    """Ativas primeiro, depois por nível e nome."""
+    return sorted(competencias, key=lambda c: (not c.get("ativo", True), str(c.get("nivel") or ""), str(c.get("nome") or "").lower()))
+
+
+def validar_competencia(nome: str, descricao: str, categoria: str | None, nivel: str | None, peso) -> str | None:
+    nome = (nome or "").strip()
+    if not 3 <= len(nome) <= 200:
+        return "O nome precisa ter de 3 a 200 caracteres."
+    if len((descricao or "").strip()) > 1000:
+        return "A descrição pode ter até 1000 caracteres."
+    if categoria not in CATEGORIAS_COMPETENCIA:
+        return "Escolha a categoria."
+    if nivel not in NIVEIS_COMPETENCIA:
+        return "Escolha o nível."
+    if peso is None or not 0 < float(peso) <= 100:
+        return "O peso vai de mais de 0 até 100."
+    return None
+
 
 def situacao(status) -> tuple[str, str]:
     return STATUS.get(status, (str(status or "—"), "neu"))

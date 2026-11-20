@@ -714,14 +714,14 @@ _APP_CSS = f"""
   .st-key-doc_pendentes button[kind="tertiary"] p {{ font-size: 13.5px !important; }}
 
   /* Conferência de documentos do RH (Figma 418:1108): mesma tabela, ações em texto colorido. */
-  .st-key-rh_tabela {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 0; gap: 0; overflow: hidden; }}
-  .st-key-rh_tabela div[class*="st-key-rh_lin"] {{ border-bottom: 1px solid {BORDA}; padding: 12px 18px; gap: 0; }}
-  .st-key-rh_tabela div[class*="st-key-rh_linf_"] {{ background: #FFFBEB; }}
-  .st-key-rh_tabela .st-key-rh_cab {{ background: {MARFIM}; border-bottom: 1px solid {BORDA}; padding: 10px 18px; }}
-  .st-key-rh_tabela button[kind="tertiary"] p {{ font-size: 13.5px !important; }}
-  .st-key-rh_tabela div[class*="st-key-rh_recusar_"] button p {{ color: {ERRO} !important; }}
-  .st-key-rh_tabela div[class*="st-key-rh_arquivar_"] button p {{ color: {GRAFITE} !important; }}
-  .st-key-rh_tabela div[class*="st-key-rh_abrir_"] button p {{ color: {GRAFITE} !important; font-weight: 500 !important; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 0; gap: 0; overflow: hidden; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_lin"] {{ border-bottom: 1px solid {BORDA}; padding: 12px 18px; gap: 0; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_linf_"] {{ background: #FFFBEB; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_cab"] {{ background: {MARFIM}; border-bottom: 1px solid {BORDA}; padding: 10px 18px; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) button[kind="tertiary"] p {{ font-size: 13.5px !important; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_recusar_"] button p {{ color: {ERRO} !important; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_arquivar_"] button p {{ color: {GRAFITE} !important; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_abrir_"] button p {{ color: {GRAFITE} !important; font-weight: 500 !important; }}
   .st-key-rh_barra {{ gap: 12px; }}
   .st-key-rh_barra .stButton {{ flex-shrink: 0; }}
   .st-key-rh_barra button[kind="primary"] {{ border-radius: 10px; padding: 0.55rem 1.1rem; white-space: nowrap; }}
@@ -1235,7 +1235,7 @@ _ESCURO_CSS = f"""
   .crh-nota-ambar, .crh-aviso-pg .destaque {{ background: {ESC_AMBAR_SUAVE} !important; color: {ESC_TEXTO} !important; }}
   .st-key-doc_pendentes div[class*="st-key-doc_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
   .st-key-doc_pendentes div[class*="st-key-doc_lin"] {{ border-color: {ESC_BORDA}; }}
-  .st-key-rh_tabela {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-ae_aba [data-testid="stButtonGroup"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
   .st-key-ae_aba button p {{ color: {ESC_TEXTO_2}; }}
   .st-key-ae_aba button[aria-checked="true"] p {{ color: {GRAFITE}; }}
@@ -1343,10 +1343,10 @@ _ESCURO_CSS = f"""
   .crh-org-pessoa {{ background: {ESC_FUNDO}; }}
   .crh-org-pessoa.voce {{ background: {ESC_AMBAR_SUAVE}; border-color: {AMBAR}; }}
   .crh-pf-contador {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
-  .st-key-rh_tabela div[class*="st-key-rh_lin"] {{ border-color: {ESC_BORDA}; }}
-  .st-key-rh_tabela div[class*="st-key-rh_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
-  .st-key-rh_tabela .st-key-rh_cab {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
-  .st-key-rh_tabela div[class*="st-key-rh_arquivar_"] button p, .st-key-rh_tabela div[class*="st-key-rh_abrir_"] button p {{ color: {ESC_TEXTO} !important; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_lin"] {{ border-color: {ESC_BORDA}; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_linf_"] {{ background: {ESC_AMBAR_SUAVE}; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_cab"] {{ background: {ESC_FUNDO}; border-color: {ESC_BORDA}; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_arquivar_"] button p, :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_abrir_"] button p {{ color: {ESC_TEXTO} !important; }}
   .st-key-rh_barra button[kind="secondary"], .st-key-rh_barra .stSelectbox > div > div {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-rh_barra button[kind="secondary"] p, .st-key-rh_barra .stSelectbox div, .st-key-rh_barra .stSelectbox input {{ color: {ESC_TEXTO} !important; }}
   .st-key-ponto_topo_espelho .stSelectbox > div > div {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
