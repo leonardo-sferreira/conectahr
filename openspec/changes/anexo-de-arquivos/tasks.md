@@ -2,8 +2,8 @@
 
 ## 1. Figma
 
-- [ ] 1.1 Modal "Enviar documento" (309:1591, escuro 313:1573) com o campo "Arquivo" no lugar de "Link do arquivo". Verificar: prints dos nós.
-  - **Pendente (13/10/2026):** o MCP do Figma não conectou nesta sessão. O campo "Arquivo" era o do protótipo original (309:1591 passou a "Link do arquivo" na tarefa 62); volta a ele.
+- [x] 1.1 Modal "Enviar documento" (309:1591, escuro 313:1573) com o campo "Arquivo" no lugar de "Link do arquivo". Verificar: prints dos nós.
+  - **Feito (20/11/2026):** "Link do arquivo" virou "Arquivo", com "Escolher arquivo · PDF, JPG ou PNG, até 10 MB" e o 📎 visível, em 309:1591, 313:1573 e nas cópias dos fluxos 310:1438 e 421:786 (F23). Conferido por print de cada nó; nenhum "Link do arquivo" restante nas três páginas. Saiu de `docs/figma-pendencias.md`.
 
 ## 2. Backend
 

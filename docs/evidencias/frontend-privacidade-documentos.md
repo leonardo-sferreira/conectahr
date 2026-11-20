@@ -14,7 +14,7 @@ dos nós do Figma abaixo.
 | 224:2379 | Fazer um pedido | `frontend/pagina_configuracoes.py` |
 | 41:26 | Documentos cadastrais (com o estado "Arquivo bloqueado", tarefa 62) | `frontend/pagina_documentos.py` |
 | 309:1249 | Documentos pendentes | `frontend/pagina_documentos.py` |
-| 309:1591 | Enviar documento (campo "Link do arquivo", tarefa 62) | `frontend/pagina_documentos.py` |
+| 309:1591 | Enviar documento (campo "Arquivo"; foi "Link do arquivo" entre a tarefa 62 e a change `anexo-de-arquivos`) | `frontend/pagina_documentos.py` |
 
 As regras de apresentação ficam em módulos sem Streamlit:
 - `frontend/aviso_privacidade.py`: lê o aviso de `docs/lgpd/aviso-de-privacidade.md`;
@@ -91,7 +91,7 @@ Prints só do app (dados fictícios), em [`frontend-privacidade-documentos/`](fr
 - **Abas Segurança e Notificações:** já têm desenho (213:142 e 213:236), mas ainda não foram construídas. A tela abre na aba Privacidade.
 
 **Documentos (decisão da tarefa 62)**
-- **Link em vez de anexo:** o modal pede o **link** do arquivo, porque o plano do Xano não aceita upload e o backend só aceita `arquivo_url` https de um domínio aprovado. O Figma 309:1591 foi atualizado: o campo "Arquivo" passou a "Link do arquivo", em claro (309:1591), escuro (313:1573) e no fluxo (310:1438).
+- **Link em vez de anexo:** o modal pede o **link** do arquivo, porque o plano do Xano não aceita upload e o backend só aceita `arquivo_url` https de um domínio aprovado. O Figma 309:1591 foi atualizado: o campo "Arquivo" passou a "Link do arquivo", em claro (309:1591), escuro (313:1573) e no fluxo (310:1438). **Depois (20/11/2026):** a change `anexo-de-arquivos` (tarefa 1.1) voltou o campo a "Arquivo" (PDF, JPG ou PNG, até 10 MB) nesses três nós e na cópia do fluxo F23 (421:786).
 - **Estados do anexo:** dos quatro estados, só "bloqueado" aparece na tela. Os estados "enviado" e "em verificação" só existem durante o envio, e "liberado" é o normal. O Figma 41:26 (e o escuro 108:541) ganhou a linha "CNH — Arquivo bloqueado".
 - **Prazo das pendências:** a linha mostra a observação do RH quando existe, senão "Pedido pelo RH". A data em que o RH fez o pedido não vem do backend (o `created_at` é privado).
 - **Modal antigo 222:175:** o modal com "Arraste o arquivo" (e as cópias nos fluxos 225:2733 e 249:2032) ficou desatualizado. A referência é o 309:1591.

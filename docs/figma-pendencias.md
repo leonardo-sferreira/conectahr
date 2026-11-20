@@ -11,7 +11,6 @@ do usuário (13/10/2026).
 | Tela | Nó no Figma | O que o Streamlit já tem e o Figma não | Origem |
 |---|---|---|---|
 | Organograma | 224:3593 | Cartões em coluna: superior direto em cima, a pessoa em destaque no meio e a equipe embaixo, ligados por linhas; cada cartão só com nome, cargo e área; clicar sobe ou desce na hierarquia; "Ir ao topo" e "Minha posição"; sem "Ver detalhes" | Pedido do usuário com imagem de referência (13/10); PR #47 |
-| Documentos: modal "Enviar documento" | 309:1591 (escuro 313:1573) | Campo "Arquivo" (PDF, JPG ou PNG, até 10 MB; foto pelo celular) no lugar de "Link do arquivo" | Change `anexo-de-arquivos`, tarefa 1.1; PR #48 |
 | Documentos: modal "Enviar documento" (campos) | 309:1591 (escuro 313:1573) | Campos de cada tipo de documento: ao escolher o tipo, aparecem só os campos dele (ex.: RG com número, órgão emissor, UF e data de expedição; CPF só com o número); a conferência do RH mostra os dados informados | Change `campos-por-tipo-de-documento` |
 | Conferência de documentos | 418:1108 e 418:1461 | Seta "Ver dados e arquivo" em cada linha, com os dados preenchidos e o arquivo pronto para abrir; regras de documentos obrigatórios agrupadas por contrato (38 pré-definidas) | PR #53; change `documentos-obrigatorios-por-contrato` |
 | Colaboradores: ficha | 243:580 | Ficha com dados pessoais, endereço, vínculo e conta bancária (mascarada), documentos enviados com a seta de dados e arquivo, e "Baixar ficha em PDF" | Pedido do usuário (13/10/2026) |
