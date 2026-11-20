@@ -162,9 +162,12 @@ conferir(m.proximo_aquisitivo("2026-01-01", 12, date(2026, 10, 10)) == date(2027
 
 
 def terca(minimo_dias: int) -> date:
-    """A primeira terça-feira a partir de hoje + `minimo_dias` (fora da sexta e do sábado e longe dos feriados do teste)."""
+    """A primeira terça-feira a partir de hoje + `minimo_dias` (fora da sexta e do sábado e longe dos feriados do teste).
+
+    Pula só de 20/12 a 02/01 (Natal e Ano-Novo). Pular dezembro inteiro levava `terca(10)` para janeiro a partir de
+    20/11, mais de 45 dias depois de hoje, e o caso "menos de 45 dias" deixava de ser recusado."""
     d = HOJE + timedelta(days=minimo_dias)
-    while d.weekday() != 1 or d.month == 12:
+    while d.weekday() != 1 or (d.month, d.day) >= (12, 20) or (d.month, d.day) <= (1, 2):
         d += timedelta(days=1)
     return d
 
