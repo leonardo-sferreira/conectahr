@@ -109,6 +109,12 @@ api_client.encerrar_pesquisa_clima = lambda token, pid: chamadas.append(("encerr
 api_client.resultados_pesquisa_clima = lambda token, pid: copy.deepcopy(RESULTADOS)
 api_client.ciclos_avaliacao_rh = lambda token: {"hoje": HOJE.isoformat(), "ciclos": copy.deepcopy(CICLOS), "contestacoes": copy.deepcopy(CONTESTACOES),
                                                 "departamentos": [{"id": 1, "nome": "TI"}, {"id": 2, "nome": "RH"}], "pessoas": copy.deepcopy(PESSOAS)}
+COMPETENCIAS = [{"id": 2, "nome": "Liderança antiga", "descricao": "", "categoria": "lideranca", "nivel": "l3", "peso": 2.5, "ativo": False},
+                {"id": 1, "nome": "Comunicação", "descricao": "Fala com clareza e escuta a equipe", "categoria": "comportamental", "nivel": "l1", "peso": 1,
+                 "ativo": True}]
+api_client.competencias_avaliacao_rh = lambda token: _falha_ou("comp", {"competencias": copy.deepcopy(estado.get("comp", COMPETENCIAS))})
+api_client.criar_competencia_avaliacao = lambda token, *a: chamadas.append(("nova_comp", *a)) or _falha_ou("salvar_comp", {"sucesso": True})
+api_client.editar_competencia_avaliacao = lambda token, *a: chamadas.append(("editar_comp", *a)) or _falha_ou("salvar_comp", {"sucesso": True})
 api_client.criar_ciclo_avaliacao = lambda token, *a: chamadas.append(("novo_ciclo", *a)) or {"sucesso": True, "ciclo": {"id": 9}}
 api_client.mudar_status_ciclo_avaliacao = lambda token, cid, st: chamadas.append(("status", cid, st)) or {"sucesso": True, "avaliacoes_canceladas": 5 if st == "concluido" else 0}
 api_client.avaliacoes_do_ciclo = lambda token, cid: {"ciclo": {"id": cid}, "avaliacoes": copy.deepcopy(AVALIACOES)}
@@ -329,6 +335,51 @@ conferir("pelo menos 5" in texto(at) and not any(c[0] == "revisar" for c in cham
 at.text_area(key="av360_resposta").set_value("Revimos com o gestor e a nota passa a considerar o projeto de agosto.")
 at = clicar(at.run(), "av360_ct_ok")
 conferir(any(c[0] == "revisar" and c[1] == 70 for c in chamadas) and "respondida" in aviso(at), "responde a contestação")
+
+caso("Competências avaliadas (Figma F27, etapas 4 e 5; change backend-gestor-pendencias, D1)")
+conferir(av.validar_competencia("Co", "", "tecnica", "l1", 1) is not None and av.validar_competencia("Comunicação", "", None, "l1", 1) == "Escolha a categoria."
+         and av.validar_competencia("Comunicação", "", "tecnica", "l9", 1) == "Escolha o nível." and "peso" in av.validar_competencia("Comunicação", "", "tecnica", "l1", 0)
+         and av.validar_competencia("Comunicação", "", "tecnica", "l1", 1) is None, "validação: nome, categoria, nível e peso")
+conferir([c["id"] for c in av.competencias_ordenadas(COMPETENCIAS)] == [1, 2] and av.peso_legivel(2.5) == "2,5" and av.peso_legivel(1.0) == "1"
+         and av.nivel_legivel("l3") == "L3", "ativas primeiro; peso e nível legíveis")
+at = aba_desempenho()
+t = texto(at)
+conferir("Competências avaliadas" in t and av.TEXTO_COMPETENCIAS in t and "Comunicação" in t and "Fala com clareza e escuta a equipe" in t
+         and "Comportamental" in t and "L1" in t and "Ativa" in t and "Inativa" in t and "2,5" in t, "tabela do Figma (etapa 4), com a inativa")
+conferir("av360_comp_novo" in chaves(at) and "av360_comp_ed_1" in chaves(at) and "av360_comp_ed_2" in chaves(at), "Nova competência e Editar em cada linha")
+at = clicar(at, "av360_comp_novo")
+conferir(av.NOTA_COMPETENCIA in texto(at) and at.checkbox(key="av360_comp_nova_ativa").value is True, "modal do Figma (etapa 5): entra ativa")
+at = clicar(at, "av360_comp_nova_ok")
+conferir("O nome precisa ter" in texto(at) and not any(c[0] == "nova_comp" for c in chamadas), "sem nome não envia")
+at.text_input(key="av360_comp_nova_nome").set_value("Trabalho em equipe")
+at.selectbox(key="av360_comp_nova_cat").set_value("comportamental")
+at.selectbox(key="av360_comp_nova_nivel").set_value("l2")
+at = clicar(at.run(), "av360_comp_nova_ok")
+conferir(("nova_comp", "Trabalho em equipe", "", "comportamental", "l2", 1.0) in chamadas and "Competência cadastrada" in aviso(at), "cadastra")
+at = aba_desempenho()
+at = clicar(at, "av360_comp_ed_1")
+conferir(at.text_input(key="av360_comp_1_nome").value == "Comunicação" and at.selectbox(key="av360_comp_1_nivel").value == "l1", "editar abre com os dados")
+at.checkbox(key="av360_comp_1_ativa").uncheck()
+at = clicar(at.run(), "av360_comp_1_ok")
+conferir(("editar_comp", 1, "Comunicação", "Fala com clareza e escuta a equipe", "comportamental", "l1", 1.0, False) in chamadas
+         and "Competência atualizada" in aviso(at), "desativa (sem exclusão)")
+at = aba_desempenho()
+at = clicar(at, "av360_comp_novo")
+estado["erro_salvar_comp"] = ApiError("Somente RH ou Admin cuidam das competencias de avaliacao.", 403)
+at.text_input(key="av360_comp_nova_nome").set_value("Qualquer")
+at.selectbox(key="av360_comp_nova_cat").set_value("tecnica")
+at.selectbox(key="av360_comp_nova_nivel").set_value("l1")
+at = clicar(at.run(), "av360_comp_nova_ok")
+conferir("Somente RH ou Admin" in texto(at), "recusa do backend aparece no modal")
+estado.clear()
+at = app("ciclos-de-avaliacao", perfil="RH", comp=[])
+at.button_group(key="cav_aba").set_value("Avaliações de desempenho")
+at = at.run()
+conferir("Nenhuma competência cadastrada" in texto(at), "vazio: avisa que as avaliações ficam sem formulário")
+at = app("ciclos-de-avaliacao", perfil="RH", erro_comp=ApiError("Muitas requisições.", 429))
+at.button_group(key="cav_aba").set_value("Avaliações de desempenho")
+at = at.run()
+conferir("Muitas requisições" in texto(at) and "Desempenho 2026" in texto(at), "erro nas competências não derruba o resto da aba")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

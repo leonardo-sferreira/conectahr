@@ -1214,6 +1214,25 @@ def revisar_contestacao(token: str, contestacao_id: int, resposta: str) -> dict:
     return _post(f"contestacoes_avaliacao/{int(contestacao_id)}/revisar", {"resposta_revisao": resposta}, token, GRUPO_COLABORADORES)
 
 
+def competencias_avaliacao_rh(token: str) -> dict:
+    """GET competencias_avaliacao -> {competencias: [{id, nome, descricao, categoria, nivel, peso, ativo}]} (RH e Admin;
+    change backend-gestor-pendencias, D1)."""
+    return _get("competencias_avaliacao", token, GRUPO_COLABORADORES)
+
+
+def criar_competencia_avaliacao(token: str, nome: str, descricao: str, categoria: str, nivel: str, peso: float) -> dict:
+    """POST competencias_avaliacao: entra ativa."""
+    return _post("competencias_avaliacao", {"nome": nome, "descricao": descricao or None, "categoria": categoria, "nivel": nivel, "peso": peso},
+                 token, GRUPO_COLABORADORES)
+
+
+def editar_competencia_avaliacao(token: str, competencia_id: int, nome: str, descricao: str, categoria: str, nivel: str, peso: float,
+                                 ativo: bool) -> dict:
+    """PATCH competencias_avaliacao/{id}: edita, desativa ou reativa (não há exclusão)."""
+    return _request("PATCH", f"competencias_avaliacao/{int(competencia_id)}", token, GRUPO_COLABORADORES,
+                    {"nome": nome, "descricao": descricao or None, "categoria": categoria, "nivel": nivel, "peso": peso, "ativo": bool(ativo)})
+
+
 # ---------------------------------------------------------------------------
 # Integrações e e-mails (change integracoes-e-emails)
 # ---------------------------------------------------------------------------

@@ -10,7 +10,10 @@ pesquisa-clima-e-avaliacao-360, D5 a D8). Só RH e Admin; a tela chama `aba_dese
 - Embaixo, do ciclo em foco (o aberto, ou o de "Ver avaliações"): "Contestações do ciclo" com "Responder" e
   "Andamento por departamento".
 
-Endpoints: `ciclos_avaliacao_rh`, `ciclos_avaliacao` POST, `ciclos_avaliacao/{id}/status`, `{id}/avaliacoes`,
+- No fim, "Competências avaliadas" (etapas 4 e 5 do F27; change backend-gestor-pendencias, D1): a tabela, "Nova
+  competência" e "Editar" (o mesmo modal, com "Salvar"). Não há exclusão: desativar tira do formulário.
+
+Endpoints: `competencias_avaliacao` (GET, POST e `{id}` PATCH), `ciclos_avaliacao_rh`, `ciclos_avaliacao` POST, `ciclos_avaliacao/{id}/status`, `{id}/avaliacoes`,
 `{id}/atribuir`, `avaliacoes` POST e `contestacoes_avaliacao/{id}/revisar`.
 """
 
@@ -20,9 +23,11 @@ from datetime import date, timedelta
 
 import streamlit as st
 
-from api_client import (ApiError, atribuir_avaliacao, atribuir_avaliacoes_lote, avaliacoes_do_ciclo, ciclos_avaliacao_rh, criar_ciclo_avaliacao,
-                        mudar_status_ciclo_avaliacao, revisar_contestacao)
-from avaliacao_ciclo_modelo import (DESCRICAO_PADRAO, RELACOES, STATUS_AVALIACAO, acoes, andamento_departamentos, anos, confirmacao, contestacoes_do_ciclo,
+from api_client import (ApiError, atribuir_avaliacao, atribuir_avaliacoes_lote, avaliacoes_do_ciclo, ciclos_avaliacao_rh, competencias_avaliacao_rh,
+                        criar_ciclo_avaliacao, criar_competencia_avaliacao, editar_competencia_avaliacao, mudar_status_ciclo_avaliacao,
+                        revisar_contestacao)
+from avaliacao_ciclo_modelo import (CATEGORIAS_COMPETENCIA, DESCRICAO_PADRAO, NIVEIS_COMPETENCIA, NOTA_COMPETENCIA, RELACOES, TEXTO_COMPETENCIAS,
+                                    competencias_ordenadas, nivel_legivel, peso_legivel, validar_competencia, STATUS_AVALIACAO, acoes, andamento_departamentos, anos, confirmacao, contestacoes_do_ciclo,
                                     do_ano, em_foco, filtrar_avaliacoes, linha_contestacao, nota_legivel, pct_relacao, periodo, pode_atribuir, progresso,
                                     resumo_lote, situacao, situacao_avaliacao, validar_avulsa, validar_ciclo)
 from campos import campo
@@ -43,6 +48,10 @@ def _guardado(chave: str, buscar):
 
 def dados_rh(token: str) -> dict:
     return _guardado("av360_cache_rh", lambda: ciclos_avaliacao_rh(token))
+
+
+def _competencias(token: str) -> list[dict]:
+    return _guardado("av360_cache_comp", lambda: competencias_avaliacao_rh(token)).get("competencias") or []
 
 
 def _avaliacoes(token: str, ciclo_id: int) -> list[dict]:
@@ -104,6 +113,56 @@ def _modal_novo() -> None:
                 _concluir(f"Ciclo criado, mas a abertura não terminou: {erro_api.message} Use \"Iniciar ciclo\" ou \"Atribuir\" na tabela.")
             st.session_state.av360_foco = ciclo_id
             _concluir(f"Ciclo aberto. {resumo_lote(r)}")
+
+
+def _modal_competencia(atual: dict | None) -> None:
+    """Figma F27, etapa 5 ("Nova competência"). Editar usa o mesmo modal, com "Salvar"."""
+    chave = f"av360_comp_{atual['id'] if atual else 'nova'}"
+    dados = atual or {}
+    nome = campo(st, "Nome", "texto", f"{chave}_nome", max_chars=200, value=dados.get("nome") or "", placeholder="Ex.: Comunicação")
+    descricao = campo(st, "Descrição", "texto", f"{chave}_desc", max_chars=1000, value=dados.get("descricao") or "",
+                      placeholder="Ex.: Fala com clareza e escuta a equipe")
+    c1, c2 = st.columns(2)
+    categorias = list(CATEGORIAS_COMPETENCIA)
+    categoria = c1.selectbox("Categoria", categorias, index=categorias.index(dados["categoria"]) if dados.get("categoria") in categorias else None,
+                             format_func=CATEGORIAS_COMPETENCIA.get, placeholder="Escolha", key=f"{chave}_cat")
+    nivel = c2.selectbox("Nível", NIVEIS_COMPETENCIA, index=NIVEIS_COMPETENCIA.index(dados["nivel"]) if dados.get("nivel") in NIVEIS_COMPETENCIA else None,
+                         format_func=nivel_legivel, placeholder="Escolha", key=f"{chave}_nivel")
+    c3, _ = st.columns(2)
+    peso = c3.number_input("Peso", min_value=0.1, max_value=100.0, value=float(dados.get("peso") or 1), step=0.5, key=f"{chave}_peso")
+    ativa = st.checkbox("Ativa (entra no formulário das avaliações)", value=bool(dados.get("ativo", True)), key=f"{chave}_ativa",
+                        disabled=atual is None)
+    st.html(f'<p class="crh-nota-neutra">{html.escape(NOTA_COMPETENCIA)}</p>')
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key=f"{chave}_cancelar"):
+            _fechar()
+            st.rerun()
+        if st.button("Salvar" if atual else "Cadastrar", type="primary", key=f"{chave}_ok"):
+            erro = validar_competencia(nome, descricao, categoria, nivel, peso)
+            if erro:
+                alerta(slot, "erro", erro)
+                return
+            token = st.session_state.token
+            try:
+                if atual:
+                    editar_competencia_avaliacao(token, atual["id"], nome.strip(), (descricao or "").strip(), categoria, nivel, peso, ativa)
+                else:
+                    criar_competencia_avaliacao(token, nome.strip(), (descricao or "").strip(), categoria, nivel, peso)
+            except ApiError as erro_api:
+                alerta(slot, "erro", erro_api.message)
+                return
+            _concluir("Competência atualizada." if atual else "Competência cadastrada.")
+
+
+@st.dialog("Nova competência", width="medium", on_dismiss=_fechar)
+def _modal_competencia_nova() -> None:
+    _modal_competencia(None)
+
+
+@st.dialog("Editar competência", width="medium", on_dismiss=_fechar)
+def _modal_competencia_editar(atual: dict) -> None:
+    _modal_competencia(atual)
 
 
 @st.dialog("Mudar a situação do ciclo", width="small", on_dismiss=_fechar)
@@ -296,6 +355,39 @@ def _cartoes(token: str, foco: dict | None, contestacoes: list[dict]) -> None:
                             f'<div class="barra"><span style="width:{pct}%"></span></div></div>' for nome, pct in linhas))
 
 
+def _secao_competencias(token: str) -> None:
+    """Figma F27, etapa 4: a tabela de competências, com "Nova competência" e "Editar" em cada linha."""
+    st.html(f'<p class="crh-cfg-titulo">Competências avaliadas</p><p class="crh-meta">{html.escape(TEXTO_COMPETENCIAS)}</p>')
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Nova competência", type="primary", key="av360_comp_novo"):
+            _abrir("competencia", None)
+    try:
+        competencias = competencias_ordenadas(_competencias(token))
+    except ApiError as erro:
+        alerta(st.empty(), "erro", erro.message)
+        return
+    pesos = [3.2, 1.6, 0.8, 0.8, 1.1, 1.0]
+    with st.container(key="rh_tabela_comp"):
+        with st.container(key="rh_cab_comp"):
+            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Competência", "Categoria", "Nível", "Peso", "Situação", ""]):
+                coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
+        if not competencias:
+            with st.container(key="rh_lin_comp_vazio"):
+                st.html('<p class="crh-meta">Nenhuma competência cadastrada: as avaliações ficam sem formulário. Cadastre em "Nova competência".</p>')
+        for c in competencias:
+            with st.container(key=f"rh_lin_comp_{c['id']}"):
+                col = st.columns(pesos, vertical_alignment="center")
+                desc = f'<p class="d">{html.escape(c["descricao"])}</p>' if c.get("descricao") else ""
+                col[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(c.get("nome") or "")}</p>{desc}</div>')
+                col[1].html(f'<p class="crh-doc-prazo">{html.escape(CATEGORIAS_COMPETENCIA.get(c.get("categoria"), "—"))}</p>')
+                col[2].html(f'<p class="crh-doc-prazo">{html.escape(nivel_legivel(c.get("nivel")))}</p>')
+                col[3].html(f'<p class="crh-doc-prazo">{html.escape(peso_legivel(c.get("peso")))}</p>')
+                selo, tom = ("Ativa", "azul") if c.get("ativo", True) else ("Inativa", "neu")
+                col[4].html(f'<span class="crh-selo {tom}">{selo}</span>', width="content")
+                if col[5].button("Editar", type="tertiary", key=f"av360_comp_ed_{c['id']}"):
+                    _abrir("competencia", c["id"])
+
+
 def aba_desempenho(token: str) -> None:
     dados = dados_rh(token)
     ciclos = dados.get("ciclos") or []
@@ -310,6 +402,7 @@ def aba_desempenho(token: str) -> None:
     do_periodo = do_ano(ciclos, ano_escolhido) + [c for c in ciclos if ano_escolhido is not None and c.get("data_inicio") is None and c.get("data_fim") is None]
     _tabela(do_periodo)
     _cartoes(token, em_foco(do_periodo, st.session_state.get("av360_foco")), dados.get("contestacoes") or [])
+    _secao_competencias(token)
 
 
 def abrir_modal(token: str) -> bool:
@@ -318,6 +411,19 @@ def abrir_modal(token: str) -> bool:
     if not modal:
         return False
     tipo, alvo = modal
+    if tipo == "competencia":
+        if alvo is None:
+            _modal_competencia_nova()
+            return True
+        try:
+            atual = next((c for c in _competencias(token) if c["id"] == alvo), None)
+        except ApiError:
+            atual = None
+        if atual:
+            _modal_competencia_editar(atual)
+        else:
+            _fechar()
+        return True
     dados = dados_rh(token)
     ciclos = {c["id"]: c for c in dados.get("ciclos") or []}
     if tipo == "novo":
