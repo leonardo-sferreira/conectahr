@@ -4,7 +4,7 @@ Como o ConectaRH usa os seus dados, em linguagem simples. Ele segue a Lei Geral 
 
 **Versão:** Rascunho de 10/10/2026. Bases legais e prazos: a confirmar com o jurídico.
 
-> **Nota da documentação (não aparece na tela):** texto técnico de projeto acadêmico. O texto deste arquivo é o mesmo das telas do Figma (nós 285:874, aviso público, e 285:1073, aviso dentro do sistema) e do frontend; ao mudar um, mude os três. Cada linha da tabela corresponde a uma finalidade do [registro das operações](registro-de-operacoes.md); a coluna **Registro** traz o código dela (F01, F02…). Essa coluna serve só para a documentação e não aparece na tela do sistema, que mostra o mesmo texto das outras três colunas.
+> **Nota da documentação (não aparece na tela):** texto técnico de projeto acadêmico. O texto deste arquivo é o mesmo das telas do Figma (nós 285:874, aviso público, e 285:1073, aviso dentro do sistema; cópias no modo escuro, 292:974, e no fluxo F36, 301:922) e do frontend; ao mudar um, mude todos. Cada linha da tabela corresponde a uma finalidade do [registro das operações](registro-de-operacoes.md); a coluna **Registro** traz o código dela (F01, F02…). Essa coluna serve só para a documentação e não aparece na tela do sistema, que mostra o mesmo texto das outras três colunas.
 
 ## Quais dados guardamos e por quê
 
@@ -28,6 +28,7 @@ Como o ConectaRH usa os seus dados, em linguagem simples. Ele segue a Lei Geral 
 | **Solicitações, comunicados e avisos** | O que você pede ao RH, os avisos que recebe e suas preferências | Contrato de trabalho | F16, F19 |
 | **Enviar e-mails do sistema** | Seu nome, e-mail e o conteúdo da mensagem (código de acesso, avisos) | Contrato de trabalho e segurança. Avisos de segurança não podem ser desligados | F17 |
 | **Cumprir regras trabalhistas** | Qual regra do contrato vale para você | Obrigação legal | F18 |
+| **Canal de denúncias** | O que você conta na denúncia (o que aconteceu, quando e quem estava envolvido) e, **só se você quiser**, seu nome e um contato. A denúncia não fica ligada à sua conta | Obrigação legal (a lei exige um canal de denúncias de assédio). **Só a comissão de ética lê**: nem o RH nem o Admin, se não forem da comissão | F20 |
 
 O sistema **não coleta** raça, sexo, religião, filiação sindical nem biometria.
 

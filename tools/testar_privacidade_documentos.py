@@ -185,7 +185,7 @@ caso("Aviso: o texto da tela é o do documento (tarefa 59)")
 import aviso_privacidade  # noqa: E402
 
 aviso = aviso_privacidade.carregar()
-conferir(len(aviso["tabela"]["linhas"]) == 18 and all(len(l) == 3 for l in aviso["tabela"]["linhas"]), "18 finalidades, cada uma com 3 colunas (a coluna Registro fica de fora)")
+conferir(len(aviso["tabela"]["linhas"]) == 19 and all(len(l) == 3 for l in aviso["tabela"]["linhas"]), "19 finalidades, cada uma com 3 colunas (a coluna Registro fica de fora)")
 markdown = aviso_privacidade.ARQUIVO.read_text(encoding="utf-8")
 paragrafos = [
     aviso_privacidade.texto_simples(re.sub(r"^(?:- \*\*[^*]+:\*\* |- |\d+\. |#+ )", "", l)).strip().rstrip(".")

@@ -13,7 +13,8 @@
   - **Feito (20/10/2026):** publicados e testados por HTTP sem login. Recusas: tipo inválido 400, relato curto 400, código curto 400, código inexistente 404 (acompanhar e responder). Caminho completo: enviou a denúncia de teste DEN-1 (código de 16 sinais), acompanhou com o código em minúsculas e sem hífens, respondeu e viu a mensagem com só a data; a resposta não traz a identificação.
 - [x] 1.3 Endpoints da comissão e dos membros, e `auth/me` com `membro_comissao_etica` (D4, D5). Verificar: `checar_endpoints`, sem token 401, e `auth/me` conferido igual ao git antes.
   - **Feito (20/10/2026):** publicados; `checar_endpoints` 262, 0 falhas.
-- [ ] 1.4 Testar com login de verdade: Admin inclui um membro; o membro vê "Denúncias", abre a DEN-1, escreve e conclui como "inconclusiva"; quem não é membro (inclusive RH e Admin) recebe 403.
+- [x] 1.4 Testar com login de verdade: Admin inclui um membro; o membro vê "Denúncias", abre a DEN-1, escreve e conclui como "inconclusiva"; quem não é membro (inclusive RH e Admin) recebe 403.
+  - **Feito (20/11/2026):** com contas Admin, RH e uma de teste. O RH não monta a comissão (403); o Admin inclui a conta de teste e o `auth/me` passa a dizer `membro_comissao_etica`. O membro vê a fila com a DEN-1, abre, escreve (a mensagem aparece no histórico), tem o resultado inválido recusado (400), conclui como "inconclusiva" e não conclui de novo (400). RH e Admin, sem ser membros, recebem 403 na fila e na denúncia. A conta de teste saiu da comissão no fim (a comissão estava vazia antes).
 
 ## 2. Frontend
 
@@ -27,4 +28,5 @@
 ## 3. Documentação
 
 - [x] 3.1 `docs/regras-de-negocio.md` (seção 19), LGPD (registro F20, retenção e RIPD seção 4) e `docs/figma-pendencias.md`. Verificar: `openspec validate canal-de-denuncias`.
-- [ ] 3.2 Acrescentar a finalidade F20 ao aviso de privacidade (documento e as cópias no Figma, que precisam continuar idênticos).
+- [x] 3.2 Acrescentar a finalidade F20 ao aviso de privacidade (documento e as cópias no Figma, que precisam continuar idênticos).
+  - **Feito (20/11/2026):** linha "Canal de denúncias" depois da F18 em `docs/lgpd/aviso-de-privacidade.md` e nas seis cópias do Figma (claro 285:874 e 285:1073, escuro 292:974 e fluxo F36 301:922), com o divisor da linha anterior ajustado. `tools/testar_privacidade_documentos.py` conta 19 finalidades: 108/108.

@@ -1606,3 +1606,114 @@ O sistema SHALL permitir que a pessoa envie um documento anexando o arquivo (PDF
 #### Scenario: Armazenamento não configurado
 - **WHEN** as variáveis do Supabase não estão definidas no Xano
 - **THEN** o envio falha com mensagem clara e nenhum documento é gravado
+
+### Requirement: Canal de denúncias anônimo com acompanhamento pelo código
+O sistema SHALL oferecer um canal de denúncias que funcione com e sem login e que não ligue a denúncia a nenhuma conta, colaborador ou horário. Ao enviar, a pessoa SHALL receber um protocolo e um código de acompanhamento que só aparece uma vez; o sistema SHALL guardar apenas o hash do código. Com o código, a pessoa SHALL ver a situação, o resultado, o parecer e a conversa com a comissão, e SHALL poder responder enquanto a denúncia não for concluída. A identificação SHALL ser opcional e SHALL ficar visível só para a comissão de ética.
+
+#### Scenario: Denúncia anônima
+- **WHEN** alguém envia uma denúncia sem se identificar
+- **THEN** a denúncia é gravada sem conta nem horário, e a resposta traz o protocolo e o código uma única vez
+
+#### Scenario: Código errado
+- **WHEN** alguém consulta um código que não existe
+- **THEN** o sistema responde que o código não foi encontrado, sem revelar nada
+
+### Requirement: Apuração restrita à comissão de ética
+Somente os membros ativos da comissão de ética SHALL ver e apurar as denúncias, qualquer que seja o perfil; ser RH ou Admin SHALL NOT dar acesso. Cada abertura de denúncia SHALL ficar na auditoria. A conclusão SHALL exigir o resultado (procedente, improcedente ou inconclusiva) e o parecer, e a denúncia concluída SHALL NOT reabrir. Só o Admin SHALL incluir e remover membros.
+
+#### Scenario: Admin que não é membro
+- **WHEN** um Admin que não é da comissão tenta abrir a fila de denúncias
+- **THEN** o backend recusa
+
+#### Scenario: Primeira mensagem da comissão
+- **WHEN** um membro escreve para o denunciante numa denúncia nova
+- **THEN** a denúncia passa para em apuração e o denunciante lê a mensagem pelo código
+
+### Requirement: Indicadores parciais da equipe
+
+O sistema SHALL oferecer ao Gestor o F18 parcial usando fontes autorizadas e coberturas
+identificadas separadamente. SHALL mostrar a série de horas extras gravadas dos últimos seis
+meses e ausências agrupadas por registro, sem férias. SHALL apresentar o banco como saldo
+corrente departamental, sem atribuir-lhe recorte histórico. SHALL suprimir grupos menores que
+o piso padrão de cinco pessoas. SHALL preservar indisponibilidade em falhas e falta de cobertura.
+
+#### Scenario: Mês sem cobertura
+- **WHEN** um mês falha ou não há registros válidos para todos os membros do recorte
+- **THEN** seu valor de horas extras fica indisponível, sem zero inventado
+
+#### Scenario: Banco parcialmente indisponível
+- **WHEN** uma consulta individual necessária falha
+- **THEN** o total do banco fica indisponível e as fontes da folha continuam independentes
+
+#### Scenario: Fontes com escopos diferentes
+- **WHEN** folha e banco permitem conjuntos diferentes
+- **THEN** cada agregado usa somente seu conjunto autorizado e informa sua cobertura
+
+#### Scenario: Métricas bloqueadas
+- **WHEN** o Gestor abre a página
+- **THEN** Absenteísmo e Clima ficam indisponíveis e Exportar CSV permanece desabilitado,
+  sem endpoint restrito nem exportação simulada
+
+#### Scenario: Privacidade
+- **WHEN** a página recebe campos extras ou um grupo com menos de cinco pessoas
+- **THEN** campos sensíveis não são apresentados e os agregados desse grupo são suprimidos
+
+### Requirement: Consulta parcial de delegações pelo Gestor
+
+O sistema SHALL oferecer ao Gestor uma página com suas delegações como titular ou substituto,
+usando somente os contratos existentes. SHALL distinguir a direção e separar Ativas e futuras
+de Encerradas. SHALL derivar Agendada, Ativa e Encerrada pelas datas UTC e dar precedência ao
+cancelamento. SHALL mostrar vigência indisponível se os dados não permitirem classificá-la.
+SHALL apresentar período, escopo, situação e motivo, sem expor IDs ou dados sensíveis.
+
+#### Scenario: Delegação recebida
+- **WHEN** o usuário é substituto de uma delegação retornada
+- **THEN** vê Recebida por mim, titular não disponível quando não há nome autorizado, e nenhuma ação de cancelamento
+
+#### Scenario: Cancelar uma delegação concedida
+- **WHEN** o titular cancela uma delegação ainda não cancelada e o backend confirma
+- **THEN** a lista é atualizada, a delegação aparece Cancelada em Encerradas e a página mostra sucesso
+
+#### Scenario: Cancelamento recusado ou falha parcial
+- **WHEN** a consulta ou o cancelamento falha
+- **THEN** a página informa a falha sem transformar indisponibilidade em vazio nem simular cancelamento
+
+#### Scenario: Criação bloqueada
+- **WHEN** o Gestor abre Nova delegação sem catálogo autorizado de substitutos
+- **THEN** a criação permanece indisponível, sem pedir IDs nem chamar POST delegacoes
+
+#### Scenario: Limitação operacional
+- **WHEN** a página apresenta escopos e orientações
+- **THEN** informa a integração parcial e a ausência de encaminhamento à Central, sem ampliar permissões nem afirmar transferência de todos os poderes
+
+### Requirement: Avaliações atribuídas ao Gestor no F15
+
+O sistema SHALL oferecer ao perfil Gestor uma página por ciclo das avaliações em que o usuário
+autenticado é o avaliador designado e a relação é `gestor`. SHALL permitir responder competências,
+salvar notas e comentários por competência e enviar avaliações pendentes ou em andamento usando
+os endpoints existentes. SHALL reutilizar a validação de preenchimento da Trajetória. O backend
+SHALL continuar responsável pela autorização. Avaliações enviadas ou canceladas SHALL ficar sem edição.
+
+#### Scenario: Avaliação atribuída
+- **WHEN** o Gestor abre uma avaliação atribuída a sua conta
+- **THEN** a página consulta as competências autorizadas e permite salvar respostas ou enviar
+
+#### Scenario: Avaliação de outro avaliador
+- **WHEN** um registro não pertence ao usuário autenticado como avaliador
+- **THEN** a página não oferece sua manipulação e trata a recusa do backend sem gravar localmente
+
+#### Scenario: Informação não disponível
+- **WHEN** não é possível confirmar a autoavaliação ou consultar contestações com o perfil Gestor
+- **THEN** a página mostra estado neutro e não infere conclusão nem contagem zero
+
+#### Scenario: Falha parcial
+- **WHEN** metadados de ciclos ou organograma falham e as atribuições estão disponíveis
+- **THEN** a página mantém as avaliações com identificação disponível e informa a indisponibilidade
+
+#### Scenario: Rascunho e envio
+- **WHEN** o Gestor salva o rascunho
+- **THEN** apenas notas e comentários por competência são persistidos; o comentário geral é enviado somente na finalização
+
+#### Scenario: Contestação indisponível ao Gestor
+- **WHEN** o Gestor acessa a área de contestações
+- **THEN** recebe informação de indisponibilidade sem consultar endpoints exclusivos de RH/Admin nem oferecer revisão de nota
