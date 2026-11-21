@@ -16,6 +16,7 @@ from datetime import date, timedelta
 from documentos_modelo import rotulo_tipo
 from onboarding_modelo import data_br
 from ponto_modelo import _DIAS_LONGOS, MOTIVOS_AUSENCIA, ROTULO_CAMPO, TIPOS_AUSENCIA, hora, para_brasilia
+from sla_modelo import ordenar
 
 RECENTE_DIAS = 30  # decisões dos últimos 30 dias continuam em "Minhas pendências"
 
@@ -104,10 +105,11 @@ def linhas_ferias(fila: list[dict], mapa: dict, meu_colaborador_id, departamento
             "observacao": (f.get("observacao_colaborador") or "").strip() or "—",
             "pedido_em": data_br(f.get("data_solicitacao") or f.get("created_at")) or "—",
             "proprio": meu_colaborador_id is not None and f.get("colaborador_id") == meu_colaborador_id,
+            "status": f.get("status"), "prazo_sla": f.get("prazo_sla"), "alerta_sla": f.get("alerta_sla"),
             "_ordem": str(f.get("data_solicitacao") or f.get("created_at") or ""),
         })
     linhas.sort(key=lambda l: l.pop("_ordem"))
-    return linhas
+    return ordenar(linhas)
 
 
 _TIPO_CORRECAO = {"inclusao": "Incluir marcação", "alteracao": "Corrigir horário", "desconsideracao": "Desconsiderar marcação"}
@@ -144,8 +146,9 @@ def linhas_correcoes(correcoes: list[dict], mapa: dict, meu_colaborador_id, depa
             "horario": hora(_momento_correcao(c)) or "—",
             "original": hora(c.get("valor_original")) if c.get("tipo") != "desconsideracao" else None,
             "proprio": meu_colaborador_id is not None and c.get("colaborador_id") == meu_colaborador_id,
+            "status": c.get("status"), "prazo_sla": c.get("prazo_sla"), "alerta_sla": c.get("alerta_sla"),
         })
-    return linhas
+    return ordenar(linhas)
 
 
 def linhas_ausencias_fila(fila: list[dict], mapa: dict, meu_colaborador_id, departamento_id=None) -> list[dict]:
@@ -163,8 +166,9 @@ def linhas_ausencias_fila(fila: list[dict], mapa: dict, meu_colaborador_id, depa
             "tipo": TIPOS_AUSENCIA.get(a.get("tipo"), a.get("tipo") or "—"),
             "periodo": periodo(a.get("data_inicio"), a.get("data_fim")),
             "proprio": meu_colaborador_id is not None and a.get("colaborador_id") == meu_colaborador_id,
+            "status": a.get("status"), "prazo_sla": a.get("prazo_sla"), "alerta_sla": a.get("alerta_sla"),
         })
-    return linhas
+    return ordenar(linhas)
 
 
 def conferencia_ferias(resposta: dict) -> list[str]:
@@ -319,6 +323,7 @@ def linhas_ausencias(ausencias: list[dict], mapa: dict, meu_colaborador_id, tipo
             "comprovante": bool(a.get("comprovante")),
             "proprio": meu_colaborador_id is not None and a.get("colaborador_id") == meu_colaborador_id,
             "status": a.get("status"),
+            "prazo_sla": a.get("prazo_sla"), "alerta_sla": a.get("alerta_sla"),
             "aprovada_em": data_br(a.get("updated_at")) or "—",
         })
     return linhas

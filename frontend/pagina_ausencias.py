@@ -26,6 +26,7 @@ from api_client import (
 from decisoes_modelo import ABAS_AUSENCIAS, linhas_ausencias, pessoas, resumo_ausencias, tipos_ausencia_presentes, validar_motivo
 from ponto_modelo import TIPOS_AUSENCIA
 from theme import alerta, render_hero, render_indicadores, render_topbar
+from sla_modelo import selo_html
 
 _CACHE = "ausencias_cache"
 _VALIDADE_CACHE_S = 20
@@ -124,7 +125,7 @@ def _tabela(linhas: list[dict], status: str, token: str) -> None:
         for i, l in enumerate(linhas):
             with st.container(key=f"rh_linf_{i}" if status in ("Pendente", "Aprovada") else f"rh_lin_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
-                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["pessoa"])}</p><p class="d">{html.escape(l["detalhe"])}</p></div>')
+                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["pessoa"])}</p><p class="d">{html.escape(l["detalhe"])}</p><p class="d">{selo_html(l)}</p></div>')
                 c[1].html(f'<span class="crh-selo {l["selo_tipo"]}">{html.escape(l["tipo"])}</span>', width="content")
                 c[2].html(f'<p class="crh-doc-prazo">{html.escape(l["periodo"])}</p>')
                 c[3].html(f'<p class="crh-doc-prazo">{html.escape(l["motivo"])}</p>')

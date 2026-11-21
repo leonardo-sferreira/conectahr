@@ -1397,3 +1397,22 @@ def minha_foto(token: str) -> dict:
 def remover_foto_colaborador(token: str, colaborador_id: int, justificativa: str) -> dict:
     """DELETE colaboradores/{id}/foto (RH e Admin), com justificativa: auditado e avisado à pessoa."""
     return _request("DELETE", f"colaboradores/{int(colaborador_id)}/foto?justificativa={quote(justificativa, safe='')}", token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# SLA de solicitações (change sla-de-solicitacoes, D4)
+# ---------------------------------------------------------------------------
+def sla_config(token: str) -> dict:
+    """GET sla_config -> {padrao_horas, pode_editar, slas: [{id, tipo_solicitacao, setor, horas_uteis, padrao, atualizado_por,
+    atualizado_em}]} (Admin, RH e Gestor)."""
+    return _get("sla_config", token, GRUPO_COLABORADORES)
+
+
+def criar_sla(token: str, tipo_solicitacao: str, horas_uteis: int) -> dict:
+    """POST sla_config: grava o SLA de um tipo que ainda não tem linha (só o Admin)."""
+    return _post("sla_config", {"tipo_solicitacao": tipo_solicitacao, "horas_uteis": int(horas_uteis)}, token, GRUPO_COLABORADORES)
+
+
+def alterar_sla(token: str, sla_id: int, horas_uteis: int, ativo: bool = True) -> dict:
+    """PATCH sla_config/{id}: muda as horas; ativo = False volta ao padrão de 72 (só o Admin)."""
+    return _request("PATCH", f"sla_config/{int(sla_id)}", token, GRUPO_COLABORADORES, {"horas_uteis": int(horas_uteis), "ativo": bool(ativo)})

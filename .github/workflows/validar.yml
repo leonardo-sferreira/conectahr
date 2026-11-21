@@ -113,6 +113,9 @@ jobs:
       - name: Testes dos Pedidos LGPD
         run: python tools/testar_pedidos_lgpd.py
 
+      - name: Testes do SLA de solicitações
+        run: python tools/testar_sla.py
+
       - name: Testes de Integrações e e-mails
         run: python tools/testar_integracoes.py
 

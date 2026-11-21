@@ -9,6 +9,7 @@ e `meus_dados` (exportação).
 import json
 
 from onboarding_modelo import data_br
+from sla_modelo import selo_texto
 
 # Os sete subtipos do backend (solicitacoes_POST) e o nome de cada um na lista "Meus pedidos".
 SUBTIPOS = {
@@ -56,7 +57,10 @@ def pedidos_privacidade(solicitacoes: list[dict]) -> list[dict]:
         aberto = data_br(s.get("created_at") or s.get("updated_at"))
         partes = [f"Aberto em {aberto}"] if aberto else []
         prazo = data_br(s.get("prazo_resposta"))
-        if prazo and s.get("status") in (None, "recebida", "em_analise"):
+        # Com o SLA (change sla-de-solicitacoes), o prazo é o dele, que nunca passa do legal; sem ele, o prazo legal.
+        if s.get("prazo_sla") and (prazo_sla := selo_texto(s)):
+            partes.append(prazo_sla)
+        elif prazo and s.get("status") in (None, "recebida", "em_analise"):
             partes.append(f"responder até {prazo}")
         if s.get("status") in ("atendida", "indeferida") and s.get("justificativa_decisao"):
             partes.append(f"Resposta do RH: {s['justificativa_decisao']}")

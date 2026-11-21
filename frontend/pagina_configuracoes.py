@@ -14,6 +14,8 @@ Aba "Segurança" (Figma 213:142; change configuracoes-seguranca-notificacoes): t
 encerra as outras sessões) e sessões e dispositivos (`auth/minhas_sessoes`, `auth/sessoes/{id}/encerrar` e
 `auth/sessoes/encerrar_outras`).
 
+Aba "SLA de solicitações" (só Admin e RH; change sla-de-solicitacoes): em `sla_ui.py`.
+
 Aba "Notificações" (Figma 213:236): por assunto, "Na plataforma" e "E-mail" (`minhas_preferencias_aviso`). Benefícios,
 alertas de segurança e pedidos para decidir são sempre ligados. Sem "Comunicados" nem "Frequência dos e-mails": o
 backend não manda aviso de comunicado nem resumo diário (docs/figma-pendencias.md).
@@ -44,6 +46,7 @@ from api_client import (
 from configuracoes_modelo import ASSUNTOS, SEMPRE_LIGADOS, alteradas, linhas_sessoes, preferencias_por_assunto, regras_senha, validar_troca
 from aviso_privacidade import encarregado, versao
 from privacidade_modelo import FORMATOS, OPCOES_PEDIDO, arquivo_exportado, pedidos_privacidade, validar_pedido
+from sla_ui import aba_sla
 from theme import alerta, render_linhas_onboarding, render_titulo_pagina, render_topbar
 
 _ABAS = ["Segurança", "Notificações", "Privacidade"]
@@ -481,14 +484,19 @@ def pagina_configuracoes() -> None:
         "Configurações", "Cuide da sua senha, dos seus acessos, dos avisos que recebe e da sua privacidade."
     )
     with st.container(key="cfg_abas"):
+        perfil = str(st.session_state.usuario.get("perfil") or "").strip().upper()
+        abas = _ABAS + (["SLA de solicitações"] if perfil in ("ADMIN", "RH") else [])
         aba = st.segmented_control(
-            "Seção", _ABAS, default="Segurança", required=True, key="cfg_aba", label_visibility="collapsed"
+            "Seção", abas, default="Segurança", required=True, key="cfg_aba", label_visibility="collapsed"
         )
     if aba == "Segurança":
         _aba_seguranca(token)
         return
     if aba == "Notificações":
         _aba_notificacoes(token)
+        return
+    if aba == "SLA de solicitações":
+        aba_sla(token)
         return
 
     with st.spinner("Carregando..."):

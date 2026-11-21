@@ -10,6 +10,7 @@ checklist de saída completo). Ninguém decide o próprio pedido; as decisões s
 from datetime import date
 
 from onboarding_modelo import data_br
+from sla_modelo import selo_texto
 
 MOTIVOS = ["Nova oportunidade de trabalho", "Mudança de cidade", "Questões pessoais ou de saúde", "Estudos", "Insatisfação com o trabalho", "Outro"]
 ABAS = {"Pendentes": ("pendente",), "Em análise": ("em_analise",), "Agendados": ("agendado",), "Concluídos": ("concluido", "rejeitada", "cancelada")}
@@ -73,6 +74,8 @@ def linhas_meus(solicitacoes: list[dict]) -> list[dict]:
             detalhe.append("pedido pelo gestor")
         if s.get("status") == "rejeitada" and s.get("motivo_decisao"):
             detalhe.append(f"Motivo do RH: {s['motivo_decisao']}")
+        if prazo := selo_texto(s):
+            detalhe.append(prazo)
         saida.append({"id": s.get("id"), "titulo": f"Último dia: {ultimo}", "detalhe": " · ".join(detalhe), "badge": badge, "tom": tom,
                       "pode_cancelar": s.get("status") == "pendente"})
     return saida
@@ -100,7 +103,7 @@ def linhas_rh(solicitacoes: list[dict], aba: str, origem: str | None = None) -> 
                       "tipo": tipo_legivel(s), "data": data_br(s.get("data_efetiva") or s.get("data_prevista")) or "—",
                       "responsavel": s.get("responsavel_rh_nome") or "—", "status": s.get("status"), "badge": badge, "tom": tom,
                       "colaborador_user_id": s.get("colaborador_user_id"), "data_efetiva": s.get("data_efetiva"), "data_prevista": s.get("data_prevista"),
-                      "tipo_desligamento": s.get("tipo_desligamento")})
+                      "tipo_desligamento": s.get("tipo_desligamento"), "prazo_sla": s.get("prazo_sla"), "alerta_sla": s.get("alerta_sla")})
     return saida
 
 

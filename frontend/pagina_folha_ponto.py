@@ -37,6 +37,7 @@ from planilha_ponto import desmarcar_planilha, erro_do_formulario, formulario_pe
 from ponto_mensal_modelo import anos_disponiveis, csv_do_mes, descricao_pedido, legenda, meses_do_ano, resumo_do_mes, tem_saldo, texto_prazo
 from ponto_modelo import hoje_brasilia, valor_solicitado_ms
 from theme import alerta, render_hero, render_indicadores, render_topbar
+from sla_modelo import selo_html
 
 _VALIDADE_CACHE_S = 20
 _ABAS = ["Resumo do mês", "Por pessoa"]
@@ -274,7 +275,7 @@ def _por_pessoa(token: str, pessoas: list[dict], deps: dict, feriados: list[dict
                 quando = linha_do_registro.get(c.get("registro_ponto_id")) or ""
                 with st.container(horizontal=True, vertical_alignment="center", key=f"fp_pend_{c['id']}"):
                     st.html(f'<p class="crh-doc-prazo">{html.escape(quando)}: {html.escape(descricao_pedido(c, marcacoes))} · '
-                            f'{html.escape((c.get("justificativa") or "").strip() or "sem motivo")}</p>', width="stretch")
+                            f'{html.escape((c.get("justificativa") or "").strip() or "sem motivo")} {selo_html(c)}</p>', width="stretch")
                     if not proprio:
                         if st.button("Recusar", type="tertiary", key=f"rh_recusar_fp_{c['id']}"):
                             st.session_state.modal_folha = ("recusar", c["id"])

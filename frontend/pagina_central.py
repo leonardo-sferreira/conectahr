@@ -47,6 +47,7 @@ from decisoes_modelo import (
     tem_alerta,
     validar_motivo,
 )
+from sla_modelo import selo_html
 from theme import alerta, html_linha_onboarding, render_hero, render_indicadores, render_topbar
 
 DECISORES = ("GESTOR", "RH", "ADMIN")
@@ -230,8 +231,10 @@ def _cabecalho(titulos: list[str], pesos: list[float]) -> None:
             coluna.html(f'<p class="crh-doc-cab">{html.escape(texto)}</p>')
 
 
-def _pessoa(coluna, nome: str, detalhe: str) -> None:
-    coluna.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(nome)}</p><p class="d">{html.escape(detalhe)}</p></div>')
+def _pessoa(coluna, nome: str, detalhe: str, item: dict | None = None) -> None:
+    """Pessoa e detalhe; com o item da fila, o selo do prazo embaixo (change sla-de-solicitacoes, D6)."""
+    selo = f'<p class="d">{selo_html(item)}</p>' if item and "prazo_sla" in item else ""
+    coluna.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(nome)}</p><p class="d">{html.escape(detalhe)}</p>{selo}</div>')
 
 
 def _texto(coluna, texto: str) -> None:
@@ -252,7 +255,7 @@ def _tabela_ferias(linhas: list[dict]) -> None:
         for i, l in enumerate(linhas):
             with st.container(key=f"rh_linf_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
-                _pessoa(c[0], l["pessoa"], l["detalhe"])
+                _pessoa(c[0], l["pessoa"], l["detalhe"], l)
                 c[1].html(f'<span class="crh-selo neu">{html.escape(l["dias"])}</span>', width="content")
                 _texto(c[2], l["periodo"])
                 _texto(c[3], l["observacao"])
@@ -275,7 +278,7 @@ def _tabela_correcoes(linhas: list[dict], token: str) -> None:
         for i, l in enumerate(linhas):
             with st.container(key=f"rh_linf_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
-                _pessoa(c[0], l["pessoa"], l["detalhe"])
+                _pessoa(c[0], l["pessoa"], l["detalhe"], l)
                 _texto(c[1], l["campo"])
                 _texto(c[2], l["dia"])
                 _texto(c[3], l["justificativa"])
@@ -310,7 +313,7 @@ def _tabela_ausencias(linhas: list[dict], token: str) -> None:
         for i, l in enumerate(linhas):
             with st.container(key=f"rh_linf_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
-                _pessoa(c[0], l["pessoa"], l["detalhe"])
+                _pessoa(c[0], l["pessoa"], l["detalhe"], l)
                 _texto(c[1], l["tipo"])
                 _texto(c[2], l["periodo"])
                 with c[3]:
