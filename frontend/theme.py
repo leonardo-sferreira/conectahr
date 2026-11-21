@@ -84,6 +84,8 @@ _BASE_CSS = f"""
 <style>
   /* Texto de status solto na página (tarefa 61): escuro no tema claro e claro no escuro (o tema escuro redefine). */
   :root {{ --crh-ok: {SUCESSO_TEXTO}; --crh-amb: {AMBAR_TEXTO}; --crh-err: {ERRO_TEXTO}; --crh-foco: {AMBAR_TEXTO}; }}
+  /* Texto só para leitor de tela (tarefa 3): some da tela e continua lido. */
+  .crh-sr {{ position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }}
   /* Fontes servidas pelo próprio app (frontend/static/fonts, licença OFL), e não pelo Google Fonts:
      assim o navegador de quem usa não manda o IP ao Google (tarefa 4, LGPD). O caminho é relativo à
      página e precisa de server.enableStaticServing = true em .streamlit/config.toml. */
@@ -446,6 +448,10 @@ _AVISO_CSS = f"""
   .st-key-aviso_faixa button[kind="primary"] {{ padding: 0.45rem 1rem; width: auto; }}
   .st-key-btn_aviso_voltar button {{ background: white !important; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1rem !important; }}
   .st-key-btn_aviso_voltar button p {{ color: {GRAFITE} !important; font-size: 13px !important; }}
+  /* Tela estreita (tarefa 3): a tabela do aviso rola dentro do cartão em vez de empurrar a página. */
+  @media (max-width: 768px) {{
+    [data-testid="stMain"] table {{ display: block; max-width: 100%; overflow-x: auto; }}
+  }}
 </style>
 """
 
@@ -466,7 +472,11 @@ _APP_CSS = f"""
     min-width: 240px !important;
     max-width: 240px !important;
   }}
-  div[data-testid="stSidebarHeader"], div[data-testid="stSidebarCollapseButton"] {{ display: none; }}
+  /* Em tela larga o menu fica sempre aberto, sem os controles de abrir e fechar. Na estreita (celular, tarefa 3) ele
+     abre por cima do conteúdo, então os controles nativos do Streamlit voltam para a pessoa poder fechá-lo. */
+  @media (min-width: 769px) {{
+    div[data-testid="stSidebarHeader"], div[data-testid="stSidebarCollapseButton"] {{ display: none; }}
+  }}
   div[data-testid="stSidebarContent"], div[data-testid="stSidebarUserContent"] {{ padding: 0 !important; }}
   /* O Streamlit reserva calha de scrollbar nas duas bordas (10px cada), o que
      deslocaria o conteudo do padding de 16px do Figma. */
@@ -1243,6 +1253,20 @@ _APP_CSS = f"""
   .crh-incluso .n {{ margin: 6px 0 0 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-nota-verde {{ background: #DCFCE7; color: {SUCESSO_TEXTO}; border-radius: 10px; padding: 12px 14px; margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; line-height: 1.45; }}
   .crh-nota-ambar {{ background: {AMBAR_BG}; color: {GRAFITE}; border-radius: 10px; padding: 12px 14px; margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; }}
+  /* Tela estreita (celular, até 768px; tarefa 3): menos margem, linhas de números que quebram, tabelas que rolam dentro
+     do próprio cartão em vez de empurrar a página, e textos longos que quebram. */
+  @media (max-width: 768px) {{
+    .block-container {{ padding: 64px 16px 32px !important; }}
+    /* O cabeçalho do Streamlit fica escondido; no celular só o botão de abrir o menu aparece, num quadrado grafite. */
+    [data-testid="stExpandSidebarButton"] {{ visibility: visible; background: {GRAFITE}; border-radius: 8px; }}
+    [data-testid="stExpandSidebarButton"] svg, [data-testid="stExpandSidebarButton"] span {{ color: #FFFFFF; fill: #FFFFFF; }}
+    .crh-linha {{ flex-wrap: wrap; }}
+    .crh-linha > .crh-stat {{ flex: 1 1 140px; }}
+    .crh-linha > .crh-bloco {{ flex: 1 1 100%; }}
+    [data-testid="stMain"] table:not(.crh-cal table) {{ display: block; max-width: 100%; overflow-x: auto; }}
+    .crh-stat .crh-stat-valor {{ overflow-wrap: anywhere; }}
+    [data-testid="stMain"] .crh-hero {{ padding: 20px; }}
+  }}
 </style>
 """
 

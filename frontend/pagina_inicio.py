@@ -223,7 +223,7 @@ def pagina_inicio() -> None:
         itens_aniv = '<p class="crh-meta">Nenhum aniversariante este mês.</p>'
     else:
         itens_aniv = "".join(
-            f'<div class="crh-aniv"><div class="crh-aniv-icone">🎂</div>'
+            f'<div class="crh-aniv"><div class="crh-aniv-icone" aria-hidden="true">🎂</div>'
             f'<p class="crh-aniv-nome">{html.escape(a["nome"])}</p>'
             f'<p class="crh-meta">{html.escape(a["aniversario"])}</p></div>'
             for a in lista_aniv

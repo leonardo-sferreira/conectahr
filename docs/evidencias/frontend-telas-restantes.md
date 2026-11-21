@@ -164,7 +164,7 @@ Os três ganharam o contorno de `--crh-foco`. Na área principal, ele fica por d
   página normalmente.
 - **Ponto e Benefícios:** demoraram a abrir na rodada longa. Repetidas sozinhas, deram 48 paradas sem problema.
 
-**Ainda não conferido na tarefa 3:** responsividade em tela estreita e textos alternativos.
+A responsividade e os textos alternativos, que a tarefa 3 também pede, estão na seção seguinte.
 
 ## Usuários e perfis: bloqueio, desbloquear, reenviar e motivo (tarefa 76, 21/11/2026)
 
@@ -198,3 +198,33 @@ próximo login certo.
 
 **Não testado por HTTP:** o envio de fato do "Reenviar acesso". Nenhuma conta de teste usa a senha temporária, e a ação
 manda e-mail.
+
+## Tela estreita e textos alternativos (tarefa 3, 21/11/2026)
+
+**Tela estreita:** abri as 55 rotas logadas e as 3 públicas numa tela de celular (390×844, no Chrome) e medi o que passava
+da largura.
+
+**Defeito maior:** no celular, o menu lateral abria por cima da tela inteira, e o botão de fechar estava escondido pelo
+tema. Quem entrava pelo celular não via o conteúdo. Agora:
+- o menu começa aberto em tela larga e fechado no celular (`initial_sidebar_state="auto"`);
+- os controles de abrir e fechar só ficam escondidos em tela larga;
+- no celular, o botão de abrir aparece num quadrado grafite.
+
+Testado no Chrome: o menu abre e fecha no celular, e no computador continua sempre aberto, sem os controles.
+
+**Outros ajustes para tela estreita** (até 768px):
+- margens menores;
+- as linhas de números quebram em duas colunas;
+- tabelas largas (Aviso de privacidade) rolam dentro do cartão, sem empurrar a página;
+- textos longos nos números (a data da Rotina diária) quebram.
+
+A grade do Calendário ficou de fora da regra das tabelas.
+
+**Resultado final:** nenhuma das 58 rotas transborda. No computador, nada mudou.
+
+**Textos alternativos:**
+- O logo e os avatares usam `alt=""` com o nome ou as iniciais visíveis ao lado. O sino tem "Notificações".
+- O 🎂 dos aniversariantes passou a ser escondido do leitor de tela (`aria-hidden`).
+- Nas regras de senha, o ✓ e o • ganharam o texto "atendida" ou "ainda não atendida", só para o leitor de tela (classe
+  nova `.crh-sr`).
+

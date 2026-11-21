@@ -189,7 +189,8 @@ st.set_page_config(
     page_title="ConectaRH",
     page_icon="🧭",
     layout="wide" if logado and not em_onboarding else "centered",
-    initial_sidebar_state="expanded" if logado and not em_onboarding else "collapsed",
+    # "auto": aberto em tela larga, fechado no celular, onde o menu cobriria a tela toda (tarefa 3).
+    initial_sidebar_state="auto" if logado and not em_onboarding else "collapsed",
 )
 
 # Token vencido pelo relógio ou rejeitado pela API na rodada anterior: volta ao login com aviso.
