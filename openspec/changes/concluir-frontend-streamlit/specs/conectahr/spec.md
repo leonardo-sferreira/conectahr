@@ -27,41 +27,6 @@ O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, 
 - **WHEN** um usuario com perfil Colaborador e superior direto de outra pessoa
 - **THEN** o sistema permite que ele decida os pedidos dessa pessoa, como faria um Gestor, sem lhe dar acesso a outros dados de gestao
 
-### Requirement: Registro de ponto e correcao
-O sistema SHALL permitir registrar entrada, inicio e fim de intervalo e saida, acompanhar a jornada e calcular horas trabalhadas e extras quando aplicavel. O registro SHALL usar os status ABERTO, COMPLETO, INCOMPLETO ou AJUSTADO; um registro ABERTO de dia anterior SHALL passar a INCOMPLETO quando a rotina diaria for acionada. O colaborador SHALL poder solicitar correcao de uma marcacao de um dia com registro e tambem de um dia passado sem nenhuma marcacao, desde que o dia nao seja anterior a admissao. O horario pedido SHALL estar dentro do dia, nao SHALL estar no futuro e SHALL respeitar a ordem das marcacoes; uma marcacao com pedido pendente nao SHALL receber outro pedido. O responsavel autorizado pela hierarquia (RH, Admin, o superior direto do colaborador ou, sem superior, o Gestor do departamento ou o substituto de uma delegacao vigente desse Gestor) SHALL poder aprovar ou recusar com justificativa, nunca sobre o proprio registro. O mesmo responsavel SHALL poder ajustar diretamente uma marcacao da sua equipe, com justificativa: o ajuste segue as mesmas regras de horario, recalcula as horas, fica no historico como correcao aprovada, e auditado e avisa a pessoa.
-
-#### Scenario: Jornada concluida
-- **WHEN** o colaborador registra os marcadores necessarios do dia
-- **THEN** o sistema calcula a jornada e marca o registro como COMPLETO
-
-#### Scenario: Correcao aprovada
-- **WHEN** o responsavel com permissao aprova uma solicitacao de correcao de outro colaborador
-- **THEN** o sistema ajusta o registro, preserva o valor original, registra a decisao e marca o registro como AJUSTADO
-
-#### Scenario: Jornada nao finalizada
-- **WHEN** RH aciona a rotina diaria e existe registro ABERTO de um dia anterior
-- **THEN** o sistema marca o registro como INCOMPLETO sem inventar marcacoes ausentes
-
-#### Scenario: Correcao de dia sem marcacao
-- **WHEN** o colaborador pede a correcao de um dia passado, posterior a admissao, em que nao ha registro
-- **THEN** o sistema cria o registro do dia como INCOMPLETO e a solicitacao de correcao pendente
-
-#### Scenario: Horario invalido
-- **WHEN** o horario pedido esta fora do dia, no futuro ou fora da ordem das marcacoes
-- **THEN** o sistema recusa o pedido com mensagem clara, sem alterar o registro
-
-#### Scenario: Decisao fora da hierarquia
-- **WHEN** alguem que nao e RH, Admin, o superior direto nem, sem superior, o Gestor do departamento tenta decidir ou ajustar o ponto de outro colaborador
-- **THEN** o sistema nega a operacao
-
-#### Scenario: Ajuste direto
-- **WHEN** o responsavel autorizado ajusta uma marcacao de outra pessoa da sua equipe, com justificativa
-- **THEN** o sistema grava o novo horario, recalcula as horas, registra a correcao como aprovada, audita a acao e notifica a pessoa
-
-#### Scenario: Ajuste do proprio ponto
-- **WHEN** alguem tenta ajustar diretamente o proprio ponto
-- **THEN** o sistema nega o ajuste; o pedido segue para quem decide pela hierarquia
-
 ### Requirement: Ferias e ausencias
 O sistema SHALL permitir solicitar ferias e registrar ausencias com acompanhamento de status. Ferias SHALL usar Pendente, Aprovada, Rejeitada, Cancelada ou Concluida. Ausencias SHALL usar Falta, Atestado, Afastamento, Licenca ou Outro e status Pendente, Aprovada, Rejeitada ou Registrado. As decisoes de ferias e a aprovacao ou recusa de ausencias SHALL seguir a hierarquia: RH e Admin decidem de qualquer colaborador; com superior direto definido, decide o superior; sem superior, decide o Gestor do departamento que o colaborador integra; o substituto de uma delegacao vigente do Gestor com escopo `ferias` ou `todas` SHALL decidir ferias dentro do mesmo escopo. A conferencia de conflitos de um pedido de ferias SHALL estar disponivel a quem pode decidi-lo. Registrar uma ausencia aprovada SHALL continuar restrito a RH e Admin. Ninguem SHALL decidir as proprias ferias nem as proprias ausencias. Toda decisao SHALL manter justificativa e responsavel. Nas ausencias, quem decide sem ser RH ou Admin SHALL consultar somente tipo, periodo e status, sem acesso ao atestado, documento anexado ou motivo.
 
@@ -116,21 +81,6 @@ O sistema SHALL manter artigos de FAQ organizados por categoria (ferias, ponto, 
 - **THEN** o sistema exibe os artigos publicados, organizados por categoria
 
 ## ADDED Requirements
-
-### Requirement: Espelho de ponto mensal
-O sistema SHALL permitir que o colaborador consulte o próprio ponto mês a mês, de qualquer mês desde o primeiro ponto registrado ou a admissão, sem limite de meses. Cada dia, até hoje, SHALL aparecer uma única vez com as marcações, as horas trabalhadas e uma situação, nesta ordem de precedência: registro do dia; hoje sem marcação; férias aprovadas; ausência aprovada (pelo tipo: Atestado, Falta justificada, Licença ou Afastamento) ou em análise; ausência recusada, como Falta injustificada; feriado nacional; folga no fim de semana; dia útil sem nada, como "Sem registro" no mês corrente e "Falta injustificada" em mês encerrado. O espelho SHALL mostrar o resumo do mês (horas, dias com marcação, sem registro, faltas injustificadas e atestados), os pedidos de correção em análise e o motivo de uma correção recusada, e SHALL permitir baixar o mês em CSV.
-
-#### Scenario: Consulta de um mês encerrado
-- **WHEN** o colaborador escolhe um mês anterior
-- **THEN** o sistema mostra cada dia do mês com a situação, e o dia útil sem marcação nem ausência aparece como Falta injustificada
-
-#### Scenario: Atestado aprovado
-- **WHEN** um dia está coberto por um atestado aprovado
-- **THEN** o espelho mostra o dia como Atestado, sem ação de correção
-
-#### Scenario: Pedido de correção a partir do espelho
-- **WHEN** o colaborador escolhe corrigir um dia passado, com ou sem registro, dentro do prazo
-- **THEN** o sistema abre o pedido só com as marcações que ainda não estão em análise
 
 ### Requirement: Folha de ponto da equipe e do RH
 O sistema SHALL oferecer a consulta mensal do ponto das pessoas que o usuário pode ver: RH e Admin veem todos; os demais veem a si mesmos, quem os tem como superior direto e, entre quem não tem superior, as pessoas do departamento que gerenciam. A consulta SHALL trazer, por pessoa, horas, dias com marcação, dias sem registro, faltas injustificadas e atestados do mês, com exportação em CSV para o fechamento do pagamento, e a folha mensal de cada pessoa com os pedidos de correção pendentes. A consulta não SHALL expor atestado, motivo clínico, CPF, salário ou dados bancários.
