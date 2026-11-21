@@ -129,7 +129,9 @@ def _instalar():
         _falha_ou("criar", None)
         return {"sucesso": True, "usuario": {"id": 30, "email": email}, "email_enviado": estado.get("email_enviado", True)}
     api_client.criar_usuario = _criar
-    api_client.trocar_perfil = lambda token, uid, p: chamadas.append(("perfil", uid, p)) or _falha_ou("perfil", {"sucesso": True})
+    api_client.trocar_perfil = lambda token, uid, p, motivo=None: chamadas.append(("perfil", uid, p)) or estado.setdefault("motivos", []).append(motivo) or _falha_ou("perfil", {"sucesso": True})
+    api_client.desbloquear_usuario = lambda token, uid, motivo: chamadas.append(("desbloquear", uid, motivo)) or _falha_ou("desbloquear", {"sucesso": True})
+    api_client.reenviar_acesso = lambda token, uid, senha: chamadas.append(("reenviar", uid, len(senha))) or _falha_ou("reenviar", {"sucesso": True, "email_enviado": estado.get("email_enviado", True)})
     api_client.solicitacoes_acesso = lambda token: chamadas.append(("pedidos",)) or _falha_ou("pedidos", {"solicitacoes": estado.get("pedidos", pedidos())})
     api_client.pedir_acesso = lambda token, uid, p, j: chamadas.append(("pedir", uid, p, j)) or _falha_ou("pedir", {"sucesso": True})
     api_client.aprovar_pedido_acesso = lambda token, pid: chamadas.append(("aprovar_acesso", pid)) or _falha_ou("aprovar_acesso", {"sucesso": True})
@@ -436,11 +438,16 @@ at = at.run()
 conferir("col_alterar_acesso" in chaves(at) and "col_pedir_acesso" not in chaves(at), "Admin tem 'Alterar acesso' na ficha")
 at.button(key="col_alterar_acesso").click()
 at = at.run()
-conferir("Pedido pendente do RH: Colaborador → Gestor" in texto(at) and "ac_justificativa" not in [t.key for t in at.text_area], "o Admin vê o pedido pendente e não precisa justificar")
+conferir("Pedido pendente do RH: Colaborador → Gestor" in texto(at) and "Motivo (fica na auditoria)" in [t.label for t in at.text_area], "o Admin vê o pedido pendente e escreve o motivo")
 at.radio(key="ac_novo").set_value("RH")
 at.button(key="ac_ok").click()
 at = at.run()
-conferir(("perfil", 1, "RH") in chamadas and not any(c[0] == "pedir" for c in chamadas), "Admin troca o perfil na hora")
+conferir("mínimo de 5 caracteres" in texto(at) and not any(c[0] == "perfil" for c in chamadas), "sem motivo, o Admin não troca")
+at.text_area(key="ac_justificativa").set_value("Assumiu o RH da filial.")
+at.button(key="ac_ok").click()
+at = at.run()
+conferir(("perfil", 1, "RH") in chamadas and not any(c[0] == "pedir" for c in chamadas) and estado["motivos"][-1] == "Assumiu o RH da filial.",
+         "Admin troca o perfil na hora, com o motivo")
 # Admin: aprova ou recusa em Usuários e perfis.
 at = app("ADMIN", "usuarios-e-perfis")
 t = texto(at)
@@ -487,9 +494,10 @@ at = app("ADMIN", "usuarios-e-perfis")
 at.button(key="usr_perfil_1").click()
 at = at.run()
 at.radio(key="usr_perfil_novo").set_value("GESTOR")
+at.text_area(key="usr_perfil_motivo").set_value("Passou a liderar a equipe.")
 at.button(key="usr_perfil_ok").click()
 at = at.run()
-conferir(("perfil", 1, "GESTOR") in chamadas, "troca o perfil")
+conferir(("perfil", 1, "GESTOR") in chamadas and estado["motivos"][-1] == "Passou a liderar a equipe.", "troca o perfil com o motivo")
 at = app("ADMIN", "usuarios-e-perfis")
 at.button(key="rh_recusar_usr_1").click()
 at = at.run()
@@ -696,6 +704,50 @@ at.text_input(key="usr_ed_nome").set_value("Outro Nome")
 at.button(key="usr_ed_ok").click()
 at = at.run()
 conferir("já está vinculado a outra conta" in texto(at), "recusa do backend aparece no modal")
+
+caso("Usuários: bloqueio de senha, desbloquear e reenviar acesso (tarefa 76)")
+agora = datetime(2026, 11, 21, 18, 0, tzinfo=timezone.utc)
+futuro, passado = "2026-11-21T18:30:00Z", "2026-11-21T17:00:00Z"
+conferir(m.bloqueado_ate({"senha_bloqueada_ate": futuro}, agora) and m.bloqueado_ate({"senha_bloqueada_ate": passado}, agora) is None
+         and m.bloqueado_ate({}, agora) is None, "bloqueio só enquanto vale")
+lista_b = [dict(u, senha_bloqueada_ate=futuro) if u["id"] == 1 else u for u in usuarios()]
+lb = {l["id"]: l for l in m.linhas_usuarios(lista_b, colabs(), 3, "ADMIN", agora=agora)}
+conferir(lb[1]["situacao"] == ("Bloqueado (senha)", "err") and "desbloquear" in lb[1]["acoes"] and lb[1]["bloqueado_ate"] == "21/11/2026 às 15:30",
+         "situação Bloqueado (senha), com o fim em Brasília")
+conferir([l["id"] for l in m.linhas_usuarios(lista_b, colabs(), 3, "ADMIN", situacao="bloqueado", agora=agora)] == [1], "filtro Bloqueados")
+lr = {l["id"]: l for l in m.linhas_usuarios(lista_b, colabs(), 2, "RH", agora=agora)}
+conferir("desbloquear" not in lr[1]["acoes"] and "reenviar" not in lr[1]["acoes"], "RH não desbloqueia nem reenvia")
+lista_t = [dict(u, senha_primeiro_acesso=True) if u["id"] in (4, 5) else u for u in usuarios()]  # 4 ativa, 5 inativa
+la = {l["id"]: l for l in m.linhas_usuarios(lista_t, colabs(), 3, "ADMIN")}
+conferir("reenviar" in la[4]["acoes"] and not any("reenviar" in la[i]["acoes"] for i in (1, 2, 3, 5)),
+         "Reenviar acesso só para conta ativa que usa a senha temporária")
+conferir(m.validar_motivo("abc") and m.validar_motivo("x" * 501) and m.validar_motivo("Pediu por telefone.") is None, "validação do motivo")
+lista_b = [dict(u, senha_bloqueada_ate="2099-01-01T00:00:00Z") if u["id"] == 1 else u for u in usuarios()]  # bloqueio que ainda vale agora
+at = app("ADMIN", "usuarios-e-perfis", usuarios=lista_b)
+conferir("Bloqueado (senha)" in texto(at) and "usr_desbloquear_1" in chaves(at), "a tela mostra o bloqueio e o Desbloquear")
+at.button(key="usr_desbloquear_1").click()
+at = at.run()
+at.button(key="usr_desb_ok").click()
+at = at.run()
+conferir("mínimo de 5 caracteres" in texto(at) and not any(c[0] == "desbloquear" for c in chamadas), "desbloquear pede o motivo")
+at.text_area(key="usr_desb_motivo").set_value("Confirmou a identidade por telefone.")
+at.button(key="usr_desb_ok").click()
+at = at.run()
+conferir(("desbloquear", 1, "Confirmou a identidade por telefone.") in chamadas, "desbloquear com o motivo")
+alvo = 4
+at = app("ADMIN", "usuarios-e-perfis", usuarios=lista_t)
+at.button(key=f"usr_reenviar_{alvo}").click()
+at = at.run()
+conferir("a anterior deixa de valer" in texto(at) and not any(c[0] == "reenviar" for c in chamadas), "reenviar pede confirmação")
+at.button(key="usr_reenv_ok").click()
+at = at.run()
+conferir(any(c[0] == "reenviar" and c[1] == alvo and c[2] >= 8 for c in chamadas), "reenviar gera uma senha nova (sem mostrá-la)")
+at = app("ADMIN", "usuarios-e-perfis", usuarios=lista_t, erro_reenviar=ApiError("Esta pessoa já trocou a senha temporária.", 400))
+at.button(key=f"usr_reenviar_{alvo}").click()
+at = at.run()
+at.button(key="usr_reenv_ok").click()
+at = at.run()
+conferir("já trocou a senha temporária" in texto(at), "recusa do backend aparece no modal")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

@@ -26,7 +26,8 @@ CONTRATOS = {"CLT": "CLT", "PJ": "PJ", "ESTAGIO": "Estágio", "APRENDIZ": "Apren
 JORNADA_SEMANAL = {"CLT": 44.0, "TEMPORARIO": 44.0, "ESTAGIO": 30.0, "APRENDIZ": 30.0}
 NIVEIS = {"l1": "L1", "l2": "L2", "l3": "L3", "l4": "L4", "l5": "L5"}
 SITUACOES_COLAB = {"ativos": "Situação: Ativos", "todos": "Situação: Todos", "desligados": "Situação: Desligados"}
-SITUACOES_USUARIO = {"todos": "Situação: Todos", "ativo": "Situação: Ativos", "inativo": "Situação: Inativos", "sem_ficha": "Situação: Sem ficha", "senha": "Situação: Senha temporária"}
+SITUACOES_USUARIO = {"todos": "Situação: Todos", "ativo": "Situação: Ativos", "inativo": "Situação: Inativos", "sem_ficha": "Situação: Sem ficha", "senha": "Situação: Senha temporária",
+                     "bloqueado": "Situação: Bloqueados (senha)"}
 _SELO_COLAB = {"ATIVO": ("Ativo", "ok"), "FERIAS": ("Férias", "azul"), "AFASTADO": ("Afastado", "amb"), "DESLIGADO": ("Desligado", "neu")}
 _SELO_PERFIL = {"COLABORADOR": "neu", "GESTOR": "azul", "RH": "azul", "ADMIN": "azul"}
 BRASILIA = timezone(timedelta(hours=-3))
@@ -216,6 +217,35 @@ def ultimo_acesso(valor, agora: datetime | None = None) -> str:
     return local.strftime("%d/%m/%Y")
 
 
+def _instante(valor) -> datetime | None:
+    """Milissegundos ou texto ISO do backend -> datetime com fuso (UTC); None se vazio ou inválido."""
+    if valor in (None, ""):
+        return None
+    try:
+        if isinstance(valor, (int, float)):
+            return datetime.fromtimestamp(valor / 1000 if valor > 1e11 else valor, tz=timezone.utc)
+        momento = datetime.fromisoformat(str(valor).replace("Z", "+00:00"))
+        return momento if momento.tzinfo else momento.replace(tzinfo=timezone.utc)
+    except (ValueError, OSError, OverflowError):
+        return None
+
+
+def bloqueado_ate(usuario: dict, agora: datetime | None = None) -> datetime | None:
+    """Fim do bloqueio por tentativas de senha, se ainda vale (`usuarios` GET, campo `senha_bloqueada_ate`; tarefa 76)."""
+    fim = _instante(usuario.get("senha_bloqueada_ate"))
+    agora = agora or datetime.now(timezone.utc)
+    return fim if fim and fim > agora else None
+
+
+def validar_motivo(motivo: str) -> str | None:
+    texto = (motivo or "").strip()
+    if len(texto) < 5:
+        return "Escreva o motivo (mínimo de 5 caracteres). Ele fica na auditoria."
+    if len(texto) > 500:
+        return "O motivo tem no máximo 500 caracteres."
+    return None
+
+
 def resumo_usuarios(usuarios_lista: list[dict], colabs: list[dict]) -> dict:
     com_ficha = {c.get("user_id") for c in colabs if c.get("user_id")}
     return {
@@ -229,8 +259,9 @@ def resumo_usuarios(usuarios_lista: list[dict], colabs: list[dict]) -> dict:
 def linhas_usuarios(usuarios_lista: list[dict], colabs: list[dict], meu_id, meu_perfil: str, busca: str = "", filtro_perfil=None,
                     situacao: str = "todos", agora: datetime | None = None) -> list[dict]:
     """{'id', 'nome', 'email', 'perfil', 'perfil_rotulo', 'selo_perfil', 'ultimo_acesso', 'situacao', 'sem_ficha',
-    'acoes'}. `acoes` entre "editar", "perfil", "desativar", "ativar" e "vincular", só o que o backend aceitaria (editar nome e
-    e-mail de contas ativas: o Admin, qualquer outra conta; o RH, só contas de colaborador)."""
+    'acoes'}. `acoes` entre "editar", "perfil", "desativar", "ativar", "vincular", "desbloquear" e "reenviar", só o que o backend
+    aceitaria (editar nome e e-mail de contas ativas: o Admin, qualquer outra conta; o RH, só contas de colaborador; desbloquear
+    e reenviar o acesso: só o Admin, nunca na própria conta)."""
     com_ficha = {c.get("user_id") for c in colabs if c.get("user_id")}
     termo = _norm(busca).strip()
     admin = perfil(meu_perfil) == "ADMIN"
@@ -242,15 +273,18 @@ def linhas_usuarios(usuarios_lista: list[dict], colabs: list[dict], meu_id, meu_
         if termo and termo not in _norm(u.get("nome")) and termo not in _norm(u.get("email")):
             continue
         sem_ficha = u.get("id") not in com_ficha
+        bloqueio = bloqueado_ate(u, agora)
         if not u.get("ativo"):
             sit = ("Inativo", "neu")
+        elif bloqueio:
+            sit = ("Bloqueado (senha)", "err")
         elif u.get("senha_primeiro_acesso"):
             sit = ("Senha temporária", "amb")
         elif sem_ficha:
             sit = ("Sem ficha", "amb")
         else:
             sit = ("Ativo", "ok")
-        chave_sit = {"Inativo": "inativo", "Senha temporária": "senha", "Sem ficha": "sem_ficha"}.get(sit[0], "ativo")
+        chave_sit = {"Inativo": "inativo", "Senha temporária": "senha", "Sem ficha": "sem_ficha", "Bloqueado (senha)": "bloqueado"}.get(sit[0], "ativo")
         if situacao != "todos" and not (chave_sit == situacao or (situacao == "sem_ficha" and sem_ficha and u.get("ativo"))):
             continue
         proprio = u.get("id") == meu_id
@@ -264,11 +298,16 @@ def linhas_usuarios(usuarios_lista: list[dict], colabs: list[dict], meu_id, meu_
             acoes.append("desativar" if u.get("ativo") else "ativar")
         if pode_mexer and u.get("ativo"):
             acoes.append("editar")
+        if admin and not proprio and u.get("ativo") and bloqueio:
+            acoes.append("desbloquear")
+        if admin and not proprio and u.get("ativo") and u.get("senha_primeiro_acesso"):
+            acoes.append("reenviar")
         linhas.append({
             "id": u.get("id"), "nome": u.get("nome") or "—", "email": u.get("email") or "—",
             "perfil": p, "perfil_rotulo": PERFIS.get(p, p.capitalize() or "—"), "selo_perfil": _SELO_PERFIL.get(p, "neu"),
             "ultimo_acesso": ultimo_acesso(u.get("ultimo_acesso"), agora),
             "situacao": sit, "sem_ficha": sem_ficha, "proprio": proprio, "acoes": acoes,
+            "bloqueado_ate": f"{bloqueio.astimezone(BRASILIA):%d/%m/%Y às %H:%M}" if bloqueio else None,
         })
     # Quem precisa de ação primeiro (sem ficha, senha temporária), depois por nome.
     linhas.sort(key=lambda l: (l["situacao"][0] not in ("Sem ficha", "Senha temporária"), _norm(l["nome"])))

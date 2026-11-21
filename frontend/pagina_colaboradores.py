@@ -46,6 +46,7 @@ from cadastro_modelo import (
     senha_temporaria,
     validar_admissao,
     validar_novo_usuario,
+    validar_motivo,
     validar_pedido_acesso,
 )
 from cargos_modelo import cargos_do_departamento, rotulo_cargo
@@ -246,7 +247,7 @@ def modal_criar_acesso(colabs: list[dict], deps: dict, colaborador_id=None) -> N
             novo_usuario = (resposta.get("usuario") or {}).get("id")
             if escolhido != "COLABORADOR" and admin:
                 try:
-                    trocar_perfil(st.session_state.token, novo_usuario, escolhido)
+                    trocar_perfil(st.session_state.token, novo_usuario, escolhido, "Perfil escolhido na criação do acesso.")
                     aviso += f" Perfil: {PERFIS[escolhido]}."
                 except ApiError as erro:
                     aviso += f" O perfil continuou Colaborador: {erro.message}"
@@ -279,8 +280,9 @@ def _modal_acesso(colab: dict, conta: dict, pendente: dict | None) -> None:
                 + (" Ele continua pendente: decida em Usuários e perfis." if admin else "") + "</p>")
     opcoes = [p for p in PERFIS if p != atual]
     novo = st.radio("Novo tipo de acesso", opcoes, format_func=PERFIS.get, key="ac_novo")
-    justificativa = ""
-    if not admin:
+    if admin:
+        justificativa = st.text_area("Motivo (fica na auditoria)", max_chars=500, height=80, key="ac_justificativa")
+    else:
         justificativa = st.text_area("Justificativa para o Admin", max_chars=1000, height=90, key="ac_justificativa", help=_AJUDA_PEDIDO)
     st.html('<div class="crh-incluso"><p class="n" style="margin:0">'
             + ("A troca vale no próximo login da pessoa e fica na auditoria." if admin else "O Admin recebe o pedido, aprova ou recusa; você é avisado no sino.")
@@ -291,13 +293,13 @@ def _modal_acesso(colab: dict, conta: dict, pendente: dict | None) -> None:
             fechar()
             st.rerun()
         if st.button("Alterar acesso" if admin else "Enviar pedido ao Admin", type="primary", key="ac_ok"):
-            erro_campo = None if admin else validar_pedido_acesso(atual, novo, justificativa)
+            erro_campo = validar_motivo(justificativa) if admin else validar_pedido_acesso(atual, novo, justificativa)
             if erro_campo:
                 alerta(slot, "erro", erro_campo)
                 return
             try:
                 if admin:
-                    trocar_perfil(st.session_state.token, conta.get("id"), novo)
+                    trocar_perfil(st.session_state.token, conta.get("id"), novo, justificativa.strip())
                 else:
                     pedir_acesso(st.session_state.token, conta.get("id"), novo, justificativa.strip())
             except ApiError as erro:

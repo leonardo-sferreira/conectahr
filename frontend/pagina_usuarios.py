@@ -14,9 +14,10 @@ import html
 
 import streamlit as st
 
-from api_client import ApiError, alterar_status_usuario, aprovar_pedido_acesso, editar_usuario, recusar_pedido_acesso, trocar_perfil, vincular_colaborador
+from api_client import (ApiError, alterar_status_usuario, aprovar_pedido_acesso, desbloquear_usuario, editar_usuario, recusar_pedido_acesso, reenviar_acesso,
+                        trocar_perfil, vincular_colaborador)
 from cadastro_modelo import (PERFIS, SITUACOES_USUARIO, fichas_sem_conta, linhas_pedidos_acesso, linhas_usuarios, perfil, resumo_usuarios,
-                             validar_edicao_usuario, validar_recusa_acesso)
+                             senha_temporaria, validar_edicao_usuario, validar_motivo, validar_recusa_acesso)
 from comissao_etica_ui import cartao_comissao_etica
 from pagina_colaboradores import carregar, concluir, fechar, modal_criar_acesso, pedidos_acesso
 from theme import alerta, render_hero, render_indicadores, render_topbar
@@ -62,16 +63,58 @@ def _modal_perfil(linha: dict) -> None:
     _campos([("Usuário", linha["nome"]), ("Perfil atual", linha["perfil_rotulo"])])
     opcoes = [p for p in PERFIS if p != linha["perfil"]]
     novo = st.radio("Novo perfil", opcoes, format_func=PERFIS.get, key="usr_perfil_novo")
-    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A troca fica registrada na auditoria, com quem fez. Ninguém troca o próprio perfil.</p></div>')
+    motivo = st.text_area("Motivo", max_chars=500, height=80, key="usr_perfil_motivo", placeholder="Ex.: assumiu a coordenação da equipe")
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A troca fica registrada na auditoria, com quem fez e o motivo. Ninguém troca o próprio perfil.</p></div>')
     slot = st.empty()
     if _botoes("Trocar perfil", "usr_perfil_ok"):
+        if erro_campo := validar_motivo(motivo):
+            alerta(slot, "erro", erro_campo)
+            return
         try:
-            trocar_perfil(st.session_state.token, linha["id"], novo)
+            trocar_perfil(st.session_state.token, linha["id"], novo, motivo.strip())
         except ApiError as erro:
             alerta(slot, "erro", erro.message)
             return
         st.session_state.pop("usr_perfil_novo", None)
+        st.session_state.pop("usr_perfil_motivo", None)
         concluir(f"Perfil de {linha['nome']} agora é {PERFIS[novo]}.")
+
+
+@st.dialog("Desbloquear conta", width="small", on_dismiss=fechar)
+def _modal_desbloquear(linha: dict) -> None:
+    _campos([("Usuário", linha["nome"]), ("Bloqueada até", linha["bloqueado_ate"] or "—")])
+    motivo = st.text_area("Motivo", max_chars=500, height=80, key="usr_desb_motivo", placeholder="Ex.: a pessoa confirmou a identidade por telefone")
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A conta foi bloqueada por tentativas de senha erradas. Desbloquear libera o login '
+            "na hora, sem trocar a senha. A ação fica na auditoria com o motivo.</p></div>")
+    slot = st.empty()
+    if _botoes("Desbloquear", "usr_desb_ok"):
+        if erro_campo := validar_motivo(motivo):
+            alerta(slot, "erro", erro_campo)
+            return
+        try:
+            desbloquear_usuario(st.session_state.token, linha["id"], motivo.strip())
+        except ApiError as erro:
+            alerta(slot, "erro", erro.message)
+            return
+        st.session_state.pop("usr_desb_motivo", None)
+        concluir(f"Conta de {linha['nome']} desbloqueada.")
+
+
+@st.dialog("Reenviar acesso", width="small", on_dismiss=fechar)
+def _modal_reenviar(linha: dict) -> None:
+    _campos([("Usuário", linha["nome"]), ("E-mail de acesso", linha["email"])])
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">A pessoa ainda não trocou a senha temporária. Uma senha temporária nova vai para '
+            "o e-mail de acesso, e a anterior deixa de valer. A senha não aparece aqui nem na auditoria.</p></div>")
+    slot = st.empty()
+    if _botoes("Reenviar acesso", "usr_reenv_ok"):
+        try:
+            resposta = reenviar_acesso(st.session_state.token, linha["id"], senha_temporaria())
+        except ApiError as erro:
+            alerta(slot, "erro", erro.message)
+            return
+        if resposta.get("email_enviado") is False:
+            concluir(f"Senha nova gravada, mas o e-mail para {linha['nome']} não saiu. Peça para usar \"Esqueci minha senha\".")
+        concluir(f"Nova senha temporária enviada para {linha['email']}.")
 
 
 @st.dialog("Vincular ficha", width="small", on_dismiss=fechar)
@@ -199,6 +242,12 @@ def _tabela(linhas: list[dict], token: str) -> None:
                     if l["proprio"] and l["sem_ficha"]:
                         st.html('<p class="crh-meta">Sua conta: outro Admin vincula a ficha</p>')
                     with st.container(horizontal=True, gap="small"):
+                        if "desbloquear" in l["acoes"] and st.button("Desbloquear", type="tertiary", key=f"usr_desbloquear_{l['id']}"):
+                            st.session_state.modal_cadastro = ("desbloquear", l["id"])
+                            st.rerun()
+                        if "reenviar" in l["acoes"] and st.button("Reenviar acesso", type="tertiary", key=f"usr_reenviar_{l['id']}"):
+                            st.session_state.modal_cadastro = ("reenviar", l["id"])
+                            st.rerun()
                         if "editar" in l["acoes"] and st.button("Editar", type="tertiary", key=f"usr_editar_{l['id']}"):
                             st.session_state.modal_cadastro = ("editar", l["id"])
                             st.rerun()
@@ -293,7 +342,11 @@ def pagina_usuarios() -> None:
     if linha is None:
         fechar()
         return
-    if acao == "editar" and "editar" in linha["acoes"]:
+    if acao == "desbloquear" and "desbloquear" in linha["acoes"]:
+        _modal_desbloquear(linha)
+    elif acao == "reenviar" and "reenviar" in linha["acoes"]:
+        _modal_reenviar(linha)
+    elif acao == "editar" and "editar" in linha["acoes"]:
         _modal_editar(linha)
     elif acao == "vincular" and "vincular" in linha["acoes"]:
         _modal_vincular(linha, colabs, deps)

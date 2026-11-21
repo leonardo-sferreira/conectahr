@@ -251,6 +251,13 @@ _BASE_CSS = f"""
     outline: 2px solid var(--crh-foco) !important;
     outline-offset: 2px;
   }}
+  /* Área de texto e número têm a caixa marcada com data-testid; e a área principal da página, que é rolável, também
+     recebe o Tab: o contorno fica por dentro (tarefa 39, navegação só por teclado). */
+  :is([data-testid="stTextAreaRootElement"], [data-testid="stNumberInputContainer"], [data-testid="stDateInputField"]):focus-within {{
+    outline: 2px solid var(--crh-foco) !important;
+    outline-offset: 2px;
+  }}
+  [data-testid="stMain"]:focus-visible {{ outline: 2px solid var(--crh-foco); outline-offset: -4px; }}
 
   /* Links secundarios no estilo "Esqueci minha senha" / "Reenviar codigo":
      usa o botao nativo type="tertiary" do Streamlit (kind="tertiary" no DOM)

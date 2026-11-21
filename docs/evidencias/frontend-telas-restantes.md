@@ -140,3 +140,61 @@ departamento e à própria pessoa, e as férias com as observações.
 - Por HTTP com a conta RH, a resposta foi 200.
 - Como ninguém tem histórico no banco hoje (o vazamento não expôs dados reais), conferi os dois recortes no Xano com uma
   função temporária e dados fictícios. Apaguei a função depois.
+
+## Navegação só pelo teclado (tarefa 39, 21/11/2026)
+
+Percorri as 53 rotas da área logada (prévia sem rede, perfil Admin) e as 3 públicas (Entrar, Aviso de privacidade e Canal
+de denúncias) só com Tab, no Chrome. Em cada parada, conferi se o elemento focado, ou um dos quatro elementos acima dele,
+mostra contorno ou sombra.
+
+**Primeira rodada:**
+- a área principal da página recebe o Tab, porque é rolável, e não tinha contorno: 49 páginas;
+- a caixa de texto e a de número não tinham contorno;
+- os campos de data com dia, mês e ano separados (REP-P) não tinham contorno.
+
+Os três ganharam o contorno de `--crh-foco`. Na área principal, ele fica por dentro.
+
+**Rodada final:**
+- área logada: 2.112 paradas de Tab, nenhuma sem foco visível;
+- páginas públicas: todas com foco visível, e o Tab dá a volta na página sem ficar preso.
+
+**Avisos que não eram defeito:**
+- **Entrar, Onboarding e Início:** apareceram com uma só parada porque o roteiro usou endereços que não existem na área
+  logada. Entrar e Onboarding são telas de fora do login, e o Início fica na raiz. Pela raiz, o Início percorre o menu e a
+  página normalmente.
+- **Ponto e Benefícios:** demoraram a abrir na rodada longa. Repetidas sozinhas, deram 48 paradas sem problema.
+
+**Ainda não conferido na tarefa 3:** responsividade em tela estreita e textos alternativos.
+
+## Usuários e perfis: bloqueio, desbloquear, reenviar e motivo (tarefa 76, 21/11/2026)
+
+**Backend publicado, depois de conferir a paridade dos dois endpoints que já existiam:**
+- `usuarios` GET passou a trazer `senha_bloqueada_ate`;
+- `usuarios/{id}/perfil` PATCH aceita `motivo`, que vai para a auditoria;
+- dois endpoints novos, só do Admin e nunca na própria conta:
+  - **`usuarios/{id}/desbloquear`:** pede motivo de 5 a 500 caracteres e recusa conta que não está bloqueada.
+  - **`usuarios/{id}/reenviar_acesso`:** só para conta ativa que ainda usa a senha temporária. Grava a senha nova, tira o
+    bloqueio e manda o e-mail; a senha não vai para a auditoria.
+
+**Tela:**
+- a situação "Bloqueado (senha)", com a data e a hora do fim do bloqueio em Brasília;
+- o filtro "Bloqueados (senha)";
+- "Desbloquear" (com motivo) e "Reenviar acesso" (com confirmação);
+- o motivo obrigatório em "Trocar perfil" e no "Alterar acesso" da ficha.
+
+`testar_cadastro.py` passou com 142/142.
+
+**HTTP com a conta Admin (16/16):**
+- a lista traz o fim do bloqueio e não traz a senha;
+- **recusas:** desbloquear conta sem bloqueio (400), reenviar para quem já trocou a senha (400, sem gravar e sem e-mail),
+  desbloquear a própria conta (403) e motivo curto (400);
+- **bloqueio:** 5 senhas erradas bloquearam a conta Colaborador de teste e a lista mostrou o bloqueio. O Admin
+  desbloqueou, o bloqueio sumiu e o login voltou a responder normalmente;
+- **perfil:** troquei para Gestor e de volta para Colaborador, as duas vezes com motivo;
+- **auditoria:** guarda os dois motivos da troca e o do desbloqueio.
+
+**O que ficou na conta de teste:** a última tentativa errada deixou o contador de tentativas em 1 (de 5). Ele zera no
+próximo login certo.
+
+**Não testado por HTTP:** o envio de fato do "Reenviar acesso". Nenhuma conta de teste usa a senha temporária, e a ação
+manda e-mail.
