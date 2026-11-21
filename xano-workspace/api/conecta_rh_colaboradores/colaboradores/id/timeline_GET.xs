@@ -6,6 +6,10 @@
 // consulta a propria timeline; o Gestor consulta colaboradores do
 // departamento que ele gerencia (cada gestor gerencia um unico
 // departamento).
+// Campos por perfil (LGPD, minimizacao; 21/11/2026): RH e Admin recebem o
+// historico com salario, motivo e as situacoes de eSocial e CTPS; o Gestor e a
+// propria pessoa recebem so tipo, datas, cargo, departamento, nivel, contrato e
+// jornada. Ferias saem so com periodo e dias, sem as observacoes.
 query "colaboradores/{id}/timeline" verb=GET {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -127,13 +131,53 @@ query "colaboradores/{id}/timeline" verb=GET {
       sort = {ferias.data_inicio: "asc"}
       return = {type: "list"}
     } as $eventos_ferias
+
+    var $ve_tudo {
+      value = ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN")
+    }
+
+    var $historico_resposta {
+      value = []
+    }
+
+    foreach ($eventos_historico) {
+      each as $h {
+        var $linha_historico {
+          value = {id: $h.id, tipo_alteracao: $h.tipo_alteracao, data_inicio: $h.data_inicio, data_fim: $h.data_fim, cargo_id: $h.cargo_id, departamento_id: $h.departamento_id, nivel: $h.nivel, tipo_contrato: $h.tipo_contrato, carga_horaria_semanal: $h.carga_horaria_semanal}
+        }
+
+        conditional {
+          if ($ve_tudo) {
+            var.update $linha_historico {
+              value = $linha_historico|set:"salario":$h.salario|set:"motivo_alteracao":$h.motivo_alteracao|set:"esocial_status":$h.esocial_status|set:"ctps_status":$h.ctps_status
+            }
+          }
+        }
+
+        var.update $historico_resposta {
+          value = $historico_resposta|push:$linha_historico
+        }
+      }
+    }
+
+    var $ferias_resposta {
+      value = []
+    }
+
+    foreach ($eventos_ferias) {
+      each as $f {
+        var.update $ferias_resposta {
+          value = $ferias_resposta|push:{id: $f.id, data_inicio: $f.data_inicio, data_fim: $f.data_fim, quantidade_dias: $f.quantidade_dias}
+        }
+      }
+    }
   }
 
   response = {
     sucesso         : true
     colaborador_id  : $colaborador_alvo.id
-    historico       : $eventos_historico
-    ferias_concluidas: $eventos_ferias
+    historico       : $historico_resposta
+    ferias_concluidas: $ferias_resposta
   }
 
   guid = "conectahr-colaboradores-timeline-get-0001"

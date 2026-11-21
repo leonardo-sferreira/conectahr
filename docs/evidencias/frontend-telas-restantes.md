@@ -125,8 +125,18 @@ agora inclui as ausências, as avaliações da equipe e os pedidos LGPD perto do
 **Comunicados:** não mostram o autor nem têm "Editar", porque o backend não tem a edição e o GET só traz o id de quem
 publicou.
 
-## Achado que ficou de fora
+## Achado corrigido (tarefa 86)
 
-`colaboradores/{id}/timeline` GET devolve as linhas inteiras do histórico profissional, com o salário, também para o
-Gestor do departamento e para a própria pessoa. A ficha do RH não mostra o salário, mas o endpoint entrega. Vale uma
-tarefa própria para restringir os campos por perfil.
+`colaboradores/{id}/timeline` GET devolvia as linhas inteiras do histórico profissional, com salário, também ao Gestor do
+departamento e à própria pessoa, e as férias com as observações.
+
+**O que mudou:** a resposta agora é montada campo a campo.
+- **RH e Admin:** o histórico completo, com salário, motivo e as situações de eSocial e CTPS.
+- **Gestor e a própria pessoa:** só tipo, datas, cargo, departamento, nível, contrato e jornada.
+- **Férias, para todos:** só período e dias.
+
+**Como foi verificado:**
+- Conferi a paridade com a versão no ar antes de publicar.
+- Por HTTP com a conta RH, a resposta foi 200.
+- Como ninguém tem histórico no banco hoje (o vazamento não expôs dados reais), conferi os dois recortes no Xano com uma
+  função temporária e dados fictícios. Apaguei a função depois.
