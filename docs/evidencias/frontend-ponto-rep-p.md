@@ -141,3 +141,28 @@ Os arquivos reais ficaram só na pasta temporária, porque têm CPF.
 
 **Limite:** a ARP no ar não tem marcações (tipo 7). A cadeia de hashes com dados reais será conferida depois da
 tarefa 3.1. Os testes sem rede conferem a cadeia, o CRC e o trailer com marcações fictícias.
+
+## Conferência de ponta a ponta com login (tarefas 3.1, 9.2 e 8.2, 21/11/2026)
+
+**Ambiente:** Xano da equipe (workspace 147338). As contas foram usadas pelo papel: Admin e uma conta de teste de Colaborador (CLT,
+admissão em 01/01/2026). Resultado: 28/28.
+
+| Tarefa | Cenário | Esperado | Obtido |
+|---|---|---|---|
+| 3.1 | Admissão da ficha de teste em 22/11, com marcação no dia 21 | Recusa com a data da admissão | 403, "Sua admissão é em 22/11/2026..." |
+| 3.1 | Cinco marcações no mesmo dia | NSR crescente; três pares, o último aberto | Igual (status "Aberto") |
+| 9.2 | Inclusão de ontem às 05:00 de hoje, pelo Admin, e a primeira marcação de hoje | Descanso abaixo de 11h, aviso criado | 354 min de 660; notificação `descanso_interjornada` criada |
+| 9.2 | Segunda a quinta marcação do dia | Não medem o descanso de novo | Igual |
+| 8.2 | Pedido de inclusão de ontem às 09:00, aprovado pelo Admin | Vira tratamento; o espelho mostra "(I)" | "09:00 (I)" e "05:00 (I)" |
+| 8.2 | Folha do RH do mês | As marcações sem CPF nem hash | Igual |
+| 8.2 | AFD de ontem e hoje | 5 registros tipo 7; passa na conferência | Igual; a cadeia de hashes da ARP inteira confere |
+| 8.2 | AEJ de ontem e hoje | Registros 05 com a inclusão (fonte I e motivo) | 7 registros 05 |
+| 8.2 | Férias de 20 dias com venda de 10 (início em 06/01/2027) | Aceito, com saldo restante 0 | Igual; o pedido foi cancelado em seguida |
+
+O que o teste deixou e o que foi desfeito:
+- **Desfeito:** a admissão da ficha de teste voltou para 01/01/2026, depois da mudança por uma função temporária, que
+  já foi apagada. O pedido de férias foi cancelado.
+- **Ficou, porque o REP-P não apaga:** as 5 marcações e os 2 tratamentos ficam na ARP.
+
+**Observação:** a ARP do ar começa no id 18, com NSR 1. As marcações do teste de 12/10/2026 não estão nela, então a
+tabela foi esvaziada antes de 13/10. Desde então, nada foi apagado: os NSR são contínuos e a cadeia confere.

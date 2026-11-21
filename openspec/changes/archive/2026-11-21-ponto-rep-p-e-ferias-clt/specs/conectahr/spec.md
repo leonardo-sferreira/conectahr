@@ -51,6 +51,14 @@ O sistema SHALL permitir que o colaborador marque o ponto quantas vezes precisar
 - **WHEN** alguém tenta ajustar diretamente o próprio ponto
 - **THEN** o sistema nega o ajuste; o pedido segue para quem decide pela hierarquia
 
+## REMOVED Requirements
+
+### Requirement: Ponto experimental e conformidade futura
+**Reason**: O ponto passa a seguir o REP-P da Portaria nº 671/2021, descrito em "Marcação de ponto no REP-P" e nos requisitos seguintes. O que este requisito garantia (marcação original imutável, ajuste separado, espelho para o trabalhador e registro de quem pediu e decidiu) continua valendo dentro deles.
+**Migration**: As marcações de `registro_ponto` são copiadas para o armazenamento de marcações (ARP) com NSR na ordem em que foram feitas; as correções já aprovadas viram tratamentos.
+
+## ADDED Requirements
+
 ### Requirement: Espelho de ponto mensal
 O sistema SHALL oferecer ao colaborador duas visões do próprio ponto: "Hoje", com as marcações do dia em ordem e o comprovante de cada uma, e "Mês", com todos os dias do mês numa planilha, uma linha por dia. Não SHALL haver visão semanal. O mês SHALL poder ser escolhido entre o mês da admissão e o mês atual. A planilha SHALL mostrar, por dia, a data completa (dd/mm/aaaa) e o dia da semana, todas as marcações em ordem (as incluídas por tratamento identificadas como incluídas e as desconsideradas identificadas como desconsideradas), as horas trabalhadas, o saldo do dia, o descanso entre jornadas quando for menor que o mínimo e uma situação, nesta ordem de precedência: dia anterior à admissão, em branco e sem nenhuma informação; dia com marcação ou tratamento; hoje sem marcação; férias aprovadas; ausência aprovada (pelo tipo: Atestado, Falta justificada, Licença ou Afastamento) ou em análise; ausência recusada, como Falta injustificada; feriado ou ponto facultativo; folga no fim de semana; dia útil sem nada, como "Sem registro" no mês corrente e "Falta injustificada" em mês encerrado. Dias futuros SHALL aparecer em branco. O espelho SHALL trazer o cabeçalho do art. 84 da Portaria nº 671/2021 (empregador, trabalhador com admissão e cargo, data de emissão, período e horário contratual), o resumo do mês (horas, horas positivas e horas negativas, dias com marcação, sem registro e faltas injustificadas), os pedidos de correção em análise e o motivo de uma correção recusada, e SHALL permitir baixar o mês em CSV.
 
@@ -81,14 +89,6 @@ O sistema SHALL oferecer ao colaborador duas visões do próprio ponto: "Hoje", 
 #### Scenario: Pedido de correcao a partir do espelho
 - **WHEN** o colaborador escolhe corrigir um dia passado, com ou sem registro, dentro do prazo
 - **THEN** o sistema abre o pedido só com as marcações que ainda não estão em análise
-
-## REMOVED Requirements
-
-### Requirement: Ponto experimental e conformidade futura
-**Reason**: O ponto passa a seguir o REP-P da Portaria nº 671/2021, descrito em "Marcação de ponto no REP-P" e nos requisitos seguintes. O que este requisito garantia (marcação original imutável, ajuste separado, espelho para o trabalhador e registro de quem pediu e decidiu) continua valendo dentro deles.
-**Migration**: As marcações de `registro_ponto` são copiadas para o armazenamento de marcações (ARP) com NSR na ordem em que foram feitas; as correções já aprovadas viram tratamentos.
-
-## ADDED Requirements
 
 ### Requirement: Marcação de ponto no REP-P
 O sistema SHALL funcionar como registrador eletrônico de ponto via programa (REP-P), conforme a Portaria MTP nº 671/2021 e o seu Anexo IX. Cada marcação SHALL ser gravada num armazenamento de registro de ponto (ARP) com: NSR (número sequencial de registro da empresa, começando em 1 e crescendo de um em um, sem repetir nem pular, compartilhado com os demais registros do AFD), CPF do trabalhador, data e hora da marcação com fuso horário, data e hora da gravação com fuso horário, identificador do coletor ("02", navegador), indicação de marcação on-line e código hash SHA-256 calculado sobre esses campos e o hash da marcação anterior. Os registros da ARP não SHALL ser alterados nem apagados por nenhum endpoint, perfil ou rotina, inclusive as de retenção e anonimização. O sistema não SHALL marcar ponto automaticamente nem com horário predefinido, não SHALL exigir autorização prévia para hora extra e não SHALL oferecer ao trabalhador nenhuma forma de alterar o que foi registrado (art. 74). A tela de marcação SHALL mostrar um relógio digital com horas, minutos e segundos.
