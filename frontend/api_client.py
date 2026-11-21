@@ -290,6 +290,33 @@ def listar_cargos(token: str) -> dict:
     return _get("listar_cargos", token, GRUPO_CARGOS)
 
 
+def listar_departamentos(token: str) -> dict:
+    """GET listar_departamentos -> {departamentos: [{id, nome, descricao, ativo, gestor_colaborador_id}]} (RH e Admin, com os inativos)."""
+    return _get("listar_departamentos", token, GRUPO_DEPARTAMENTOS)
+
+
+def criar_departamento(token: str, nome: str, descricao: str) -> dict:
+    """POST departamentos (RH e Admin): nome único; nasce ativo."""
+    return _post("departamentos", {"nome": nome, "descricao": descricao, "ativo": True}, token, GRUPO_DEPARTAMENTOS)
+
+
+def editar_departamento(token: str, departamento_id: int, nome: str, descricao: str) -> dict:
+    """PATCH departamentos/{id} (RH e Admin): nome e descrição; a situação é em departamentos/{id}/status."""
+    return _request("PATCH", f"departamentos/{int(departamento_id)}", token, GRUPO_DEPARTAMENTOS, {"nome": nome, "descricao": descricao})
+
+
+def situacao_departamento(token: str, departamento_id: int, ativo: bool) -> dict:
+    """PATCH departamentos/{id}/status (RH e Admin): ativa ou inativa sem mexer nos vínculos."""
+    return _request("PATCH", f"departamentos/{int(departamento_id)}/status", token, GRUPO_DEPARTAMENTOS, {"ativo": bool(ativo)})
+
+
+def definir_gestor_departamento(token: str, departamento_id: int, colaborador_id: int) -> dict:
+    """PATCH departamentos/{id}/gestor (RH e Admin): a pessoa precisa ser ativa, do departamento e ter conta com perfil Gestor.
+    O backend guarda o histórico de gestores."""
+    return _request("PATCH", f"departamentos/{int(departamento_id)}/gestor", token, GRUPO_DEPARTAMENTOS,
+                    {"gestor_colaborador_id": int(colaborador_id)})
+
+
 def criar_cargo(token: str, nome: str, descricao: str, salario_base: float, senioridade: str | None, departamento_id: int | None,
                 nivel_id: int | None) -> dict:
     """POST cargos (RH e Admin): o nome é o título completo, com a senioridade, como vai para a carteira."""
@@ -1031,6 +1058,17 @@ def encerrar_sessao(token: str, sessao_id: int) -> dict:
 def encerrar_outras_sessoes(token: str) -> dict:
     """POST auth/sessoes/encerrar_outras -> {total_encerradas}; a sessão deste token continua."""
     return _post("auth/sessoes/encerrar_outras", {}, token, GRUPO_AUTENTICACAO)
+
+
+def sessoes_ativas(token: str) -> dict:
+    """GET admin/sessoes_ativas -> {sessoes: [{id, user_id, nome, perfil, dispositivo, created_at, expira_em, atual}], sessao_atual_id}.
+    Só o Admin; sem IP."""
+    return _get("admin/sessoes_ativas", token, GRUPO_AUTENTICACAO)
+
+
+def encerrar_sessao_admin(token: str, sessao_id: int) -> dict:
+    """POST admin/sessoes/{id}/encerrar: o Admin encerra a sessão de qualquer conta, menos a própria (auditado)."""
+    return _post(f"admin/sessoes/{int(sessao_id)}/encerrar", {}, token, GRUPO_AUTENTICACAO)
 
 
 def minhas_preferencias_aviso(token: str) -> dict:

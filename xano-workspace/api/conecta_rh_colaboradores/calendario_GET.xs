@@ -1,6 +1,7 @@
 // Calendario organizacional: feriados (sempre visiveis a todos),
 // ferias aprovadas e ausencias aprovadas do departamento do usuario
-// (RH/ADMIN veem de todos os departamentos).
+// (RH/ADMIN veem de todos os departamentos). Ferias e ausencias saem
+// so com quem, periodo e status.
 query calendario verb=GET {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -163,12 +164,31 @@ query calendario verb=GET {
         }
       }
     }
+
+    // Ferias na resposta: so quem, periodo e status (tarefa 56 da change concluir-frontend-streamlit). As
+    // observacoes do colaborador e do RH nao saem para os colegas do departamento.
+    var $ferias_resposta {
+      value = []
+    }
+
+    foreach ($ferias_no_escopo) {
+      each as $ferias_visivel {
+        db.get colaborador {
+          field_name = "id"
+          field_value = $ferias_visivel.colaborador_id
+        } as $dono_ferias
+
+        var.update $ferias_resposta {
+          value = $ferias_resposta|push:{id: $ferias_visivel.id, colaborador_id: $ferias_visivel.colaborador_id, nome: ($dono_ferias != null ? $dono_ferias.nome : null), data_inicio: $ferias_visivel.data_inicio, data_fim: $ferias_visivel.data_fim, status: $ferias_visivel.status}
+        }
+      }
+    }
   }
 
   response = {
     sucesso   : true
     feriados  : $feriados
-    ferias    : $ferias_no_escopo
+    ferias    : $ferias_resposta
     ausencias : $ausencias_resposta
   }
 

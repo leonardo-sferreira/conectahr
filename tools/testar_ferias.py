@@ -335,6 +335,7 @@ conferir(fdm.mensagem_importacao({"ano": 2026, "importados": 14, "ja_existiam": 
 def estrutura(perfil: str, **extra) -> AppTest:
     at = app(**extra)
     at.session_state["usuario"] = dict(at.session_state["usuario"], perfil=perfil)
+    at.session_state["estr_aba"] = "Feriados"  # a aba inicial agora é "Departamentos" (tarefa 52)
     return abrir(at, "estrutura-da-empresa")
 
 

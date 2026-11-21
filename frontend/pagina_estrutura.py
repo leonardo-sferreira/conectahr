@@ -1,6 +1,10 @@
 """
 Página "Estrutura da empresa" do RH e do Admin. Abas:
 
+- "Departamentos" (Figma 249:6993; tarefa 52 da change concluir-frontend-streamlit): todos os departamentos, com o
+  gestor, quantas pessoas e a situação; "Novo departamento", "Editar" (nome, descrição e situação), "Trocar gestor" e
+  "Reativar". Endpoints: `listar_departamentos`, `departamentos` POST, `departamentos/{id}` PATCH,
+  `departamentos/{id}/status` e `departamentos/{id}/gestor`; o gestor e a contagem saem do `organograma`.
 - "Feriados" (Figma 468:838; change ponto-rep-p-e-ferias-clt, tarefas 7.1 e 7.3): a lista do ano (`calendario`) e
   "Importar feriados nacionais" (`feriados/importar`), que traz os nacionais da BrasilAPI.
 - "Níveis" (Figma 500:888; change organograma-hierarquia, D2 e D3): a hierarquia da empresa, com nome e ordem (1 é o
@@ -9,7 +13,8 @@ Página "Estrutura da empresa" do RH e do Admin. Abas:
   departamento; "Novo cargo" e "Editar" (nome, senioridade, departamento, nível, salário base e descrição), com o nome
   que vai para a carteira montado na hora.
 
-Diferenças em relação ao Figma: sem a aba "Departamentos"; nos feriados, sem "Novo feriado", "Editar" e "Desativar"
+Diferenças em relação ao Figma: nos departamentos, a sigla fica na descrição (o cadastro não tem campo próprio) e não há os quadros "Próximos
+feriados" e "Organograma" embaixo da lista (os feriados têm a própria aba); nos feriados, sem "Novo feriado", "Editar" e "Desativar"
 (o backend ainda não tem a edição nem a desativação, e o cadastro não guarda o tipo).
 """
 
@@ -22,22 +27,28 @@ from api_client import (
     ApiError,
     calendario,
     criar_cargo,
+    criar_departamento,
+    definir_gestor_departamento,
+    editar_departamento,
     criar_nivel_hierarquico,
     definir_nivel_cargo,
     editar_cargo,
     editar_nivel_hierarquico,
     importar_feriados,
     listar_cargos,
+    listar_departamentos,
     niveis_hierarquicos,
     organograma,
+    situacao_departamento,
 )
+import departamentos_modelo as dm
 from cargos_modelo import SENIORIDADES, linhas_cargos, nome_base, titulo, validar_cargo
 from feriados_modelo import NOTA, anos_feriados, linhas_feriados, mensagem_importacao
 from organograma_modelo import SEM_NIVEL, linhas_niveis, validar_nivel
 from theme import alerta, render_hero, render_topbar
 
 _PESOS = [0.8, 2.6, 1.3, 1.8]
-_ABAS = ["Feriados", "Níveis", "Cargos"]
+_ABAS = ["Departamentos", "Cargos", "Níveis", "Feriados"]
 
 
 def _fechar() -> None:
@@ -45,7 +56,7 @@ def _fechar() -> None:
 
 
 def _invalidar_hierarquia() -> None:
-    for chave in ("estr_niveis", "estr_org", "estr_cargos", "org_cache"):
+    for chave in ("estr_niveis", "estr_org", "estr_cargos", "estr_deps", "org_cache"):
         st.session_state.pop(chave, None)
 
 
@@ -275,6 +286,138 @@ def _cargos(token: str) -> None:
             'O nível ordena e rotula as pessoas no organograma.</p></div>')
 
 
+def _lista_departamentos(token: str) -> list[dict] | None:
+    if "estr_deps" not in st.session_state:
+        try:
+            st.session_state.estr_deps = listar_departamentos(token).get("departamentos") or []
+        except ApiError as erro:
+            alerta(st.empty(), "erro", erro.message)
+            return None
+    return st.session_state.estr_deps
+
+
+def _salvou(mensagem: str, *chaves: str) -> None:
+    for chave in chaves:
+        st.session_state.pop(chave, None)
+    _invalidar_hierarquia()
+    _fechar()
+    st.session_state.aviso_toast = mensagem
+    st.rerun()
+
+
+@st.dialog("Departamento", width="small", on_dismiss=_fechar)
+def _modal_departamento(dep: dict | None) -> None:
+    atual = dep or {}
+    nome = st.text_input("Nome", value=atual.get("nome", ""), max_chars=80, key="estr_dp_nome", placeholder="Ex.: Tecnologia da Informação")
+    descricao = st.text_area("Descrição ou sigla", value=atual.get("descricao", ""), max_chars=500, height=80, key="estr_dp_desc", placeholder="Ex.: TI")
+    ativo = st.toggle("Ativo", value=bool(atual.get("ativo", True)), key="estr_dp_ativo",
+                      help="Inativar não tira ninguém do departamento: só deixa de aparecer nas escolhas.") if dep else True
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="estr_dp_cancelar"):
+            _fechar()
+            st.rerun()
+        if st.button("Salvar departamento", type="primary", key="estr_dp_salvar"):
+            mudou_texto = dep is None or (nome.strip(), descricao.strip()) != (dep["nome"], dep["descricao"])
+            if mudou_texto and (erro_campo := dm.validar(nome, descricao)):
+                alerta(slot, "erro", erro_campo)
+                return
+            token = st.session_state.token
+            try:
+                if dep:
+                    if mudou_texto:
+                        editar_departamento(token, dep["id"], nome.strip(), descricao.strip())
+                    if ativo != dep["ativo"]:
+                        situacao_departamento(token, dep["id"], ativo)
+                else:
+                    criar_departamento(token, nome.strip(), descricao.strip())
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            _salvou("Departamento salvo.", "estr_dp_nome", "estr_dp_desc", "estr_dp_ativo")
+
+
+@st.dialog("Trocar gestor", width="small", on_dismiss=_fechar)
+def _modal_gestor(dep: dict, pessoas: dict) -> None:
+    st.html(f'<p class="crh-meta">Departamento: <b>{html.escape(dep["nome"])}</b>. Gestor atual: <b>{html.escape(dep["gestor"])}</b>.</p>')
+    opcoes = [i for i in pessoas if i != dep["gestor_id"]]
+    if not opcoes:
+        st.html('<p class="crh-alerta-inline">Não há outra pessoa neste departamento. O gestor precisa ser do departamento.</p>')
+        if st.button("Fechar", key="estr_gs_fechar"):
+            _fechar()
+            st.rerun()
+        return
+    escolhido = st.selectbox("Novo gestor", opcoes, format_func=lambda i: pessoas[i], key="estr_gs_pessoa")
+    st.html('<p class="crh-meta">A pessoa precisa estar ativa e ter conta com o perfil Gestor (em Usuários e perfis). '
+            "O gestor anterior fica no histórico.</p>")
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="estr_gs_cancelar"):
+            _fechar()
+            st.rerun()
+        if st.button("Definir gestor", type="primary", key="estr_gs_salvar"):
+            try:
+                definir_gestor_departamento(st.session_state.token, dep["id"], escolhido)
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            _salvou(f"{pessoas[escolhido]} agora é o gestor de {dep['nome']}.", "estr_gs_pessoa")
+
+
+def _reativar(dep_id: int) -> None:
+    try:
+        situacao_departamento(st.session_state.token, dep_id, True)
+    except ApiError as erro:
+        st.session_state.estr_erro_dep = erro.message
+        return
+    _invalidar_hierarquia()
+    st.session_state.aviso_toast = "Departamento reativado."
+
+
+def _departamentos(token: str) -> None:
+    with st.container(horizontal=True, vertical_alignment="center", key="rh_barra"):
+        st.space("stretch")
+        if st.button("Novo departamento", type="primary", key="estr_novo_dep"):
+            st.session_state.modal_estr = ("departamento", None)
+            st.rerun()
+    if erro_acao := st.session_state.pop("estr_erro_dep", None):
+        alerta(st.empty(), "erro", erro_acao)
+    dados = _hierarquia(token)
+    deps = _lista_departamentos(token)
+    if dados is None or deps is None:
+        return
+    linhas = dm.linhas(deps, dados[1].get("colaboradores") or [])
+    pesos = [2.6, 1.8, 0.9, 1.0, 1.7]
+    with st.container(key="rh_tabela"):
+        with st.container(key="rh_cab"):
+            for coluna, texto in zip(st.columns(pesos, vertical_alignment="center"), ["Departamento", "Gestor", "Pessoas", "Situação", ""]):
+                coluna.html(f'<p class="crh-doc-cab">{texto}</p>')
+        if not linhas:
+            with st.container(key="rh_lin_vazio"):
+                st.html('<p class="crh-meta">Nenhum departamento cadastrado. Use "Novo departamento".</p>')
+        for l in linhas:
+            with st.container(key=f"rh_lin_dp_{l['id']}"):
+                c = st.columns(pesos, vertical_alignment="center")
+                desc = f'<p class="d">{html.escape(l["descricao"])}</p>' if l["descricao"] else ""
+                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["nome"])}</p>{desc}</div>')
+                c[1].html(f'<p class="crh-doc-prazo">{html.escape(l["gestor"])}</p>')
+                c[2].html(f'<p class="crh-doc-prazo">{l["pessoas"]}</p>')
+                c[3].html(f'<span class="crh-selo {"ok" if l["ativo"] else "neu"}">{"Ativo" if l["ativo"] else "Inativo"}</span>')
+                with c[4]:
+                    with st.container(horizontal=True):
+                        if l["ativo"]:
+                            if st.button("Trocar gestor", type="tertiary", key=f"estr_gestor_dp_{l['id']}"):
+                                st.session_state.modal_estr = ("gestor", l["id"])
+                                st.rerun()
+                            if st.button("Editar", type="tertiary", key=f"estr_editar_dp_{l['id']}"):
+                                st.session_state.modal_estr = ("departamento", l["id"])
+                                st.rerun()
+                        else:
+                            st.button("Reativar", type="tertiary", key=f"estr_reativar_dp_{l['id']}", on_click=_reativar, args=(l["id"],))
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O organograma que o colaborador vê no Perfil é montado a partir '
+            "dos departamentos e dos gestores cadastrados aqui.</p></div>")
+
+
 def pagina_estrutura() -> None:
     token = st.session_state.token
     usuario = st.session_state.usuario
@@ -289,7 +432,9 @@ def pagina_estrutura() -> None:
         if st.session_state.get("estr_aba") not in _ABAS:
             st.session_state.estr_aba = _ABAS[0]
         aba = st.segmented_control("Aba", _ABAS, required=True, key="estr_aba", label_visibility="collapsed")
-    if aba == "Níveis":
+    if aba == "Departamentos":
+        _departamentos(token)
+    elif aba == "Níveis":
         _niveis(token)
     elif aba == "Cargos":
         _cargos(token)
@@ -301,7 +446,18 @@ def pagina_estrutura() -> None:
         return
     tipo, alvo = modal
     niveis = st.session_state.get("estr_niveis") or []
-    if tipo == "nivel":
+    if tipo in ("departamento", "gestor"):
+        org = st.session_state.get("estr_org") or {}
+        linhas = dm.linhas(st.session_state.get("estr_deps") or [], org.get("colaboradores") or [])
+        dep = next((l for l in linhas if l["id"] == alvo), None)
+        if alvo is not None and dep is None:
+            _fechar()
+            return
+        if tipo == "gestor":
+            _modal_gestor(dep, dm.pessoas_do_departamento(dep["id"], org.get("colaboradores") or []))
+        else:
+            _modal_departamento(dep)
+    elif tipo == "nivel":
         nivel = next((n for n in niveis if n.get("id") == alvo), None)
         if alvo is not None and nivel is None:
             _fechar()

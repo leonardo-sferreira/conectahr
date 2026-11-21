@@ -852,6 +852,7 @@ _APP_CSS = f"""
                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
   .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO_TEXTO}; }}
   .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
+  .crh-cal .tag.ferias {{ background: #E0EBFF; color: #2663D9; }}
   .crh-cal .tag.pessoa.ok {{ background: #DCFCE7; color: #166534; }}
   .crh-cal .tag.pessoa.amb {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
   .crh-cal .tag.pessoa.mais {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
@@ -997,6 +998,20 @@ _APP_CSS = f"""
   .st-key-cfg_card_pc button[kind^="segmented_control"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button {{ min-width: 44px; height: 41px; border-radius: 8px !important; border: 1px solid {BORDA} !important; background: #FFFFFF; color: {GRAFITE}; }}
   .st-key-cfg_card_pc button[kind="segmented_controlActive"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; color: {GRAFITE} !important; }}
   .crh-pc-item {{ border: 1px solid {BORDA}; border-radius: 10px; padding: 12px 15px; margin-top: 12px; }}
+  /* Rotina diária (Figma 289:900): ponto, título e detalhe, contagem à direita. */
+  .crh-rd-lista {{ border: 1px solid {BORDA}; border-radius: 12px; padding: 4px 14px 14px; background: #FFFFFF; }}
+  .crh-rd-item {{ display: flex; align-items: center; gap: 12px; border: 1px solid {BORDA}; border-radius: 10px; padding: 10px 14px; margin-top: 10px; }}
+  .crh-rd-item .ponto {{ width: 7px; height: 7px; border-radius: 50%; background: {AMBAR}; flex: none; }}
+  .crh-rd-item.ok .ponto {{ background: {SUCESSO}; }}
+  .crh-rd-item.zero .ponto {{ background: {BORDA}; }}
+  .crh-cal-ev {{ border: none; padding: 6px 0; margin: 0; }}
+  .crh-rd-item .ponto.feriado {{ background: {ERRO_TEXTO}; }}
+  .crh-rd-item .ponto.facultativo {{ background: {AMBAR}; }}
+  .crh-rd-item .ponto.ferias {{ background: #2663D9; }}
+  .crh-rd-item .txt {{ flex: 1; min-width: 0; }}
+  .crh-rd-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-rd-item .d {{ margin: 2px 0 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-rd-titulo {{ margin: 18px 0 10px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 700; color: {GRAFITE}; }}
   .crh-pc-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: {GRAFITE}; }}
   .crh-pc-item .d {{ margin: 4px 0 8px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-pcr-lista {{ margin: 0; padding-left: 20px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; }}
@@ -1291,6 +1306,11 @@ _ESCURO_CSS = f"""
   .crh-pc-anonimo {{ background: #14301F !important; color: #86EFAC !important; }}
   .crh-pc-pergunta, .crh-pc-item .t, .crh-pcr-lista, .crh-pcr-res .t, .crh-pcr-res table, .crh-av360-tabela {{ color: {ESC_TEXTO} !important; }}
   .crh-pc-item, .crh-pcr-res td, .crh-av360-tabela td {{ border-color: {ESC_BORDA} !important; }}
+  .crh-rd-lista {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .crh-rd-item {{ border-color: {ESC_BORDA} !important; }}
+  .crh-rd-item .t, .crh-rd-titulo {{ color: {ESC_TEXTO} !important; }}
+  .crh-rd-item .d {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-rd-item.zero .ponto {{ background: {ESC_BORDA} !important; }}
   .crh-pc-progresso .barra {{ background: {ESC_BORDA} !important; }}
   .crh-pcr-barra .barra {{ background: {ESC_BORDA} !important; }}
   .crh-pcr-barra .r, .crh-pcr-kv b {{ color: {ESC_TEXTO} !important; }}
