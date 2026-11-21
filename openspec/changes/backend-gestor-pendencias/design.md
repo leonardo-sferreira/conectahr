@@ -57,6 +57,13 @@ Ver `proposal.md`. Este documento traz as decisões tomadas. As dos itens 3 a 5 
   - em `avaliacao`: `nota_original`.
 - **Auditoria:** `responder_contestacao_gestor`, com a decisão e as notas anterior e nova.
 
+## Ajustes na implementação (20/11/2026)
+
+- **Cálculo dos indicadores:** fica na função `ConectaHR/indicadores_setor`, usada pelas duas rotas. O mínimo de pessoas é parâmetro: as rotas sempre passam 5; a conferência pela CLI usou 1.
+- **Cartão de clima:** vira "Clima (favorável)", com a % de respostas favoráveis, e não o eNPS do rótulo original do Figma.
+- **"Ausências por tipo" do Figma:** vira "Ausências por mês", porque a rota agregada conta por mês.
+- **Tela de contestação do RH:** passa a mostrar a resposta do Gestor. Para isso, `ciclos_avaliacao_rh` devolve `decisao_gestor`, `nota_revisada`, `resposta_gestor` e `nota_original`.
+
 ## Risks / Trade-offs
 
 - [Competências iniciais genéricas] → servem para destravar as avaliações; o RH pode trocá-las e criar competências por nível.
