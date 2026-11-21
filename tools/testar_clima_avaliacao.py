@@ -120,7 +120,7 @@ api_client.mudar_status_ciclo_avaliacao = lambda token, cid, st: chamadas.append
 api_client.avaliacoes_do_ciclo = lambda token, cid: {"ciclo": {"id": cid}, "avaliacoes": copy.deepcopy(AVALIACOES)}
 api_client.atribuir_avaliacoes_lote = lambda token, cid, dep, auto, gestor: chamadas.append(("lote", cid, dep, auto, gestor)) or {"criadas": 6, "puladas": 2, "sem_gestor": 1}
 api_client.atribuir_avaliacao = lambda token, *a: chamadas.append(("avulsa", *a)) or {"sucesso": True}
-api_client.revisar_contestacao = lambda token, cid, resp: chamadas.append(("revisar", cid, resp)) or {"sucesso": True}
+api_client.revisar_contestacao = lambda token, cid, resp, nota_final=None: chamadas.append(("revisar", cid, resp, nota_final)) or {"sucesso": True}
 
 falhas: list[str] = []
 total = 0
@@ -334,7 +334,14 @@ at = clicar(at, "av360_ct_ok")
 conferir("pelo menos 5" in texto(at) and not any(c[0] == "revisar" for c in chamadas), "responder exige texto")
 at.text_area(key="av360_resposta").set_value("Revimos com o gestor e a nota passa a considerar o projeto de agosto.")
 at = clicar(at.run(), "av360_ct_ok")
-conferir(any(c[0] == "revisar" and c[1] == 70 for c in chamadas) and "respondida" in aviso(at), "responde a contestação")
+conferir(any(c[0] == "revisar" and c[1] == 70 and c[3] is None for c in chamadas) and "respondida" in aviso(at), "responde a contestação")
+at = aba_desempenho()
+at = clicar(at, "av360_ct_70")
+conferir("O gestor ainda não respondeu" in texto(at), "RH vê que o gestor ainda não respondeu (backend-gestor-pendencias, D5)")
+at.text_area(key="av360_resposta").set_value("Revimos e a nota final passa a 4.")
+at.selectbox(key="av360_nota_final").set_value(4)
+at = clicar(at.run(), "av360_ct_ok")
+conferir(any(c[0] == "revisar" and c[1] == 70 and c[3] == 4 for c in chamadas), "RH fecha com a nota final (palavra final)")
 
 caso("Competências avaliadas (Figma F27, etapas 4 e 5; change backend-gestor-pendencias, D1)")
 conferir(av.validar_competencia("Co", "", "tecnica", "l1", 1) is not None and av.validar_competencia("Comunicação", "", None, "l1", 1) == "Escolha a categoria."

@@ -99,7 +99,7 @@ def linhas_ferias(fila: list[dict], mapa: dict, meu_colaborador_id, departamento
         linhas.append({
             "id": f.get("id"),
             "pessoa": p["nome"],
-            "detalhe": p["detalhe"],
+            "detalhe": p["detalhe"] + (f" · por delegação de {f['delegado_de']}" if f.get("delegado_de") else ""),
             "dias": f"{qtd} dia{'s' if qtd != 1 else ''}",
             "periodo": periodo(f.get("data_inicio"), f.get("data_fim")),
             "observacao": (f.get("observacao_colaborador") or "").strip() or "—",
@@ -139,7 +139,7 @@ def linhas_correcoes(correcoes: list[dict], mapa: dict, meu_colaborador_id, depa
         linhas.append({
             "id": c.get("id"),
             "pessoa": p["nome"],
-            "detalhe": p["detalhe"],
+            "detalhe": p["detalhe"] + (f" · por delegação de {c['delegado_de']}" if c.get("delegado_de") else ""),
             "campo": _rotulo_correcao(c),
             "dia": momento.strftime("%d/%m/%Y") if momento else "—",
             "justificativa": (c.get("justificativa") or "").strip() or "—",

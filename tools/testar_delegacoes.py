@@ -50,6 +50,9 @@ class ApiFicticia:
         self.chamadas = []
         self.falhar_leitura_apos_cancelar = False
         self.cancelamento_incompleto = False
+        # Catálogo do backend (change backend-gestor-pendencias, D3); a pessoa 20 não está nas delegações de exemplo.
+        self.substitutos = [{"user_id": 20, "nome": "Bruna Fictícia", "setor": "Recursos Humanos", "motivo": "mesmo_setor"},
+                            {"user_id": 21, "nome": "Caio Fictício", "setor": "Comercial", "motivo": "gestor"}]
 
     def responder(self, method, path, token, canonical, payload=None):
         rota = path.split("?")[0]
@@ -62,6 +65,16 @@ class ApiFicticia:
         if rota == "minhas_delegacoes":
             assert canonical == api_client.GRUPO_USUARIOS
             return {"sucesso": True, "delegacoes": copy.deepcopy(self.delegacoes)}
+        if rota == "delegacoes/substitutos":
+            assert method == "GET" and canonical == api_client.GRUPO_USUARIOS
+            return {"sucesso": True, "escopos": ["ferias", "correcao_ponto", "todas"], "substitutos": copy.deepcopy(self.substitutos)}
+        if rota == "delegacoes" and method == "POST":
+            assert canonical == api_client.GRUPO_USUARIOS
+            if payload["escopo"] not in ("ferias", "correcao_ponto", "todas"):
+                raise ApiError("O Gestor delega so ferias, correcao de ponto ou todas.", 400)
+            nova = dict(id=200, titular_user_id=9, cancelada_em=None, **payload)
+            self.delegacoes.append(nova)
+            return {"sucesso": True, "delegacao": copy.deepcopy(nova)}
         if re.fullmatch(r"delegacoes/\d+/cancelar", rota):
             assert method == "POST" and payload == {} and canonical == api_client.GRUPO_USUARIOS
             d = next(d for d in self.delegacoes if d.get("id") == int(rota.split("/")[1]))
@@ -153,9 +166,15 @@ class ModeloEConsultas(Base):
     def test_escopos_antigos_nao_prometem_integracao(self):
         for escopo in ("ausencia", "documento", "desligamento", "solicitacao_rh"):
             l = modelo.linhas([dict(DELEGACOES[0], escopo=escopo)], 9, HOJE)[0]
-            self.assertIn("Sem integração", l["nota_escopo"])
+            self.assertIn("Decisão do RH", l["nota_escopo"])
         todas = modelo.linhas([DELEGACOES[1]], 9, HOJE)[0]
-        self.assertIn("limitada a férias e correção", todas["nota_escopo"])
+        self.assertIn("Férias e correção de ponto", todas["nota_escopo"])
+        com_nome = modelo.linhas([DELEGACOES[0]], 9, HOJE, {DELEGACOES[0]["substituto_user_id"]: "Nome Fictício"})[0]
+        self.assertEqual(com_nome["pessoa"], "Nome Fictício")
+        self.assertEqual(modelo.validar_nova(None, "ferias", HOJE, HOJE, "Motivo ok", HOJE), "Escolha o substituto.")
+        self.assertEqual(modelo.validar_nova(20, "ferias", date(2000, 1, 1), HOJE, "Motivo ok", HOJE), "O início não pode ser no passado.")
+        self.assertEqual(modelo.validar_nova(20, "ferias", date(2099, 1, 2), date(2099, 1, 1), "Motivo ok", HOJE), "O fim não pode ser antes do início.")
+        self.assertIsNone(modelo.validar_nova(20, "todas", HOJE, HOJE, "Minhas férias", HOJE))
 
     def test_cache_e_atualizacao(self):
         dados.carregar("teste", 9)
@@ -292,19 +311,37 @@ class TelaENavegacao(Base):
         self.assertIn("Nenhuma delegação nesta aba", self.texto(at))
         self.assertEqual(self.posts(), [])
 
-    def test_criacao_bloqueada_sem_id_ou_chamadas_a_catalogo(self):
+    def test_criacao_com_catalogo_e_escopos_do_gestor(self):
         at = self.app()
-        self.api.chamadas.clear()
         at.button(key="dg_nova").click().run()
         self.assertFalse(list(at.exception))
-        self.assertIn("Não é possível selecionar um substituto", self.texto(at))
-        self.assertTrue(at.button(key="dg_criar").disabled)
-        self.assertTrue(at.selectbox(key="dg_substituto").disabled)
-        self.assertEqual(len(at.number_input), 0)
-        self.assertEqual(len(at.text_input), 0)
-        self.assertEqual(self.api.chamadas, [])
-        at.button(key="dg_fechar_nova").click().run()
-        self.assertNotIn("dg_criar", {b.key for b in at.button})
+        self.assertEqual(at.selectbox(key="dg_substituto").options, ["Bruna Fictícia (Recursos Humanos)", "Caio Fictício (Comercial) · outro Gestor"])
+        self.assertEqual(at.selectbox(key="dg_escopo").options, ["Férias", "Correção de ponto", "Todas as aprovações"])
+        at.button(key="dg_criar").click().run()
+        self.assertIn("Escolha o substituto", self.texto(at))
+        self.assertEqual(self.posts(), [])
+        at.selectbox(key="dg_substituto").set_value(20)
+        at.selectbox(key="dg_escopo").set_value("ferias")
+        at.date_input(key="dg_fim").set_value(HOJE)
+        at.text_area(key="dg_motivo").set_value("Minhas férias de dezembro")
+        at.button(key="dg_criar").click().run()
+        self.assertFalse(list(at.exception))
+        criar = [c for c in self.api.chamadas if c[0] == "POST" and c[1] == "delegacoes"]
+        self.assertEqual(len(criar), 1)
+        self.assertEqual({k: criar[0][2][k] for k in ("substituto_user_id", "escopo", "motivo")},
+                         {"substituto_user_id": 20, "escopo": "ferias", "motivo": "Minhas férias de dezembro"})
+        self.assertIn("Delegação criada para Bruna Fictícia", self.texto(at))
+
+    def test_recusa_do_backend_aparece_no_modal(self):
+        self.api.erros["delegacoes"] = ApiError("Escolha o substituto entre as pessoas do seu setor ou os outros Gestores.", 400)
+        at = self.app()
+        at.button(key="dg_nova").click().run()
+        at.selectbox(key="dg_substituto").set_value(21)
+        at.selectbox(key="dg_escopo").set_value("todas")
+        at.date_input(key="dg_fim").set_value(HOJE)
+        at.text_area(key="dg_motivo").set_value("Viagem a trabalho")
+        at.button(key="dg_criar").click().run()
+        self.assertIn("Escolha o substituto entre as pessoas do seu setor", self.texto(at))
 
     def test_cancelamento_atualiza_lista_e_abre_encerradas(self):
         at = self.app()
@@ -382,8 +419,8 @@ class TelaENavegacao(Base):
         self.api.chamadas.clear()
         at.button(key="dg_atualizar").click().run()
         texto = self.texto(at)
-        self.assertIn("ainda não incluem pedidos recebidos por delegação", texto)
-        self.assertIn("também se limita a férias e correção de ponto", texto)
+        self.assertIn("mostra os pedidos que você decidiria", texto)
+        self.assertIn("são decisões do RH", texto)
         self.assertEqual({c[1] for c in self.api.chamadas}, {"minhas_delegacoes"})
 
 
