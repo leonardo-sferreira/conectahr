@@ -2,6 +2,19 @@
 
 **Data:** 21/11/2026.
 
+## Carga (tarefa 7.1)
+
+- **Fontes:**
+  - Portaria MGI nº 11.460, de 29/12/2025 (DOU de 30/12/2025, seção 1, p. 59), lida no texto: 9 pontos facultativos federais em 2026;
+  - Lei estadual de SP nº 9.497/1997: 9 de julho;
+  - Lei municipal de São Paulo nº 14.485/2007, art. 10, citada no calendário oficial de 2026 da Prefeitura: 25 de janeiro e Corpus Christi.
+- **Conferência:** `python tools/feriados.py` deu 6/6:
+  - Páscoa 05/04/2026 e 28/03/2027;
+  - Corpus Christi 04/06/2026 e 27/05/2027;
+  - as datas móveis batem com a portaria.
+- **Carga** (`ConectaHR/semear_feriados`, com a lista de `tools/feriados.py --json`): a primeira rodada criou 12 e pulou 3, que a BrasilAPI já tinha gravado como ponto facultativo nacional; a segunda criou 0.
+- **2027:** só os feriados de SP. Os facultativos federais entram quando a portaria de 2027 sair, em dezembro.
+
 ## Backend (tarefa 7.2)
 
 - `calendario` GET devolve o feriado inteiro, inclusive `tipo` (feriado ou ponto facultativo) e a abrangência.
