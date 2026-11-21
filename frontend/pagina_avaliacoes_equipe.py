@@ -1,15 +1,19 @@
-"""F15 do Gestor (248:744 e 248:1019), limitado aos contratos atuais de avaliação."""
+"""F15 do Gestor (248:744 e 248:1019). Com a change backend-gestor-pendencias (D4 e D5): o prazo é o fim do ciclo, a
+autoavaliação aparece pela situação (sem notas) e a aba "Contestações" deixa o Gestor manter ou revisar a nota antes da
+palavra final do RH."""
 
 import html
+import time
 
 import streamlit as st
 
-from api_client import ApiError
+from api_client import ApiError, contestacoes_equipe, responder_contestacao_gestor
 from avaliacoes_equipe_dados import carregar, formulario, gravar, invalidar
-from avaliacoes_equipe_modelo import ciclos_disponiveis, editavel, indicadores, linhas
+from avaliacoes_equipe_modelo import (DECISOES_GESTOR, autoavaliacao, ciclos_disponiveis, contestacoes_do_ciclo, editavel, indicadores, linhas,
+                                      prazo, situacao_contestacao, validar_resposta_gestor)
 from campos import campos_invalidos
 from theme import alerta, render_hero, render_indicadores, render_topbar
-from trajetoria_modelo import NOTAS, validar_envio
+from trajetoria_modelo import NOTAS, nota_br, validar_envio
 
 
 def fechar() -> None:
@@ -39,7 +43,7 @@ def _conteudo_avaliacao(alvo: dict, ciclo: dict) -> None:
         return
     st.html(f'<p class="crh-meta">{html.escape(form.get("avaliado_nome") or "liderado")}</p>'
             f'<div class="crh-incluso"><p class="crh-meta">Ciclo: {html.escape(ciclo["nome"])}</p>'
-            '<p class="crh-meta">Autoavaliação: Não disponível</p></div>')
+            f'<p class="crh-meta">Autoavaliação: {html.escape(autoavaliacao(alvo)[0])} · Prazo: {html.escape(prazo(alvo))}</p></div>')
     if not editavel(form):
         alerta(st.empty(), "atencao", "Esta avaliação já foi enviada ou cancelada e não pode ser alterada.")
         return
@@ -107,14 +111,87 @@ def _tabela(avaliacoes: list[dict], org: dict, ciclo: dict) -> None:
             with st.container(key=f"rh_linf_ae_{l['id']}" if l["editavel"] else f"rh_lin_ae_{l['id']}"):
                 cols = st.columns(pesos, vertical_alignment="center")
                 cols[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["nome"])}</p>'
-                             f'<p class="d">{html.escape(l["detalhe"])}</p></div>')
-                cols[1].html('<p class="crh-doc-prazo">—</p>')
+                             f'<p class="d">{html.escape(l["detalhe"])} · prazo {html.escape(l["prazo"])}</p></div>')
+                cols[1].html(f'<span class="crh-selo {l["autoavaliacao"][1]}">{html.escape(l["autoavaliacao"][0])}</span>', width="content")
                 cols[2].html(f'<span class="crh-selo {l["tom"]}">{html.escape(l["situacao"])}</span>')
                 cols[3].html(f'<p class="crh-doc-prazo">{html.escape(l["nota"])}</p>')
                 if l["editavel"]:
                     with cols[4]:
                         if st.button("Avaliar →", type="tertiary", key=f"ae_avaliar_{l['id']}"):
                             _abrir(alvos[l["id"]], ciclo)
+
+
+def _contestacoes(token: str) -> list[dict]:
+    item = st.session_state.get("ae_contestacoes_cache")
+    if item and item["token"] == token and time.time() - item["em"] < 20:
+        return item["dados"]
+    dados = contestacoes_equipe(token).get("contestacoes") or []
+    st.session_state.ae_contestacoes_cache = {"token": token, "em": time.time(), "dados": dados}
+    return dados
+
+
+def _aba_contestacoes(contestacoes: list[dict] | None) -> None:
+    """Contestações das avaliações que você fez (change backend-gestor-pendencias, D5): responda primeiro; o RH fecha."""
+    with st.container(border=True):
+        st.html('<p class="crh-bloco-titulo">Contestações</p><p class="crh-meta">Responda primeiro: mantenha a nota ou revise-a. '
+                'A nota revisada passa a valer, e a original fica guardada. O RH dá a palavra final.</p>')
+        if contestacoes is None:
+            alerta(st.empty(), "erro", "Não foi possível carregar as contestações. Tente atualizar.")
+            return
+        if not contestacoes:
+            st.html('<p class="crh-meta">Nenhuma contestação neste ciclo.</p>')
+            return
+        for c in contestacoes:
+            rotulo, tom = situacao_contestacao(c)
+            with st.container(horizontal=True, vertical_alignment="center", key=f"ae_ct_{c['id']}"):
+                resposta = ""
+                if c.get("decisao_gestor"):
+                    resposta = f' · sua resposta: {DECISOES_GESTOR.get(c["decisao_gestor"], "")}'
+                    if c.get("nota_revisada") is not None:
+                        resposta += f' para {nota_br(c["nota_revisada"])}'
+                if c.get("resposta_rh"):
+                    resposta += f' · RH: {c["resposta_rh"]}'
+                st.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(c.get("colaborador_nome") or "—")} '
+                        f'<span class="crh-selo {tom}">{html.escape(rotulo)}</span></p>'
+                        f'<p class="d">Nota {html.escape(nota_br(c.get("nota")) or "—")} · motivo: {html.escape(c.get("motivo") or "")}'
+                        f'{html.escape(resposta)}</p></div>', width="stretch")
+                if c.get("status") == "aberta" and not c.get("decisao_gestor"):
+                    if st.button("Responder →", type="tertiary", key=f"ae_ct_resp_{c['id']}"):
+                        st.session_state.ae_contestacao = c["id"]
+                        st.rerun()
+
+
+@st.dialog("Responder contestação", width="small", on_dismiss=lambda: st.session_state.pop("ae_contestacao", None))
+def _modal_contestacao(c: dict) -> None:
+    st.html(f'<p><b>{html.escape(c.get("colaborador_nome") or "—")}</b> contestou a sua nota '
+            f'{html.escape(nota_br(c.get("nota")) or "—")}.</p>'
+            f'<div class="crh-painel crh-bloco"><p class="crh-meta">Motivo</p><p>{html.escape(c.get("motivo") or "")}</p></div>')
+    decisao = st.segmented_control("Decisão", list(DECISOES_GESTOR), format_func=DECISOES_GESTOR.get, key="ae_ct_decisao")
+    nota = None
+    if decisao == "revisar":
+        nota = st.segmented_control("Nova nota", [1, 2, 3, 4, 5], key="ae_ct_nota")
+    justificativa = st.text_area("Justificativa", max_chars=2000, height=100, key="ae_ct_justificativa",
+                                 placeholder="O que você considerou. A pessoa e o RH veem esta resposta.")
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Voltar", key="ae_ct_voltar"):
+            st.session_state.pop("ae_contestacao", None)
+            st.rerun()
+        if st.button("Enviar resposta", type="primary", key="ae_ct_enviar"):
+            erro = validar_resposta_gestor(decisao, nota, justificativa)
+            if erro:
+                alerta(slot, "erro", erro)
+                return
+            try:
+                responder_contestacao_gestor(st.session_state.token, c["id"], decisao, justificativa.strip(), nota)
+            except ApiError as erro_api:
+                alerta(slot, "erro", erro_api.message)
+                return
+            st.session_state.pop("ae_contestacao", None)
+            st.session_state.pop("ae_contestacoes_cache", None)
+            invalidar()
+            st.session_state.ae_aviso = "Resposta enviada. O RH dá a palavra final."
+            st.rerun()
 
 
 def pagina_avaliacoes_equipe() -> None:
@@ -146,7 +223,13 @@ def pagina_avaliacoes_equipe() -> None:
     if dados["erros"]:
         alerta(st.empty(), "atencao", "Algumas informações não estão disponíveis. As avaliações atribuídas continuam acessíveis.")
     avaliacoes = [a for a in dados["avaliacoes"] if ciclo and a.get("ciclo_avaliacao_id") == ciclo["id"]]
-    render_indicadores(indicadores(avaliacoes))
+    try:
+        contestacoes = contestacoes_do_ciclo(_contestacoes(st.session_state.token), ciclo["id"] if ciclo else None)
+    except ApiError as erro:
+        if erro.status_code == 401:
+            return
+        contestacoes = None
+    render_indicadores(indicadores(avaliacoes, contestacoes))
     with st.container(horizontal=True, vertical_alignment="center", key="rh_barra"):
         aba = st.segmented_control("Área", ["Avaliações", "Contestações"], default="Avaliações", key="ae_aba", label_visibility="collapsed")
         st.space("stretch")
@@ -157,16 +240,20 @@ def pagina_avaliacoes_equipe() -> None:
             fechar()
             st.rerun()
     if aba == "Contestações":
-        with st.container(border=True):
-            st.html('<p class="crh-bloco-titulo">Contestações</p>')
-            alerta(st.empty(), "atencao", "Não disponível para o perfil Gestor. As contestações são revisadas pelo RH ou Admin; a revisão não altera a nota original.")
+        _aba_contestacoes(contestacoes)
+        if alvo_c := st.session_state.get("ae_contestacao"):
+            c = next((x for x in contestacoes or [] if x["id"] == alvo_c), None)
+            if c and c.get("status") == "aberta" and not c.get("decisao_gestor"):
+                _modal_contestacao(c)
+            else:
+                st.session_state.pop("ae_contestacao", None)
         return
     if ciclo:
         _tabela(avaliacoes, dados["organograma"], ciclo)
     else:
         st.html('<p class="crh-meta">Nenhuma avaliação atribuída a você.</p>')
     st.html('<p class="crh-meta">Indicadores referentes às avaliações atribuídas a você como gestor. '
-            'Autoavaliação, prazo específico do gestor e contestações não estão disponíveis para consulta nesta tela.</p>'
+            'O prazo é o fim do ciclo. A autoavaliação aparece só pela situação, sem as notas da pessoa.</p>'
             '<p class="crh-meta">Nenhuma promoção ou desligamento é decidido automaticamente pela nota.</p>')
     if modal := st.session_state.get("ae_modal"):
         # O alvo precisa continuar entre as atribuições da sessão; o backend confirma novamente a cada operação.

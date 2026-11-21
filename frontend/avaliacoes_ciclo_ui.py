@@ -262,8 +262,18 @@ def _modal_contestacao(c: dict) -> None:
     st.html(f'<p><b>{html.escape(c.get("avaliado_nome") or "—")}</b> contestou a avaliação de {html.escape(c.get("avaliador_nome") or "—")} '
             f'({html.escape(RELACOES.get(c.get("relacao_avaliador"), "—"))}, nota {html.escape(nota_legivel(c.get("nota")))}).</p>'
             f'<div class="crh-painel crh-bloco"><p class="crh-meta">Motivo</p><p>{html.escape(c.get("motivo") or "")}</p></div>')
+    # Resposta do Gestor que avaliou (change backend-gestor-pendencias, D5); o RH dá a palavra final.
+    if c.get("decisao_gestor"):
+        revisou = f' para {nota_legivel(c.get("nota_revisada"))} (era {nota_legivel(c.get("nota_original"))})' if c.get("decisao_gestor") == "revisar" else ""
+        st.html(f'<div class="crh-painel crh-bloco"><p class="crh-meta">Resposta do gestor: '
+                f'{"revisou a nota" if c.get("decisao_gestor") == "revisar" else "manteve a nota"}{html.escape(revisou)}</p>'
+                f'<p>{html.escape(c.get("resposta_gestor") or "")}</p></div>')
+    else:
+        st.html('<p class="crh-meta">O gestor ainda não respondeu. Você pode responder mesmo assim.</p>')
     resposta = campo(st, "Resposta do RH", "texto", "av360_resposta", area=True, max_chars=2000, height=110,
                      placeholder="O que foi revisto e a decisão. A pessoa vê esta resposta.")
+    nota_final = st.selectbox("Nota final", [None, 1, 2, 3, 4, 5], format_func=lambda n: "Manter a nota atual" if n is None else str(n),
+                              key="av360_nota_final")
     slot = st.empty()
     with st.container(horizontal=True, horizontal_alignment="right"):
         if st.button("Voltar", key="av360_ct_voltar"):
@@ -274,7 +284,7 @@ def _modal_contestacao(c: dict) -> None:
                 alerta(slot, "erro", "Escreva a resposta (pelo menos 5 caracteres).")
                 return
             try:
-                revisar_contestacao(st.session_state.token, c["id"], resposta.strip())
+                revisar_contestacao(st.session_state.token, c["id"], resposta.strip(), nota_final)
             except ApiError as erro:
                 alerta(slot, "erro", erro.message)
                 return

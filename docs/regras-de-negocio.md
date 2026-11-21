@@ -1138,3 +1138,28 @@ Por decisão registrada em `design.md` deste change, este documento cobre apenas
   - nos pedidos de acesso de Usuários e perfis.
 
   Em "Meus pedidos" (privacidade e desligamento), o prazo aparece como texto. No pedido LGPD, o prazo do SLA substitui o prazo legal na tela, porque nunca passa dele.
+
+## 26. Telas do Gestor: indicadores, delegações e avaliações (change `backend-gestor-pendencias`, desde 20/11/2026)
+
+- **Indicadores do setor** (`indicadores_equipe` GET e `indicadores_equipe/exportar` POST; função `ConectaHR/indicadores_setor`):
+  - só o Gestor, do setor em que é o gestor do departamento; só agregados dos últimos 6 meses, sem nomes nem ids de pessoas;
+  - horas extras: soma de `registro_ponto.horas_extras`;
+  - ausências: registros Aprovada ou Registrado que tocam o mês;
+  - absenteísmo: dias úteis cobertos por ausência ÷ (pessoas × dias úteis), em %;
+  - banco de horas: saldo atual;
+  - clima: % de respostas 4 e 5 das perguntas de concordância na última pesquisa de clima encerrada, só com o mínimo de respostas atingido;
+  - setor com menos de 5 pessoas fica oculto;
+  - a exportação grava a auditoria `exportar_indicadores_equipe`;
+  - a folha individual continua com o escopo de sempre.
+- **Delegações:**
+  - o Gestor delega só férias, correção de ponto ou "todas", que são as decisões dele; RH e Admin, todos os escopos;
+  - o substituto do Gestor vem do catálogo (`delegacoes/substitutos`): pessoas ativas com conta do próprio setor e outros Gestores;
+  - a delegação vale quando o titular é quem decidiria o pedido: o superior direto e, sem ele, o gestor do departamento;
+  - durante a delegação, a Central e `correcoes_ponto` incluem os pedidos que o titular decidiria, com `delegado_de`.
+- **Avaliação do Gestor:**
+  - `minhas_avaliacoes` traz o prazo (fim do ciclo) e a situação da autoavaliação da pessoa, sem notas nem comentários.
+- **Contestação** (`contestacoes_equipe` GET e `contestacoes_avaliacao/{id}/responder_gestor` POST):
+  - o avaliador da avaliação de relação gestor responde primeiro, uma vez: manter, com justificativa, ou revisar, com nota de 1 a 5;
+  - a nota revisada passa a valer, e a original fica em `avaliacao.nota_original`;
+  - a contestação continua aberta até o RH, que pode dar a nota final em `revisar` (`nota_final`) e fecha a contestação;
+  - auditoria `responder_contestacao_gestor`, com a decisão e as notas antes e depois.

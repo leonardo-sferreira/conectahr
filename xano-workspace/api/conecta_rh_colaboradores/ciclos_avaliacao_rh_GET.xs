@@ -209,6 +209,10 @@ query "ciclos_avaliacao_rh" verb=GET {
             relacao_avaliador: ($avaliacao_contestada != null ? $avaliacao_contestada.relacao_avaliador : null)
             nota             : ($avaliacao_contestada != null ? $avaliacao_contestada.nota : null)
             ciclo_nome       : $ciclo_nome
+            nota_original    : ($avaliacao_contestada != null ? $avaliacao_contestada.nota_original : null)
+            decisao_gestor   : $contestacao.decisao_gestor
+            nota_revisada    : $contestacao.nota_revisada
+            resposta_gestor  : $contestacao.resposta_gestor
           }
         }
       }

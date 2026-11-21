@@ -176,7 +176,9 @@ query "ferias/{id}/rejeitar" verb=POST {
                     } as $departamento_do_titular
 
                     conditional {
-                      if ($departamento_do_titular != null) {
+                      // Hierarquia alinhada (change backend-gestor-pendencias, D3): o titular vale quando e quem decidiria o
+                      // pedido, o superior direto e, sem ele, o gestor do departamento.
+                      if ((($colaborador_escopo.superior_colaborador_id != null) && ($colaborador_escopo.superior_colaborador_id == $colaborador_titular.id)) || (($colaborador_escopo.superior_colaborador_id == null) && ($departamento_do_titular != null))) {
                         var.update $titular_delegacao_id {
                           value = $delegacao_item.titular_user_id
                         }

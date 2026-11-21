@@ -50,6 +50,9 @@ class ApiFicticia:
         self.competencias = copy.deepcopy(COMPETENCIAS)
         self.erros = {}
         self.chamadas = []
+        # Contestações das avaliações do Gestor (change backend-gestor-pendencias, D5).
+        self.contestacoes = [dict(id=70, avaliacao_id=103, colaborador_nome="Pessoa B", ciclo_avaliacao_id=7, nota=3.2, motivo="Não considerou o projeto",
+                                  status="aberta", decisao_gestor=None, nota_revisada=None, resposta_gestor=None, resposta_rh=None)]
 
     def responder(self, method, path, token, canonical, payload=None):
         rota = path.split("?")[0]
@@ -64,6 +67,12 @@ class ApiFicticia:
                 raise erro
         if rota == "minhas_avaliacoes":
             return {"avaliacoes": copy.deepcopy(self.avaliacoes)}
+        if rota == "contestacoes_equipe":
+            return {"contestacoes": copy.deepcopy(self.contestacoes)}
+        if rota.startswith("contestacoes_avaliacao/") and rota.endswith("/responder_gestor"):
+            c = next(c for c in self.contestacoes if c["id"] == int(rota.split("/")[1]))
+            c.update(decisao_gestor=payload["decisao"], nota_revisada=payload.get("nota"), resposta_gestor=payload["justificativa"])
+            return {"sucesso": True, "contestacao": copy.deepcopy(c)}
         if rota == "ciclos_avaliacao":
             return {"ciclos": copy.deepcopy(self.ciclos)}
         if rota == "organograma":
@@ -130,13 +139,19 @@ class ModeloEConsultas(Base):
         self.assertEqual([v for _, v, _ in modelo.indicadores(av)], ["3", "1", "2", "—"])
         self.assertEqual([v for _, v, _ in modelo.indicadores([])], ["0", "0", "0", "—"])
         self.assertEqual(modelo.indicadores(av + [dict(av[0], id=108)])[0][1], "3")
+        self.assertEqual(modelo.indicadores(av, [{"status": "aberta"}, {"status": "revisada"}])[3][1], "1")
+        self.assertEqual(modelo.validar_resposta_gestor("revisar", None, "Justificativa ok"), "Escolha a nova nota, de 1 a 5.")
+        self.assertIsNone(modelo.validar_resposta_gestor("manter", None, "Mantenho a nota"))
 
     def test_ciclos_referenciados_sem_metadados_nao_sao_perdidos(self):
         self.assertEqual([c["nome"] for c in modelo.ciclos_disponiveis([], AVALIACOES)], ["Ciclo #7", "Ciclo #6"])
 
     def test_linhas_preservam_neutro_e_nao_mostram_nota_de_cancelada(self):
         linhas = modelo.linhas(modelo.atribuicoes(AVALIACOES[:4], 9), self.api.org)
-        self.assertEqual([l["autoavaliacao"] for l in linhas], ["—"] * 4)
+        self.assertEqual([l["autoavaliacao"] for l in linhas], [("—", "neu")] * 4)
+        com_auto = modelo.linhas([dict(AVALIACOES[0], autoavaliacao_status="enviada", prazo="2026-12-15")], {})[0]
+        self.assertEqual((com_auto["autoavaliacao"], com_auto["prazo"]), (("Enviada", "ok"), "15/12/2026"))
+        self.assertEqual(modelo.autoavaliacao({"autoavaliacao_status": "sem_autoavaliacao"})[0], "Sem autoavaliação")
         self.assertEqual([l["editavel"] for l in linhas], [True, True, False, False])
         self.assertEqual([l["nota"] for l in linhas], ["—", "—", "3,2", "—"])
         self.assertEqual(modelo.linhas([AVALIACOES[0]], {})[0]["nome"], "Colaborador #11")
@@ -296,7 +311,7 @@ class TelaENavegacao(Base):
         at = self.app()
         self.api.chamadas.clear()
         self.abrir(at)
-        self.assertIn("Autoavaliação: Não disponível", self.texto(at))
+        self.assertIn("Autoavaliação: —", self.texto(at))
         self.assertNotIn("enviada em", self.texto(at))
         self.assertFalse(any(c[1] in ("central_de_tarefas", "minha_trajetoria") for c in self.api.chamadas))
         self.assertTrue(at.button(key="ae_salvar"))
@@ -374,12 +389,23 @@ class TelaENavegacao(Base):
         self.assertNotIn("ae_enviar", {b.key for b in at.button})
         self.assertEqual(self.posts(), [])
 
-    def test_contestacoes_somente_indisponibilidade_sem_chamada_proibida(self):
+    def test_contestacoes_gestor_responde_e_rh_tem_a_palavra_final(self):
         at = self.app()
         next(g for g in at.get("button_group") if g.key == "ae_aba").set_value("Contestações").run()
-        self.assertIn("Não disponível para o perfil Gestor", self.texto(at))
-        self.assertFalse(any("contestac" in c[1] for c in self.api.chamadas))
-        self.assertFalse(any(b.label in ("Enviar resposta", "Manter a nota", "Revisar a nota") for b in at.button))
+        self.assertIn("Aguardando sua resposta", self.texto(at))
+        self.assertIn("O RH dá a palavra final", self.texto(at))
+        self.assertFalse(any(c[1] == "contestacoes_avaliacao/revisar" or c[1].endswith("/revisar") for c in self.api.chamadas))
+        at.button(key="ae_ct_resp_70").click().run()
+        at.button(key="ae_ct_enviar").click().run()
+        self.assertIn("Escolha manter ou revisar", self.texto(at))
+        next(g for g in at.get("button_group") if g.key == "ae_ct_decisao").set_value("revisar").run()
+        next(g for g in at.get("button_group") if g.key == "ae_ct_nota").set_value(4).run()
+        at.text_area(key="ae_ct_justificativa").set_value("Revi o projeto de agosto.").run()
+        at.button(key="ae_ct_enviar").click().run()
+        self.assertFalse(list(at.exception))
+        envio = [c for c in self.api.chamadas if c[1] == "contestacoes_avaliacao/70/responder_gestor"]
+        self.assertEqual(envio[0][2], {"decisao": "revisar", "justificativa": "Revi o projeto de agosto.", "nota": 4})
+        self.assertIn("Aguardando o RH", self.texto(at))
 
     def test_dados_sensiveis_nao_exibidos_e_html_escapado(self):
         self.api.org["colaboradores"][0].update(cpf="CPF_NAO_EXIBIR", conta="BANCO_NAO_EXIBIR", documento="DOC_NAO_EXIBIR",

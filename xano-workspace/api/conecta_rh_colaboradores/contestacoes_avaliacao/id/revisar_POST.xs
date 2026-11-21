@@ -7,6 +7,8 @@ query "contestacoes_avaliacao/{id}/revisar" verb=POST {
   input {
     int id
     text resposta_revisao filters=trim|min:5|max:2000
+    // Nota final opcional do RH (change backend-gestor-pendencias, D5): vale sobre a do Gestor, guardando a original.
+    decimal? nota_final?
   }
 
   stack {
@@ -106,6 +108,34 @@ query "contestacoes_avaliacao/{id}/revisar" verb=POST {
       error = "Esta contestacao ja foi revisada."
     }
 
+    precondition (($input.nota_final == null) || (($input.nota_final >= 1) && ($input.nota_final <= 5))) {
+      error_type = "inputerror"
+      error = "A nota final vai de 1 a 5."
+    }
+
+    conditional {
+      if ($input.nota_final != null) {
+        db.get avaliacao {
+          field_name = "id"
+          field_value = $contestacao_atual.avaliacao_id
+        } as $avaliacao_final
+
+        var $original_final {
+          value = ($avaliacao_final.nota_original != null) ? $avaliacao_final.nota_original : $avaliacao_final.nota
+        }
+
+        db.edit avaliacao {
+          field_name = "id"
+          field_value = $avaliacao_final.id
+          data = {
+            nota         : $input.nota_final
+            nota_original: $original_final
+            updated_at   : "now"
+          }
+        } as $avaliacao_nota_final
+      }
+    }
+
     db.edit contestacao_avaliacao {
       field_name = "id"
       field_value = $contestacao_atual.id
@@ -118,6 +148,10 @@ query "contestacoes_avaliacao/{id}/revisar" verb=POST {
       }
     } as $contestacao_revisada
 
+    var $valor_nota_final {
+      value = ($input.nota_final != null) ? ("nota final " ~ ($input.nota_final|to_text)) : null
+    }
+
     // Auditoria: revisao de contestacao de avaliacao.
     db.add auditoria {
       data = {
@@ -127,6 +161,7 @@ query "contestacoes_avaliacao/{id}/revisar" verb=POST {
         registro_id   : $contestacao_atual.id
         justificativa : $input.resposta_revisao
         resultado     : "sucesso"
+        valor_novo    : $valor_nota_final
       }
     } as $evento_auditoria
   }

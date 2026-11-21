@@ -1209,9 +1209,26 @@ def atribuir_avaliacao(token: str, ciclo_id: int, colaborador_id: int, avaliador
                                 "relacao_avaliador": relacao, "periodo_incio": inicio, "periodo_fim": fim}, token, GRUPO_COLABORADORES)
 
 
-def revisar_contestacao(token: str, contestacao_id: int, resposta: str) -> dict:
-    """POST contestacoes_avaliacao/{id}/revisar: a resposta do RH à contestação."""
-    return _post(f"contestacoes_avaliacao/{int(contestacao_id)}/revisar", {"resposta_revisao": resposta}, token, GRUPO_COLABORADORES)
+def revisar_contestacao(token: str, contestacao_id: int, resposta: str, nota_final: float | None = None) -> dict:
+    """POST contestacoes_avaliacao/{id}/revisar: a resposta do RH, que fecha a contestação; `nota_final` (1 a 5) é opcional
+    e vale sobre a do Gestor (change backend-gestor-pendencias, D5)."""
+    corpo = {"resposta_revisao": resposta}
+    if nota_final is not None:
+        corpo["nota_final"] = nota_final
+    return _post(f"contestacoes_avaliacao/{int(contestacao_id)}/revisar", corpo, token, GRUPO_COLABORADORES)
+
+
+def contestacoes_equipe(token: str) -> dict:
+    """GET contestacoes_equipe -> {contestacoes} das avaliações que o Gestor fez (D5)."""
+    return _get("contestacoes_equipe", token, GRUPO_COLABORADORES)
+
+
+def responder_contestacao_gestor(token: str, contestacao_id: int, decisao: str, justificativa: str, nota: float | None = None) -> dict:
+    """POST contestacoes_avaliacao/{id}/responder_gestor: manter ou revisar (nota de 1 a 5). O RH dá a palavra final (D5)."""
+    corpo = {"decisao": decisao, "justificativa": justificativa}
+    if nota is not None:
+        corpo["nota"] = nota
+    return _post(f"contestacoes_avaliacao/{int(contestacao_id)}/responder_gestor", corpo, token, GRUPO_COLABORADORES)
 
 
 def competencias_avaliacao_rh(token: str) -> dict:
@@ -1435,3 +1452,30 @@ def criar_sla(token: str, tipo_solicitacao: str, horas_uteis: int) -> dict:
 def alterar_sla(token: str, sla_id: int, horas_uteis: int, ativo: bool = True) -> dict:
     """PATCH sla_config/{id}: muda as horas; ativo = False volta ao padrão de 72 (só o Admin)."""
     return _request("PATCH", f"sla_config/{int(sla_id)}", token, GRUPO_COLABORADORES, {"horas_uteis": int(horas_uteis), "ativo": bool(ativo)})
+
+
+# ---------------------------------------------------------------------------
+# Indicadores do setor do Gestor (change backend-gestor-pendencias, D2)
+# ---------------------------------------------------------------------------
+def indicadores_equipe(token: str) -> dict:
+    """GET indicadores_equipe -> {indicadores: {setor, pessoas, minimo, suprimido, motivo, meses, banco_horas, clima}} (Gestor)."""
+    return _get("indicadores_equipe", token, GRUPO_COLABORADORES)
+
+
+def exportar_indicadores_equipe(token: str) -> dict:
+    """POST indicadores_equipe/exportar: os mesmos agregados, com a exportação na auditoria."""
+    return _post("indicadores_equipe/exportar", {}, token, GRUPO_COLABORADORES)
+
+
+# ---------------------------------------------------------------------------
+# Delegação pelo Gestor (change backend-gestor-pendencias, D3)
+# ---------------------------------------------------------------------------
+def delegacoes_substitutos(token: str) -> dict:
+    """GET delegacoes/substitutos -> {escopos, substitutos: [{user_id, nome, setor, motivo}]} (Gestor, RH e Admin)."""
+    return _get("delegacoes/substitutos", token, GRUPO_USUARIOS)
+
+
+def criar_delegacao(token: str, substituto_user_id: int, escopo: str, data_inicio: str, data_fim: str, motivo: str) -> dict:
+    """POST delegacoes: o Gestor delega como titular (férias, correção de ponto ou todas), a um substituto do catálogo."""
+    return _post("delegacoes", {"substituto_user_id": int(substituto_user_id), "escopo": escopo, "data_inicio": data_inicio,
+                                "data_fim": data_fim, "motivo": motivo}, token, GRUPO_USUARIOS)

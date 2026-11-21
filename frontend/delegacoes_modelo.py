@@ -42,7 +42,7 @@ def situacao(d: dict, hoje: date) -> tuple[str, str]:
     return "Ativa", "ok"
 
 
-def linhas(delegacoes: list[dict], usuario_id, hoje: date) -> list[dict]:
+def linhas(delegacoes: list[dict], usuario_id, hoje: date, nomes: dict | None = None) -> list[dict]:
     resultado = []
     for d in delegacoes:
         if not vinculada(d, usuario_id):
@@ -50,9 +50,11 @@ def linhas(delegacoes: list[dict], usuario_id, hoje: date) -> list[dict]:
         concedida = d.get("titular_user_id") == usuario_id
         status, tom = situacao(d, hoje)
         escopo = d.get("escopo")
-        nota = ("Integração limitada a férias e correção de ponto." if escopo == "todas" else ""
-                if escopo in ("ferias", "correcao_ponto") else "Sem integração de delegação neste escopo.")
-        resultado.append({"id": d["id"], "pessoa": "Substituto não disponível" if concedida else "Titular não disponível",
+        nota = ("Férias e correção de ponto." if escopo == "todas" else ""
+                if escopo in ("ferias", "correcao_ponto") else "Decisão do RH: sem efeito para o Gestor.")
+        outro = d.get("substituto_user_id") if concedida else d.get("titular_user_id")
+        nome = (nomes or {}).get(outro)
+        resultado.append({"id": d["id"], "pessoa": nome or ("Substituto não disponível" if concedida else "Titular não disponível"),
                           "direcao": "Delegada por mim" if concedida else "Recebida por mim",
                           "periodo": periodo(d.get("data_inicio"), d.get("data_fim")) if datas(d) else "—",
                           "escopo": ESCOPOS.get(escopo, "Não disponível"), "nota_escopo": nota,
@@ -60,3 +62,28 @@ def linhas(delegacoes: list[dict], usuario_id, hoje: date) -> list[dict]:
                           "encerrada": status in ("Encerrada", "Cancelada"),
                           "cancelavel": pode_cancelar(d, usuario_id)})
     return resultado
+
+
+# Criação pelo Gestor (change backend-gestor-pendencias, D3): só o que ele decide; o substituto vem do catálogo do backend.
+ESCOPOS_GESTOR = ["ferias", "correcao_ponto", "todas"]
+
+
+def rotulo_substituto(s: dict) -> str:
+    extra = " · outro Gestor" if s.get("motivo") == "gestor" else ""
+    return f"{s.get('nome') or 'Sem nome'} ({s.get('setor') or 'sem setor'}){extra}"
+
+
+def validar_nova(substituto, escopo, inicio: date | None, fim: date | None, motivo: str, hoje: date) -> str | None:
+    if not substituto:
+        return "Escolha o substituto."
+    if escopo not in ESCOPOS:
+        return "Escolha o que delegar."
+    if inicio is None or fim is None:
+        return "Informe o início e o fim."
+    if inicio < hoje:
+        return "O início não pode ser no passado."
+    if fim < inicio:
+        return "O fim não pode ser antes do início."
+    if len((motivo or "").strip()) < 5:
+        return "Escreva o motivo (pelo menos 5 caracteres)."
+    return None

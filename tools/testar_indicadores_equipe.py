@@ -55,6 +55,13 @@ class ApiFicticia:
         self.meses[(2026, 8)]["ausencias"] = [ausencia()]
         self.meses[(2026, 9)]["ausencias"] = [ausencia(), ausencia(2, tipo="Falta"), ausencia(3, tipo="Licenca")]
         self.erros, self.chamadas = {}, []
+        # Rota agregada (change backend-gestor-pendencias, D2): números prontos do setor, sem pessoas.
+        self.indicadores = {"setor": "Recursos Humanos", "pessoas": 6, "minimo": 5, "suprimido": False, "motivo": None,
+                            "meses": [{"mes": f"{ano}-{mes:02d}", "horas_extras": total, "ausencias": aus, "dias_uteis": 21, "dias_ausencia": dias,
+                                       "absenteismo": abs_} for (ano, mes), total, aus, dias, abs_ in
+                                      zip(modelo.meses(HOJE), [6, 9, 4, 11, 14, 12], [0, 0, 0, 1, 3, 0], [0, 0, 0, 2, 5, 0], [0, 0, 0, 1.6, 4, 2.4])],
+                            "banco_horas": 9 + 2 / 3, "clima": {"pesquisa": "Clima 2026", "encerrada_em": "2026-08-31", "participantes": 6, "minimo": 5,
+                                                                 "favoravel_pct": 78}}
 
     def responder(self, method, path, token, canonical, payload=None):
         self.chamadas.append((method, path, canonical))
@@ -63,6 +70,9 @@ class ApiFicticia:
             if erro.status_code == 401:
                 dados.st.session_state["sessao_expirada"] = True
             raise erro
+        if path in ("indicadores_equipe", "indicadores_equipe/exportar"):
+            assert canonical == api_client.GRUPO_COLABORADORES
+            return {"indicadores": copy.deepcopy(self.indicadores)}
         if path == "folha_ponto/pessoas":
             assert canonical == api_client.GRUPO_PONTO
             return {"pessoas": copy.deepcopy(self.pessoas)}
@@ -90,8 +100,7 @@ class Base(unittest.TestCase):
     def setUp(self):
         self.api = ApiFicticia()
         for p in (patch.object(api_client, "_request", side_effect=self.api.responder),
-                  patch.object(api_client.requests, "request", side_effect=AssertionError("Teste sem rede")),
-                  patch("pagina_indicadores_equipe.hoje_brasilia", return_value=HOJE)):
+                  patch.object(api_client.requests, "request", side_effect=AssertionError("Teste sem rede"))):
             p.start()
             self.addCleanup(p.stop)
 
@@ -249,6 +258,8 @@ class ModeloEFontes(Base):
 
 
 class TelaENavegacao(Base):
+    """A página usa só a rota agregada `indicadores_equipe` (change backend-gestor-pendencias, D2)."""
+
     def app(self, perfil="GESTOR", tema="claro"):
         at = AppTest.from_file(str(RAIZ / "frontend/app.py"), default_timeout=30)
         for k, v in dict(token="sessao-ficticia", usuario=dict(USUARIO, perfil=perfil), tema=tema,
@@ -270,21 +281,22 @@ class TelaENavegacao(Base):
     def indicadores(self, at):
         return re.findall(r'class="crh-stat-valor[^\"]*">([^<]*)', " ".join(str(e.value) for e in at.get("html")))
 
-    def test_gestor_cards_coberturas_periodo(self):
+    def test_gestor_cartoes_da_rota_agregada(self):
         at = self.app()
-        self.assertEqual(self.indicadores(at), ["—", "+12h00", "+9h40", "—"])
+        self.assertEqual(self.indicadores(at), ["2,4%", "+12h00", "+9h40", "78%"])
         texto = self.texto(at)
-        for termo in ("Recursos Humanos", "01/04/2026 a 15/09/2026", "Não representa necessariamente todo o departamento", "Saldo corrente", "Contagem única por solicitação", "Clima"):
+        for termo in ("Recursos Humanos", "6 pessoas do setor", "dias úteis cobertos por ausência", "78% de respostas favoráveis", "Clima 2026"):
             self.assertIn(termo.casefold(), texto.casefold())
         self.assertEqual(at.selectbox(key="ie_periodo").options, [modelo.PERIODO])
+        self.assertEqual([p for _, p, _ in self.api.chamadas if "indicadores" in p], ["indicadores_equipe"])
+        self.assertFalse(any(p.startswith(("folha_ponto", "colaboradores/")) for _, p, _ in self.api.chamadas))
 
-    def test_navegacao_menu_sem_construcao(self):
+    def test_navegacao_menu(self):
         at = self.app()
         at.button(key="nav_Início").click().run()
         at._page_hash = next(h for h, i in at._registered_pages.items() if i.get("page_name") == "Início")
         at.button(key="nav_Indicadores da equipe").click().run()
         self.assertFalse(list(at.exception))
-        self.assertFalse(list(at.toast))
         self.assertIn("Horas extras por mês", self.texto(at))
 
     def test_outros_perfis_sem_menu_nem_consultas(self):
@@ -295,81 +307,60 @@ class TelaENavegacao(Base):
                 self.assertNotIn("nav_Indicadores da equipe", {b.key for b in at.button})
                 self.assertEqual(self.api.chamadas, [])
 
-    def test_mes_atual_vazio_mantem_outros_meses(self):
-        self.api.meses[(2026, 9)]["registros"] = []
+    def test_setor_pequeno_oculto(self):
+        self.api.indicadores = {"setor": "Recursos Humanos", "pessoas": 2, "minimo": 5, "suprimido": True, "meses": [], "banco_horas": None,
+                                "clima": None, "motivo": "O setor tem menos de 5 pessoas: os números ficam ocultos para não identificar ninguém."}
         at = self.app()
-        self.assertEqual(self.indicadores(at)[1], "—")
-        self.assertIn("+14h00", self.texto(at))
-        self.assertNotIn("0h00", self.texto(at))
-
-    def test_mes_falha_nao_vira_zero_nem_total_parcial_de_ausencias(self):
-        self.api.erros["folha_ponto/mes?ano=2026&mes=8"] = ApiError("Falha.", 500)
-        at = self.app()
-        self.assertIn("Período sem cobertura completa", self.texto(at))
-        self.assertEqual(self.indicadores(at)[1], "+12h00")
-        self.assertIn("+9h40", self.texto(at))
-
-    def test_banco_parcial_indisponivel_sem_derrubar_horas(self):
-        self.api.erros["colaboradores/9/banco_horas"] = ApiError("Sem permissão.", 403)
-        at = self.app()
-        self.assertEqual(self.indicadores(at), ["—", "+12h00", "—", "—"])
-        self.assertIn("falta de permissão", self.texto(at))
-
-    def test_banco_negativo(self):
-        self.api.bancos = {i: -1.5 for i in IDS_BANCO}
-        self.assertEqual(self.indicadores(self.app())[2], "-7h30")
-
-    def test_sem_pessoas_e_protecao_grupo_pequeno(self):
-        for ids in ([], IDS_FOLHA[:3]):
-            self.api.pessoas = [PESSOAS[0]] + [p for p in PESSOAS if p["id"] in ids]
-            self.api.org["colaboradores"] = [{"id": 12, "departamento_id": 1}]
-            at = self.app()
-            self.assertEqual(self.indicadores(at), ["—"] * 4)
-            self.assertIn("Agregados de grupos com menos de 5", self.texto(at))
-
-    def test_ausencias_vazias_confirmadas(self):
-        for mes in self.api.meses.values():
-            mes["ausencias"] = []
-        self.assertIn("Nenhuma solicitação aprovada ou registrada", self.texto(self.app()))
-
-    def test_fontes_independentes_e_erro_geral_recuperavel(self):
-        self.api.erros["organograma"] = ApiError("Falha.", 500)
-        at = self.app()
-        self.assertEqual(self.indicadores(at)[1:3], ["+12h00", "—"])
-        self.api.erros.clear()
-        at.button(key="ie_atualizar").click().run()
-        self.assertEqual(self.indicadores(at)[2], "+9h40")
-
-    def test_absenteismo_clima_csv_bloqueados_sem_chamadas_restritas(self):
-        at = self.app()
+        self.assertEqual(self.indicadores(at), ["—"] * 4)
+        self.assertIn("menos de 5 pessoas", self.texto(at))
         self.assertTrue(at.button(key="ie_csv").disabled)
+
+    def test_ausencias_por_mes_e_vazio(self):
+        self.assertIn("Ausências por mês", self.texto(self.app()))
+        for m in self.api.indicadores["meses"]:
+            m["ausencias"] = 0
+        self.assertIn("Nenhuma ausência aprovada ou registrada", self.texto(self.app()))
+
+    def test_clima_abaixo_do_minimo(self):
+        self.api.indicadores["clima"] = {"pesquisa": "Clima 2026", "participantes": 3, "minimo": 5, "favoravel_pct": None}
+        at = self.app()
+        self.assertEqual(self.indicadores(at)[3], "—")
+        self.assertIn("só aparece com 5 respostas ou mais (3 responderam)", self.texto(at))
+
+    def test_exportar_csv_auditado(self):
+        at = self.app()
         self.assertEqual(len(at.get("download_button")), 0)
-        self.assertIn("O resultado do clima só aparece para grupos com 5 pessoas ou mais.", self.texto(at))
-        self.assertIn("resultado não está disponível para o Gestor", self.texto(at))
-        self.assertTrue(all(m == "GET" for m, _, _ in self.api.chamadas))
-        self.assertFalse(any("indicadores" in p or "clima" in p or "calendario" in p for _, p, _ in self.api.chamadas))
+        at.button(key="ie_csv").click().run()
+        self.assertIn(("POST", "indicadores_equipe/exportar", api_client.GRUPO_COLABORADORES), self.api.chamadas)
+        self.assertEqual(len(at.get("download_button")), 1)
+        conteudo = modelo.csv_backend(self.api.indicadores).decode("utf-8-sig")
+        self.assertIn("Setor;Mês;Horas extras", conteudo)
+        self.assertNotIn("colaborador", conteudo.casefold())
+
+    def test_erro_e_atualizar(self):
+        self.api.erros["indicadores_equipe"] = ApiError("Sua conta nao e gestora de nenhum setor.", 404)
+        at = self.app()
+        self.assertIn("nao e gestora", self.texto(at))
+        self.api.erros.clear()
+        at = self.app()
+        at.button(key="ie_atualizar").click().run()
+        self.assertEqual(self.indicadores(at)[1], "+12h00")
 
     def test_sessao_expirada(self):
-        self.api.erros["organograma"] = ApiError("Sessão encerrada.", 401)
+        self.api.erros["indicadores_equipe"] = ApiError("Sessão encerrada.", 401)
         at = self.app()
         self.assertNotIn("token", at.session_state)
 
-    def test_privacidade_e_html_escapado(self):
-        self.api.org["departamentos"][0]["nome"] = "<b>Departamento fictício</b>"
-        self.api.org["colaboradores"][0].update(cpf="CPF_SIGILO", nome="PESSOA_SIGILO")
-        for mes in self.api.meses.values():
-            mes["registros"][0].update(cpf="CPF_SIGILO", conta="BANCO_SIGILO", observacao="COMENTARIO_SIGILO")
-        at = self.app()
-        bruto = " ".join(str(e.value) for e in at.get("html"))
-        for segredo in ("CPF_SIGILO", "PESSOA_SIGILO", "BANCO_SIGILO", "COMENTARIO_SIGILO", "NAO_EXIBIR", "<b>Departamento fictício</b>"):
-            self.assertNotIn(segredo, bruto)
+    def test_html_escapado(self):
+        self.api.indicadores["setor"] = "<b>Departamento fictício</b>"
+        bruto = " ".join(str(e.value) for e in self.app().get("html"))
+        self.assertNotIn("<b>Departamento fictício</b>", bruto)
         self.assertIn("&lt;b&gt;Departamento fictício&lt;/b&gt;", bruto)
 
     def test_temas_claro_escuro_preservam_metricas(self):
         for tema in ("claro", "escuro"):
             at = self.app(tema=tema)
-            self.assertEqual(self.indicadores(at), ["—", "+12h00", "+9h40", "—"])
-            self.assertEqual(at.session_state["tema"], tema)
+            self.assertEqual(self.indicadores(at), ["2,4%", "+12h00", "+9h40", "78%"])
 
 
 def previa():

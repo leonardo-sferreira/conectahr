@@ -1,5 +1,7 @@
 """Agregados do F18: recortes separados, sem recriar regras de jornada ou autorização."""
 
+import csv
+import io
 import math
 from datetime import date
 
@@ -156,3 +158,64 @@ def total_banco(saldos: dict, ids: list[int] | None) -> float | None:
     if motivo_cobertura(ids) or any(numero(saldos.get(pid)) is None for pid in ids):
         return None
     return numero(sum(saldos[pid] for pid in ids))
+
+
+# ---------------------------------------------------------------------------
+# Agregados do backend (change backend-gestor-pendencias, D2): `indicadores_equipe` já devolve os números do setor
+# inteiro, sem pessoas; aqui só se formatam.
+# ---------------------------------------------------------------------------
+def _rotulo_mes(chave: str) -> str:
+    ano, mes = chave.split("-")
+    return f"{MESES[int(mes) - 1][:3].lower()}/{ano[2:]}"
+
+
+def serie_backend(ind: dict) -> list[dict]:
+    return [{"rotulo": _rotulo_mes(m["mes"]), "valor": m.get("horas_extras"),
+             "texto": saldo(m["horas_extras"])[0] if m.get("horas_extras") is not None else "—", "situacao": "Horas extras registradas"}
+            for m in (ind or {}).get("meses") or []]
+
+
+def ausencias_backend(ind: dict) -> list[tuple[str, int]] | None:
+    meses_ind = (ind or {}).get("meses") or []
+    if not meses_ind:
+        return None
+    return [(_rotulo_mes(m["mes"]), int(m.get("ausencias") or 0)) for m in meses_ind]
+
+
+def percentual(valor) -> str:
+    return "—" if valor is None else f"{float(valor):.1f}%".replace(".", ",")
+
+
+def cartoes_backend(ind: dict) -> list[tuple[str, str, str]]:
+    """Os quatro cartões do Figma: absenteísmo do mês, horas extras do mês, banco do setor e clima (% favorável)."""
+    ind = ind or {}
+    meses_ind = ind.get("meses") or []
+    atual = meses_ind[-1] if meses_ind else {}
+    clima = (ind.get("clima") or {}).get("favoravel_pct")
+    return [("Absenteísmo no mês", percentual(atual.get("absenteismo")), ""),
+            ("Horas extras no mês", saldo(atual["horas_extras"])[0] if atual.get("horas_extras") is not None else "—", "ambar"),
+            ("Banco de horas da equipe", saldo(ind["banco_horas"])[0] if ind.get("banco_horas") is not None else "—", ""),
+            ("Clima (favorável)", f"{clima}%" if clima is not None else "—", "verde" if clima is not None else "")]
+
+
+def texto_clima(ind: dict) -> str:
+    clima = (ind or {}).get("clima")
+    if not clima:
+        return "Nenhuma pesquisa de clima encerrada ainda."
+    if clima.get("favoravel_pct") is None:
+        return (f"{clima.get('pesquisa') or 'Última pesquisa'}: o resultado do setor só aparece com {clima.get('minimo')} respostas ou mais "
+                f"({clima.get('participantes')} responderam).")
+    return f"{clima['favoravel_pct']}% de respostas favoráveis em \"{clima.get('pesquisa')}\" ({clima.get('participantes')} pessoas do setor)."
+
+
+def csv_backend(ind: dict) -> bytes:
+    """CSV dos agregados, sem pessoas: mês, horas extras, ausências, dias úteis, dias de ausência e absenteísmo."""
+    saida = io.StringIO()
+    escritor = csv.writer(saida, delimiter=";")
+    escritor.writerow(["Setor", "Mês", "Horas extras", "Ausências", "Dias úteis", "Dias de ausência", "Absenteísmo (%)"])
+    for m in (ind or {}).get("meses") or []:
+        escritor.writerow([ind.get("setor") or "", m["mes"], str(m.get("horas_extras")).replace(".", ","), m.get("ausencias"), m.get("dias_uteis"),
+                           m.get("dias_ausencia"), "" if m.get("absenteismo") is None else str(m["absenteismo"]).replace(".", ",")])
+    escritor.writerow([])
+    escritor.writerow(["Banco de horas do setor (horas)", str(ind.get("banco_horas")).replace(".", ",") if ind.get("banco_horas") is not None else ""])
+    return saida.getvalue().encode("utf-8-sig")

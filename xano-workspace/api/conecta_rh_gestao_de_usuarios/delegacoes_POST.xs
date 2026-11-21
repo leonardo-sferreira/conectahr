@@ -122,6 +122,127 @@ query delegacoes verb=POST {
       error = "Escopo invalido."
     }
 
+    // Gestor (change backend-gestor-pendencias, D3): so os escopos que ele decide e um substituto do catalogo.
+    // RH e Admin continuam com todos os escopos e qualquer conta ativa.
+    conditional {
+      if (($perfil_autenticado != "RH") && ($perfil_autenticado != "ADMIN")) {
+        precondition (($input.escopo == "ferias") || ($input.escopo == "correcao_ponto") || ($input.escopo == "todas")) {
+          error_type = "inputerror"
+          error = "O Gestor delega so ferias, correcao de ponto ou todas: as outras decisoes sao do RH."
+        }
+
+        var $titular_catalogo_id {
+          value = $titular_id_final
+        }
+
+        // Catalogo de substitutos (change backend-gestor-pendencias, D3): pessoas ativas com conta do setor do titular e os
+        // outros Gestores ativos. Nunca o proprio titular.
+        db.get colaborador {
+          field_name = "user_id"
+          field_value = $titular_catalogo_id
+          output = ["id", "departamento_id"]
+        } as $ficha_titular_catalogo
+
+        var $setor_titular {
+          value = ($ficha_titular_catalogo != null) ? $ficha_titular_catalogo.departamento_id : null
+        }
+
+        db.query user {
+          where = $db.user.ativo == true
+          return = {type: "list"}
+          output = ["id", "nome", "perfil"]
+        } as $contas_ativas
+
+        db.query colaborador {
+          where = $db.colaborador.user_id != null
+          return = {type: "list"}
+          output = ["id", "user_id", "departamento_id", "status"]
+        } as $fichas_com_conta
+
+        db.query departamento {
+          return = {type: "list"}
+          output = ["id", "nome"]
+        } as $setores
+
+        var $catalogo {
+          value = []
+        }
+
+        var $catalogo_ids {
+          value = ","
+        }
+
+        foreach ($contas_ativas) {
+          each as $conta {
+            conditional {
+              if ($conta.id != $titular_catalogo_id) {
+                var $ficha_conta {
+                  value = null
+                }
+
+                foreach ($fichas_com_conta) {
+                  each as $fc {
+                    conditional {
+                      if ($fc.user_id == $conta.id) {
+                        var.update $ficha_conta {
+                          value = $fc
+                        }
+                      }
+                    }
+                  }
+                }
+
+                var $mesmo_setor {
+                  value = ($ficha_conta != null) && ($setor_titular != null) && ($ficha_conta.departamento_id == $setor_titular) && ($ficha_conta.status != "Desligado")
+                }
+
+                var $e_gestor {
+                  value = ($conta.perfil|trim|to_upper) == "GESTOR"
+                }
+
+                conditional {
+                  if ($mesmo_setor || $e_gestor) {
+                    var $nome_setor {
+                      value = null
+                    }
+
+                    foreach ($setores) {
+                      each as $st {
+                        conditional {
+                          if (($ficha_conta != null) && ($st.id == $ficha_conta.departamento_id)) {
+                            var.update $nome_setor {
+                              value = $st.nome
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    var $motivo_catalogo {
+                      value = $mesmo_setor ? "mesmo_setor" : "gestor"
+                    }
+
+                    var.update $catalogo {
+                      value = $catalogo|push:{user_id: $conta.id, nome: $conta.nome, setor: $nome_setor, motivo: $motivo_catalogo}
+                    }
+
+                    var.update $catalogo_ids {
+                      value = $catalogo_ids ~ ($conta.id|to_text) ~ ","
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        precondition ($catalogo_ids|contains:("," ~ ($input.substituto_user_id|to_text) ~ ",")) {
+          error_type = "inputerror"
+          error = "Escolha o substituto entre as pessoas do seu setor ou os outros Gestores."
+        }
+      }
+    }
+
     precondition ($input.data_fim >= $input.data_inicio) {
       error_type = "inputerror"
       error = "A data de fim nao pode ser anterior a data de inicio."

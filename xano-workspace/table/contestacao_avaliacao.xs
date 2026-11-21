@@ -22,6 +22,19 @@ table contestacao_avaliacao {
     }
     text? resposta_revisao filters=trim|max:2000
     timestamp? data_revisao
+
+    // Resposta do Gestor que avaliou (change backend-gestor-pendencias, D5): manter ou revisar a nota.
+    // A contestacao continua aberta ate o RH responder (palavra final).
+    enum? decisao_gestor? {
+      values = ["manter", "revisar"]
+    }
+
+    decimal? nota_revisada?
+    text? resposta_gestor? filters=trim|max:2000
+    timestamp? respondido_gestor_em?
+    int? respondido_gestor_por_user_id? {
+      table = "user"
+    }
   }
 
   index = [

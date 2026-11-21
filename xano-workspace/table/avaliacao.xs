@@ -32,6 +32,9 @@ table avaliacao {
     enum status?=pendente {
       values = ["pendente", "em_andamento", "enviada", "cancelada"]
     }
+
+    // Nota antes da primeira revisao por contestacao (change backend-gestor-pendencias, D5); a nota atual fica em `nota`.
+    decimal? nota_original?
   }
 
   index = [

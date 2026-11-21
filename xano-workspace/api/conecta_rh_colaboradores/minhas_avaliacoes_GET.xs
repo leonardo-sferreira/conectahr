@@ -58,7 +58,65 @@ query "minhas_avaliacoes" verb=GET {
       where = $db.avaliacao.user_id == $usuario_autenticado.id
       sort = {avaliacao.created_at: "desc"}
       return = {type: "list"}
-    } as $minhas_avaliacoes
+    } as $minhas_avaliacoes_brutas
+
+    // Avaliacao do gestor (change backend-gestor-pendencias, D4): o prazo e o fim do ciclo, e a situacao da
+    // autoavaliacao da mesma pessoa no mesmo ciclo vem sem notas nem comentarios.
+    var $minhas_avaliacoes {
+      value = []
+    }
+
+    foreach ($minhas_avaliacoes_brutas) {
+      each as $av_item {
+        var $prazo_av {
+          value = null
+        }
+
+        var $auto_status {
+          value = null
+        }
+
+        conditional {
+          if ($av_item.relacao_avaliador == "gestor") {
+            db.get ciclo_avaliacao {
+              field_name = "id"
+              field_value = $av_item.ciclo_avaliacao_id
+              output = ["id", "data_fim"]
+            } as $ciclo_av
+
+            var.update $prazo_av {
+              value = ($ciclo_av != null) ? $ciclo_av.data_fim : null
+            }
+
+            db.query avaliacao {
+              where = $db.avaliacao.colaborador_id == $av_item.colaborador_id && $db.avaliacao.ciclo_avaliacao_id == $av_item.ciclo_avaliacao_id && $db.avaliacao.relacao_avaliador == "autoavaliacao"
+              return = {type: "list"}
+              output = ["id", "status"]
+            } as $autos
+
+            var.update $auto_status {
+              value = "sem_autoavaliacao"
+            }
+
+            foreach ($autos) {
+              each as $auto {
+                conditional {
+                  if ($auto.status != "cancelada") {
+                    var.update $auto_status {
+                      value = $auto.status
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        var.update $minhas_avaliacoes {
+          value = $minhas_avaliacoes|push:($av_item|set:"prazo":$prazo_av|set:"autoavaliacao_status":$auto_status)
+        }
+      }
+    }
   }
 
   response = {
