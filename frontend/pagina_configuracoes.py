@@ -340,7 +340,8 @@ def _cartao_senha(token: str) -> None:
         nova = st.text_input("Nova senha", type="password", max_chars=64, key="cfg_senha_nova")
         confirmar = st.text_input("Confirmar nova senha", type="password", max_chars=64, key="cfg_senha_confirmar")
         regras = "".join(
-            f'<p class="crh-cfg-nota crh-regra{" ok" if ok else ""}" style="margin:0">{"✓" if ok else "•"} {html.escape(texto)}</p>'
+            f'<p class="crh-cfg-nota crh-regra{" ok" if ok else ""}" style="margin:0"><span aria-hidden="true">{"✓" if ok else "•"}</span> '
+            f'{html.escape(texto)}<span class="crh-sr"> ({"atendida" if ok else "ainda não atendida"})</span></p>'
             for texto, ok in regras_senha(nova, atual)
         )
         st.html(regras)

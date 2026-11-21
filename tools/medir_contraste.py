@@ -32,6 +32,7 @@ FUNDO_REAL = {
     "crh-link-aviso-rotulo": theme.GRAFITE,  # rótulos dos links da tela Entrar, também sobre o grafite
     'ae_aba button[aria-checked="true"]': theme.AMBAR,  # aba ativa: o fundo âmbar está na regra do botão
     "calendar": "#262730",                # calendário do seletor de data: abre com o fundo escuro do Streamlit
+    "stExpandSidebarButton": theme.GRAFITE,  # botão de abrir o menu no celular: o fundo grafite está na própria regra
 }
 # Variáveis de texto de status (tarefa 61): valores do tema claro e do escuro.
 VARIAVEIS = {
