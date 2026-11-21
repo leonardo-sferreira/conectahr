@@ -75,7 +75,8 @@
 
 ## 8. LGPD e integração
 
-- [ ] 8.1 Atualizar `docs/lgpd/registro-de-operacoes.md`, `retencao.md` e o aviso de privacidade (documento e cópias no Figma) com o CPF no comprovante, no AFD e no AEJ e a ARP fora da anonimização pelo prazo legal. Verificar: documento e Figma com os mesmos textos.
+- [x] 8.1 Atualizar `docs/lgpd/registro-de-operacoes.md`, `retencao.md` e o aviso de privacidade (documento e cópias no Figma) com o CPF no comprovante, no AFD e no AEJ e a ARP fora da anonimização pelo prazo legal. Verificar: documento e Figma com os mesmos textos.
+  - **Feito (21/11/2026):** F07 em `registro-de-operacoes.md` (ARP com CPF, comprovante, AFD e AEJ; acesso de cada um; ARP fora da anonimização no prazo legal), `retencao.md` (a ARP fica fora da anonimização durante o prazo; `checar_endpoints` protege) e a linha "Controlar a jornada" do aviso de privacidade, com o mesmo texto no documento e nas 6 cópias do Figma (285:948/950 e 285:1250/1252; escuro 292:1071/1073 e 292:1296/1298; fluxo F36 301:1369/1371 e 301:2062/2064). Prazo de 5 anos marcado "a confirmar com o jurídico". `tools/testar_privacidade_documentos.py` 108/108.
 - [ ] 8.2 Conferência de ponta a ponta: marcar, pedir correção, aprovar, ver o espelho com "(I)", gerar AFD e AEJ e pedir férias com venda, num ambiente de teste. Verificar: o roteiro executado com os resultados em `docs/evidencias/frontend-ponto-rep-p.md`, e `openspec validate ponto-rep-p-e-ferias-clt` passando.
 
 ## 9. Jornada, descanso e saldo (decidido em 12/10/2026)
