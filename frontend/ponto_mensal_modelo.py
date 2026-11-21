@@ -46,6 +46,18 @@ _SITUACAO = {
 }
 
 
+
+
+def rotulo_feriado(f: dict) -> str:
+    """"Feriado", "Feriado estadual (SP)", "Feriado municipal (São Paulo)" ou "Ponto facultativo" (tarefa 7.3)."""
+    if f.get("tipo") == "ponto_facultativo":
+        return "Ponto facultativo"
+    if f.get("abrangencia") == "estadual":
+        return f"Feriado estadual ({f.get('estado') or 'estado'})"
+    if f.get("abrangencia") == "municipal":
+        return f"Feriado municipal ({f.get('municipio') or 'município'})"
+    return "Feriado"
+
 def _dia(valor) -> date | None:
     try:
         return date.fromisoformat(str(valor)[:10])
@@ -236,7 +248,7 @@ def espelho_do_mes(registros: list[dict], ausencias: list[dict], correcoes: list
     dias_sem_expediente = {}
     for f in feriados:
         if f.get("ativo", True) and _dia(f.get("data")):
-            rotulo = "Ponto facultativo" if f.get("tipo") == "ponto_facultativo" else "Feriado"
+            rotulo = rotulo_feriado(f)
             dias_sem_expediente[_dia(f["data"])] = f"{rotulo} — {f.get('nome') or rotulo}"
     ferias_ok = [f for f in ferias if f.get("status") in ("Aprovada", "Concluida")]
     aus_validas = [a for a in ausencias if a.get("status") != "Rejeitada"]

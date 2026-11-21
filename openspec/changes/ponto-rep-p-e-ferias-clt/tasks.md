@@ -67,9 +67,11 @@
 
 - [ ] 7.1 Criar `tools/feriados.py` (Páscoa e datas móveis) e carregar 2026 e 2027: nacionais, facultativos federais, estado de São Paulo e cidade de São Paulo. Verificar: o teste confere Páscoa de 2026 em 05/04 e de 2027 em 28/03, Corpus Christi em 04/06/2026 e 27/05/2027, e a lista bate com a portaria federal de pontos facultativos de 2026.
   - **Em andamento (12/10/2026, D17):** no lugar do script, os nacionais vêm da BrasilAPI por `ConectaHR/importar_feriados_nacionais` e `feriados/importar` (RH e Admin, auditado); 2026 e 2027 importados por `xano function run` (14 cada; repetir 2026 não duplicou). Faltam os facultativos federais, os estaduais e os municipais de SP, que a BrasilAPI não traz.
-- [ ] 7.2 Ajustar `calendario` GET para devolver o tipo, e o CRUD de feriados (RH e Admin, auditado) para aceitar o tipo. Verificar: por HTTP, Gestor recebe 403 ao incluir feriado e o tipo volta na consulta.
-- [ ] 7.3 Mostrar o calendário mensal na tela de férias e a aba "Feriados" na estrutura da empresa; tratar ponto facultativo no espelho do ponto. Verificar: teste com 9 de julho mostra "Feriado estadual (SP)" sem falta, e prints com o Figma.
+- [x] 7.2 Ajustar `calendario` GET para devolver o tipo, e o CRUD de feriados (RH e Admin, auditado) para aceitar o tipo. Verificar: por HTTP, Gestor recebe 403 ao incluir feriado e o tipo volta na consulta.
+  - **Feito (21/11/2026):** `calendario` GET já devolvia o tipo; `feriados` POST passou a aceitar `tipo` e `observacao`, exige estado e município conforme a abrangência e grava a auditoria `criar_feriado`; `feriados/{id}` PATCH novo (editar, desativar e reativar, auditado). Só RH e Admin (os demais, 403). `checar_endpoints` 292, 0 falhas. Ver `docs/evidencias/frontend-feriados.md`.
+- [x] 7.3 Mostrar o calendário mensal na tela de férias e a aba "Feriados" na estrutura da empresa; tratar ponto facultativo no espelho do ponto. Verificar: teste com 9 de julho mostra "Feriado estadual (SP)" sem falta, e prints com o Figma.
   - **Em andamento (12/10/2026):** calendário do mês na tela de férias ("Ver calendário", Figma 466:833: feriados, facultativos, férias aprovadas e em análise, ‹ e ›) e a aba "Feriados" da Estrutura da empresa (lista do ano e importar; sem editar e desativar, que o backend não tem). `tools/testar_ferias.py`: 51/51. Falta o ponto facultativo estadual no espelho e os prints com o Figma.
+  - **Feito (21/11/2026):** o espelho mostra "Feriado estadual (SP)" no 9 de julho, sem falta, e os rótulos municipal e de ponto facultativo (`tools/testar_ponto_mensal.py` 99/99). Prints da prévia lado a lado com o Figma 466:833 e 468:838 em `docs/evidencias/frontend-feriados.md`.
 
 ## 8. LGPD e integração
 
@@ -91,4 +93,5 @@
   - **Ajuste (12/10/2026):** a incluída (I) também pode ser corrigida ou desconsiderada (`correcao_ponto.tratamento_id`, schema publicado à parte; aprovado, desfaz a inclusão) e Cancelar não reabre mais o pedido (versão na chave da planilha). `validar_tratamento` conferido por `xano function run`; `tools/testar_ponto_mensal.py` 91/91, `tools/testar_folha_ponto.py` 46/46.
 - [x] 9.8 Pedido pela célula da planilha e limpeza dos textos de tela (D18, pedidos do usuário em 12/10/2026). Verificar: `tools/testar_ponto_mensal.py` 95/95 (célula, ações, faixa de horário) e `tools/testar_folha_ponto.py` 46/46; as suítes das telas com textos retirados passando.
 - [ ] 9.5 Documentar em `docs/regras-de-negocio.md` (4.7), `docs/ponto/rep-p.md` e `docs/fluxos/ponto-mensal.md`, e registrar as evidências (prints com o Figma e o teste por HTTP) em `docs/evidencias/frontend-ponto-rep-p.md`. Verificar: os documentos descrevem as três regras e as decisões D12 a D14.
+  - **Em parte (21/11/2026):** `docs/ponto/rep-p.md` e `docs/fluxos/ponto-mensal.md` descrevem as três regras e D12 a D14 (a seção 4.7 das regras já descrevia). Falta a evidência por HTTP, que depende da 9.2.
 
