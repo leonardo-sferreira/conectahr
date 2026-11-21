@@ -150,11 +150,16 @@ query "mural_reconhecimento" verb=GET {
         }
       }
     }
+
+    // Nomes e competência (tarefa 66), depois das regras acima: não muda quem aparece.
+    function.run "ConectaHR/enriquecer_reconhecimentos" {
+      input = {lista: $mural}
+    } as $mural_com_nomes
   }
 
   response = {
     sucesso: true
-    mural  : $mural
+    mural  : $mural_com_nomes
   }
 
   guid = "conectahr-mural-reconhecimento-get-0001"

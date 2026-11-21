@@ -1289,6 +1289,43 @@ def processar_fila_emails(token: str) -> dict:
     return _post("email_outbox/processar", {}, token, GRUPO_COLABORADORES)
 
 
+def mural_reconhecimento(token: str) -> dict:
+    """GET mural_reconhecimento -> {mural}: públicos ativos, respeitando "Aparecer no mural", com os nomes e a competência."""
+    return _get("mural_reconhecimento", token, GRUPO_COLABORADORES)
+
+
+def meus_reconhecimentos_recebidos(token: str) -> dict:
+    """GET meus_reconhecimentos_recebidos -> {recebidos}: públicos e privados recebidos, com os nomes e a competência."""
+    return _get("meus_reconhecimentos_recebidos", token, GRUPO_COLABORADORES)
+
+
+def meus_reconhecimentos_enviados(token: str) -> dict:
+    """GET meus_reconhecimentos_enviados -> {enviados}: os que a pessoa enviou, com a moderação e o motivo."""
+    return _get("meus_reconhecimentos_enviados", token, GRUPO_COLABORADORES)
+
+
+def competencias_reconhecimento(token: str) -> dict:
+    """GET competencias_reconhecimento -> {competencias: [{id, nome}]}: as ativas, para reconhecer um colega."""
+    return _get("competencias_reconhecimento", token, GRUPO_COLABORADORES)
+
+
+def enviar_reconhecimento(token: str, destinatario_colaborador_id: int, competencia_avaliacao_id: int, titulo: str, mensagem: str) -> dict:
+    """POST reconhecimentos: a visibilidade sai da relação (gestor do departamento = privado; colega = público)."""
+    corpo = {"destinatario_colaborador_id": int(destinatario_colaborador_id), "competencia_avaliacao_id": int(competencia_avaliacao_id),
+             "titulo": titulo, "mensagem": mensagem}
+    return _post("reconhecimentos", corpo, token, GRUPO_COLABORADORES)
+
+
+def reconhecimentos_moderacao(token: str) -> dict:
+    """GET reconhecimentos_moderacao -> {reconhecimentos}: públicos no mural e moderados (RH e Admin)."""
+    return _get("reconhecimentos_moderacao", token, GRUPO_COLABORADORES)
+
+
+def moderar_reconhecimento(token: str, reconhecimento_id: int, motivo: str) -> dict:
+    """POST reconhecimentos/{id}/moderar: tira do mural com motivo (RH e Admin; auditado, sem volta)."""
+    return _post(f"reconhecimentos/{int(reconhecimento_id)}/moderar", {"motivo_moderacao": motivo}, token, GRUPO_COLABORADORES)
+
+
 def retencao(token: str) -> dict:
     """GET retencao -> {hoje, documentos, pessoas, guardas, processo_aberto}: tela "Retenção e anonimização" (RH e Admin).
     Só leitura: documentos com guarda vencida, desligados e donos desses documentos, prazos de guarda e processos abertos."""

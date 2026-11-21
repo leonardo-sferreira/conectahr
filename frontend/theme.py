@@ -679,7 +679,7 @@ _APP_CSS = f"""
   div[class*="st-key-cfg_card_"], .st-key-doc_lista {{
     background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 24px; gap: 14px;
   }}
-  div[class*="st-key-cfg_card_"] button[kind="primary"], .st-key-doc_topo button[kind="primary"] {{ width: auto; padding: 0.6rem 1.1rem; }}
+  div[class*="st-key-cfg_card_"] button[kind="primary"], .st-key-doc_topo button[kind="primary"], .st-key-rec_topo button[kind="primary"] {{ width: auto; padding: 0.6rem 1.1rem; }}
   div[class*="st-key-cfg_card_"] button[kind="secondary"] {{ border: 1px solid {BORDA}; border-radius: 10px; padding: 0.6rem 1.1rem; background: white; }}
   div[class*="st-key-cfg_card_"] button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .crh-cfg-titulo {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 18px; color: {GRAFITE}; }}
@@ -937,6 +937,24 @@ _APP_CSS = f"""
   .crh-rec .nome {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE}; }}
   .crh-rec .quando {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; white-space: nowrap; }}
   .crh-rec .msg {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
+  /* Reconhecimentos (Figma 291:908, 291:1075, 291:1239 e 291:1374; tarefa 66): cartão é o contêiner rec_card_*. */
+  div[class*="st-key-rec_card_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 14px; padding: 16px 18px; gap: 8px; }}
+  div[class*="st-key-rec_card_"] button {{ border: 1px solid {BORDA}; border-radius: 10px; background: white; padding: 0.35rem 0.9rem; min-height: 0; }}
+  .crh-rc {{ display: flex; gap: 14px; align-items: flex-start; }}
+  .crh-rc .av {{ flex: none; width: 34px; height: 34px; border-radius: 999px; background: {GRAFITE}; color: {AMBAR}; display: flex; align-items: center; justify-content: center; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 12px; }}
+  .crh-rc .corpo {{ flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }}
+  .crh-rc .topo {{ display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }}
+  .crh-rc .quem {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-rc .quem b {{ color: {GRAFITE}; font-weight: 600; }}
+  .crh-rc .selos {{ display: flex; gap: 6px; flex-wrap: wrap; }}
+  .crh-rc .t {{ margin: 2px 0 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 15px; color: {GRAFITE}; }}
+  .crh-rc .m {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; line-height: 1.5; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-rc .q {{ margin: 2px 0 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-rc .nota {{ margin: 2px 0 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: var(--crh-err); }}
+  .crh-rc-vazio {{ text-align: center; padding: 36px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; }}
+  .crh-rc-vazio .ic {{ width: 46px; height: 46px; border-radius: 999px; background: {GRAFITE}; color: {AMBAR}; display: flex; align-items: center; justify-content: center; font-size: 16px; }}
+  .crh-rc-vazio .t {{ margin: 6px 0 0; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 17px; color: {GRAFITE}; }}
+  .crh-rc-vazio .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
   /* Data em três listas (campos.data_por_partes): o rótulo igual ao dos outros campos. */
   .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
   /* Auditoria (Figma 225:6784): resultado em verde (sucesso) ou vermelho (falha). */
@@ -1261,6 +1279,11 @@ _ESCURO_CSS = f"""
   .crh-carreira .r, .crh-rec .quando, .crh-rec .msg {{ color: {ESC_TEXTO_2} !important; }}
   .crh-carreira .comp {{ background: {ESC_AMBAR_SUAVE}; color: {AMBAR}; }}
   .crh-rec .item {{ border-color: {ESC_BORDA}; }}
+  div[class*="st-key-rec_card_"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  div[class*="st-key-rec_card_"] button {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-rc .quem, .crh-rc .m, .crh-rc .q, .crh-rc-vazio .d {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-rc .quem b, .crh-rc .t, .crh-rc-vazio .t {{ color: {ESC_TEXTO} !important; }}
+  .crh-rc .av, .crh-rc-vazio .ic {{ background: {ESC_FUNDO}; }}
   .crh-cm-cab .t, .crh-cm-q .p, .crh-cm-q .r, .crh-cm-fb .t, .crh-cm-fb .i {{ color: {ESC_TEXTO} !important; }}
   .crh-cm-cab .s, .crh-cm-q .r b, .crh-cm-fb .q {{ color: {ESC_TEXTO_2} !important; }}
   .crh-cm-q {{ border-color: {ESC_BORDA}; }}

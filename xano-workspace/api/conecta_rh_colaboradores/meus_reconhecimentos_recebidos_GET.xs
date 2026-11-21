@@ -72,11 +72,16 @@ query "meus_reconhecimentos_recebidos" verb=GET {
       sort = {reconhecimento.created_at: "desc"}
       return = {type: "list"}
     } as $recebidos
+
+    // Nomes e competência (tarefa 66).
+    function.run "ConectaHR/enriquecer_reconhecimentos" {
+      input = {lista: $recebidos}
+    } as $recebidos_com_nomes
   }
 
   response = {
     sucesso  : true
-    recebidos: $recebidos
+    recebidos: $recebidos_com_nomes
   }
 
   guid = "conectahr-meus-reconhecimentos-recebidos-get-0001"
