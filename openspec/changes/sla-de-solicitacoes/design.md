@@ -50,7 +50,7 @@ Ver proposal.md. Pontos do código levantados em 23/10/2026:
 - **Conferência:**
   - aberta segunda às 10h, 72 horas → quinta às 10h;
   - aberta sexta às 10h → quarta às 10h;
-  - aberta sábado às 15h → quarta às 00h (o relógio começa segunda às 00h);
+  - aberta sábado às 15h → quinta às 00h, o fim da quarta (o relógio começa segunda às 00h; corrigido em 20/11/2026: o texto antigo dizia "quarta às 00h", que não fecha com a regra);
   - com feriado na terça, a segunda às 10h vai para sexta às 10h.
 
 ### D3. Prazo gravado na abertura
@@ -93,6 +93,14 @@ Ver proposal.md. Pontos do código levantados em 23/10/2026:
 
 - **Na rotina diária:** para cada pedido em aberto com `now >= alerta_sla` e sem `aviso_sla_em`, avisa quem decide (pela mesma regra do `notificar_decisores`, tipo novo `prazo_vencendo`) e grava `aviso_sla_em`. É idempotente.
 - **Depende da change `notificacoes-de-publicacao`** (o enum e a preferência). Se ela não estiver pronta, esta parte espera.
+
+## Ajustes na implementação (20/11/2026)
+
+- **Situação:** calculada no frontend (`sla_modelo.py`), a partir de `prazo_sla` e `alerta_sla` devolvidos pelas listagens. As listagens não montam a situação. A `central_de_tarefas` ordena as filas pelo prazo (`sort` no `prazo_sla`), e a tela reordena com os sem prazo no fim.
+- **Funções:** `ConectaHR/prazo_sla` só lê o SLA vigente. O endpoint chama `ConectaHR/somar_horas_uteis` duas vezes, para o prazo e para o alerta, para não chamar função de dentro de função.
+- **"Atendido no prazo" ou "fora do prazo"** para pedidos decididos: não entrou, porque o Figma só desenha o selo do pedido em aberto.
+- **"Meus pedidos":** o prazo entra como texto no detalhe da linha, que já tem o selo da situação.
+- **Central:** as solicitações ao RH não estão na `central_de_tarefas` (só férias, ausências, desligamentos, documentos e pedidos LGPD); o selo delas aparece em "Solicitações ao RH".
 
 ## Risks
 
