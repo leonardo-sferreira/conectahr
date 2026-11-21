@@ -16,7 +16,7 @@ Como o ConectaRH usa os seus dados, em linguagem simples. Ele segue a Lei Geral 
 | **Guardar documentos obrigatórios** | RG, CPF, CNH, carteira de trabalho, reservista, documentos de estrangeiro e, para menores de 18 anos, o documento do responsável legal | Obrigações legais | F04 |
 | **Pagar você** | Salário, banco, agência, conta, holerite e informe de rendimentos | Contrato de trabalho e obrigações legais. **Seu gestor não vê esses dados** | F05 |
 | **Registrar contrato, cargo e carreira** | Cargo, departamento e histórico profissional | Contrato de trabalho e obrigações legais | F06 |
-| **Controlar a jornada** | Horários de ponto, correções e banco de horas | Obrigação legal (a CLT exige o controle de jornada) | F07 |
+| **Controlar a jornada** | Horários de ponto, correções e banco de horas. Cada marcação guarda o seu CPF, que também sai no comprovante e nos arquivos que o RH gera para a fiscalização do trabalho | Obrigação legal (a CLT exige o controle de jornada). O registro do ponto não pode ser alterado nem apagado durante o prazo legal; a correção fica ao lado da marcação original | F07 |
 | **Organizar férias** | Períodos de férias e observações | Contrato de trabalho e obrigação legal | F08 |
 | **Registrar ausências e atestados** | Tipo e período da ausência, o motivo e o atestado | Obrigação legal. **Atestado é dado de saúde, um dado sensível.** Seu gestor vê só o tipo, o período e a situação, nunca o motivo nem o atestado | F09 |
 | **Cuidar da saúde e segurança no trabalho** | Resultado do exame ocupacional (ASO), médico responsável e laudos | Obrigação legal (normas de saúde e segurança e eSocial). **Dado sensível**, só o RH acessa | F10 |
