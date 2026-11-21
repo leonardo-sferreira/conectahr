@@ -92,7 +92,7 @@ query status_operacional verb=GET {
     // Desligamentos agendados cuja data efetiva ja passou e ainda nao
     // foram concluidos manualmente (solicitacoes_desligamento/{id}/concluir).
     var $agora_ts_status_op {
-      value = (now|format_timestamp:"Y-m-d":"UTC")
+      value = (now|format_timestamp:"Y-m-d":"America/Sao_Paulo")
     }
 
     db.query solicitacao_desligamento {

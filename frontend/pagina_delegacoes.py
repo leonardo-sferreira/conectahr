@@ -9,7 +9,7 @@ import streamlit as st
 
 from api_client import ApiError, criar_delegacao, delegacoes_substitutos
 from delegacoes_dados import cancelar, carregar, invalidar
-from delegacoes_modelo import ESCOPOS, hoje_utc, linhas, rotulo_substituto, validar_nova
+from delegacoes_modelo import ESCOPOS, hoje_brasilia, linhas, rotulo_substituto, validar_nova
 from theme import alerta, render_hero, render_titulo_cartao, render_topbar
 
 
@@ -39,7 +39,7 @@ def _modal_nova_delegacao() -> None:
     substituto = st.selectbox("Substituto", list(substitutos), index=None, format_func=lambda u: rotulo_substituto(substitutos[u]),
                               placeholder="Escolha quem decide no seu lugar", key="dg_substituto")
     escopo = st.selectbox("O que delegar", escopos, index=None, format_func=ESCOPOS.get, placeholder="Escolha", key="dg_escopo")
-    hoje = hoje_utc()
+    hoje = hoje_brasilia()
     c1, c2 = st.columns(2)
     inicio = c1.date_input("Início", value=hoje, format="DD/MM/YYYY", key="dg_inicio")
     fim = c2.date_input("Fim", value=None, format="DD/MM/YYYY", key="dg_fim")
@@ -145,7 +145,7 @@ def pagina_delegacoes() -> None:
         nomes = {s["user_id"]: s.get("nome") for s in _catalogo(st.session_state.token).get("substitutos") or []}
     except ApiError:
         nomes = {}
-    itens = linhas(dados["delegacoes"], usuario.get("id"), hoje_utc(), nomes)
+    itens = linhas(dados["delegacoes"], usuario.get("id"), hoje_brasilia(), nomes)
     if dados["incompletas"] or any(i["situacao"] == "Não disponível" or i["escopo"] == "Não disponível" for i in itens):
         _mensagem("atencao", "Algumas delegações chegaram com informações incompletas. Confira novamente em instantes.")
     with st.container(horizontal=True, vertical_alignment="center", key="rh_barra"):

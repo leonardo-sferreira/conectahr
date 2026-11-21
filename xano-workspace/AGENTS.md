@@ -53,9 +53,10 @@ Para copiar o padrão, use um endpoint recente como modelo, por exemplo
   `split`, `substr`, `contains`, `replace`, `strlen`.
 - `now|to_text` em campo de dado vira o texto "now". Use `"now"` literal no `data = {}` ou
   `format_timestamp`.
-- Campos `date` são texto "Y-m-d": compare com `format_timestamp:"Y-m-d":"UTC"` e converta com
-  `to_timestamp` para fazer conta. As datas são sempre em UTC (à noite no Brasil, "hoje" já é
-  o dia seguinte).
+- Campos `date` são texto "Y-m-d" gravados em UTC: formate um campo `date` com `format_timestamp:"Y-m-d":"UTC"` e
+  converta com `to_timestamp` para fazer conta. O **dia de hoje** é o de Brasília:
+  `now|format_timestamp:"Y-m-d":"America/Sao_Paulo"`. Com `"UTC"`, depois das 21h "hoje" já é o dia seguinte (tarefa
+  73 da `concluir-frontend-streamlit`, 21/11/2026).
 - Um `||` entre parênteses dentro de `where` de `db.query` não filtrou direito: filtre no laço.
 - `db.get` com `output` restrito não traz os outros campos: inclua o que o endpoint usa.
 - `db.get` com `field_value` nulo falha: confira antes.

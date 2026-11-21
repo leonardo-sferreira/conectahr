@@ -95,7 +95,7 @@ query "colaboradores/aniversariantes" verb=GET {
 
     // Mes corrente, no formato de dois digitos (ex.: "08").
     var $mes_atual {
-      value = now|format_timestamp:"m":"UTC"
+      value = now|format_timestamp:"m":"America/Sao_Paulo"
     }
 
     // Colaboradores ativos com data de nascimento informada.

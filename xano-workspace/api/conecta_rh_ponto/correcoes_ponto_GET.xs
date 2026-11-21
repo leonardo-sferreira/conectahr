@@ -104,7 +104,7 @@ query correcoes_ponto verb=GET {
     }
 
     var $hoje_delegacao_fila {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     db.query delegacao_aprovacao {

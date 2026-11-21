@@ -124,7 +124,7 @@ query "ferias/{id}/verificar_conflito" verb=GET {
     }
 
     var $hoje {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     // Antecedencia da solicitacao, em dias. data_inicio e data_admissao

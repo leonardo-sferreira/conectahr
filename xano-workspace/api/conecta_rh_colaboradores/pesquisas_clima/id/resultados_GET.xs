@@ -87,7 +87,7 @@ query "pesquisas_clima/{id}/resultados" verb=GET {
     // com o periodo vencido). Com a pesquisa aberta, dois pedidos em sequencia
     // revelariam a resposta de quem respondeu entre eles.
     var $hoje_resultados {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     var $pesquisa_encerrada {

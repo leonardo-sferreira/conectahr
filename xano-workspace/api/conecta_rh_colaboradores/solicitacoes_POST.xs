@@ -99,7 +99,7 @@ query solicitacoes verb=POST {
     }
 
     var $prazo_lgpd {
-      value = ($e_pedido_lgpd ? (now|add_secs_to_timestamp:1296000|format_timestamp:"Y-m-d":"UTC") : null)
+      value = ($e_pedido_lgpd ? (now|add_secs_to_timestamp:1296000|format_timestamp:"Y-m-d":"America/Sao_Paulo") : null)
     }
 
     // Prazo de atendimento (change sla-de-solicitacoes, D3): gravado na abertura; mudar o SLA depois nao o altera.
