@@ -102,8 +102,61 @@ query solicitacoes verb=POST {
       value = ($e_pedido_lgpd ? (now|add_secs_to_timestamp:1296000|format_timestamp:"Y-m-d":"UTC") : null)
     }
 
+    // Prazo de atendimento (change sla-de-solicitacoes, D3): gravado na abertura; mudar o SLA depois nao o altera.
+    function.run "ConectaHR/prazo_sla" {
+      input = {tipo_solicitacao: $input.tipo}
+    } as $sla_vigente
+
+    var $sla_aberta_em {
+      value = now
+    }
+
+    function.run "ConectaHR/somar_horas_uteis" {
+      input = {inicio: $sla_aberta_em, horas: $sla_vigente.sla_horas}
+    } as $sla_prazo_calculado
+
+    function.run "ConectaHR/somar_horas_uteis" {
+      input = {inicio: $sla_aberta_em, horas: $sla_vigente.horas_alerta}
+    } as $sla_alerta_calculado
+
+    var $sla_prazo {
+      value = $sla_prazo_calculado
+    }
+
+    var $sla_alerta {
+      value = $sla_alerta_calculado
+    }
+
+    // Pedido LGPD: o prazo nunca passa do prazo legal (prazo_resposta, fim do dia).
+    conditional {
+      if ($e_pedido_lgpd) {
+        var $sla_limite_legal {
+          value = ($prazo_lgpd ~ " 23:59:59")|to_timestamp:"America/Sao_Paulo"
+        }
+
+        conditional {
+          if ($sla_prazo > $sla_limite_legal) {
+            var.update $sla_prazo {
+              value = $sla_limite_legal
+            }
+          }
+        }
+
+        conditional {
+          if ($sla_alerta > $sla_prazo) {
+            var.update $sla_alerta {
+              value = $sla_prazo
+            }
+          }
+        }
+      }
+    }
+
     db.add solicitacao_rh {
       data = {
+        prazo_sla : $sla_prazo
+        alerta_sla: $sla_alerta
+        sla_horas : $sla_vigente.sla_horas
         colaborador_id: $colaborador_autenticado.id
         tipo          : $input.tipo
         descricao     : $input.descricao

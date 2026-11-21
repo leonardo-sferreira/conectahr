@@ -322,6 +322,7 @@ def linhas_pedidos_acesso(pedidos: list[dict]) -> list[dict]:
             "justificativa": p.get("justificativa") or "", "pedido_por": p.get("solicitante_nome") or "RH",
             "quando": _data_hora(p.get("created_at")), "situacao": _SITUACAO_PEDIDO_ACESSO.get(status, (status.capitalize(), "neu")),
             "decisao": decisao, "pendente": status == "pendente",
+            "status": status, "prazo_sla": p.get("prazo_sla"), "alerta_sla": p.get("alerta_sla"),
             "mudou": status == "pendente" and bool(p.get("perfil_hoje")) and perfil(p.get("perfil_hoje")) != de,
         })
     linhas.sort(key=lambda l: not l["pendente"])

@@ -1088,3 +1088,53 @@ Por decisão registrada em `design.md` deste change, este documento cobre apenas
 - **Sempre entregues, sem preferência:** benefícios, o alerta de descanso interjornada de `ponto/marcar` (alerta legal; o endpoint do REP-P não foi alterado) e os documentos pedidos na admissão (`gerar_pendencias_obrigatorias`).
 - `preferencia_notificacao` e `minhas_preferencias_notificacao` (item 7.8) continuam no banco, mas nenhum endpoint as consulta mais.
 
+
+## 25. SLA de solicitações (change `sla-de-solicitacoes`, desde 20/11/2026)
+
+- **O que é:** cada tipo de pedido tem um prazo de resposta em horas úteis, gravado na abertura. Mudar o SLA depois não altera os pedidos já abertos. Pedidos abertos antes de 20/11/2026 não têm prazo ("Sem prazo").
+- **Tipos, setor responsável e padrão:** todos começam com 72 horas úteis; sem linha ativa em `sla_config`, vale o padrão.
+
+| Tipo | Tabela | Setor |
+|---|---|---|
+| Alteração cadastral, declaração, documento avulso, outra | `solicitacao_rh` | RH |
+| Privacidade (LGPD) | `solicitacao_rh` (`privacidade_lgpd`) | RH; nunca passa do prazo legal (`prazo_resposta`, fim do dia) e o SLA vai até 240 horas |
+| Desligamento | `solicitacao_desligamento` | RH |
+| Férias | `ferias` | Gestor |
+| Ausência | `ausencia` | RH (o superior acompanha) |
+| Correção de ponto | `correcao_ponto` (só o pedido da pessoa; o ajuste direto do RH já nasce aprovado) | Gestor |
+| Pedido de acesso | `solicitacao_acesso` | Admin |
+
+- **Horas úteis** (`ConectaHR/somar_horas_uteis`):
+  - Contam só segunda a sexta, menos os feriados nacionais ativos da tabela `feriado` (sem estado e sem município; ponto facultativo não conta). O dia útil vale 24 horas, no horário de São Paulo.
+  - Início em dia não útil passa para 00:00 do próximo dia útil. Depois, o cálculo soma os dias úteis inteiros e, por fim, as horas que sobram. Se o resultado cair em dia não útil, ele anda até o próximo dia útil, mantendo o horário.
+  - Exemplos com 72 horas:
+    - segunda às 10h vai para quinta às 10h;
+    - sexta às 10h vai para quarta às 10h;
+    - sábado às 15h vai para quinta às 00h, que é o fim da quarta.
+  - Com feriado na segunda (02/11/2026), 24 horas a partir de sexta, 30/10, às 10h vão para terça, 03/11, às 10h. Com o feriado de sexta, 20/11/2026, 24 horas a partir de quinta, 19/11, às 10h vão para segunda, 23/11, às 10h.
+- **Gravado na abertura** (os POST de `solicitacoes`, `solicitacoes_desligamento`, `ferias/solicitacoes`, `ausencias`, `ponto/correcao` e `solicitacoes_acesso`):
+  - `sla_horas`: o SLA vigente;
+  - `prazo_sla`: a abertura mais as horas úteis;
+  - `alerta_sla`: a abertura mais 80% das horas úteis, arredondado para baixo, no mínimo 1 hora.
+- **Configuração:**
+  - `sla_config` GET: lido por Admin, RH e Gestor.
+  - `sla_config` POST e `sla_config/{id}` PATCH: gravados só pelo Admin, de 1 a 720 horas. `ativo = false` volta ao padrão.
+  - Auditoria `alterar_sla`, com o valor anterior e o novo.
+- **Situação na tela** (`frontend/sla_modelo.py`, calculada com a hora atual):
+  - "Responder até dd/mm hh:mm" em verde, no prazo;
+  - o mesmo texto em âmbar, depois de `alerta_sla`;
+  - "Venceu em dd/mm hh:mm" em vermelho, depois de `prazo_sla`;
+  - "Sem prazo" em cinza.
+  - Só pedido em aberto mostra o selo.
+  - A Central ordena as filas de férias, ausências e desligamentos pelo prazo, com os vencidos primeiro e os sem prazo no fim.
+- **Aviso de "perto de vencer":** a rotina diária (passo 11 de `processar_transicoes_diarias`) avisa quem decide os pedidos em aberto que passaram de `alerta_sla` e ainda não tiveram aviso:
+  - tipo `prazo_vencendo`, pela regra de `notificar_decisores`;
+  - nos pedidos de acesso, as contas Admin.
+  - A rotina grava `aviso_sla_em`, então a execução seguinte não avisa de novo.
+- **Telas:** a aba "SLA de solicitações" em Configurações (Admin edita; RH só lê; Gestor e Colaborador não têm a aba). O selo aparece:
+  - na Central de Pendências;
+  - em Solicitações ao RH, Desligamentos e Ausências;
+  - nos pedidos de correção da Folha de ponto;
+  - nos pedidos de acesso de Usuários e perfis.
+
+  Em "Meus pedidos" (privacidade e desligamento), o prazo aparece como texto. No pedido LGPD, o prazo do SLA substitui o prazo legal na tela, porque nunca passa dele.

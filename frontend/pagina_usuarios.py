@@ -19,6 +19,7 @@ from cadastro_modelo import (PERFIS, SITUACOES_USUARIO, fichas_sem_conta, linhas
 from comissao_etica_ui import cartao_comissao_etica
 from pagina_colaboradores import carregar, concluir, fechar, modal_criar_acesso, pedidos_acesso
 from theme import alerta, render_hero, render_indicadores, render_topbar
+from sla_modelo import selo_html
 
 
 def _campos(linhas: list[tuple[str, str]]) -> None:
@@ -136,7 +137,7 @@ def _pedidos(linhas: list[dict], meu_id) -> None:
     for l in pendentes:
         with st.container(horizontal=True, vertical_alignment="center", key=f"usr_ped_{l['id']}"):
             st.html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["nome"])}: {html.escape(l["de"])} → {html.escape(l["para"])}</p>'
-                    f'<p class="d">{html.escape(l["pedido_por"])} em {html.escape(l["quando"])} · {html.escape(l["justificativa"])}</p></div>', width="stretch")
+                    f'<p class="d">{html.escape(l["pedido_por"])} em {html.escape(l["quando"])} · {html.escape(l["justificativa"])}</p>{selo_html(l)}</div>', width="stretch")
             if l["usuario_id"] == meu_id:
                 st.html('<p class="crh-meta">Sua conta: outro Admin decide</p>', width="content")
                 continue

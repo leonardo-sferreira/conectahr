@@ -41,6 +41,7 @@ Como escrever:
 | `frontend-onboarding.md` | Onboarding do primeiro acesso, "Meu onboarding" e o card do Início (tarefa 68) |
 | `frontend-ponto-rep-p.md` | Tela de ponto no REP-P: Hoje, Mês com o art. 84, comprovante em PDF, pedido de correção e folha da equipe, com prints |
 | `anexo-de-arquivos.md` | Anexo de arquivo em Documentos: envio ao bucket privado do Supabase, recusa sem assinatura e abertura pelo link de 5 minutos |
+| `sla-de-solicitacoes.md` | SLA de solicitações: horas úteis (com feriados), configuração só pelo Admin, prazo na abertura, teto do LGPD e mudança que não altera os pedidos já abertos |
 
 ## Checklist antes de cada commit nesta pasta
 

@@ -57,6 +57,14 @@ table solicitacao_desligamento {
     timestamp? data_cancelamento?
     text motivo_cancelamento? filters=trim|max:500
     timestamp? data_conclusao?
+
+    // SLA de atendimento gravado na abertura (change sla-de-solicitacoes, D3): o prazo e o ponto de
+    // "perto de vencer" (80% das horas uteis) nao mudam se o SLA for alterado depois.
+    timestamp? prazo_sla?
+    timestamp? alerta_sla?
+    int? sla_horas?
+    // Quando quem decide foi avisado de que o prazo esta perto de vencer (D7; rotina diaria).
+    timestamp? aviso_sla_em?
   }
 
   index = [

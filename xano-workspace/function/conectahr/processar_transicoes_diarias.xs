@@ -584,6 +584,227 @@ function "ConectaHR/processar_transicoes_diarias" {
       input = {aplicar: $input.aplicar, autor_user_id: null, incluir_termometro: true}
     } as $convites
 
+    // ---------- 11. Prazo de atendimento perto de vencer (change sla-de-solicitacoes, D7) ----------
+    // Pedido em aberto que passou de `alerta_sla` (80% das horas uteis) e ainda nao teve aviso: avisa quem decide
+    // (a mesma regra de `notificar_decisores`; pedido de acesso, as contas Admin) e grava `aviso_sla_em`, para a
+    // proxima execucao nao avisar de novo.
+    var $n_avisos_sla {
+      value = 0
+    }
+
+    var $agora_sla {
+      value = now
+    }
+
+    db.query solicitacao_rh {
+      where = $db.solicitacao_rh.alerta_sla != null && $db.solicitacao_rh.aviso_sla_em == null
+      return = {type: "list"}
+      output = ["id", "colaborador_id", "status", "alerta_sla"]
+    } as $sla_solicitacao_rh
+
+    foreach ($sla_solicitacao_rh) {
+      each as $p_sla {
+        conditional {
+          if (((($p_sla.status == "recebida") || ($p_sla.status == "em_analise"))) && ($p_sla.alerta_sla <= $agora_sla)) {
+            var.update $n_avisos_sla {
+              value = $n_avisos_sla + 1
+            }
+
+            conditional {
+              if ($input.aplicar) {
+                function.run "ConectaHR/notificar_decisores" {
+                  input = {colaborador_id: $p_sla.colaborador_id, autor_user_id: null, quem: "rh", tipo: "prazo_vencendo", titulo: "Prazo perto de vencer", mensagem: "Uma solicitação ao RH está perto do prazo de resposta.", recurso: "solicitacao_rh", registro_id: $p_sla.id}
+                } as $avisados_sla
+
+                db.edit solicitacao_rh {
+                  field_name = "id"
+                  field_value = $p_sla.id
+                  data = {aviso_sla_em: "now"}
+                } as $sla_avisado_solicitacao_rh
+              }
+            }
+          }
+        }
+      }
+    }
+
+    db.query solicitacao_desligamento {
+      where = $db.solicitacao_desligamento.alerta_sla != null && $db.solicitacao_desligamento.aviso_sla_em == null
+      return = {type: "list"}
+      output = ["id", "colaborador_id", "status", "alerta_sla"]
+    } as $sla_solicitacao_desligamento
+
+    foreach ($sla_solicitacao_desligamento) {
+      each as $p_sla {
+        conditional {
+          if (((($p_sla.status == "pendente") || ($p_sla.status == "em_analise"))) && ($p_sla.alerta_sla <= $agora_sla)) {
+            var.update $n_avisos_sla {
+              value = $n_avisos_sla + 1
+            }
+
+            conditional {
+              if ($input.aplicar) {
+                function.run "ConectaHR/notificar_decisores" {
+                  input = {colaborador_id: $p_sla.colaborador_id, autor_user_id: null, quem: "rh", tipo: "prazo_vencendo", titulo: "Prazo perto de vencer", mensagem: "Um pedido de desligamento está perto do prazo de resposta.", recurso: "solicitacao_desligamento", registro_id: $p_sla.id}
+                } as $avisados_sla
+
+                db.edit solicitacao_desligamento {
+                  field_name = "id"
+                  field_value = $p_sla.id
+                  data = {aviso_sla_em: "now"}
+                } as $sla_avisado_solicitacao_desligamento
+              }
+            }
+          }
+        }
+      }
+    }
+
+    db.query ferias {
+      where = $db.ferias.alerta_sla != null && $db.ferias.aviso_sla_em == null
+      return = {type: "list"}
+      output = ["id", "colaborador_id", "status", "alerta_sla"]
+    } as $sla_ferias
+
+    foreach ($sla_ferias) {
+      each as $p_sla {
+        conditional {
+          if (((($p_sla.status == "Pendente"))) && ($p_sla.alerta_sla <= $agora_sla)) {
+            var.update $n_avisos_sla {
+              value = $n_avisos_sla + 1
+            }
+
+            conditional {
+              if ($input.aplicar) {
+                function.run "ConectaHR/notificar_decisores" {
+                  input = {colaborador_id: $p_sla.colaborador_id, autor_user_id: null, quem: "superior", tipo: "prazo_vencendo", titulo: "Prazo perto de vencer", mensagem: "Um pedido de férias está perto do prazo de resposta.", recurso: "ferias", registro_id: $p_sla.id}
+                } as $avisados_sla
+
+                db.edit ferias {
+                  field_name = "id"
+                  field_value = $p_sla.id
+                  data = {aviso_sla_em: "now"}
+                } as $sla_avisado_ferias
+              }
+            }
+          }
+        }
+      }
+    }
+
+    db.query ausencia {
+      where = $db.ausencia.alerta_sla != null && $db.ausencia.aviso_sla_em == null
+      return = {type: "list"}
+      output = ["id", "colaborador_id", "status", "alerta_sla"]
+    } as $sla_ausencia
+
+    foreach ($sla_ausencia) {
+      each as $p_sla {
+        conditional {
+          if (((($p_sla.status == "Pendente"))) && ($p_sla.alerta_sla <= $agora_sla)) {
+            var.update $n_avisos_sla {
+              value = $n_avisos_sla + 1
+            }
+
+            conditional {
+              if ($input.aplicar) {
+                function.run "ConectaHR/notificar_decisores" {
+                  input = {colaborador_id: $p_sla.colaborador_id, autor_user_id: null, quem: "superior_e_rh", tipo: "prazo_vencendo", titulo: "Prazo perto de vencer", mensagem: "Uma ausência está perto do prazo de resposta.", recurso: "ausencia", registro_id: $p_sla.id}
+                } as $avisados_sla
+
+                db.edit ausencia {
+                  field_name = "id"
+                  field_value = $p_sla.id
+                  data = {aviso_sla_em: "now"}
+                } as $sla_avisado_ausencia
+              }
+            }
+          }
+        }
+      }
+    }
+
+    db.query correcao_ponto {
+      where = $db.correcao_ponto.alerta_sla != null && $db.correcao_ponto.aviso_sla_em == null
+      return = {type: "list"}
+      output = ["id", "colaborador_id", "status", "alerta_sla"]
+    } as $sla_correcao_ponto
+
+    foreach ($sla_correcao_ponto) {
+      each as $p_sla {
+        conditional {
+          if (((($p_sla.status == "pendente"))) && ($p_sla.alerta_sla <= $agora_sla)) {
+            var.update $n_avisos_sla {
+              value = $n_avisos_sla + 1
+            }
+
+            conditional {
+              if ($input.aplicar) {
+                function.run "ConectaHR/notificar_decisores" {
+                  input = {colaborador_id: $p_sla.colaborador_id, autor_user_id: null, quem: "superior", tipo: "prazo_vencendo", titulo: "Prazo perto de vencer", mensagem: "Uma correção de ponto está perto do prazo de resposta.", recurso: "correcao_ponto", registro_id: $p_sla.id}
+                } as $avisados_sla
+
+                db.edit correcao_ponto {
+                  field_name = "id"
+                  field_value = $p_sla.id
+                  data = {aviso_sla_em: "now"}
+                } as $sla_avisado_correcao_ponto
+              }
+            }
+          }
+        }
+      }
+    }
+
+    db.query solicitacao_acesso {
+      where = $db.solicitacao_acesso.alerta_sla != null && $db.solicitacao_acesso.aviso_sla_em == null
+      return = {type: "list"}
+      output = ["id", "usuario_id", "status", "alerta_sla"]
+    } as $sla_solicitacao_acesso
+
+    foreach ($sla_solicitacao_acesso) {
+      each as $p_sla {
+        conditional {
+          if (((($p_sla.status == "pendente"))) && ($p_sla.alerta_sla <= $agora_sla)) {
+            var.update $n_avisos_sla {
+              value = $n_avisos_sla + 1
+            }
+
+            conditional {
+              if ($input.aplicar) {
+                db.query user {
+                  where = $db.user.perfil == "Admin" && $db.user.ativo == true
+                  return = {type: "list"}
+                  output = ["id"]
+                } as $admins_sla_solicitacao_acesso
+
+                foreach ($admins_sla_solicitacao_acesso) {
+                  each as $admin_sla {
+                    db.add notificacao_interna {
+                      data = {
+                        destinatario_user_id: $admin_sla.id
+                        tipo                : "prazo_vencendo"
+                        titulo              : "Prazo perto de vencer"
+                        mensagem            : "Um pedido de alteração de acesso está perto do prazo de resposta. Veja em Usuários e perfis."
+                        recurso             : "solicitacao_acesso"
+                        registro_id         : $p_sla.id
+                      }
+                    } as $aviso_admin_sla
+                  }
+                }
+
+                db.edit solicitacao_acesso {
+                  field_name = "id"
+                  field_value = $p_sla.id
+                  data = {aviso_sla_em: "now"}
+                } as $sla_avisado_solicitacao_acesso
+              }
+            }
+          }
+        }
+      }
+    }
+
     var $contagens {
       value = {
         desligamentos_concluidos: $n_desligamentos
@@ -598,6 +819,7 @@ function "ConectaHR/processar_transicoes_diarias" {
         desligados_prazo_cumprido  : $desligados_prazo_cumprido
         convites_pesquisa          : $convites.pesquisas
         convite_termometro         : $convites.termometro
+        prazos_vencendo_avisados   : $n_avisos_sla
       }
     }
   }

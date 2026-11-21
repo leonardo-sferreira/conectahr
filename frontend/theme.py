@@ -1081,7 +1081,7 @@ _APP_CSS = f"""
   div[class*="st-key-cfg_sessao_"] button {{ border: 1px solid {BORDA}; border-radius: 10px; background: white; }}
   .st-key-cfg_encerrar_todas button {{ border: 1px solid {ERRO} !important; background: transparent !important; border-radius: 10px; }}
   .st-key-cfg_encerrar_todas button p {{ color: {ERRO} !important; }}
-  .st-key-cfg_av_cab {{ background: {MARFIM}; border-radius: 10px; padding: 6px 12px; }}
+  .st-key-cfg_av_cab, .st-key-cfg_sla_cab {{ background: {MARFIM}; border-radius: 10px; padding: 6px 12px; }}
   div[class*="st-key-cfg_av_"]:not(.st-key-cfg_av_cab):not(.st-key-cfg_av_desfazer):not(.st-key-cfg_av_salvar) {{ border-bottom: 1px solid {BORDA}; padding: 6px 12px; }}
   /* Ciclo de metas (change ciclo-de-metas): etapa, pergunta com as respostas e a caixa de feedback. */
   .crh-cm-etapa {{ padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }}
@@ -1301,7 +1301,7 @@ _ESCURO_CSS = f"""
   .crh-reg-nota:not(.err) {{ background: {ESC_FUNDO}; color: {ESC_TEXTO_2}; }}
   div[class*="st-key-cfg_sessao_"], div[class*="st-key-cfg_av_"] {{ border-color: {ESC_BORDA} !important; }}
   div[class*="st-key-cfg_sessao_"] button {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
-  .st-key-cfg_av_cab {{ background: {ESC_FUNDO}; }}
+  .st-key-cfg_av_cab, .st-key-cfg_sla_cab {{ background: {ESC_FUNDO}; }}
   .crh-ct-ponto .l {{ background: {ESC_BORDA}; }}
   .st-key-col_ficha_card {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .crh-ponto-status.neu {{ color: {ESC_TEXTO_2}; }}

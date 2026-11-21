@@ -202,6 +202,7 @@ query "central_de_tarefas" verb=GET {
       if ($e_aprovador) {
         db.query ferias {
           where = $db.ferias.status == "Pendente"
+          sort = {ferias.prazo_sla: "asc"}
           return = {type: "list"}
         } as $ferias_pendentes_todas
 
@@ -209,11 +210,13 @@ query "central_de_tarefas" verb=GET {
         db.query ausencia {
           where = $db.ausencia.status == "Pendente"
           return = {type: "list"}
-          output = ["id", "colaborador_id", "tipo", "data_inicio", "data_fim", "status"]
+          sort = {ausencia.prazo_sla: "asc"}
+          output = ["id", "colaborador_id", "tipo", "data_inicio", "data_fim", "status", "prazo_sla", "alerta_sla"]
         } as $ausencias_pendentes_todas
 
         db.query solicitacao_desligamento {
           where = $db.solicitacao_desligamento.status == "pendente" || $db.solicitacao_desligamento.status == "em_analise"
+          sort = {solicitacao_desligamento.prazo_sla: "asc"}
           return = {type: "list"}
         } as $desligamentos_pendentes_todos
 

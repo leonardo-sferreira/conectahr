@@ -20,6 +20,7 @@ from api_client import (ApiError, aprovar_desligamento, assumir_desligamento, co
 from campos import campo
 from desligamento_modelo import ABAS, ETAPAS, ORIGENS, acoes_rh, faltam, indicadores, linhas_checklist, linhas_rh, validar_aprovacao
 from theme import alerta, html_linha_onboarding, render_hero, render_indicadores, render_topbar
+from sla_modelo import selo_html
 
 _VALIDADE_CACHE_S = 20
 _ROTULOS = {"assumir": "Assumir análise", "rejeitar": "Rejeitar", "aprovar": "Aprovar", "concluir": "Concluir"}
@@ -122,7 +123,7 @@ def _tabela(linhas: list[dict], eu, hoje: date) -> tuple[str | None, dict | None
         for i, l in enumerate(linhas):
             with st.container(key=f"rh_lin_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
-                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["pessoa"])}</p><p class="d">{html.escape(l["sub"])}</p></div>')
+                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["pessoa"])}</p><p class="d">{html.escape(l["sub"])}</p><p class="d">{selo_html(l)}</p></div>')
                 for coluna, texto in zip(c[1:5], (l["origem"], l["tipo"], l["data"], l["responsavel"])):
                     coluna.html(f'<p class="crh-doc-prazo">{html.escape(texto)}</p>')
                 with c[5]:

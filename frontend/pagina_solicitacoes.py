@@ -22,6 +22,7 @@ from decisoes_modelo import pessoas
 from solicitacoes_modelo import ABAS, CAMPO_PARA_CADASTRO, TIPOS, aplicar_pedido, dados_atuais, linhas, resumo, validar_dados_pessoais, validar_justificativa
 from campos import campo as campo_tipado, limpar
 from theme import alerta, render_hero, render_indicadores, render_topbar
+from sla_modelo import selo_html
 
 _CACHE = "solicitacoes_cache"
 _VALIDADE_CACHE_S = 20
@@ -176,7 +177,7 @@ def _tabela(itens: list[dict], aba: str, meu_colaborador_id) -> None:
         for i, l in enumerate(itens):
             with st.container(key=f"rh_linf_{i}" if aba == "Em aberto" else f"rh_lin_{i}"):
                 c = st.columns(pesos, vertical_alignment="center")
-                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["pessoa"])}</p><p class="d">{html.escape(l["detalhe"])}</p></div>')
+                c[0].html(f'<div class="crh-doc-cel"><p class="t">{html.escape(l["pessoa"])}</p><p class="d">{html.escape(l["detalhe"])}</p><p class="d">{selo_html(l)}</p></div>')
                 for coluna, texto in zip(c[1:4], (l["tipo"], l["pedido"], l["aberto_em"])):
                     coluna.html(f'<p class="crh-doc-prazo">{html.escape(texto)}</p>')
                 quando = l["prazo"] if aba == "Em aberto" else l["decidido_em"]

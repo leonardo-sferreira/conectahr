@@ -88,6 +88,7 @@ def linhas(solicitacoes: list[dict], mapa: dict, aba: str, hoje: date, tipo=None
             "alteracao": ler_alteracao(s.get("descricao")) if s["tipo"] == "alteracao_cadastral" else None,
             "descricao": s.get("descricao") or "", "justificativa": s.get("justificativa_decisao") or "",
             "decidido_em": data_br(s.get("data_decisao")) or "—",
+            "status": s.get("status") or "recebida", "prazo_sla": s.get("prazo_sla"), "alerta_sla": s.get("alerta_sla"),
             # Em aberto: prazo mais curto primeiro; decididas: decisão mais recente primeiro.
             "_ordem": (limite.toordinal() if limite else 10**9) if aberto else -(_dia(s.get("data_decisao")) or date.min).toordinal(),
         })
