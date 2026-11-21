@@ -97,6 +97,52 @@ query correcoes_ponto verb=GET {
       value = []
     }
 
+    // Delegacoes vigentes em que quem pede e o substituto (change backend-gestor-pendencias, D3), escopo "correcao_ponto" ou
+    // "todas": os titulares, com a ficha e o setor que gerenciam, para incluir os pedidos que eles decidiriam.
+    var $titulares_delegacao {
+      value = []
+    }
+
+    var $hoje_delegacao_fila {
+      value = now|format_timestamp:"Y-m-d":"UTC"
+    }
+
+    db.query delegacao_aprovacao {
+      where = $db.delegacao_aprovacao.substituto_user_id == $usuario_autenticado.id && $db.delegacao_aprovacao.cancelada_em == null && $db.delegacao_aprovacao.data_inicio <= $hoje_delegacao_fila && $db.delegacao_aprovacao.data_fim >= $hoje_delegacao_fila
+      return = {type: "list"}
+    } as $delegacoes_recebidas
+
+    foreach ($delegacoes_recebidas) {
+      each as $dr {
+        conditional {
+          if (($dr.escopo == "correcao_ponto") || ($dr.escopo == "todas")) {
+            db.get colaborador {
+              field_name = "user_id"
+              field_value = $dr.titular_user_id
+              output = ["id", "nome"]
+            } as $ficha_titular_dr
+
+            conditional {
+              if ($ficha_titular_dr != null) {
+                db.query departamento {
+                  where = $db.departamento.gestor_colaborador_id == $ficha_titular_dr.id
+                  return = {type: "single"}
+                } as $setor_titular_dr
+
+                var $setor_titular_dr_id {
+                  value = ($setor_titular_dr != null) ? $setor_titular_dr.id : null
+                }
+
+                var.update $titulares_delegacao {
+                  value = $titulares_delegacao|push:{colaborador_id: $ficha_titular_dr.id, setor_id: $setor_titular_dr_id, nome: $ficha_titular_dr.nome}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     conditional {
       // Sem departamento gerenciado, o Gestor nao ve fila nenhuma (antes caia em "ve tudo").
       if ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
@@ -121,10 +167,36 @@ query correcoes_ponto verb=GET {
               value = ($colaborador_da_correcao != null && $colaborador_da_correcao.id != $colaborador_autenticado.id && ($colaborador_da_correcao.superior_colaborador_id == $colaborador_autenticado.id || ($colaborador_da_correcao.superior_colaborador_id == null && $departamento_escopo_id != null && $colaborador_da_correcao.departamento_id == $departamento_escopo_id)))
             }
 
+            var $titular_da_correcao {
+              value = null
+            }
+
+            conditional {
+              if (($no_escopo == false) && ($colaborador_da_correcao != null) && ($colaborador_da_correcao.id != $colaborador_autenticado.id)) {
+                foreach ($titulares_delegacao) {
+                  each as $tc {
+                    conditional {
+                      if (($titular_da_correcao == null) && ($colaborador_da_correcao.id != $tc.colaborador_id) && (($colaborador_da_correcao.superior_colaborador_id == $tc.colaborador_id) || (($colaborador_da_correcao.superior_colaborador_id == null) && ($tc.setor_id != null) && ($colaborador_da_correcao.departamento_id == $tc.setor_id)))) {
+                        var.update $titular_da_correcao {
+                          value = $tc.nome
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
             conditional {
               if ($no_escopo) {
                 var.update $correcoes_no_escopo {
                   value = $correcoes_no_escopo|push:$correcao_item
+                }
+              }
+
+              elseif ($titular_da_correcao != null) {
+                var.update $correcoes_no_escopo {
+                  value = $correcoes_no_escopo|push:($correcao_item|set:"delegado_de":$titular_da_correcao)
                 }
               }
             }

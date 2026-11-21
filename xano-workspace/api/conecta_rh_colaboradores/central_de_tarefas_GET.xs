@@ -172,12 +172,97 @@ query "central_de_tarefas" verb=GET {
       }
     }
 
+    // Delegacoes vigentes em que quem pede e o substituto (change backend-gestor-pendencias, D3), escopo "ferias" ou
+    // "todas": os titulares, com a ficha e o setor que gerenciam, para incluir os pedidos que eles decidiriam.
+    var $titulares_delegacao {
+      value = []
+    }
+
+    var $hoje_delegacao_fila {
+      value = now|format_timestamp:"Y-m-d":"UTC"
+    }
+
+    db.query delegacao_aprovacao {
+      where = $db.delegacao_aprovacao.substituto_user_id == $usuario_autenticado.id && $db.delegacao_aprovacao.cancelada_em == null && $db.delegacao_aprovacao.data_inicio <= $hoje_delegacao_fila && $db.delegacao_aprovacao.data_fim >= $hoje_delegacao_fila
+      return = {type: "list"}
+    } as $delegacoes_recebidas
+
+    foreach ($delegacoes_recebidas) {
+      each as $dr {
+        conditional {
+          if (($dr.escopo == "ferias") || ($dr.escopo == "todas")) {
+            db.get colaborador {
+              field_name = "user_id"
+              field_value = $dr.titular_user_id
+              output = ["id", "nome"]
+            } as $ficha_titular_dr
+
+            conditional {
+              if ($ficha_titular_dr != null) {
+                db.query departamento {
+                  where = $db.departamento.gestor_colaborador_id == $ficha_titular_dr.id
+                  return = {type: "single"}
+                } as $setor_titular_dr
+
+                var $setor_titular_dr_id {
+                  value = ($setor_titular_dr != null) ? $setor_titular_dr.id : null
+                }
+
+                var.update $titulares_delegacao {
+                  value = $titulares_delegacao|push:{colaborador_id: $ficha_titular_dr.id, setor_id: $setor_titular_dr_id, nome: $ficha_titular_dr.nome}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Pessoas cujos pedidos de ferias o titular decidiria: superior direto e, sem ele, o gestor do setor (mesma regra).
+    var $delegados_texto {
+      value = ","
+    }
+
+    var $titular_por_pessoa {
+      value = {}
+    }
+
+    conditional {
+      if (($ve_tudo == false) && (($titulares_delegacao|count) > 0)) {
+        db.query colaborador {
+          where = $db.colaborador.anonimizado_em == null
+          return = {type: "list"}
+          output = ["id", "superior_colaborador_id", "departamento_id"]
+        } as $todos_para_delegacao
+
+        foreach ($titulares_delegacao) {
+          each as $td {
+            foreach ($todos_para_delegacao) {
+              each as $pd {
+                conditional {
+                  if (($pd.id != $td.colaborador_id) && (($colaborador_autenticado == null) || ($pd.id != $colaborador_autenticado.id)) && (($pd.superior_colaborador_id == $td.colaborador_id) || (($pd.superior_colaborador_id == null) && ($td.setor_id != null) && ($pd.departamento_id == $td.setor_id)))) {
+                    var.update $delegados_texto {
+                      value = $delegados_texto ~ ($pd.id|to_text) ~ ","
+                    }
+
+                    var.update $titular_por_pessoa {
+                      value = $titular_por_pessoa|set:($pd.id|to_text):$td.nome
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     var $e_superior {
       value = (($ids_equipe|count) > 0)
     }
 
     var $e_aprovador {
-      value = ($ve_tudo || $e_superior)
+      value = ($ve_tudo || $e_superior || (($delegados_texto|strlen) > 1))
     }
 
     // ---- Fila de aprovacao (ferias, ausencias, documentos, desligamentos) ----
@@ -255,6 +340,16 @@ query "central_de_tarefas" verb=GET {
                   if ($ids_equipe|contains:$ferias_item.colaborador_id) {
                     var.update $ferias_pendentes_fila {
                       value = $ferias_pendentes_fila|push:$ferias_item
+                    }
+                  }
+
+                  elseif ($delegados_texto|contains:("," ~ ($ferias_item.colaborador_id|to_text) ~ ",")) {
+                    var $nome_titular_ferias {
+                      value = $titular_por_pessoa|get:($ferias_item.colaborador_id|to_text)
+                    }
+
+                    var.update $ferias_pendentes_fila {
+                      value = $ferias_pendentes_fila|push:($ferias_item|set:"delegado_de":$nome_titular_ferias)
                     }
                   }
                 }
