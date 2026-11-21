@@ -37,7 +37,15 @@ Contas Admin, RH e Colaborador. A conta de Colaborador virou Gestor só durante 
 
 `tools/testar_sla.py`: 22/22. Cobre a situação, o selo, a ordem, as linhas da configuração e a validação, a aba com Admin, RH, Gestor e Colaborador, o vazio, o erro, a recusa no modal e a fila da Central com o vencido no topo. Os 36 passos de teste do CI passam.
 
-## Pendente
+## Vencido e aviso (5/5)
 
-- **3.3, pedido vencido no topo da `central_de_tarefas`:** um pedido "Outra" com SLA de 1 hora útil foi aberto em 20/11. Como esse dia é feriado e cai numa sexta, o prazo é segunda, 23/11, às 01:00. A conferência da Central precisa de um pedido que entre nela, como um desligamento.
-- **2.5, aviso `prazo_vencendo`:** rodar a rotina diária duas vezes, depois do alerta, e conferir que avisa uma vez só.
+Para não esperar o relógio, uma função temporária do Xano moveu para o passado o prazo e o alerta só dos pedidos de teste (registros com "TESTE"). A função foi apagada depois.
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Rotina diária em simulação | Só o aviso do pedido de teste e o convite do termômetro, autorizado pelo responsável | Igual |
+| Rotina de verdade, duas vezes seguidas | Avisa 1 e depois 0 | 1 e 0 |
+| Sino do RH | Um aviso `prazo_vencendo` do pedido de teste | Um |
+| Desligamento de teste recém-aberto | "No prazo" | Igual |
+| Com o prazo no passado | Primeiro em `fila_desligamentos_pendentes`; vencido e com selo vermelho na tela | Igual. A fila só tinha esse pedido; a ordem com vários está em `tools/testar_sla.py` |
+| Fim do teste | Pedidos de teste encerrados ou cancelados | Igual |
