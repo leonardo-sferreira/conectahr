@@ -71,6 +71,7 @@ api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
 api_client.organograma = lambda token: _falha_ou("org", ORG)
 api_client.niveis_hierarquicos = lambda token: {"niveis": NIVEIS}
+api_client.listar_departamentos = lambda token: {"departamentos": []}  # aba Departamentos (tarefa 52), fora do escopo deste teste
 api_client.listar_cargos = lambda token: {"cargos": CARGOS}
 api_client.calendario = lambda token: {"feriados": []}
 api_client.colaboradores = lambda token: {"colaboradores": []}

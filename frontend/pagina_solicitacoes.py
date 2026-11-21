@@ -19,18 +19,16 @@ import streamlit as st
 from api_client import ApiError, atender_solicitacao, atualizar_dados_pessoais, colaboradores, indeferir_solicitacao, organograma, solicitacoes_rh
 from cadastro_modelo import perfil
 from decisoes_modelo import pessoas
-from solicitacoes_modelo import ABAS, CAMPO_PARA_CADASTRO, TIPOS, aplicar_pedido, dados_atuais, linhas, resumo, validar_dados_pessoais, validar_justificativa
+from solicitacoes_modelo import ABAS, CAMPO_PARA_CADASTRO, ROTULOS_PESSOAIS, TIPOS, TIPOS_PESSOAIS, aplicar_pedido, dados_atuais, linhas, resumo, validar_dados_pessoais, validar_justificativa
 from campos import campo as campo_tipado, limpar
 from theme import alerta, render_hero, render_indicadores, render_topbar
 from sla_modelo import selo_html
 
 _CACHE = "solicitacoes_cache"
 _VALIDADE_CACHE_S = 20
-_ROTULOS = {"nome": "Nome completo", "cpf": "CPF (só números)", "email_pessoal": "E-mail pessoal", "telefone": "Telefone", "cep": "CEP",
-            "logradouro": "Logradouro", "numero": "Número", "complemento": "Complemento", "bairro": "Bairro", "cidade": "Cidade", "estado": "Estado (UF)"}
+_ROTULOS = ROTULOS_PESSOAIS
 _ENDERECO = ["cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"]
-_TIPO_CAMPO = {"nome": "nome", "cpf": "numero", "email_pessoal": "email", "telefone": "numero", "cep": "numero", "logradouro": "endereco",
-               "numero": "numero", "complemento": "endereco", "bairro": "endereco", "cidade": "endereco", "estado": "nome"}
+_TIPO_CAMPO = TIPOS_PESSOAIS
 
 
 def _carregar(token: str) -> dict:

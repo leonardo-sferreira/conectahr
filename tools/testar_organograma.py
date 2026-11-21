@@ -75,6 +75,7 @@ api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
 api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
 api_client.organograma = lambda token: chamadas.append(("org",)) or _falha_ou("org", estado.get("org", ORG))
 api_client.niveis_hierarquicos = lambda token: _falha_ou("niveis", {"niveis": NIVEIS})
+api_client.listar_departamentos = lambda token: {"departamentos": []}  # aba Departamentos (tarefa 52), fora do escopo deste teste
 api_client.criar_nivel_hierarquico = lambda token, nome, ordem: chamadas.append(("criar", nome, ordem)) or _falha_ou("criar", {"sucesso": True})
 api_client.editar_nivel_hierarquico = lambda token, nid, nome, ordem, ativo: chamadas.append(("editar", nid, nome, ordem, ativo)) or {"sucesso": True}
 api_client.definir_nivel_cargo = lambda token, cid, nid: chamadas.append(("cargo", cid, nid)) or {"sucesso": True}

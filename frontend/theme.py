@@ -83,7 +83,7 @@ _BELL_ESCURO_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(
 _BASE_CSS = f"""
 <style>
   /* Texto de status solto na página (tarefa 61): escuro no tema claro e claro no escuro (o tema escuro redefine). */
-  :root {{ --crh-ok: {SUCESSO_TEXTO}; --crh-amb: {AMBAR_TEXTO}; --crh-err: {ERRO_TEXTO}; }}
+  :root {{ --crh-ok: {SUCESSO_TEXTO}; --crh-amb: {AMBAR_TEXTO}; --crh-err: {ERRO_TEXTO}; --crh-foco: {AMBAR_TEXTO}; }}
   /* Fontes servidas pelo próprio app (frontend/static/fonts, licença OFL), e não pelo Google Fonts:
      assim o navegador de quem usa não manda o IP ao Google (tarefa 4, LGPD). O caminho é relativo à
      página e precisa de server.enableStaticServing = true em .streamlit/config.toml. */
@@ -197,7 +197,7 @@ _BASE_CSS = f"""
     overflow: hidden;
   }}
   .stTextInput [data-testid="stTextInputRootElement"]:focus-within {{
-    outline: 2px solid {AMBAR};
+    outline: 2px solid var(--crh-foco);
     outline-offset: 2px;
   }}
   .stTextInput [data-testid="stTextInputRootElement"] > div {{ background: transparent; }}
@@ -237,7 +237,18 @@ _BASE_CSS = f"""
   /* Botão desligado: mais claro e sem o cursor de clique (a cor sozinha não basta, então também a opacidade). */
   .stButton button:disabled {{ opacity: 0.45; cursor: not-allowed; }}
   .stButton button:focus-visible, .stFormSubmitButton button:focus-visible {{
-    outline: 2px solid {AMBAR};
+    outline: 2px solid var(--crh-foco);
+    outline-offset: 2px;
+  }}
+  /* Foco visível em todo controle (tarefa 39; WCAG 2.4.7 e 1.4.11): o contorno tem 3:1 ou mais sobre o fundo nos dois
+     temas (#A15C07 no claro, inclusive sobre o menu grafite; #F5A623 no escuro). Antes só botões e campos de texto tinham,
+     e em âmbar claro (2:1 sobre o branco). */
+  :is([data-testid="stMain"], [data-testid="stSidebar"], [role="dialog"]) :is(a, [role="radio"], [role="checkbox"], [role="switch"], [role="tab"],
+      [data-testid="stBaseButton-segmented_control"], [data-testid="stBaseButton-segmented_controlActive"], [data-testid="stDownloadButton"] button,
+      [data-testid="stLinkButton"] a, [data-testid="stExpander"] summary):focus-visible,
+  :is([data-testid="stSelectbox"], [data-testid="stMultiSelect"], [data-testid="stTextArea"], [data-testid="stNumberInput"],
+      [data-testid="stDateInput"], [data-testid="stTimeInput"]):focus-within > div:not([data-testid]) {{
+    outline: 2px solid var(--crh-foco) !important;
     outline-offset: 2px;
   }}
 
@@ -319,7 +330,7 @@ _BASE_CSS = f"""
      "hidden": o hidden deixa o navegador rolar a moldura ate o cursor, que fica depois do
      ultimo digito. */
   .st-key-campo_codigo [data-testid="stTextInputRootElement"]:focus-within {{
-    outline: 2px solid {AMBAR}; outline-offset: 2px;
+    outline: 2px solid var(--crh-foco); outline-offset: 2px;
   }}
   .st-key-campo_codigo input {{
     /* 6 passos de 58px + o recuo inicial: o campo precisa ser mais largo que as caixas
@@ -852,6 +863,7 @@ _APP_CSS = f"""
                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
   .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO_TEXTO}; }}
   .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
+  .crh-cal .tag.ferias {{ background: #E0EBFF; color: #2663D9; }}
   .crh-cal .tag.pessoa.ok {{ background: #DCFCE7; color: #166534; }}
   .crh-cal .tag.pessoa.amb {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
   .crh-cal .tag.pessoa.mais {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
@@ -997,6 +1009,20 @@ _APP_CSS = f"""
   .st-key-cfg_card_pc button[kind^="segmented_control"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button {{ min-width: 44px; height: 41px; border-radius: 8px !important; border: 1px solid {BORDA} !important; background: #FFFFFF; color: {GRAFITE}; }}
   .st-key-cfg_card_pc button[kind="segmented_controlActive"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; color: {GRAFITE} !important; }}
   .crh-pc-item {{ border: 1px solid {BORDA}; border-radius: 10px; padding: 12px 15px; margin-top: 12px; }}
+  /* Rotina diária (Figma 289:900): ponto, título e detalhe, contagem à direita. */
+  .crh-rd-lista {{ border: 1px solid {BORDA}; border-radius: 12px; padding: 4px 14px 14px; background: #FFFFFF; }}
+  .crh-rd-item {{ display: flex; align-items: center; gap: 12px; border: 1px solid {BORDA}; border-radius: 10px; padding: 10px 14px; margin-top: 10px; }}
+  .crh-rd-item .ponto {{ width: 7px; height: 7px; border-radius: 50%; background: {AMBAR}; flex: none; }}
+  .crh-rd-item.ok .ponto {{ background: {SUCESSO}; }}
+  .crh-rd-item.zero .ponto {{ background: {BORDA}; }}
+  .crh-cal-ev {{ border: none; padding: 6px 0; margin: 0; }}
+  .crh-rd-item .ponto.feriado {{ background: {ERRO_TEXTO}; }}
+  .crh-rd-item .ponto.facultativo {{ background: {AMBAR}; }}
+  .crh-rd-item .ponto.ferias {{ background: #2663D9; }}
+  .crh-rd-item .txt {{ flex: 1; min-width: 0; }}
+  .crh-rd-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; font-weight: 600; color: {GRAFITE}; }}
+  .crh-rd-item .d {{ margin: 2px 0 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-rd-titulo {{ margin: 18px 0 10px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; color: {GRAFITE}; }}
   .crh-pc-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: {GRAFITE}; }}
   .crh-pc-item .d {{ margin: 4px 0 8px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-pcr-lista {{ margin: 0; padding-left: 20px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; }}
@@ -1167,6 +1193,9 @@ _APP_CSS = f"""
     font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE} !important;
   }}
   div[class*="st-key-cfg_card_"] [data-testid="stCaptionContainer"] p, div[class*="st-key-cfg_card_"] .stRadio [data-testid="stCaptionContainer"] {{ color: {GRAFITE_SECUNDARIO} !important; }}
+  /* Checkbox e toggle soltos na página (fora de cartão e de modal): sem isto o rótulo herdava o texto claro do tema base
+     escuro, #ECEAE4 sobre o fundo claro (Calendário e Conferência; tarefa 39). */
+  [data-testid="stMain"] [data-testid="stCheckbox"] label p {{ color: {GRAFITE} !important; }}
   div[class*="st-key-cfg_card_"] [data-baseweb="select"] > div, div[class*="st-key-cfg_card_"] [data-baseweb="input"], div[class*="st-key-cfg_card_"] [data-baseweb="textarea"],
   div[class*="st-key-cfg_card_"] [data-testid="stDateInputField"], div[class*="st-key-cfg_card_"] [data-testid="stTextInputRootElement"] {{
     background: {MARFIM} !important; border: 1px solid {BORDA} !important; border-radius: 10px !important; color: {GRAFITE} !important;
@@ -1229,7 +1258,7 @@ ESC_AMBAR_SUAVE = "#2A2417"
 _ESCURO_CSS = f"""
 <style>
   /* crh-tema-escuro */
-  :root {{ --crh-ok: #4ADE80; --crh-amb: {AMBAR}; --crh-err: #FCA5A5; }}
+  :root {{ --crh-ok: #4ADE80; --crh-amb: {AMBAR}; --crh-err: #FCA5A5; --crh-foco: {AMBAR}; }}
   .st-key-me_estado {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .st-key-me_busca [data-testid="stTextInputRootElement"] {{ background: {ESC_FUNDO} !important; }}
   div[class*="st-key-rh_linf_me_"] {{ background: {ESC_AMBAR_SUAVE} !important; }}
@@ -1291,6 +1320,11 @@ _ESCURO_CSS = f"""
   .crh-pc-anonimo {{ background: #14301F !important; color: #86EFAC !important; }}
   .crh-pc-pergunta, .crh-pc-item .t, .crh-pcr-lista, .crh-pcr-res .t, .crh-pcr-res table, .crh-av360-tabela {{ color: {ESC_TEXTO} !important; }}
   .crh-pc-item, .crh-pcr-res td, .crh-av360-tabela td {{ border-color: {ESC_BORDA} !important; }}
+  .crh-rd-lista {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
+  .crh-rd-item {{ border-color: {ESC_BORDA} !important; }}
+  .crh-rd-item .t, .crh-rd-titulo {{ color: {ESC_TEXTO} !important; }}
+  .crh-rd-item .d {{ color: {ESC_TEXTO_2} !important; }}
+  .crh-rd-item.zero .ponto {{ background: {ESC_BORDA} !important; }}
   .crh-pc-progresso .barra {{ background: {ESC_BORDA} !important; }}
   .crh-pcr-barra .barra {{ background: {ESC_BORDA} !important; }}
   .crh-pcr-barra .r, .crh-pcr-kv b {{ color: {ESC_TEXTO} !important; }}
@@ -1422,6 +1456,7 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:empty {{ background: {ESC_CARTAO} !important; }}
   /* Campos dentro dos cartões, no escuro. */
   div[class*="st-key-cfg_card_"] [data-testid="stWidgetLabel"] p, div[class*="st-key-cfg_card_"] label p {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stMain"] [data-testid="stCheckbox"] label p {{ color: {ESC_TEXTO} !important; }}
   div[class*="st-key-cfg_card_"] [data-testid="stCaptionContainer"] p {{ color: {ESC_TEXTO_2} !important; }}
   div[class*="st-key-cfg_card_"] [data-baseweb="select"] > div, div[class*="st-key-cfg_card_"] [data-baseweb="input"], div[class*="st-key-cfg_card_"] [data-baseweb="textarea"],
   div[class*="st-key-cfg_card_"] [data-testid="stDateInputField"], div[class*="st-key-cfg_card_"] [data-testid="stTextInputRootElement"],

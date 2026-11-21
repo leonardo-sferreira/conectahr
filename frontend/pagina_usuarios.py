@@ -4,7 +4,8 @@ perfil" e 440:1203 "Vincular ficha"; tarefa 50 da change concluir-frontend-strea
 
 Quem acessa o ConectaRH e com qual perfil. "Vincular ficha" liga uma conta que não tem cadastro de
 colaborador (por exemplo, a de RH ou Admin criada antes da ficha) a uma ficha sem conta: sem ficha, a
-pessoa não marca ponto nem pede férias. Endpoints: `usuarios`, `usuarios/{id}/perfil|status|
+pessoa não marca ponto nem pede férias. "Editar" troca o nome e o e-mail de acesso (`usuarios/{id}` PATCH, tarefa 50);
+a troca de e-mail avisa o endereço anterior. Endpoints: `usuarios`, `usuarios/{id}`, `usuarios/{id}/perfil|status|
 vincular_colaborador`, `colaboradores` e `organograma`. Ninguém troca o próprio perfil, desativa nem
 vincula a própria conta (o backend recusa e a tela não oferece).
 """
@@ -13,9 +14,9 @@ import html
 
 import streamlit as st
 
-from api_client import ApiError, alterar_status_usuario, aprovar_pedido_acesso, recusar_pedido_acesso, trocar_perfil, vincular_colaborador
+from api_client import ApiError, alterar_status_usuario, aprovar_pedido_acesso, editar_usuario, recusar_pedido_acesso, trocar_perfil, vincular_colaborador
 from cadastro_modelo import (PERFIS, SITUACOES_USUARIO, fichas_sem_conta, linhas_pedidos_acesso, linhas_usuarios, perfil, resumo_usuarios,
-                             validar_recusa_acesso)
+                             validar_edicao_usuario, validar_recusa_acesso)
 from comissao_etica_ui import cartao_comissao_etica
 from pagina_colaboradores import carregar, concluir, fechar, modal_criar_acesso, pedidos_acesso
 from theme import alerta, render_hero, render_indicadores, render_topbar
@@ -33,6 +34,27 @@ def _botoes(rotulo: str, chave: str) -> bool:
             fechar()
             st.rerun()
         return st.button(rotulo, type="primary", key=chave)
+
+
+@st.dialog("Editar usuário", width="small", on_dismiss=fechar)
+def _modal_editar(linha: dict) -> None:
+    nome = st.text_input("Nome", value=linha["nome"] if linha["nome"] != "—" else "", max_chars=100, key="usr_ed_nome")
+    email = st.text_input("E-mail de acesso", value=linha["email"] if linha["email"] != "—" else "", max_chars=150, key="usr_ed_email")
+    st.html('<div class="crh-incluso"><p class="n" style="margin:0">O e-mail é o login e recebe o código de acesso. Se ele mudar, o '
+            "endereço anterior recebe um aviso. A troca fica na auditoria.</p></div>")
+    slot = st.empty()
+    if _botoes("Salvar", "usr_ed_ok"):
+        if erro_campo := validar_edicao_usuario(nome, email, linha):
+            alerta(slot, "erro", erro_campo)
+            return
+        try:
+            editar_usuario(st.session_state.token, linha["id"], nome.strip(), email.strip().lower())
+        except ApiError as erro:
+            alerta(slot, "erro", erro.message)
+            return
+        for chave in ("usr_ed_nome", "usr_ed_email"):
+            st.session_state.pop(chave, None)
+        concluir(f"Conta de {nome.strip()} atualizada.")
 
 
 @st.dialog("Trocar perfil", width="small", on_dismiss=fechar)
@@ -177,6 +199,9 @@ def _tabela(linhas: list[dict], token: str) -> None:
                     if l["proprio"] and l["sem_ficha"]:
                         st.html('<p class="crh-meta">Sua conta: outro Admin vincula a ficha</p>')
                     with st.container(horizontal=True, gap="small"):
+                        if "editar" in l["acoes"] and st.button("Editar", type="tertiary", key=f"usr_editar_{l['id']}"):
+                            st.session_state.modal_cadastro = ("editar", l["id"])
+                            st.rerun()
                         if "vincular" in l["acoes"] and st.button("Vincular ficha", type="tertiary", key=f"usr_vinc_{l['id']}"):
                             st.session_state.modal_cadastro = ("vincular", l["id"])
                             st.rerun()
@@ -268,7 +293,9 @@ def pagina_usuarios() -> None:
     if linha is None:
         fechar()
         return
-    if acao == "vincular" and "vincular" in linha["acoes"]:
+    if acao == "editar" and "editar" in linha["acoes"]:
+        _modal_editar(linha)
+    elif acao == "vincular" and "vincular" in linha["acoes"]:
         _modal_vincular(linha, colabs, deps)
     elif acao == "perfil" and "perfil" in linha["acoes"]:
         _modal_perfil(linha)

@@ -4,7 +4,8 @@ indicadores, comunicados internos, aniversariantes do mês e atalho para o FAQ.
 
 Dados reais do backend (cada bloco falha isolado, mostrando "—" em vez de
 derrubar a tela inteira):
-- Pendências: central_de_tarefas (pendências pessoais + filas de decisão do perfil).
+- Pendências: central_de_tarefas (pendências pessoais + filas de decisão do perfil; soma em `inicio_modelo`, com os
+  campos conferidos contra a resposta real). Com alguma pendência, uma linha diz o que é e leva à Central.
 - Banco de horas: meu_banco_horas (saldo = créditos - débitos).
 - Aniversariantes: colaboradores/aniversariantes.
 - Comunicados: meus_comunicados (já filtrados por vigência e público-alvo).
@@ -21,7 +22,9 @@ from datetime import date
 
 import streamlit as st
 
+import inicio_modelo as im
 from api_client import ApiError, aniversariantes, central_de_tarefas, meu_banco_horas, meu_humor, meus_comunicados, responder_humor
+from delegacoes_modelo import hoje_brasilia
 from humor_modelo import MOTIVOS, OPCOES, periodo, proximo, validar_resposta
 from onboarding_dados import carregar as carregar_onboarding
 from onboarding_modelo import card_inicio
@@ -44,13 +47,6 @@ def _consultar(funcao, token: str) -> dict | None:
 
 def _data_extenso(hoje: date) -> str:
     return f"{_DIAS_SEMANA[hoje.weekday()]}, {hoje.day:02d} de {_MESES[hoje.month - 1]} de {hoje.year}"
-
-
-def _total_pendencias(central: dict) -> int:
-    total = int(bool(central.get("minha_senha_primeiro_acesso"))) + int(bool(central.get("meu_cadastro_incompleto")))
-    for chave in ("minhas_ferias_pendentes", "fila_ferias_pendentes", "fila_documentos_pendentes", "fila_desligamentos_pendentes"):
-        total += len(central.get(chave) or [])
-    return total
 
 
 def _formatar_saldo(horas: float) -> tuple[str, str]:
@@ -175,7 +171,7 @@ def pagina_inicio() -> None:
             <div class="crh-hero-barra"></div>
             <p>Olá, {html.escape(primeiro_nome)}</p>
           </div>
-          <p class="crh-hero-sub">{_data_extenso(date.today())} — bem-vindo de volta ao ConectaRH</p>
+          <p class="crh-hero-sub">{_data_extenso(hoje_brasilia())} — bem-vindo de volta ao ConectaRH</p>
         </div>
         """
     )
@@ -183,7 +179,8 @@ def pagina_inicio() -> None:
     _card_onboarding(token, usuario)
 
     lista_aniv = aniv.get("aniversariantes", []) if aniv else []
-    pendencias = str(_total_pendencias(central)) if central else "—"
+    total_pend = im.total_pendencias(central)
+    pendencias = "—" if total_pend is None else str(total_pend)
     saldo, classe_saldo = _formatar_saldo(float(banco.get("saldo_horas") or 0)) if banco else ("—", "")
     total_aniv = str(len(lista_aniv)) if aniv else "—"
 
@@ -202,6 +199,12 @@ def pagina_inicio() -> None:
         )
         + "</div>"
     )
+    if total_pend:
+        with st.container(horizontal=True, vertical_alignment="center", key="ini_pendencias"):
+            st.html(f'<p class="crh-meta" style="margin:0">Pendências: {html.escape(im.resumo_pendencias(central))}</p>')
+            if st.button("Abrir a Central de Pendências", key="ini_ir_central", type="tertiary"):
+                st.session_state.ir_central = True
+                st.rerun()
 
     if comunicados is None:
         itens_comunicados = '<p class="crh-meta">Não foi possível carregar os comunicados.</p>'

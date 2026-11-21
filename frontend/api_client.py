@@ -229,6 +229,22 @@ def aniversariantes(token: str) -> dict:
     return _get("colaboradores/aniversariantes", token, GRUPO_COLABORADORES)
 
 
+def comunicados_rh(token: str) -> dict:
+    """GET comunicados -> {comunicados}: todos, ativos e arquivados, mais recentes primeiro (RH e Admin)."""
+    return _get("comunicados", token, GRUPO_COLABORADORES)
+
+
+def publicar_comunicado(token: str, dados: dict) -> dict:
+    """POST comunicados (RH e Admin): titulo, conteudo, publico_alvo (todos, departamento ou perfil), departamento_id ou
+    perfil_alvo, data_inicio e data_fim (opcional). Auditado como `publicar_comunicado`."""
+    return _post("comunicados", dados, token, GRUPO_COLABORADORES)
+
+
+def arquivar_comunicado(token: str, comunicado_id: int) -> dict:
+    """POST comunicados/{id}/arquivar (RH e Admin): sai do Início e da tela de todos; o registro fica. Auditado."""
+    return _post(f"comunicados/{int(comunicado_id)}/arquivar", {}, token, GRUPO_COLABORADORES)
+
+
 def meus_comunicados(token: str) -> dict:
     """GET meus_comunicados -> {comunicados} (vigentes e visiveis ao usuario)."""
     return _get("meus_comunicados", token, GRUPO_COLABORADORES)
@@ -288,6 +304,33 @@ def editar_nivel_hierarquico(token: str, nivel_id: int, nome: str, ordem: int, a
 def listar_cargos(token: str) -> dict:
     """GET listar_cargos (RH e Admin) -> {cargos}: todos os campos, inclusive o salário base e os inativos."""
     return _get("listar_cargos", token, GRUPO_CARGOS)
+
+
+def listar_departamentos(token: str) -> dict:
+    """GET listar_departamentos -> {departamentos: [{id, nome, descricao, ativo, gestor_colaborador_id}]} (RH e Admin, com os inativos)."""
+    return _get("listar_departamentos", token, GRUPO_DEPARTAMENTOS)
+
+
+def criar_departamento(token: str, nome: str, descricao: str) -> dict:
+    """POST departamentos (RH e Admin): nome único; nasce ativo."""
+    return _post("departamentos", {"nome": nome, "descricao": descricao, "ativo": True}, token, GRUPO_DEPARTAMENTOS)
+
+
+def editar_departamento(token: str, departamento_id: int, nome: str, descricao: str) -> dict:
+    """PATCH departamentos/{id} (RH e Admin): nome e descrição; a situação é em departamentos/{id}/status."""
+    return _request("PATCH", f"departamentos/{int(departamento_id)}", token, GRUPO_DEPARTAMENTOS, {"nome": nome, "descricao": descricao})
+
+
+def situacao_departamento(token: str, departamento_id: int, ativo: bool) -> dict:
+    """PATCH departamentos/{id}/status (RH e Admin): ativa ou inativa sem mexer nos vínculos."""
+    return _request("PATCH", f"departamentos/{int(departamento_id)}/status", token, GRUPO_DEPARTAMENTOS, {"ativo": bool(ativo)})
+
+
+def definir_gestor_departamento(token: str, departamento_id: int, colaborador_id: int) -> dict:
+    """PATCH departamentos/{id}/gestor (RH e Admin): a pessoa precisa ser ativa, do departamento e ter conta com perfil Gestor.
+    O backend guarda o histórico de gestores."""
+    return _request("PATCH", f"departamentos/{int(departamento_id)}/gestor", token, GRUPO_DEPARTAMENTOS,
+                    {"gestor_colaborador_id": int(colaborador_id)})
 
 
 def criar_cargo(token: str, nome: str, descricao: str, salario_base: float, senioridade: str | None, departamento_id: int | None,
@@ -736,6 +779,11 @@ def cancelar_delegacao(token: str, delegacao_id: int) -> dict:
     return _post(f"delegacoes/{int(delegacao_id)}/cancelar", {}, token, GRUPO_USUARIOS)
 
 
+def editar_usuario(token: str, usuario_id: int, nome: str, email: str) -> dict:
+    """PATCH usuarios/{id}: nome e e-mail de acesso. Troca de e-mail avisa o endereço anterior; auditado com o e-mail mascarado."""
+    return _request("PATCH", f"usuarios/{int(usuario_id)}", token, GRUPO_USUARIOS, {"nome": nome, "email": email})
+
+
 def vincular_colaborador(token: str, usuario_id: int, colaborador_id: int) -> dict:
     """POST usuarios/{id}/vincular_colaborador: liga uma conta sem ficha a uma ficha sem conta."""
     return _post(f"usuarios/{int(usuario_id)}/vincular_colaborador", {"colaborador_id": int(colaborador_id)}, token, GRUPO_USUARIOS)
@@ -762,6 +810,17 @@ def atender_solicitacao(token: str, solicitacao_id: int, justificativa: str | No
 def indeferir_solicitacao(token: str, solicitacao_id: int, justificativa: str) -> dict:
     """POST solicitacoes/{id}/indeferir com a justificativa obrigatória (5 a 1000 caracteres)."""
     return _post(f"solicitacoes/{int(solicitacao_id)}/indeferir", {"justificativa_decisao": justificativa}, token, GRUPO_COLABORADORES)
+
+
+def mudar_vinculo(token: str, colaborador_id: int, dados: dict) -> dict:
+    """PATCH colaboradores/{id}/vinculo (só o RH): cargo_id, departamento_id, tipo_contrato, nivel, salario, carga_horaria_semanal,
+    data_inicio, tipo_alteracao e motivo_alteracao. Encerra o histórico anterior e abre outro."""
+    return _request("PATCH", f"colaboradores/{int(colaborador_id)}/vinculo", token, GRUPO_COLABORADORES, dados)
+
+
+def colaborador_timeline(token: str, colaborador_id: int) -> dict:
+    """GET colaboradores/{id}/timeline -> {historico, ferias_concluidas} (RH e Admin, a própria pessoa e o Gestor do departamento)."""
+    return _get(f"colaboradores/{int(colaborador_id)}/timeline", token, GRUPO_COLABORADORES)
 
 
 def atualizar_dados_pessoais(token: str, colaborador_id: int, dados: dict) -> dict:
@@ -1031,6 +1090,17 @@ def encerrar_sessao(token: str, sessao_id: int) -> dict:
 def encerrar_outras_sessoes(token: str) -> dict:
     """POST auth/sessoes/encerrar_outras -> {total_encerradas}; a sessão deste token continua."""
     return _post("auth/sessoes/encerrar_outras", {}, token, GRUPO_AUTENTICACAO)
+
+
+def sessoes_ativas(token: str) -> dict:
+    """GET admin/sessoes_ativas -> {sessoes: [{id, user_id, nome, perfil, dispositivo, created_at, expira_em, atual}], sessao_atual_id}.
+    Só o Admin; sem IP."""
+    return _get("admin/sessoes_ativas", token, GRUPO_AUTENTICACAO)
+
+
+def encerrar_sessao_admin(token: str, sessao_id: int) -> dict:
+    """POST admin/sessoes/{id}/encerrar: o Admin encerra a sessão de qualquer conta, menos a própria (auditado)."""
+    return _post(f"admin/sessoes/{int(sessao_id)}/encerrar", {}, token, GRUPO_AUTENTICACAO)
 
 
 def minhas_preferencias_aviso(token: str) -> dict:

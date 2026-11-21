@@ -256,7 +256,8 @@ def pagina_ciclos_avaliacao() -> None:
     with st.container(key="cfg_abas"):
         aba = st.segmented_control("Aba", _ABAS, default=_ABAS[0], required=True, key="cav_aba", label_visibility="collapsed")
     try:
-        {"Ciclos de metas": _aba_ciclos, "Perguntas": _aba_perguntas, "Formulários": _aba_formularios, "Avaliações de desempenho": aba_desempenho}[aba](token)
+        with st.spinner("Carregando..."):
+            {"Ciclos de metas": _aba_ciclos, "Perguntas": _aba_perguntas, "Formulários": _aba_formularios, "Avaliações de desempenho": aba_desempenho}[aba](token)
     except ApiError as erro:
         alerta(st.empty(), "erro", erro.message)
         return

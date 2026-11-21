@@ -327,6 +327,10 @@ def pagina_ferias() -> None:
         if st.button("Fechar calendário" if aberto else "Ver calendário", key="fe_calendario"):
             st.session_state.fe_cal_aberto = not aberto
             st.rerun()
+        # Feriados e férias da equipe, Figma 233:2394 (tarefa 56).
+        if st.button("Calendário da equipe", key="fe_ir_calendario", type="tertiary"):
+            st.session_state.ir_calendario = True
+            st.rerun()
         if st.button("Solicitar férias", type="primary", key="fe_solicitar", disabled=not (numeros and numeros["pode_pedir"])):
             st.session_state.modal_ferias = True
             st.rerun()

@@ -64,6 +64,9 @@ from pagina_integracoes import pagina_integracoes
 from pagina_pedidos_lgpd import pagina_pedidos_lgpd
 from pagina_rep_p import pagina_rep_p
 from pagina_indicadores_gerais import pagina_indicadores_gerais
+from pagina_calendario import pagina_calendario
+from pagina_rotina_diaria import pagina_rotina_diaria
+from pagina_sessoes_ativas import pagina_sessoes_ativas
 from pagina_reconhecimentos import pagina_moderar_reconhecimentos, pagina_reconhecimentos
 from pagina_retencao import pagina_retencao
 from pagina_perfil import pagina_perfil
@@ -122,6 +125,8 @@ _MENU_RH = [
     "Pedidos LGPD",
     # Empregador, programa, disponibilidade e os arquivos AFD e AEJ (change ponto-rep-p-e-ferias-clt, tarefa 5.3).
     "Ponto eletrônico (REP-P)",
+    # Transições por data e limpeza de dados vencidos, acionadas à mão (tarefa 64 da change concluir-frontend-streamlit).
+    "Rotina diária",
     # Documentos com guarda vencida e anonimização de desligados (tarefa 64 da change concluir-frontend-streamlit).
     "Retenção e anonimização",
     # Feriados, níveis da hierarquia e cargos (change organograma-hierarquia): o RH também mantém.
@@ -281,6 +286,9 @@ PG_RETENCAO = st.Page(pagina_retencao, title="Retenção e anonimização", url_
 PG_RECONHECIMENTOS = st.Page(pagina_reconhecimentos, title="Mural de reconhecimentos", url_path="reconhecimentos")
 PG_MODERAR_REC = st.Page(pagina_moderar_reconhecimentos, title="Moderar reconhecimentos", url_path="moderar-reconhecimentos")
 PG_INDICADORES_GERAIS = st.Page(pagina_indicadores_gerais, title="Indicadores gerais", url_path="indicadores-gerais")
+PG_CALENDARIO = st.Page(pagina_calendario, title="Calendário", url_path="calendario")
+PG_ROTINA = st.Page(pagina_rotina_diaria, title="Rotina diária", url_path="rotina-diaria")
+PG_SESSOES = st.Page(pagina_sessoes_ativas, title="Sessões ativas", url_path="sessoes-ativas")
 PG_INTEGRACOES = st.Page(pagina_integracoes, title="Integrações e e-mails", url_path="integracoes-e-emails")
 PG_CANAL = st.Page(pagina_canal_denuncias, title="Canal de denúncias", url_path="canal-de-denuncias")
 PG_DENUNCIAS = st.Page(pagina_denuncias, title="Denúncias", url_path="denuncias")
@@ -291,7 +299,7 @@ PG_HUMOR = st.Page(pagina_termometro_humor, title="Termômetro de humor", url_pa
 PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AVALIACOES_EQUIPE, PG_DELEGACOES, PG_INDICADORES_EQUIPE, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_REP, PG_RETENCAO, PG_RECONHECIMENTOS, PG_MODERAR_REC, PG_INDICADORES_GERAIS, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS, PG_HUMOR], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AVALIACOES_EQUIPE, PG_DELEGACOES, PG_INDICADORES_EQUIPE, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_REP, PG_RETENCAO, PG_RECONHECIMENTOS, PG_MODERAR_REC, PG_INDICADORES_GERAIS, PG_ROTINA, PG_SESSOES, PG_CALENDARIO, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS, PG_HUMOR], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -326,13 +334,16 @@ _ATALHOS = {
     "ir_meus_treinamentos": PG_MEUS_TREINAMENTOS,
     "ir_pesquisa_clima": PG_CLIMA,
     "ir_delegacoes": PG_DELEGACOES,
+    "ir_auditoria": PG_AUDITORIA,
+    "ir_rotina": PG_ROTINA,
+    "ir_calendario": PG_CALENDARIO,
 }
 for marca, destino in _ATALHOS.items():
     if st.session_state.pop(marca, False):
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Ponto eletrônico (REP-P)": PG_REP, "Retenção e anonimização": PG_RETENCAO, "Indicadores gerais": PG_INDICADORES_GERAIS, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1, "Treinamentos": PG_TREINAMENTOS, "Meus treinamentos": PG_MEUS_TREINAMENTOS, "Termômetro de humor": PG_HUMOR}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Ponto eletrônico (REP-P)": PG_REP, "Retenção e anonimização": PG_RETENCAO, "Indicadores gerais": PG_INDICADORES_GERAIS, "Rotina diária": PG_ROTINA, "Sessões ativas": PG_SESSOES, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1, "Treinamentos": PG_TREINAMENTOS, "Meus treinamentos": PG_MEUS_TREINAMENTOS, "Termômetro de humor": PG_HUMOR}
 
 _PAGINAS_DO_MENU["Minha equipe"] = PG_MINHA_EQUIPE
 _PAGINAS_DO_MENU["Avaliações da equipe"] = PG_AVALIACOES_EQUIPE
@@ -341,7 +352,7 @@ _PAGINAS_DO_MENU["Indicadores da equipe"] = PG_INDICADORES_EQUIPE
 
 # "Meu onboarding" é uma tela do Início: o item ativo do menu continua sendo "Início" (Figma 309:1048).
 # Configurações e o aviso não são itens do menu: nenhum fica ativo (Figma 286:878 e 285:1073).
-ativo_no_menu = {"Meu onboarding": "Início", "Organograma": "Perfil", "Metas do ciclo": "Trajetória", "Mural de reconhecimentos": "Trajetória", "Moderar reconhecimentos": "Trajetória", "Pedir desligamento": "Perfil"}.get(pagina_atual.title, pagina_atual.title)
+ativo_no_menu = {"Meu onboarding": "Início", "Organograma": "Perfil", "Metas do ciclo": "Trajetória", "Mural de reconhecimentos": "Trajetória", "Calendário": "Férias", "Moderar reconhecimentos": "Trajetória", "Pedir desligamento": "Perfil"}.get(pagina_atual.title, pagina_atual.title)
 perfil = str(st.session_state.usuario.get("perfil", "")).upper()
 
 # Quem é superior direto de alguém decide e vê a folha da equipe, qualquer que seja o perfil (tarefa 83).

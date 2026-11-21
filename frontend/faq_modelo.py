@@ -60,6 +60,59 @@ def meta_comunicado(c: dict) -> str:
     return " · ".join(p for p in partes if p)
 
 
+PUBLICOS = {"todos": "Toda a empresa", "departamento": "Um departamento", "perfil": "Um perfil"}
+PERFIS_ALVO = ["Colaborador", "Gestor", "RH", "Admin"]
+SITUACOES_COMUNICADO = {None: "Situação: Todos", "publicado": "Situação: Publicados", "agendado": "Situação: Agendados",
+                        "encerrado": "Situação: Encerrados", "arquivado": "Situação: Arquivados"}
+
+
+def situacao_comunicado(c: dict, hoje: date) -> tuple[str, str, str]:
+    """(chave, rótulo, tom do selo): arquivado, agendado (começa depois de hoje), encerrado (vigência passou) ou publicado."""
+    if not c.get("ativo", True):
+        return "arquivado", "Arquivado", "neu"
+    inicio, fim = _dia(c.get("data_inicio")), _dia(c.get("data_fim"))
+    if inicio and inicio > hoje:
+        return "agendado", "Agendado", "azul"
+    if fim and fim < hoje:
+        return "encerrado", "Encerrado", "neu"
+    return "publicado", "Publicado", "ok"
+
+
+def linhas_comunicados_rh(comunicados: list[dict], deps: dict, hoje: date, situacao: str | None = None) -> list[dict]:
+    """Lista do RH (Figma 245:594): [{id, titulo, publico, publicacao, vigencia, situacao, arquivavel}]."""
+    linhas = []
+    for c in comunicados_ordenados(comunicados or []):
+        chave, rotulo, tom = situacao_comunicado(c, hoje)
+        if situacao and chave != situacao:
+            continue
+        publico = c.get("publico_alvo")
+        alvo = (deps.get(c.get("departamento_id")) or "Departamento") if publico == "departamento" else (c.get("perfil_alvo") or "Perfil") if publico == "perfil" else "Toda a empresa"
+        inicio, fim = _dia(c.get("data_inicio")), _dia(c.get("data_fim"))
+        linhas.append({"id": c.get("id"), "titulo": c.get("titulo") or "Comunicado", "publico": alvo, "publicacao": f"{inicio:%d/%m/%Y}" if inicio else "—",
+                       "vigencia": f"até {fim:%d/%m/%Y}" if fim else "sem fim", "situacao": (rotulo, tom), "arquivavel": chave != "arquivado",
+                       "conteudo": c.get("conteudo") or ""})
+    return linhas
+
+
+def validar_comunicado(titulo: str, conteudo: str, publico: str, departamento_id, perfil_alvo, inicio: date | None, fim: date | None) -> str | None:
+    """Os limites de `comunicados` POST, antes de enviar."""
+    if not 3 <= len((titulo or "").strip()) <= 200:
+        return "O título tem de 3 a 200 caracteres."
+    if not 5 <= len((conteudo or "").strip()) <= 5000:
+        return "O texto tem de 5 a 5.000 caracteres."
+    if publico not in PUBLICOS:
+        return "Escolha para quem é o comunicado."
+    if publico == "departamento" and not departamento_id:
+        return "Escolha o departamento."
+    if publico == "perfil" and perfil_alvo not in PERFIS_ALVO:
+        return "Escolha o perfil."
+    if not inicio:
+        return "Informe a data de publicação."
+    if fim and fim < inicio:
+        return "O fim da vigência não pode ser antes da publicação."
+    return None
+
+
 def comunicados_ordenados(comunicados: list[dict]) -> list[dict]:
     """Do mais recente para o mais antigo (pela data de início)."""
     return sorted(comunicados, key=lambda c: str(c.get("data_inicio") or ""), reverse=True)

@@ -24,8 +24,10 @@ from datetime import date, datetime
 
 import streamlit as st
 
-from api_client import (ApiError, admitir_colaborador, colaboradores, criar_usuario, definir_superior, documentos_rh, organograma, pedir_acesso,
-                        remover_foto_colaborador, solicitacoes_acesso, trocar_perfil, usuarios)
+import ficha_modelo as fm
+from api_client import (ApiError, admitir_colaborador, atualizar_dados_pessoais, colaborador_timeline, colaboradores, criar_usuario, definir_superior,
+                        documentos_rh, mudar_vinculo, onboarding, organograma, pedir_acesso, remover_foto_colaborador, solicitacoes_acesso,
+                        trocar_perfil, usuarios)
 from cadastro_modelo import (
     CONTRATOS,
     JORNADA_SEMANAL,
@@ -49,8 +51,9 @@ from cadastro_modelo import (
 from cargos_modelo import cargos_do_departamento, rotulo_cargo
 from ficha_colaborador import documentos_da_pessoa, ficha_pdf, nome_arquivo_ficha, secoes
 from pagina_conferencia_documentos import _detalhes as detalhes_documento
-from campos import campo, data_por_partes
-from theme import alerta, render_hero, render_topbar
+from campos import campo, data_por_partes, limpar
+from solicitacoes_modelo import CAMPOS_PESSOAIS, ROTULOS_PESSOAIS, TIPOS_PESSOAIS, dados_atuais, validar_dados_pessoais
+from theme import alerta, render_barra_progresso, render_hero, render_topbar
 
 CACHE = "cadastro_cache"
 _VALIDADE_CACHE_S = 20
@@ -380,6 +383,136 @@ def _modal_remover_foto(colab: dict) -> None:
             concluir(f"Foto de perfil de {colab.get('nome')} removida.")
 
 
+@st.dialog("Editar cadastro", width="medium", on_dismiss=fechar)
+def _modal_editar(colab: dict) -> None:
+    """Dados pessoais da ficha (`colaboradores/{id}` PATCH, só o RH). O vínculo é em "Mudar cargo ou salário"."""
+    atuais = dados_atuais(colab)
+    dados = {}
+    c1, c2 = st.columns(2)
+    for i, nome_campo in enumerate(c for c in CAMPOS_PESSOAIS if c != "data_nascimento"):
+        chave = f"col_ed_{nome_campo}"
+        tipo = TIPOS_PESSOAIS[nome_campo]
+        st.session_state.setdefault(chave, limpar(atuais.get(nome_campo, ""), tipo)[0])
+        with (c1 if i % 2 == 0 else c2):
+            dados[nome_campo] = campo(st, ROTULOS_PESSOAIS[nome_campo], tipo, chave)
+    try:
+        nasc = date.fromisoformat(atuais.get("data_nascimento") or "")
+    except ValueError:
+        nasc = None
+    escolhida = st.date_input("Data de nascimento", value=nasc, min_value=date(1920, 1, 1), max_value=date.today(), format="DD/MM/YYYY", key="col_ed_nasc")
+    dados["data_nascimento"] = escolhida.isoformat() if escolhida else ""
+    st.html('<p class="crh-meta">A alteração fica na auditoria. Quando a própria pessoa pede a mudança, use Solicitações ao RH.</p>')
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="col_ed_cancelar"):
+            fechar()
+            st.rerun()
+        if st.button("Salvar cadastro", type="primary", key="col_ed_salvar"):
+            if dados == atuais:
+                alerta(slot, "atencao", "Nada mudou.")
+                return
+            if erro_campo := validar_dados_pessoais(dados, date.today()):
+                alerta(slot, "erro", erro_campo)
+                return
+            try:
+                atualizar_dados_pessoais(st.session_state.token, colab["id"], {k: v.strip() if isinstance(v, str) else v for k, v in dados.items()})
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            for chave in [k for k in st.session_state if str(k).startswith("col_ed_")]:
+                st.session_state.pop(chave, None)
+            concluir(f"Cadastro de {colab.get('nome')} atualizado.")
+
+
+@st.dialog("Mudar cargo ou salário", width="medium", on_dismiss=fechar)
+def _modal_vinculo(colab: dict, org: dict) -> None:
+    """Novo vínculo (`colaboradores/{id}/vinculo` PATCH, só o RH): o backend encerra o histórico anterior e abre outro."""
+    atual = fm.vinculo_atual(colab)
+    deps = {d.get("id"): d.get("nome") for d in org.get("departamentos") or []}
+    cargos = {c.get("id"): c.get("nome") for c in org.get("cargos") or []}
+    c1, c2 = st.columns(2)
+    cargo_ops = sorted(cargos, key=lambda i: cargos[i] or "")
+    dep_ops = sorted(deps, key=lambda i: deps[i] or "")
+    novo = dict(atual)
+    novo["cargo_id"] = c1.selectbox("Cargo", cargo_ops, index=cargo_ops.index(atual["cargo_id"]) if atual["cargo_id"] in cargo_ops else None,
+                                    format_func=lambda i: cargos[i], key="col_vn_cargo", placeholder="Escolha")
+    novo["departamento_id"] = c2.selectbox("Departamento", dep_ops, index=dep_ops.index(atual["departamento_id"]) if atual["departamento_id"] in dep_ops else None,
+                                           format_func=lambda i: deps[i], key="col_vn_dep", placeholder="Escolha")
+    contratos, niveis = list(CONTRATOS), list(NIVEIS)
+    novo["tipo_contrato"] = c1.selectbox("Contrato", contratos, index=contratos.index(atual["tipo_contrato"]) if atual["tipo_contrato"] in contratos else 0,
+                                         format_func=CONTRATOS.get, key="col_vn_contrato")
+    novo["nivel"] = c2.selectbox("Nível", niveis, index=niveis.index(atual["nivel"]) if atual["nivel"] in niveis else 0, format_func=NIVEIS.get, key="col_vn_nivel")
+    novo["salario"] = float(c1.number_input("Salário (R$)", min_value=0.0, value=atual["salario"], step=100.0, format="%.2f", key="col_vn_salario"))
+    novo["carga_horaria_semanal"] = float(c2.number_input("Jornada semanal (horas)", min_value=1.0, max_value=60.0, value=min(max(atual["carga_horaria_semanal"], 1.0), 60.0),
+                                                          step=1.0, key="col_vn_jornada"))
+    vale = c1.date_input("Vale a partir de", value=date.today(), format="DD/MM/YYYY", key="col_vn_data")
+    tipos = list(fm.TIPOS_ALTERACAO)
+    sugerido = fm.tipo_sugerido(atual, novo)
+    tipo = c2.selectbox("Tipo de alteração", tipos, index=tipos.index(sugerido), format_func=fm.TIPOS_ALTERACAO.get, key=f"col_vn_tipo_{sugerido}")
+    motivo = st.text_area("Motivo (fica no histórico)", max_chars=1000, height=70, key="col_vn_motivo")
+    st.html('<p class="crh-meta">O vínculo atual é encerrado e um novo entra no histórico profissional. O salário não aparece na ficha.</p>')
+    slot = st.empty()
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Cancelar", key="col_vn_cancelar"):
+            fechar()
+            st.rerun()
+        if st.button("Salvar mudança", type="primary", key="col_vn_salvar"):
+            admissao = fm._dia(colab.get("data_admissao"))
+            if erro_campo := fm.validar_vinculo(atual, novo, vale, admissao, motivo):
+                alerta(slot, "erro", erro_campo)
+                return
+            try:
+                mudar_vinculo(st.session_state.token, colab["id"], dict(novo, data_inicio=vale.isoformat(), tipo_alteracao=tipo, motivo_alteracao=motivo.strip()))
+            except ApiError as erro:
+                alerta(slot, "erro", erro.message)
+                return
+            for chave in [k for k in st.session_state if str(k).startswith("col_vn_")]:
+                st.session_state.pop(chave, None)
+            concluir(f"Vínculo de {colab.get('nome')} atualizado.")
+
+
+def _linha_do_tempo(token: str, colab: dict, org: dict) -> None:
+    chave = f"col_timeline_{colab.get('id')}"
+    if chave not in st.session_state:
+        try:
+            st.session_state[chave] = colaborador_timeline(token, colab["id"])
+        except ApiError as erro:
+            st.session_state[chave] = erro.message
+    dados = st.session_state[chave]
+    st.html('<p class="crh-bloco-titulo" style="margin:12px 0 4px">Linha do tempo</p>')
+    if isinstance(dados, str):
+        st.html(f'<p class="crh-meta">A linha do tempo não carregou agora: {html.escape(dados)}</p>')
+        return
+    eventos = fm.linhas_timeline(dados, {c.get("id"): c.get("nome") for c in org.get("cargos") or []},
+                                 {d.get("id"): d.get("nome") for d in org.get("departamentos") or []})
+    if not eventos:
+        st.html('<p class="crh-meta">Nenhum evento no histórico profissional.</p>')
+        return
+    st.html('<div class="crh-rd-lista">' + "".join(
+        f'<div class="crh-rd-item"><span class="ponto"></span><div class="txt"><p class="t">{html.escape(e["titulo"])}</p>'
+        f'<p class="d">{html.escape(e["detalhe"])}</p></div><span class="crh-selo neu">{html.escape(e["data"])}</span></div>' for e in eventos) + "</div>")
+
+
+def _cartao_onboarding(token: str, colab: dict) -> None:
+    chave = f"col_onb_{colab.get('id')}"
+    if chave not in st.session_state:
+        try:
+            st.session_state[chave] = onboarding(token, colab["id"])
+        except ApiError as erro:
+            st.session_state[chave] = None if erro.status_code == 404 else erro.message
+    dados = st.session_state[chave]
+    if isinstance(dados, str):
+        st.html(f'<p class="crh-meta">O onboarding não carregou agora: {html.escape(dados)}</p>')
+        return
+    resumo = fm.resumo_onboarding(dados)
+    if resumo is None:
+        return
+    st.html('<p class="crh-bloco-titulo" style="margin:12px 0 4px">Onboarding</p>')
+    render_barra_progresso(f"{resumo['situacao']} · {resumo['concluidas']} de {resumo['total']} etapas", resumo["percentual"])
+    if resumo["proxima"]:
+        st.html(f'<p class="crh-meta">Próxima etapa: {html.escape(resumo["proxima"])}</p>')
+
+
 def _documentos_rh(token: str) -> list[dict] | str:
     """Todos os documentos (`documentos`, RH e Admin), guardados por 60 s; carregados só quando uma ficha é aberta."""
     guardado = st.session_state.get("col_docs_cache")
@@ -442,6 +575,14 @@ def _ficha(colab: dict, dados: dict) -> None:
                                            help="Já há um pedido pendente para esta conta." if pendente else None):
                     st.session_state.modal_cadastro = ("tipo_acesso", colab.get("id"))
                     st.rerun()
+            desligado = str(colab.get("status") or "").upper() == "DESLIGADO"
+            if perfil(st.session_state.usuario.get("perfil")) == "RH" and not desligado:
+                if st.button("Editar cadastro", key="col_editar_cadastro"):
+                    st.session_state.modal_cadastro = ("editar", colab.get("id"))
+                    st.rerun()
+                if st.button("Mudar cargo ou salário", key="col_mudar_vinculo"):
+                    st.session_state.modal_cadastro = ("vinculo", colab.get("id"))
+                    st.rerun()
             if st.button("Definir superior", key="col_definir_superior"):
                 st.session_state.modal_cadastro = ("superior", colab.get("id"))
                 st.rerun()
@@ -454,6 +595,8 @@ def _ficha(colab: dict, dados: dict) -> None:
                     st.session_state.modal_cadastro = ("acesso", colab.get("id"))
                     st.rerun()
 
+        _cartao_onboarding(token, colab)
+        _linha_do_tempo(token, colab, dados["organograma"])
         st.html(f'<p class="crh-bloco-titulo" style="margin:12px 0 4px">Documentos enviados ({len(linhas_docs)})</p>')
         if isinstance(docs, str):
             alerta(st.empty(), "erro", f"Os documentos não carregaram agora: {docs}")
@@ -536,6 +679,14 @@ def pagina_colaboradores() -> None:
             fechar()
         else:
             _modal_superior(alvo_colab, colabs, deps)
+    elif acao in ("editar", "vinculo") and meu_perfil == "RH":
+        alvo_colab = next((c for c in colabs if c.get("id") == alvo), None)
+        if alvo_colab is None:
+            fechar()
+        elif acao == "editar":
+            _modal_editar(alvo_colab)
+        else:
+            _modal_vinculo(alvo_colab, org)
     elif acao == "foto":
         alvo_colab = next((c for c in colabs if c.get("id") == alvo), None)
         if alvo_colab is None or not alvo_colab.get("foto_path"):

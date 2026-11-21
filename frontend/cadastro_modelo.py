@@ -229,7 +229,8 @@ def resumo_usuarios(usuarios_lista: list[dict], colabs: list[dict]) -> dict:
 def linhas_usuarios(usuarios_lista: list[dict], colabs: list[dict], meu_id, meu_perfil: str, busca: str = "", filtro_perfil=None,
                     situacao: str = "todos", agora: datetime | None = None) -> list[dict]:
     """{'id', 'nome', 'email', 'perfil', 'perfil_rotulo', 'selo_perfil', 'ultimo_acesso', 'situacao', 'sem_ficha',
-    'acoes'}. `acoes` entre "perfil", "desativar", "ativar" e "vincular", só o que o backend aceitaria."""
+    'acoes'}. `acoes` entre "editar", "perfil", "desativar", "ativar" e "vincular", só o que o backend aceitaria (editar nome e
+    e-mail de contas ativas: o Admin, qualquer outra conta; o RH, só contas de colaborador)."""
     com_ficha = {c.get("user_id") for c in colabs if c.get("user_id")}
     termo = _norm(busca).strip()
     admin = perfil(meu_perfil) == "ADMIN"
@@ -261,6 +262,8 @@ def linhas_usuarios(usuarios_lista: list[dict], colabs: list[dict], meu_id, meu_
             acoes.append("perfil")
         if pode_mexer:
             acoes.append("desativar" if u.get("ativo") else "ativar")
+        if pode_mexer and u.get("ativo"):
+            acoes.append("editar")
         linhas.append({
             "id": u.get("id"), "nome": u.get("nome") or "—", "email": u.get("email") or "—",
             "perfil": p, "perfil_rotulo": PERFIS.get(p, p.capitalize() or "—"), "selo_perfil": _SELO_PERFIL.get(p, "neu"),
@@ -279,6 +282,17 @@ def senha_temporaria(tamanho: int = 12) -> str:
     senha = [secrets.choice(g) for g in grupos] + [secrets.choice(tudo) for _ in range(tamanho - len(grupos))]
     secrets.SystemRandom().shuffle(senha)
     return "".join(senha)
+
+
+def validar_edicao_usuario(nome: str, email: str, atual: dict) -> str | None:
+    """`usuarios/{id}` PATCH: nome de 2 a 100 caracteres e e-mail válido; sem mudança não grava."""
+    if not 2 <= len((nome or "").strip()) <= 100:
+        return "O nome tem de 2 a 100 caracteres."
+    if not _RE_EMAIL.match((email or "").strip()):
+        return "Informe um e-mail válido."
+    if (nome.strip(), email.strip().lower()) == (atual.get("nome"), str(atual.get("email") or "").lower()):
+        return "Nada mudou."
+    return None
 
 
 def validar_novo_usuario(colaborador_id, email: str) -> str | None:
