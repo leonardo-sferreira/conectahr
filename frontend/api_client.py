@@ -1289,6 +1289,66 @@ def processar_fila_emails(token: str) -> dict:
     return _post("email_outbox/processar", {}, token, GRUPO_COLABORADORES)
 
 
+def mural_reconhecimento(token: str) -> dict:
+    """GET mural_reconhecimento -> {mural}: públicos ativos, respeitando "Aparecer no mural", com os nomes e a competência."""
+    return _get("mural_reconhecimento", token, GRUPO_COLABORADORES)
+
+
+def meus_reconhecimentos_recebidos(token: str) -> dict:
+    """GET meus_reconhecimentos_recebidos -> {recebidos}: públicos e privados recebidos, com os nomes e a competência."""
+    return _get("meus_reconhecimentos_recebidos", token, GRUPO_COLABORADORES)
+
+
+def meus_reconhecimentos_enviados(token: str) -> dict:
+    """GET meus_reconhecimentos_enviados -> {enviados}: os que a pessoa enviou, com a moderação e o motivo."""
+    return _get("meus_reconhecimentos_enviados", token, GRUPO_COLABORADORES)
+
+
+def competencias_reconhecimento(token: str) -> dict:
+    """GET competencias_reconhecimento -> {competencias: [{id, nome}]}: as ativas, para reconhecer um colega."""
+    return _get("competencias_reconhecimento", token, GRUPO_COLABORADORES)
+
+
+def enviar_reconhecimento(token: str, destinatario_colaborador_id: int, competencia_avaliacao_id: int, titulo: str, mensagem: str) -> dict:
+    """POST reconhecimentos: a visibilidade sai da relação (gestor do departamento = privado; colega = público)."""
+    corpo = {"destinatario_colaborador_id": int(destinatario_colaborador_id), "competencia_avaliacao_id": int(competencia_avaliacao_id),
+             "titulo": titulo, "mensagem": mensagem}
+    return _post("reconhecimentos", corpo, token, GRUPO_COLABORADORES)
+
+
+def reconhecimentos_moderacao(token: str) -> dict:
+    """GET reconhecimentos_moderacao -> {reconhecimentos}: públicos no mural e moderados (RH e Admin)."""
+    return _get("reconhecimentos_moderacao", token, GRUPO_COLABORADORES)
+
+
+def moderar_reconhecimento(token: str, reconhecimento_id: int, motivo: str) -> dict:
+    """POST reconhecimentos/{id}/moderar: tira do mural com motivo (RH e Admin; auditado, sem volta)."""
+    return _post(f"reconhecimentos/{int(reconhecimento_id)}/moderar", {"motivo_moderacao": motivo}, token, GRUPO_COLABORADORES)
+
+
+def indicadores_gerais(token: str, data_inicio: str, data_fim: str) -> dict:
+    """GET indicadores -> {periodo, headcount, turnover, absenteismo, distribuicao_departamento, horas_extras_periodo, ...} da
+    empresa no período (RH e Admin). Abaixo do mínimo de pessoas, os totais vêm nulos (`totais_omitidos`)."""
+    return _get(f"indicadores?data_inicio={data_inicio}&data_fim={data_fim}", token, GRUPO_COLABORADORES)
+
+
+def exportar_indicadores_csv(token: str, data_inicio: str, data_fim: str) -> dict:
+    """GET indicadores/exportar_csv -> {csv}: o painel em CSV (RH e Admin; auditado como `exportar_indicadores_csv`)."""
+    return _get(f"indicadores/exportar_csv?data_inicio={data_inicio}&data_fim={data_fim}", token, GRUPO_COLABORADORES)
+
+
+def retencao(token: str) -> dict:
+    """GET retencao -> {hoje, documentos, pessoas, guardas, processo_aberto}: tela "Retenção e anonimização" (RH e Admin).
+    Só leitura: documentos com guarda vencida, desligados e donos desses documentos, prazos de guarda e processos abertos."""
+    return _get("retencao", token, GRUPO_COLABORADORES)
+
+
+def anonimizar_colaborador(token: str, colaborador_id: int, justificativa: str) -> dict:
+    """POST colaboradores/{id}/anonimizar: troca os dados pessoais por marcadores (sem volta). Recusa prazo de guarda
+    vigente, processo em aberto, quem não está desligado e o próprio cadastro. Auditado com a justificativa."""
+    return _post(f"colaboradores/{int(colaborador_id)}/anonimizar", {"justificativa": justificativa}, token, GRUPO_COLABORADORES)
+
+
 def status_operacional(token: str) -> dict:
     """GET status_operacional -> {fila_email, tarefas_manuais_pendentes, rotina_diaria_pendente, acesso_bloqueado} (RH e Admin)."""
     return _get("status_operacional", token, GRUPO_AUTENTICACAO)

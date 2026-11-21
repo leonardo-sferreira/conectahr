@@ -253,11 +253,20 @@ def _ciclo_metas(token: str) -> None:
             st.rerun()
 
 
+def _ir_mural() -> None:
+    """Atalho para o mural de reconhecimentos (tarefa 66), que abre pela Trajetória."""
+    with st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button("Mural de reconhecimentos →", type="tertiary", key="traj_abrir_mural"):
+            st.session_state.ir_reconhecimentos = True
+            st.rerun()
+
+
 def _reconhecimentos(dados: dict) -> None:
     itens = reconhecimentos(dados)
     if not itens:
         st.html('<p class="crh-bloco-titulo">Reconhecimentos recebidos</p>'
                 '<div class="crh-painel crh-bloco"><p class="crh-meta">Nenhum reconhecimento recebido ainda.</p></div>')
+        _ir_mural()
         return
     corpo = "".join(
         f'<div class="item"><div class="cab"><p class="nome">{html.escape(i["nome"])}</p><p class="quando">{html.escape(i["data"])}</p></div>'
@@ -265,6 +274,7 @@ def _reconhecimentos(dados: dict) -> None:
         for i in itens
     )
     st.html(f'<p class="crh-bloco-titulo">Reconhecimentos recebidos</p><div class="crh-painel crh-rec">{corpo}</div>')
+    _ir_mural()
 
 
 # ---------------------------------------------------------------------------
