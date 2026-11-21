@@ -1806,8 +1806,8 @@ def render_indicadores(indicadores: list[tuple[str, str, str]]) -> None:
     )
 
 
-def render_horas_mensais(serie: list[dict]) -> None:
-    """F18: valores de horas já calculados pelo backend; None nunca é desenhado como zero."""
+def render_horas_mensais(serie: list[dict], titulo: str = "Horas extras por mês") -> None:
+    """Colunas verticais (F18 e F33): valores já calculados pelo backend; None nunca é desenhado como zero."""
     maximo = max((i["valor"] for i in serie if i["valor"] is not None), default=0) or 1
     colunas = []
     for item in serie:
@@ -1817,7 +1817,7 @@ def render_horas_mensais(serie: list[dict]) -> None:
                        f'<div class="crh-ie-coluna"><span class="crh-ie-valor">{html.escape(item["texto"])}</span>'
                        f'<div class="crh-ie-barra" style="height:{altura}px"></div></div>'
                        f'<p class="crh-ie-rotulo">{html.escape(item["rotulo"])}</p></div>')
-    st.html('<div class="crh-painel crh-bloco"><p class="crh-bloco-titulo">Horas extras por mês</p>'
+    st.html(f'<div class="crh-painel crh-bloco"><p class="crh-bloco-titulo">{html.escape(titulo)}</p>'
             '<div class="crh-ie-serie">' + ''.join(colunas) + '</div></div>')
 
 

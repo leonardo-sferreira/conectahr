@@ -1326,6 +1326,17 @@ def moderar_reconhecimento(token: str, reconhecimento_id: int, motivo: str) -> d
     return _post(f"reconhecimentos/{int(reconhecimento_id)}/moderar", {"motivo_moderacao": motivo}, token, GRUPO_COLABORADORES)
 
 
+def indicadores_gerais(token: str, data_inicio: str, data_fim: str) -> dict:
+    """GET indicadores -> {periodo, headcount, turnover, absenteismo, distribuicao_departamento, horas_extras_periodo, ...} da
+    empresa no período (RH e Admin). Abaixo do mínimo de pessoas, os totais vêm nulos (`totais_omitidos`)."""
+    return _get(f"indicadores?data_inicio={data_inicio}&data_fim={data_fim}", token, GRUPO_COLABORADORES)
+
+
+def exportar_indicadores_csv(token: str, data_inicio: str, data_fim: str) -> dict:
+    """GET indicadores/exportar_csv -> {csv}: o painel em CSV (RH e Admin; auditado como `exportar_indicadores_csv`)."""
+    return _get(f"indicadores/exportar_csv?data_inicio={data_inicio}&data_fim={data_fim}", token, GRUPO_COLABORADORES)
+
+
 def retencao(token: str) -> dict:
     """GET retencao -> {hoje, documentos, pessoas, guardas, processo_aberto}: tela "Retenção e anonimização" (RH e Admin).
     Só leitura: documentos com guarda vencida, desligados e donos desses documentos, prazos de guarda e processos abertos."""
