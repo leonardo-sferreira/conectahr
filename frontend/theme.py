@@ -966,8 +966,8 @@ _APP_CSS = f"""
   .crh-pd-passo .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   div[class*="st-key-dl_rejeitar_"] button p {{ color: var(--crh-err) !important; font-weight: 600; }}
   div[class*="st-key-dl_aprovar_"] button p, div[class*="st-key-dl_assumir_"] button p, div[class*="st-key-dl_concluir_"] button p {{ color: var(--crh-amb) !important; font-weight: 600; }}
-  .st-key-dl_rej_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
-  .st-key-dl_rej_perigo button p {{ color: white !important; }}
+  .st-key-dl_rej_perigo button, .st-key-ret_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
+  .st-key-dl_rej_perigo button p, .st-key-ret_perigo button p {{ color: white !important; }}
   /* Pesquisa de clima (Figma 225:4668): aviso de anonimato, progresso, escala em caixas e a lista de pesquisas. */
   .crh-pc-anonimo {{ background: #DCFCE7; color: {SUCESSO_TEXTO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 14px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
   .crh-pc-progresso p {{ margin: 0 0 6px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}

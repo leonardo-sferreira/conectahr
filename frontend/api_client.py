@@ -1289,6 +1289,18 @@ def processar_fila_emails(token: str) -> dict:
     return _post("email_outbox/processar", {}, token, GRUPO_COLABORADORES)
 
 
+def retencao(token: str) -> dict:
+    """GET retencao -> {hoje, documentos, pessoas, guardas, processo_aberto}: tela "Retenção e anonimização" (RH e Admin).
+    Só leitura: documentos com guarda vencida, desligados e donos desses documentos, prazos de guarda e processos abertos."""
+    return _get("retencao", token, GRUPO_COLABORADORES)
+
+
+def anonimizar_colaborador(token: str, colaborador_id: int, justificativa: str) -> dict:
+    """POST colaboradores/{id}/anonimizar: troca os dados pessoais por marcadores (sem volta). Recusa prazo de guarda
+    vigente, processo em aberto, quem não está desligado e o próprio cadastro. Auditado com a justificativa."""
+    return _post(f"colaboradores/{int(colaborador_id)}/anonimizar", {"justificativa": justificativa}, token, GRUPO_COLABORADORES)
+
+
 def status_operacional(token: str) -> dict:
     """GET status_operacional -> {fila_email, tarefas_manuais_pendentes, rotina_diaria_pendente, acesso_bloqueado} (RH e Admin)."""
     return _get("status_operacional", token, GRUPO_AUTENTICACAO)

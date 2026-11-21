@@ -63,6 +63,7 @@ from pagina_pedir_desligamento import pagina_pedir_desligamento
 from pagina_integracoes import pagina_integracoes
 from pagina_pedidos_lgpd import pagina_pedidos_lgpd
 from pagina_rep_p import pagina_rep_p
+from pagina_retencao import pagina_retencao
 from pagina_perfil import pagina_perfil
 from pagina_pesquisa_clima import pagina_pesquisa_clima
 from pagina_pesquisas_clima import pagina_pesquisas_clima
@@ -119,6 +120,8 @@ _MENU_RH = [
     "Pedidos LGPD",
     # Empregador, programa, disponibilidade e os arquivos AFD e AEJ (change ponto-rep-p-e-ferias-clt, tarefa 5.3).
     "Ponto eletrônico (REP-P)",
+    # Documentos com guarda vencida e anonimização de desligados (tarefa 64 da change concluir-frontend-streamlit).
+    "Retenção e anonimização",
     # Feriados, níveis da hierarquia e cargos (change organograma-hierarquia): o RH também mantém.
     "Estrutura da empresa",
     # Só RH e Admin; saíram do menu principal para ele ficar igual para todos (change menu-grupos-recolhiveis).
@@ -271,6 +274,7 @@ PG_CLIMA = st.Page(pagina_pesquisa_clima, title="Pesquisa de clima", url_path="p
 PG_CLIMA_RH = st.Page(pagina_pesquisas_clima, title="Pesquisas de clima", url_path="pesquisas-de-clima")
 PG_LGPD = st.Page(pagina_pedidos_lgpd, title="Pedidos LGPD", url_path="pedidos-lgpd")
 PG_REP = st.Page(pagina_rep_p, title="Ponto eletrônico (REP-P)", url_path="ponto-eletronico-rep-p")
+PG_RETENCAO = st.Page(pagina_retencao, title="Retenção e anonimização", url_path="retencao-e-anonimizacao")
 PG_INTEGRACOES = st.Page(pagina_integracoes, title="Integrações e e-mails", url_path="integracoes-e-emails")
 PG_CANAL = st.Page(pagina_canal_denuncias, title="Canal de denúncias", url_path="canal-de-denuncias")
 PG_DENUNCIAS = st.Page(pagina_denuncias, title="Denúncias", url_path="denuncias")
@@ -281,7 +285,7 @@ PG_HUMOR = st.Page(pagina_termometro_humor, title="Termômetro de humor", url_pa
 PG_METAS_EQUIPE = st.Page(pagina_metas_equipe, title="Metas da equipe", url_path="metas-da-equipe")
 PG_TRAJETORIA = st.Page(pagina_trajetoria, title="Trajetória", url_path="trajetoria")
 pagina_atual = st.navigation(
-    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AVALIACOES_EQUIPE, PG_DELEGACOES, PG_INDICADORES_EQUIPE, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_REP, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS, PG_HUMOR], position="hidden"
+    [PG_INICIO, PG_PERFIL, PG_PONTO, PG_FERIAS, PG_PAGAMENTO, PG_LANCAMENTOS, PG_MEU_ONBOARDING, PG_DOCUMENTOS, PG_CONFIGURACOES, PG_AVISO, PG_CENTRAL, PG_MINHA_EQUIPE, PG_AVALIACOES_EQUIPE, PG_DELEGACOES, PG_INDICADORES_EQUIPE, PG_AUSENCIAS, PG_COLABORADORES, PG_USUARIOS, PG_SOLICITACOES, PG_FOLHA, PG_BENEFICIOS, PG_CONFERENCIA, PG_ESTRUTURA, PG_FAQ, PG_ORGANOGRAMA, PG_TRAJETORIA, PG_METAS_CICLO, PG_CICLOS, PG_METAS_EQUIPE, PG_REGRAS, PG_AUDITORIA, PG_PEDIR_DESLIG, PG_DESLIGAMENTOS, PG_CLIMA, PG_CLIMA_RH, PG_LGPD, PG_REP, PG_RETENCAO, PG_INTEGRACOES, PG_CANAL, PG_DENUNCIAS, PG_NR1, PG_TREINAMENTOS, PG_MEUS_TREINAMENTOS, PG_HUMOR], position="hidden"
 )
 
 # Atalhos pedidos por uma página (o st.Page só existe aqui).
@@ -320,7 +324,7 @@ for marca, destino in _ATALHOS.items():
         st.switch_page(destino)
 
 # Páginas do menu lateral que já existem; as outras ainda mostram "em construção".
-_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Ponto eletrônico (REP-P)": PG_REP, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1, "Treinamentos": PG_TREINAMENTOS, "Meus treinamentos": PG_MEUS_TREINAMENTOS, "Termômetro de humor": PG_HUMOR}
+_PAGINAS_DO_MENU = {"Início": PG_INICIO, "Perfil": PG_PERFIL, "Ponto": PG_PONTO, "Férias": PG_FERIAS, "Documentos": PG_DOCUMENTOS, "Pagamento": PG_PAGAMENTO, "Lançamento de pagamentos": PG_LANCAMENTOS, "Benefícios": PG_BENEFICIOS, "Central de Pendências": PG_CENTRAL, "Regras": PG_REGRAS, "Desligamentos": PG_DESLIGAMENTOS, "Auditoria": PG_AUDITORIA, "Trajetória": PG_TRAJETORIA, "Ausências": PG_AUSENCIAS, "Colaboradores": PG_COLABORADORES, "Solicitações ao RH": PG_SOLICITACOES, "Folha de ponto": PG_FOLHA, "Folha de ponto da equipe": PG_FOLHA, "Usuários e perfis": PG_USUARIOS, "Conferência de documentos": PG_CONFERENCIA, "Estrutura da empresa": PG_ESTRUTURA, "Comunicados e FAQ": PG_FAQ, "Ciclos de avaliação": PG_CICLOS, "Metas da equipe": PG_METAS_EQUIPE, "Pesquisa de clima": PG_CLIMA, "Pesquisas de clima": PG_CLIMA_RH, "Pedidos LGPD": PG_LGPD, "Ponto eletrônico (REP-P)": PG_REP, "Retenção e anonimização": PG_RETENCAO, "Integrações e e-mails": PG_INTEGRACOES, "Canal de denúncias": PG_CANAL, "Denúncias": PG_DENUNCIAS, "Riscos psicossociais": PG_NR1, "Treinamentos": PG_TREINAMENTOS, "Meus treinamentos": PG_MEUS_TREINAMENTOS, "Termômetro de humor": PG_HUMOR}
 
 _PAGINAS_DO_MENU["Minha equipe"] = PG_MINHA_EQUIPE
 _PAGINAS_DO_MENU["Avaliações da equipe"] = PG_AVALIACOES_EQUIPE
