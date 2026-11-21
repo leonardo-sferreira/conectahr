@@ -738,9 +738,21 @@ def criar_usuario(token: str, colaborador_id: int, email: str, senha_temporaria:
     return _post("usuarios", {"colaborador_id": int(colaborador_id), "email": email, "senha_temporaria": senha_temporaria}, token, GRUPO_USUARIOS)
 
 
-def trocar_perfil(token: str, usuario_id: int, perfil: str) -> dict:
-    """PATCH usuarios/{id}/perfil (só Admin; ninguém troca o próprio). `perfil`: COLABORADOR, GESTOR, RH ou ADMIN."""
-    return _request("PATCH", f"usuarios/{int(usuario_id)}/perfil", token, GRUPO_USUARIOS, {"perfil": perfil})
+def trocar_perfil(token: str, usuario_id: int, perfil: str, motivo: str | None = None) -> dict:
+    """PATCH usuarios/{id}/perfil (só Admin; ninguém troca o próprio). `perfil`: COLABORADOR, GESTOR, RH ou ADMIN. O `motivo`
+    vai para a auditoria (tarefa 76)."""
+    return _request("PATCH", f"usuarios/{int(usuario_id)}/perfil", token, GRUPO_USUARIOS, {"perfil": perfil, "motivo": motivo})
+
+
+def desbloquear_usuario(token: str, usuario_id: int, motivo: str) -> dict:
+    """POST usuarios/{id}/desbloquear (só Admin, nunca a própria conta): tira o bloqueio de tentativas de senha. Auditado com o motivo."""
+    return _post(f"usuarios/{int(usuario_id)}/desbloquear", {"motivo": motivo}, token, GRUPO_USUARIOS)
+
+
+def reenviar_acesso(token: str, usuario_id: int, senha_temporaria: str) -> dict:
+    """POST usuarios/{id}/reenviar_acesso -> {email_enviado}: nova senha temporária por e-mail para quem ainda não trocou a
+    primeira (só Admin, conta ativa, nunca a própria). Auditado sem a senha."""
+    return _post(f"usuarios/{int(usuario_id)}/reenviar_acesso", {"senha_temporaria": senha_temporaria}, token, GRUPO_USUARIOS)
 
 
 def solicitacoes_acesso(token: str) -> dict:

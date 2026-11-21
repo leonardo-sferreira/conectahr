@@ -8,6 +8,8 @@ query "usuarios/{id}/perfil" verb=PATCH {
   input {
     int id
     text perfil filters=trim
+    // Motivo da troca (tarefa 76 da change concluir-frontend-streamlit): vai para a auditoria.
+    text? motivo? filters=trim|max:500
   }
 
   stack {
@@ -139,6 +141,7 @@ query "usuarios/{id}/perfil" verb=PATCH {
         registro_id   : $usuario_alvo.id
         valor_anterior: $usuario_alvo.perfil
         valor_novo    : $perfil_valor_banco
+        justificativa : $input.motivo
         resultado     : "sucesso"
       }
     } as $evento_auditoria

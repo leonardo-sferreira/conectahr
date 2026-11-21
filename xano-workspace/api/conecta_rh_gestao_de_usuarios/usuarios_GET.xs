@@ -80,6 +80,7 @@ query usuarios verb=GET {
         "ativo"
         "ultimo_acesso"
         "senha_primeiro_acesso"
+        "senha_bloqueada_ate"
       ]
     } as $usuarios
   }
