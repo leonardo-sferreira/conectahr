@@ -38,3 +38,4 @@ docs/emails-templates.md
 .DS_Store
 Thumbs.db
 desktop.ini
+.omc/
