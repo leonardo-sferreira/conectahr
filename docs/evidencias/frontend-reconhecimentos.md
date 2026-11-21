@@ -53,4 +53,15 @@ Diferenças do Figma:
 - "Moderar →" no topo do mural, para RH e Admin, porque o Figma não desenha o caminho até a moderação;
 - em "Enviados", quem enviou vê o motivo da moderação, como diz o modal 291:1703.
 
-**Não verificado por HTTP ainda.** Fica para a mesma sessão de login da Retenção.
+**HTTP com login (21/11/2026), contas de teste Admin e Colaborador:**
+- `competencias_reconhecimento`: só `id` e `nome` das competências ativas (5);
+- reconhecer a si mesmo é recusado; o Colaborador reconhece a ficha do Admin e o registro sai `publico`;
+- o Admin escolheu sair do mural, então o Colaborador não vê esse reconhecimento no mural e o Admin vê, com
+  `remetente_nome`, `destinatario_nome` e `competencia_nome`;
+- aparece em `meus_reconhecimentos_enviados` do Colaborador e em `meus_reconhecimentos_recebidos` do Admin, com o nome de
+  quem enviou;
+- `reconhecimentos_moderacao`: Colaborador 403 e Gestor 403 (conta promovida só durante o teste e devolvida a Colaborador);
+- o Admin modera com motivo: o registro sai do mural, aparece na fila com `status` moderado, quem moderou e o motivo, e
+  quem enviou vê a moderação e o motivo em "Enviados".
+
+Não testado por HTTP: o caso privado (gestor da pessoa reconhece), porque as contas de teste não têm relação de gestor.

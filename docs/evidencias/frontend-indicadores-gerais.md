@@ -30,4 +30,6 @@ Diferenças do Figma, por falta de dado no backend:
 - não há filtro por departamento, porque o cálculo é da empresa toda;
 - não há "Departamento com mais horas".
 
-**Não verificado por HTTP ainda.** Fica para a mesma sessão de login da Retenção e dos Reconhecimentos.
+**HTTP com login (21/11/2026):** `indicadores` GET de 01/12/2025 a 21/11/2026: Admin 200 com `turnover` e
+`distribuicao_departamento` (headcount 9, totais não ocultos); Colaborador 403; Gestor 403 (conta promovida só durante o
+teste); `indicadores/exportar_csv`: Admin 200 com CSV não vazio.

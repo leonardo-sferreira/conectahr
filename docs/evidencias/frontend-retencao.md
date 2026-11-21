@@ -33,5 +33,9 @@ Diferenças do Figma:
   auditoria, que é do Admin;
 - o tipo do documento usa os rótulos do cadastro, e não as categorias "Cadastro", "Contrato" e "Saúde".
 
-**Não verificado por HTTP ainda:** `retencao` GET com login (RH 200, Gestor 403). Será feito na mesma sessão de teste
-dos Reconhecimentos.
+**HTTP com login (21/11/2026), contas de teste Admin e Colaborador:**
+- `retencao` GET: Admin 200 com `hoje`, `documentos`, `pessoas`, `guardas` e `processo_aberto`; nenhuma pessoa traz CPF ou
+  contato e nenhum documento traz arquivo ou número;
+- Colaborador 403 e, com a conta promovida a Gestor só durante o teste, Gestor 403;
+- `colaboradores/{id}/anonimizar` de quem não está desligado: 400 com "desligado" na mensagem, antes de gravar; justificativa
+  de 3 caracteres: 400. Nenhuma anonimização foi executada.
