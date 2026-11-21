@@ -73,6 +73,7 @@ Campos do registro 2 do AFD e do cabeçalho do AEJ, mais `inpi_registro`, `desen
 - Frontend: `primeiro_dia()` passa a ser **só** a admissão (sem o mínimo com o primeiro registro). Sem admissão no cadastro, cai no primeiro registro, como hoje. Dias antes dela e dias futuros saem como linha em branco na planilha.
 - A data de admissão errada no cadastro continua gerando falta; a correção é acertar o cadastro (informado ao usuário em 12/10/2026).
 - **Cabeçalho do art. 84 (12/10/2026):** `ponto/comprovantes` devolve também a admissão, o cargo e a jornada da regra do contrato (`horas_diarias`, `horas_semanais`, `intervalo_minutos`). O cadastro não guarda os horários de entrada e saída, então o "horário contratual" do espelho é a jornada ("8h48 por dia · 44h00 por semana · intervalo de 1h00"), e não "08:00–12:00 e 13:00–17:48" como no Figma; sem regra, "Não informado". O AEJ (registro 04, grupo 5) vai precisar dos horários: decidir lá se o cadastro ganha esses campos.
+- **AEJ sem o registro 04 (21/11/2026):** o cadastro continua sem horários de entrada e saída, então o AEJ sai sem o registro 04 e sem o `codHorContratual` no registro 05 (o leiaute pede esse campo na primeira entrada de cada dia). O trailer informa 0 registros do tipo 04. Para completar, o cadastro precisa ganhar o horário contratual (pares de entrada e saída e a duração em minutos); fica para uma change própria.
 
 ### D7b. A marcação nunca é recusada por horário
 

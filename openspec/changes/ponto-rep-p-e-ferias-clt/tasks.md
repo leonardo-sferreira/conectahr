@@ -48,9 +48,12 @@
 
 ## 5. AFD e AEJ
 
-- [ ] 5.1 Criar `frontend/rep_modelo.py` com CRC-16/KERMIT, os registros 1, 2, 5, 6, 7 e 9 e o registro de assinatura do AFD, e os registros 01 a 08 e 99 e o de assinatura do AEJ, em ISO 8859-1 com CR LF. Verificar: `tools/testar_rep_p.py` confere o CRC de "123456789" = "2189", o tamanho de cada tipo de linha e os campos de um arquivo de exemplo.
-- [ ] 5.2 Criar `rep/afd` GET e `rep/aej` GET (intervalo de datas, só RH e Admin, auditados) que devolvem os registros do intervalo. Verificar: Gestor recebe 403 por HTTP e `tools/checar_endpoints.py` sem falhas.
-- [ ] 5.3 Construir a tela do RH "Ponto eletrônico (REP-P)" com o empregador, o REP-P, os eventos do serviço e os botões de gerar os arquivos, com o nome no padrão do leiaute. Verificar: o AFD de um mês de teste baixado pela tela passa pela conferência de `tools/testar_rep_p.py` (tamanhos, CRC, hash e trailer) e prints com o Figma.
+- [x] 5.1 Criar `frontend/rep_modelo.py` com CRC-16/KERMIT, os registros 1, 2, 5, 6, 7 e 9 e o registro de assinatura do AFD, e os registros 01 a 08 e 99 e o de assinatura do AEJ, em ISO 8859-1 com CR LF. Verificar: `tools/testar_rep_p.py` confere o CRC de "123456789" = "2189", o tamanho de cada tipo de linha e os campos de um arquivo de exemplo.
+  - **Feito (21/11/2026):** `tools/testar_rep_p.py` 30/30. O CRC de "123456789" dá "2189", e os tamanhos são 302, 331, 118, 36, 137 e 64, mais a assinatura com 100. O arquivo de exemplo foi conferido campo a campo. O AEJ sai sem o registro 04 (horário contratual), porque o cadastro não guarda os horários de entrada e saída; ver o `design.md`.
+- [x] 5.2 Criar `rep/afd` GET e `rep/aej` GET (intervalo de datas, só RH e Admin, auditados) que devolvem os registros do intervalo. Verificar: Gestor recebe 403 por HTTP e `tools/checar_endpoints.py` sem falhas.
+  - **Feito (21/11/2026):** publicados; `checar_endpoints` 296, 0 falhas. Com login: Colaborador 403 e Gestor 403 nas duas rotas (a conta de teste foi promovida pelo Admin só durante o teste e voltou a Colaborador); período invertido 400; Admin 200; as duas gerações na auditoria (`rep_afd_gerado` e `rep_aej_gerado`).
+- [x] 5.3 Construir a tela do RH "Ponto eletrônico (REP-P)" com o empregador, o REP-P, os eventos do serviço e os botões de gerar os arquivos, com o nome no padrão do leiaute. Verificar: o AFD de um mês de teste baixado pela tela passa pela conferência de `tools/testar_rep_p.py` (tamanhos, CRC, hash e trailer) e prints com o Figma.
+  - **Feito (21/11/2026):** `frontend/pagina_rep_p.py` no menu RH; `tools/testar_pagina_rep_p.py` 28/28. O AFD baixado pela tela (API simulada, 29 registros) passa no `conferir_afd`. Os prints com o Figma estão em `docs/evidencias/frontend-ponto-rep-p/`.
 
 ## 6. Férias pela CLT
 
@@ -79,6 +82,7 @@
 - [x] 8.1 Atualizar `docs/lgpd/registro-de-operacoes.md`, `retencao.md` e o aviso de privacidade (documento e cópias no Figma) com o CPF no comprovante, no AFD e no AEJ e a ARP fora da anonimização pelo prazo legal. Verificar: documento e Figma com os mesmos textos.
   - **Feito (21/11/2026):** F07 em `registro-de-operacoes.md` (ARP com CPF, comprovante, AFD e AEJ; acesso de cada um; ARP fora da anonimização no prazo legal), `retencao.md` (a ARP fica fora da anonimização durante o prazo; `checar_endpoints` protege) e a linha "Controlar a jornada" do aviso de privacidade, com o mesmo texto no documento e nas 6 cópias do Figma (285:948/950 e 285:1250/1252; escuro 292:1071/1073 e 292:1296/1298; fluxo F36 301:1369/1371 e 301:2062/2064). Prazo de 5 anos marcado "a confirmar com o jurídico". `tools/testar_privacidade_documentos.py` 108/108.
 - [ ] 8.2 Conferência de ponta a ponta: marcar, pedir correção, aprovar, ver o espelho com "(I)", gerar AFD e AEJ e pedir férias com venda, num ambiente de teste. Verificar: o roteiro executado com os resultados em `docs/evidencias/frontend-ponto-rep-p.md`, e `openspec validate ponto-rep-p-e-ferias-clt` passando.
+  - **Em parte (21/11/2026):** a geração do AFD e do AEJ foi feita de ponta a ponta com login (17/17), com os dados do ar de 01/10 a 30/11. A ARP tem só 2 registros tipo 5 e nenhuma marcação, então a cadeia de hashes com dados reais fica para depois da 3.1. Faltam marcar, pedir correção, aprovar e ver o espelho, que dependem da 3.1 (marcação por HTTP, com conta de teste), e pedir férias com venda.
 
 ## 9. Jornada, descanso e saldo (decidido em 12/10/2026)
 

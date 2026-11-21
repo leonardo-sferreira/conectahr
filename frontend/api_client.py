@@ -510,6 +510,31 @@ def comprovantes_ponto(token: str) -> dict:
     return _get("ponto/comprovantes", token, GRUPO_PONTO)
 
 
+def empregador_rep(token: str) -> dict:
+    """GET empregador -> {empregador}: dados do empregador e do REP-P (nulo enquanto não cadastrado). Só RH e Admin."""
+    return _get("empregador", token, GRUPO_PONTO)
+
+
+def salvar_empregador_rep(token: str, dados: dict) -> dict:
+    """PUT empregador: grava o empregador e o programa (REP-P e PTRP). Se mudar o empregador, entra no AFD (tipo 2)."""
+    return _request("PUT", "empregador", token, GRUPO_PONTO, dados)
+
+
+def evento_rep(token: str, evento: str, observacao: str | None = None) -> dict:
+    """POST rep/eventos: "08" indisponibilidade ou "07" volta do serviço de ponto (AFD tipo 6). Auditado."""
+    return _post("rep/eventos", {"evento": evento, "observacao": observacao}, token, GRUPO_PONTO)
+
+
+def dados_afd(token: str, inicio: str, fim: str) -> dict:
+    """GET rep/afd -> {empregador, registros}: os registros da ARP gravados no período, em ordem de NSR. Auditado."""
+    return _get(f"rep/afd?data_inicio={inicio}&data_fim={fim}", token, GRUPO_PONTO)
+
+
+def dados_aej(token: str, inicio: str, fim: str) -> dict:
+    """GET rep/aej -> {empregador, vinculos, marcacoes, tratamentos, faltas, banco_horas} do período. Auditado."""
+    return _get(f"rep/aej?data_inicio={inicio}&data_fim={fim}", token, GRUPO_PONTO)
+
+
 def minhas_correcoes_ponto(token: str) -> dict:
     """GET minhas_correcoes_ponto -> {correcoes} do próprio colaborador."""
     return _get("minhas_correcoes_ponto", token, GRUPO_PONTO)
