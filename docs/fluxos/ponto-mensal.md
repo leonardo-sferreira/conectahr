@@ -89,6 +89,21 @@ O que o backend confere em todo pedido:
 O gestor e o RH também podem ajustar direto, na folha da equipe (`folha_ponto/tratar`), incluindo ou desconsiderando
 uma marcação com motivo. O ajuste vale na hora como tratamento, não tem prazo e avisa a pessoa.
 
+## 3.1 Jornada no espelho (D12 a D14) e dias sem expediente
+
+- **Dia aberto que passou:** aparece como INCOMPLETO, com "corrigir"; o sistema não fecha a jornada sozinho (D12).
+- **Saldo do dia:** o saldo de cada dia aparece no espelho com a tolerância de 10 minutos (D14).
+  - Em dia sem expediente, a jornada esperada é zero.
+  - O que for trabalhado nesse dia conta como positivo.
+- **Descanso entre jornadas:**
+  - Abaixo do mínimo, a tela "Hoje" pede confirmação antes de marcar.
+  - Se a pessoa confirmar, a marcação é gravada e o superior e o RH recebem um aviso (D13).
+- **Dias sem expediente:** vêm do calendário (`calendario`), com o rótulo pelo tipo e pela abrangência, e não geram falta. Desde 21/11/2026, tarefa 7.3:
+  - "Feriado — nome";
+  - "Feriado estadual (SP) — nome", como no 9 de julho;
+  - "Feriado municipal (São Paulo) — nome";
+  - "Ponto facultativo — nome".
+
 ## 4. O que fica fora (decisões, não brechas)
 
 - **Prazo para pedir correção (tarefa 79).** O RH define o prazo na Folha de ponto; começa sem limite. Com prazo, os

@@ -129,6 +129,12 @@ conferir(impar["status"] == "INCOMPLETO" and impar["situacao"] == "INCOMPLETO ·
          "tratamento com marcação sem par: INCOMPLETO, mesmo gravado como Ajustado")
 so_feri = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], feri, 2026, 10, date(2026, 10, 31), "2026-10-01", marcacoes=[])}
 conferir(so_feri[28]["situacao"] == "Ponto facultativo — Dia do Servidor Público" and so_feri[28]["status"] != "SEM REGISTRO", "ponto facultativo pelo tipo, sem falta")
+sp = [{"data": "2026-07-09", "nome": "Revolução Constitucionalista", "tipo": "feriado", "abrangencia": "estadual", "estado": "SP", "ativo": True},
+      {"data": "2026-01-25", "nome": "Aniversário de São Paulo", "tipo": "feriado", "abrangencia": "municipal", "estado": "SP", "municipio": "São Paulo", "ativo": True}]
+julho = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], sp, 2026, 7, date(2026, 7, 31), "2026-01-01", marcacoes=[])}
+conferir(julho[9]["situacao"] == "Feriado estadual (SP) — Revolução Constitucionalista" and julho[9]["status"] != "SEM REGISTRO",
+         "9 de julho: feriado estadual (SP), sem falta (tarefa 7.3)")
+conferir(m.rotulo_feriado(sp[1]) == "Feriado municipal (São Paulo)" and m.rotulo_feriado({"tipo": "feriado"}) == "Feriado", "rótulo municipal e nacional")
 so_sem = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 10, H, "2026-10-01", marcacoes=[])}
 conferir(so_sem[15]["situacao"] == "HOJE · sem marcação" and so_sem[5]["situacao"] == "Sem registro", "hoje sem marcação; dia útil sem nada no mês corrente: sem registro")
 fechado = {l["data"].day: l for l in m.espelho_do_mes([], [], [], [], [], 2026, 9, H, "2026-09-01", marcacoes=[])}

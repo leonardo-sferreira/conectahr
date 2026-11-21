@@ -77,6 +77,38 @@ teste, porque nada é apagado.
 `frontend/rep_modelo.py` (`conferir_cadeia`) faz isso, e `python tools/testar_rep_p.py --xano` compara o
 cálculo do backend com o do Python.
 
+## Jornada: virada do dia, descanso e saldo (design D12 a D14, 12/10/2026)
+
+Estas três regras valem para o ponto e não mudam a ARP: as marcações continuam como foram gravadas.
+
+- **Virada do dia (D12):** o dia é o dia civil de Brasília. Dia que ficou aberto vira `Incompleto` em três momentos:
+  - na primeira marcação do dia seguinte;
+  - na rotina diária;
+  - na tela, que já mostra o dia passado aberto como incompleto.
+
+  O sistema nunca grava a saída no lugar da pessoa, porque a marcação automática é proibida (art. 74). A saída que faltou vem por pedido de correção.
+- **Descanso entre jornadas (D13):** da última marcação válida do dia anterior até a primeira do dia.
+  - Abaixo do mínimo, a marcação é gravada mesmo assim, porque restringir a marcação é proibido (art. 74). O mínimo é `regra_contrato.descanso_minimo_minutos`; vazio vale 660 (CLT, art. 66).
+  - `ponto/marcar` avisa o superior direto (ou o Gestor do departamento) e o RH (`notificacao_interna`, tipo `descanso_interjornada`).
+  - A tela "Hoje" pede confirmação antes; desistir não grava nada.
+- **Saldo do dia com tolerância (D14):** `registro_ponto.saldo_minutos` é o tempo trabalhado menos a jornada do contrato.
+  - **Jornada esperada:** a do contrato em dia útil. É zero em fim de semana, feriado ou ponto facultativo do calendário, férias aprovadas e ausência aprovada ou registrada.
+  - **Tolerância:** diferença de até 10 minutos no dia vira 0; acima disso, conta a diferença inteira (CLT, art. 58, § 1º; Súmula 366 do TST).
+  - **Simplificação:** a tolerância é diária, e não por marcação, porque o cadastro não tem horário de entrada e saída.
+  - **Contrato sem jornada (PJ):** sem saldo.
+  - **Banco de horas:** o saldo não vai para ele.
+  - **Conferência:** os 7 cenários da spec, pela CLI (`xano function run`):
+
+    | Cenário | Saldo |
+    |---|---|
+    | 7h30 em jornada de 8h | -30 |
+    | 6h20 em jornada de 6h | +20 |
+    | 7h52 | 0 |
+    | Sábado, 4h | +240 |
+    | PJ | Vazio |
+    | Dia útil sem marcação | -480 |
+    | 8h11 | +11 |
+
 ## Decisões técnicas
 
 Ver o `design.md` da change `ponto-rep-p-e-ferias-clt` (D1 a D11).
