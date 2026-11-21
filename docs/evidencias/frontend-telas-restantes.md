@@ -54,15 +54,28 @@ campos novos.
 **Início:** os campos que a tela lê existem na resposta real da `central_de_tarefas` (Admin e Colaborador). A soma
 agora inclui as ausências, as avaliações da equipe e os pedidos LGPD perto do prazo, que faltavam.
 
-**Ainda sem HTTP**, porque gravam e a sessão de teste venceu:
-- arquivar comunicado;
-- editar usuário;
-- editar cadastro;
-- mudar vínculo;
-- criar departamento e trocar gestor;
-- encerrar a sessão de outra conta.
+**Gravações, com a conta RH (21/11/2026, 23/23):**
+- **Comunicados:**
+  - o RH publicou um comunicado de teste, só para o perfil RH e vigente só nesse dia;
+  - o comunicado apareceu ativo na lista e foi arquivado;
+  - depois de arquivado, sumiu dos comunicados de quem estava no público;
+  - arquivar de novo deu 400, e um comunicado inexistente deu 404.
+  - Ficou no banco, arquivado.
+- **Usuários:**
+  - o RH trocou o nome da conta Colaborador de teste e depois voltou ao original;
+  - editar a conta do Admin foi recusado ("só contas de colaboradores").
+- **Ficha:**
+  - o RH trocou o telefone da ficha de teste, conferiu e voltou ao original;
+  - a linha do tempo respondeu 200;
+  - um vínculo com data anterior à admissão foi recusado sem gravar.
+  - O caminho que grava o vínculo não foi testado por HTTP, porque cria um registro permanente no histórico.
+- **Departamentos:**
+  - o RH criou "Teste automatizado" e editou o nome;
+  - trocar o gestor por alguém de fora do departamento foi recusado;
+  - em seguida inativei o departamento, que ficou no banco como inativo.
+  - Trocar o gestor de fato precisa de uma conta Gestor do mesmo departamento e não foi testado.
 
-Os endpoints de comunicados e de sessão são novos, e os outros já existiam no backend.
+**Ainda sem HTTP:** encerrar a sessão de outra conta, porque derruba a sessão de quem está logado.
 
 ## Acessibilidade (tarefa 39)
 
