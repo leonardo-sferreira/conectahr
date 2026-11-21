@@ -28,6 +28,11 @@ PRAZO_DIAS = 15
 CAMPO_PARA_CADASTRO = {"Nome completo": "nome", "CPF": "cpf", "Data de nascimento": "data_nascimento", "Telefone": "telefone", "E-mail pessoal": "email_pessoal"}
 CAMPOS_PESSOAIS = ["nome", "cpf", "email_pessoal", "data_nascimento", "telefone", "cep", "logradouro", "numero", "complemento", "bairro", "cidade", "estado"]
 _RE_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+ROTULOS_PESSOAIS = {"nome": "Nome completo", "cpf": "CPF (só números)", "email_pessoal": "E-mail pessoal", "telefone": "Telefone", "cep": "CEP",
+                    "logradouro": "Logradouro", "numero": "Número", "complemento": "Complemento", "bairro": "Bairro", "cidade": "Cidade",
+                    "estado": "Estado (UF)"}
+TIPOS_PESSOAIS = {"nome": "nome", "cpf": "numero", "email_pessoal": "email", "telefone": "numero", "cep": "numero", "logradouro": "endereco",
+                  "numero": "numero", "complemento": "endereco", "bairro": "endereco", "cidade": "endereco", "estado": "nome"}
 
 
 def _dia(valor) -> date | None:

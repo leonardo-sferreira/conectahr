@@ -47,7 +47,8 @@ def _modal_acompanhar(codigo: str) -> None:
     dados = st.session_state.get("cd_acomp_dados")
     if dados is None:
         try:
-            dados = acompanhar_denuncia(codigo)
+            with st.spinner("Buscando a denúncia..."):
+                dados = acompanhar_denuncia(codigo)
         except ApiError as erro:
             alerta(st.empty(), "erro", erro.message)
             return
@@ -80,7 +81,8 @@ def _modal_acompanhar(codigo: str) -> None:
                 alerta(slot, "erro", erro)
                 return
             try:
-                responder_denuncia(codigo, texto.strip())
+                with st.spinner("Enviando..."):
+                    responder_denuncia(codigo, texto.strip())
             except ApiError as erro_api:
                 alerta(slot, "erro", erro_api.message)
                 return
@@ -116,7 +118,8 @@ def _formulario() -> None:
                     alerta(slot, "erro", erro)
                     return
                 try:
-                    r = enviar_denuncia(tipo, relato.strip(), (quando or "").strip(), (envolvidos or "").strip(), (identificacao or "").strip() if identificar else None)
+                    with st.spinner("Enviando..."):
+                        r = enviar_denuncia(tipo, relato.strip(), (quando or "").strip(), (envolvidos or "").strip(), (identificacao or "").strip() if identificar else None)
                 except ApiError as erro_api:
                     alerta(slot, "erro", erro_api.message)
                     return

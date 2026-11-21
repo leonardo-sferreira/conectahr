@@ -152,6 +152,33 @@ jobs:
       - name: Testes de Configurações (Segurança e Notificações)
         run: python tools/testar_configuracoes.py
 
+      - name: Testes da Rotina diária e das Sessões ativas
+        run: python tools/testar_rotina_sessoes.py
+
+      - name: Testes do Calendário
+        run: python tools/testar_calendario.py
+
+      - name: Testes dos Departamentos
+        run: python tools/testar_departamentos.py
+
+      - name: Testes do Início
+        run: python tools/testar_inicio.py
+
+      - name: Seis estados de UI em todas as páginas
+        run: python tools/auditar_estados_ui.py
+
+      - name: Testes (testar_retencao.py)
+        run: python tools/testar_retencao.py
+
+      - name: Testes (testar_reconhecimentos.py)
+        run: python tools/testar_reconhecimentos.py
+
+      - name: Testes (testar_indicadores_gerais.py)
+        run: python tools/testar_indicadores_gerais.py
+
+      - name: Testes (testar_menu.py)
+        run: python tools/testar_menu.py
+
       - name: Procurar segredos no repositorio
         run: |
           if git grep -n -E "xkeysib-[A-Za-z0-9]{20,}|SG\.[A-Za-z0-9_-]{20,}|Bearer eyJ[A-Za-z0-9_-]{20,}" -- . ':!.github'; then

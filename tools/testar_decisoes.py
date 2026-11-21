@@ -104,9 +104,10 @@ def _instalar():
     api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
     api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.organograma = lambda token: ORGANOGRAMA
+    api_client.desligamentos_rh = lambda token: {"solicitacoes": []}  # tela aberta pelo atalho da tarefa 12
     api_client.central_de_tarefas = lambda token: chamadas.append(("central",)) or _falha_ou("central", {
         "meu_ponto_status_hoje": estado.get("ponto_hoje"),
-        "fila_ferias_pendentes": estado["fila"], "fila_documentos_pendentes": [{"id": 1}, {"id": 2}], "fila_desligamentos_pendentes": [],
+        "fila_ferias_pendentes": estado["fila"], "fila_documentos_pendentes": [{"id": 1}, {"id": 2}], "fila_desligamentos_pendentes": estado.get("deslig", []),
         "fila_ausencias_pendentes": estado.get("fila_aus", []), "e_superior": estado.get("e_superior", False),
     })
     api_client.solicitacoes_rh = lambda token: _falha_ou("solicitacoes", {"solicitacoes": estado.get("solicitacoes", [])})
@@ -410,6 +411,18 @@ at = app("COLABORADOR", e_superior=False, fila_aus=FILA_AUS)
 conferir("Ausências para decidir" not in texto(at), "colaborador que não é superior: só Minhas pendências")
 at = app("COLABORADOR", erro_central=ApiError("Erro inesperado. Tente novamente.", 500))
 conferir(not at.exception and "Ausências para decidir" not in texto(at), "erro na central: o colaborador continua vendo as próprias pendências")
+
+caso("Atalhos para as filas de outras telas (tarefa 12)")
+at = app("RH", deslig=[{"id": 9}])
+t = texto(at)
+conferir("2 documentos para conferir" in t and "1 desligamento para decidir" in t and {"central_ir_docs", "central_ir_desl"} <= chaves(at), "RH: documentos e desligamentos")
+at.button(key="central_ir_desl").click()
+at = at.run()
+conferir("Desligamentos" in texto(at) and "central_ir_desl" not in chaves(at), "atalho abre Desligamentos")
+at = app("RH")
+conferir("central_ir_desl" not in chaves(at) and "central_ir_equipe" not in chaves(at), "RH sem desligamento: sem esse atalho")
+at = app("GESTOR")
+conferir("central_ir_equipe" in chaves(at) and "central_ir_docs" not in chaves(at), "Gestor: atalho para Minha equipe, sem documentos")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

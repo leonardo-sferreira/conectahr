@@ -98,12 +98,18 @@ def _instalar():
     api_client.aniversariantes = lambda token: {"aniversariantes": []}
     api_client.meus_comunicados = lambda token: {"comunicados": []}
     api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
-    api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem onboarding", 404))
+    api_client.onboarding = lambda token, cid: copy.deepcopy(estado["onboarding"]) if estado.get("onboarding") and cid == 7 else (_ for _ in ()).throw(ApiError("sem onboarding", 404))
     api_client.organograma = lambda token: ORGANOGRAMA
     # Cartão "Comissão de ética" de Usuários e perfis (change canal-de-denuncias).
     api_client.comissao_etica = lambda token: {"membros": copy.deepcopy(estado.get("membros", []))}
     api_client.incluir_comissao_etica = lambda token, uid: chamadas.append(("incluir_comissao", uid)) or {"sucesso": True}
     api_client.remover_comissao_etica = lambda token, mid: chamadas.append(("remover_comissao", mid)) or {"sucesso": True}
+    # Ações da ficha (tarefa 53): linha do tempo, onboarding, editar cadastro e mudar o vínculo.
+    api_client.colaborador_timeline = lambda token, cid: copy.deepcopy(estado.get("timeline", {"historico": [], "ferias_concluidas": []}))
+    api_client.minhas_pendencias_documento = lambda token: {"pendencias": []}
+    api_client.editar_usuario = lambda token, uid, nome, email: chamadas.append(("editar_usuario", uid, nome, email)) or _falha_ou("editar_usuario", {"sucesso": True})
+    api_client.atualizar_dados_pessoais = lambda token, cid, dados: chamadas.append(("editar", cid, dados)) or {"sucesso": True}
+    api_client.mudar_vinculo = lambda token, cid, dados: chamadas.append(("vinculo", cid, dados)) or {"sucesso": True}
     api_client.colaboradores = lambda token: chamadas.append(("colaboradores",)) or _falha_ou("colaboradores", {"colaboradores": estado["colabs"]})
     api_client.usuarios = lambda token: chamadas.append(("usuarios",)) or _falha_ou("usuarios", {"usuarios": estado["usuarios"]})
     # Documentos da ficha (pedido de 13/10/2026): todos, a ficha filtra pela pessoa.
@@ -230,7 +236,7 @@ conferir(lu[3]["acoes"] == [] and lu[3]["proprio"], "Admin: nenhuma ação na pr
 conferir(lu[4]["situacao"][0] == "Sem ficha" and lu[4]["acoes"][0] == "vincular", "conta sem ficha: 'Vincular ficha'")
 conferir(lu[5]["situacao"][0] == "Inativo" and lu[5]["acoes"] == ["ativar"], "conta inativa: só reativar")
 lr = {l["id"]: l for l in m.linhas_usuarios(usuarios(), colabs(), 2, "RH")}
-conferir(lr[1]["acoes"] == ["desativar"] and lr[4]["acoes"] == [] and "perfil" not in lr[1]["acoes"], "RH: só contas de colaborador, sem trocar perfil")
+conferir(lr[1]["acoes"] == ["desativar", "editar"] and lr[4]["acoes"] == [] and "perfil" not in lr[1]["acoes"], "RH: só contas de colaborador, sem trocar perfil")
 s = m.senha_temporaria()
 conferir(len(s) == 12 and any(c.isupper() for c in s) and any(c.islower() for c in s) and any(c.isdigit() for c in s) and m.senha_temporaria() != s, "senha temporária forte e diferente a cada vez")
 conferir(m.resumo_usuarios(usuarios(), colabs()) == {"ativos": 4, "sem_ficha": 2, "inativos": 1, "admins": 1}, "números do topo de Usuários")
@@ -604,6 +610,92 @@ at.selectbox(key="ce_incluir_conta").set_value(opcao)
 at.button(key="ce_incluir").click()
 at = at.run()
 conferir(("incluir_comissao", opcao) in chamadas, "incluir na comissão")
+
+caso("Ficha: editar cadastro, mudar o vínculo, linha do tempo e onboarding (tarefa 53)")
+import ficha_modelo as fm  # noqa: E402
+
+atual = fm.vinculo_atual(dict(colabs()[0], salario=5000))
+conferir(atual == {"cargo_id": 1, "departamento_id": 1, "tipo_contrato": "CLT", "nivel": "l2", "salario": 5000.0, "carga_horaria_semanal": 44.0}, "vínculo atual da ficha")
+conferir(fm.tipo_sugerido(atual, dict(atual, departamento_id=2)) == "alteracao_departamento" and fm.tipo_sugerido(atual, dict(atual, cargo_id=2, nivel="l3")) == "promocao"
+         and fm.tipo_sugerido(atual, dict(atual, salario=6000.0)) == "alteracao_salarial", "tipo sugerido pelo que mudou")
+conferir(fm.validar_vinculo(atual, atual, HOJE, None, "abc") and fm.validar_vinculo(atual, dict(atual, salario=0.0), HOJE, None, "abc")
+         and fm.validar_vinculo(atual, dict(atual, salario=6000.0), date(2024, 1, 1), date(2024, 6, 10), "abc")
+         and fm.validar_vinculo(atual, dict(atual, salario=6000.0), HOJE, None, "ab") and fm.validar_vinculo(atual, dict(atual, salario=6000.0), HOJE, None, "Reajuste") is None,
+         "validação do vínculo")
+tl = fm.linhas_timeline({"historico": [{"tipo_alteracao": "admissao", "data_inicio": "2024-06-10", "cargo_id": 1, "departamento_id": 1, "nivel": "l1", "salario": 4000},
+                                       {"tipo_alteracao": "promocao", "data_inicio": "2025-07-01", "cargo_id": 1, "departamento_id": 1, "nivel": "l2", "salario": 5000}],
+                         "ferias_concluidas": [{"data_inicio": "2025-01-06", "data_fim": "2025-01-20"}]}, {1: "Analista de RH"}, {1: "Recursos Humanos"})
+conferir([e["titulo"] for e in tl] == ["Promoção", "Férias", "Admissão"] and tl[0]["detalhe"] == "Analista de RH · Recursos Humanos · L2"
+         and not any("5000" in e["detalhe"] or "4000" in e["detalhe"] for e in tl), "linha do tempo do mais novo ao mais antigo, sem salário")
+onb = {"onboarding": {"status": "em_andamento"}, "itens": [{"descricao": "Assinar contrato", "concluido": True, "categoria": "dados_pessoais", "responsavel": "rh"},
+                                                     {"descricao": "Enviar RG", "concluido": False, "categoria": "dados_pessoais", "responsavel": "colaborador"}]}
+conferir(fm.resumo_onboarding(onb) == {"percentual": 50, "concluidas": 1, "total": 2, "proxima": "Enviar RG", "situacao": "Em andamento"}
+         and fm.resumo_onboarding(None) is None, "resumo do onboarding")
+at = app("RH", timeline={"historico": [{"tipo_alteracao": "admissao", "data_inicio": "2024-06-10", "cargo_id": 1, "departamento_id": 1, "nivel": "l2", "salario": 4321}],
+                         "ferias_concluidas": []}, onboarding=onb)
+at.button(key="col_ficha_7").click()
+at = at.run()
+t = texto(at)
+conferir("Linha do tempo" in t and "Admissão" in t and "10/06/2024" in t and "4321" not in t, "ficha: linha do tempo sem salário")
+conferir("Onboarding" in t and "1 de 2 etapas" in t and "Próxima etapa: Enviar RG" in t, "ficha: cartão de onboarding")
+conferir({"col_editar_cadastro", "col_mudar_vinculo"} <= chaves(at), "RH tem 'Editar cadastro' e 'Mudar cargo ou salário'")
+at.button(key="col_editar_cadastro").click()
+at = at.run()
+conferir(at.text_input(key="col_ed_nome").value == "Ana Ribeiro", "editar abre com os dados da ficha")
+at.button(key="col_ed_salvar").click()
+at = at.run()
+conferir("Nada mudou" in texto(at) and not any(c[0] == "editar" for c in chamadas), "sem mudança não grava")
+at.text_input(key="col_ed_telefone").set_value("11988887777")
+at.date_input(key="col_ed_nasc").set_value(date(1990, 5, 4))
+at.button(key="col_ed_salvar").click()
+at = at.run()
+editado = next((c for c in chamadas if c[0] == "editar"), None)
+conferir(editado and editado[1] == 7 and editado[2]["telefone"] == "11988887777" and editado[2]["cpf"] == "52998224725"
+         and editado[2]["data_nascimento"] == "1990-05-04", "editar cadastro grava os dados")
+at = app("RH")
+at.button(key="col_ficha_7").click()
+at = at.run()
+at.button(key="col_mudar_vinculo").click()
+at = at.run()
+at.selectbox(key="col_vn_dep").set_value(2)
+at = at.run()
+conferir(at.selectbox(key="col_vn_tipo_alteracao_departamento").value == "alteracao_departamento", "tipo sugerido: mudança de departamento")
+at.button(key="col_vn_salvar").click()
+at = at.run()
+conferir("Informe o salário" in texto(at) and not any(c[0] == "vinculo" for c in chamadas), "validação antes de gravar (a ficha não tem salário)")
+at.number_input(key="col_vn_salario").set_value(5200.0)
+at.text_area(key="col_vn_motivo").set_value("Mudança para a TI.")
+at.button(key="col_vn_salvar").click()
+at = at.run()
+vinc = next((c for c in chamadas if c[0] == "vinculo"), None)
+conferir(vinc and vinc[1] == 7 and vinc[2]["departamento_id"] == 2 and vinc[2]["tipo_alteracao"] == "alteracao_departamento" and vinc[2]["salario"] == 5200.0
+         and vinc[2]["motivo_alteracao"] == "Mudança para a TI." and vinc[2]["data_inicio"] == HOJE.isoformat(), "mudar o vínculo grava")
+at = app("ADMIN")
+at.button(key="col_ficha_7").click()
+at = at.run()
+conferir(not ({"col_editar_cadastro", "col_mudar_vinculo"} & chaves(at)), "Admin não edita (o backend é só do RH)")
+
+caso("Usuários: editar nome e e-mail (tarefa 50)")
+conferir(m.validar_edicao_usuario("A", "a@b.com", {}) and m.validar_edicao_usuario("Ana", "sem-arroba", {})
+         and m.validar_edicao_usuario("Ana", "ANA@x.com", {"nome": "Ana", "email": "ana@x.com"}) == "Nada mudou."
+         and m.validar_edicao_usuario("Ana Paula", "ana@x.com", {"nome": "Ana", "email": "ana@x.com"}) is None, "validação da edição")
+at = app("ADMIN", "usuarios-e-perfis")
+conferir("usr_editar_1" in chaves(at) and "usr_editar_3" not in chaves(at) and "usr_editar_5" not in chaves(at), "Editar: outras contas ativas, nunca a própria")
+at.button(key="usr_editar_1").click()
+at = at.run()
+original = at.text_input(key="usr_ed_email").value
+at.text_input(key="usr_ed_email").set_value("  NOVO@Empresa.com ")
+at.button(key="usr_ed_ok").click()
+at = at.run()
+ed = next((c for c in chamadas if c[0] == "editar_usuario"), None)
+conferir(original and ed and ed[1] == 1 and ed[3] == "novo@empresa.com", "salva o e-mail limpo e em minúsculas")
+at = app("ADMIN", "usuarios-e-perfis", erro_editar_usuario=ApiError("Este e-mail já está vinculado a outra conta.", 400))
+at.button(key="usr_editar_1").click()
+at = at.run()
+at.text_input(key="usr_ed_nome").set_value("Outro Nome")
+at.button(key="usr_ed_ok").click()
+at = at.run()
+conferir("já está vinculado a outra conta" in texto(at), "recusa do backend aparece no modal")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

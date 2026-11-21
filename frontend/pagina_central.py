@@ -409,6 +409,23 @@ def pagina_central() -> None:
                 key="central_dep", label_visibility="collapsed", width=230,
             )
 
+    # Filas que se decidem em outras telas (tarefa 12): documentos na Conferência e desligamentos em Desligamentos (só RH e
+    # Admin); o Gestor vai para o painel da equipe.
+    atalhos = []
+    if perfil in ("RH", "ADMIN"):
+        if n_docs := len(central.get("fila_documentos_pendentes") or []):
+            atalhos.append(("docs", f"{n_docs} documento{'s' if n_docs != 1 else ''} para conferir.", "Abrir Conferência de documentos →", "ir_conferencia"))
+        if n_desl := len(central.get("fila_desligamentos_pendentes") or []):
+            atalhos.append(("desl", f"{n_desl} desligamento{'s' if n_desl != 1 else ''} para decidir.", "Abrir Desligamentos →", "ir_desligamentos"))
+    if perfil == "GESTOR":
+        atalhos.append(("equipe", "Ponto, férias e pendências de cada pessoa da equipe.", "Abrir Minha equipe →", "ir_minha_equipe"))
+    for chave, texto_atalho, rotulo, marca in atalhos:
+        with st.container(horizontal=True, vertical_alignment="center", key=f"central_atalho_{chave}"):
+            st.html(f'<p class="crh-nota-ambar">{html.escape(texto_atalho)}</p>', width="stretch")
+            if st.button(rotulo, type="tertiary", key=f"central_ir_{chave}"):
+                st.session_state[marca] = True
+                st.rerun()
+
     if dados.get("solicitacoes"):
         with st.container(horizontal=True, vertical_alignment="center", key="central_solicitacoes"):
             n = dados["solicitacoes"]

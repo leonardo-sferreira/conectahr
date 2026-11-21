@@ -66,6 +66,15 @@ api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem o
 api_client.meus_comunicados = lambda token: _falha_ou("comunicados", {"comunicados": estado.get("comunicados", COMUNICADOS)})
 api_client.meu_humor = lambda token: {"ciclo": 0, "respondeu": True}
 api_client.artigos_faq = lambda token: chamadas.append(("artigos",)) or _falha_ou("artigos", {"artigos": estado.get("artigos", ARTIGOS)})
+# Comunicados do RH (tarefa 46).
+COM_RH = [{"id": 1, "titulo": "Nova política de home office", "conteudo": "Texto.", "publico_alvo": "todos", "data_inicio": "2026-09-01", "data_fim": "2099-09-30", "ativo": True},
+          {"id": 2, "titulo": "Vacinação", "conteudo": "Texto.", "publico_alvo": "departamento", "departamento_id": 5, "data_inicio": "2026-08-20", "data_fim": "2026-08-30", "ativo": True},
+          {"id": 3, "titulo": "Feriados 2099", "conteudo": "Texto.", "publico_alvo": "perfil", "perfil_alvo": "Gestor", "data_inicio": "2099-01-01", "ativo": True},
+          {"id": 4, "titulo": "Antigo", "conteudo": "Texto.", "publico_alvo": "todos", "data_inicio": "2026-01-01", "ativo": False}]
+api_client.comunicados_rh = lambda token: chamadas.append(("comunicados_rh",)) or _falha_ou("comunicados_rh", {"comunicados": estado.get("com_rh", COM_RH)})
+api_client.organograma = lambda token: {"departamentos": [{"id": 5, "nome": "Financeiro"}], "cargos": [], "colaboradores": []}
+api_client.publicar_comunicado = lambda token, dados: chamadas.append(("publicar", dados)) or _falha_ou("publicar", {"sucesso": True})
+api_client.arquivar_comunicado = lambda token, cid: chamadas.append(("arquivar", cid)) or _falha_ou("arquivar", {"sucesso": True})
 api_client.criar_artigo_faq = lambda token, cat, tit, cont: chamadas.append(("criar", cat, tit, cont)) or _falha_ou("criar", {"sucesso": True})
 
 falhas: list[str] = []
@@ -190,6 +199,59 @@ at.text_area(key="faq_novo_conteudo").set_value("Resposta de teste para o caso."
 at.button(key="faq_novo_publicar").click()
 at = at.run()
 conferir("Somente RH ou ADMIN" in texto(at) and "modal_faq" in at.session_state, "recusa do backend no modal, que continua aberto")
+
+print("\nComunicados do RH (tarefa 46)")
+from datetime import date  # noqa: E402
+
+import faq_modelo as fm  # noqa: E402
+
+hoje = date(2026, 11, 21)
+ls = fm.linhas_comunicados_rh(COM_RH, {5: "Financeiro"}, hoje)
+conferir([(l["id"], l["situacao"][0]) for l in ls] == [(3, "Agendado"), (1, "Publicado"), (2, "Encerrado"), (4, "Arquivado")], "situações e ordem")
+conferir([l["publico"] for l in ls] == ["Gestor", "Toda a empresa", "Financeiro", "Toda a empresa"] and not ls[3]["arquivavel"], "público e arquivável")
+conferir([l["id"] for l in fm.linhas_comunicados_rh(COM_RH, {}, hoje, "arquivado")] == [4], "filtro por situação")
+d = date(2026, 12, 1)
+conferir(fm.validar_comunicado("Ab", "Texto ok", "todos", None, None, d, None) and fm.validar_comunicado("Título", "Texto ok", "departamento", None, None, d, None)
+         and fm.validar_comunicado("Título", "Texto ok", "perfil", None, "Diretor", d, None) and fm.validar_comunicado("Título", "Texto ok", "todos", None, None, d, date(2026, 11, 1))
+         and fm.validar_comunicado("Título", "Texto ok", "todos", None, None, d, None) is None, "validação")
+at = app("RH")
+at.button_group(key="faq_aba").set_value("Comunicados")
+at = at.run()
+t = texto(at)
+conferir("Nova política de home office" in t and "Agendado" in t and "Arquivado" in t and "Financeiro" in t, "lista do RH")
+conferir("com_arquivar_1" in [b.key for b in at.button] and "com_arquivar_4" not in [b.key for b in at.button], "arquivar só o que não está arquivado")
+at.button(key="com_novo").click()
+at = at.run()
+at.text_input(key="com_titulo").set_value("Recesso")
+at.button(key="com_publicar").click()
+at = at.run()
+conferir("O texto tem de 5" in texto(at) and not any(c[0] == "publicar" for c in chamadas), "validação no modal")
+at.text_area(key="com_conteudo").set_value("O escritório fecha de 24/12 a 02/01.")
+at.selectbox(key="com_publico").set_value("departamento")
+at = at.run()
+at.selectbox(key="com_dep").set_value(5)
+at.button(key="com_publicar").click()
+at = at.run()
+pub = next((c[1] for c in chamadas if c[0] == "publicar"), None)
+conferir(pub and pub["publico_alvo"] == "departamento" and pub["departamento_id"] == 5 and pub["perfil_alvo"] is None and pub["data_fim"] is None
+         and pub["titulo"] == "Recesso", "publicar para um departamento")
+at = app("RH")
+at.button_group(key="faq_aba").set_value("Comunicados")
+at = at.run()
+at.button(key="com_arquivar_1").click()
+at = at.run()
+conferir("Sai do Início" in texto(at) and not any(c[0] == "arquivar" for c in chamadas), "confirmação antes de arquivar")
+at.button(key="com_arq_ok").click()
+at = at.run()
+conferir(("arquivar", 1) in chamadas, "arquivar")
+at = app("RH", erro_arquivar=ApiError("Este comunicado ja esta arquivado.", 400))
+at.button_group(key="faq_aba").set_value("Comunicados")
+at = at.run()
+at.button(key="com_arquivar_1").click()
+at = at.run()
+at.button(key="com_arq_ok").click()
+at = at.run()
+conferir("ja esta arquivado" in texto(at) and "Sai do Início" in texto(at), "erro do backend aparece no modal, que continua aberto")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

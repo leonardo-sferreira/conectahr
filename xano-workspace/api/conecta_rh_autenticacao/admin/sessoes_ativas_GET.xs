@@ -24,6 +24,11 @@ query "admin/sessoes_ativas" verb=GET {
       error = "Usuario inativo."
     }
 
+    precondition ($usuario_autenticado.senha_primeiro_acesso == false) {
+      error_type = "unauthorized"
+      error = "Troque a senha temporaria antes de continuar."
+    }
+
     // Sessao do token: precisa existir, ser do usuario, estar ativa e no prazo.
     db.get sessao {
       field_name = "id"

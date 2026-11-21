@@ -229,6 +229,22 @@ def aniversariantes(token: str) -> dict:
     return _get("colaboradores/aniversariantes", token, GRUPO_COLABORADORES)
 
 
+def comunicados_rh(token: str) -> dict:
+    """GET comunicados -> {comunicados}: todos, ativos e arquivados, mais recentes primeiro (RH e Admin)."""
+    return _get("comunicados", token, GRUPO_COLABORADORES)
+
+
+def publicar_comunicado(token: str, dados: dict) -> dict:
+    """POST comunicados (RH e Admin): titulo, conteudo, publico_alvo (todos, departamento ou perfil), departamento_id ou
+    perfil_alvo, data_inicio e data_fim (opcional). Auditado como `publicar_comunicado`."""
+    return _post("comunicados", dados, token, GRUPO_COLABORADORES)
+
+
+def arquivar_comunicado(token: str, comunicado_id: int) -> dict:
+    """POST comunicados/{id}/arquivar (RH e Admin): sai do Início e da tela de todos; o registro fica. Auditado."""
+    return _post(f"comunicados/{int(comunicado_id)}/arquivar", {}, token, GRUPO_COLABORADORES)
+
+
 def meus_comunicados(token: str) -> dict:
     """GET meus_comunicados -> {comunicados} (vigentes e visiveis ao usuario)."""
     return _get("meus_comunicados", token, GRUPO_COLABORADORES)
@@ -763,6 +779,11 @@ def cancelar_delegacao(token: str, delegacao_id: int) -> dict:
     return _post(f"delegacoes/{int(delegacao_id)}/cancelar", {}, token, GRUPO_USUARIOS)
 
 
+def editar_usuario(token: str, usuario_id: int, nome: str, email: str) -> dict:
+    """PATCH usuarios/{id}: nome e e-mail de acesso. Troca de e-mail avisa o endereço anterior; auditado com o e-mail mascarado."""
+    return _request("PATCH", f"usuarios/{int(usuario_id)}", token, GRUPO_USUARIOS, {"nome": nome, "email": email})
+
+
 def vincular_colaborador(token: str, usuario_id: int, colaborador_id: int) -> dict:
     """POST usuarios/{id}/vincular_colaborador: liga uma conta sem ficha a uma ficha sem conta."""
     return _post(f"usuarios/{int(usuario_id)}/vincular_colaborador", {"colaborador_id": int(colaborador_id)}, token, GRUPO_USUARIOS)
@@ -789,6 +810,17 @@ def atender_solicitacao(token: str, solicitacao_id: int, justificativa: str | No
 def indeferir_solicitacao(token: str, solicitacao_id: int, justificativa: str) -> dict:
     """POST solicitacoes/{id}/indeferir com a justificativa obrigatória (5 a 1000 caracteres)."""
     return _post(f"solicitacoes/{int(solicitacao_id)}/indeferir", {"justificativa_decisao": justificativa}, token, GRUPO_COLABORADORES)
+
+
+def mudar_vinculo(token: str, colaborador_id: int, dados: dict) -> dict:
+    """PATCH colaboradores/{id}/vinculo (só o RH): cargo_id, departamento_id, tipo_contrato, nivel, salario, carga_horaria_semanal,
+    data_inicio, tipo_alteracao e motivo_alteracao. Encerra o histórico anterior e abre outro."""
+    return _request("PATCH", f"colaboradores/{int(colaborador_id)}/vinculo", token, GRUPO_COLABORADORES, dados)
+
+
+def colaborador_timeline(token: str, colaborador_id: int) -> dict:
+    """GET colaboradores/{id}/timeline -> {historico, ferias_concluidas} (RH e Admin, a própria pessoa e o Gestor do departamento)."""
+    return _get(f"colaboradores/{int(colaborador_id)}/timeline", token, GRUPO_COLABORADORES)
 
 
 def atualizar_dados_pessoais(token: str, colaborador_id: int, dados: dict) -> dict:
