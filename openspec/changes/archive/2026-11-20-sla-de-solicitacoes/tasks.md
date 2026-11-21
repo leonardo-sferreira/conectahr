@@ -25,8 +25,8 @@ Cada tarefa tem o critério de verificação. Os testes por HTTP rodam contra o 
   - **Feito (20/11/2026):** publicados; `checar_endpoints` sem falha; a 3.2 passou.
 - [x] 2.4 O POST de cada tipo grava o prazo, com o teto legal no pedido LGPD; as listagens e a `central_de_tarefas` devolvem prazo e situação, em ordem (D3, D5). Verificar: a 3.1 e a 3.3.
   - **Feito (20/11/2026):** os 6 POST de pedido (o `folha_ponto/tratar` fica de fora: o ajuste direto do RH já nasce aprovado), `ausencias` e `minhas_ausencias` GET, `solicitacoes_acesso` GET e a `central_de_tarefas` (ordem pelo prazo). A situação é calculada na tela (design, "Ajustes na implementação").
-- [ ] 2.5 O aviso `prazo_vencendo` na rotina diária, idempotente (D7; depende de `notificacoes-de-publicacao`). Verificar: duas execuções seguidas avisam uma vez só.
-  - **Em parte (20/11/2026):** publicado (passo 11 da rotina e o tipo `prazo_vencendo`); em simulação a rotina roda e conta 0. Falta rodar duas vezes depois de um alerta atingido (pedido de teste 11, SLA de 1 hora, vence em 23/11 às 01:00, porque 20/11 é feriado).
+- [x] 2.5 O aviso `prazo_vencendo` na rotina diária, idempotente (D7; depende de `notificacoes-de-publicacao`). Verificar: duas execuções seguidas avisam uma vez só.
+  - **Feito (20/11/2026):** o prazo do pedido de teste 11 foi movido para o passado por uma função temporária do Xano (só registros com "TESTE"; apagada depois). A rotina rodou em simulação: além do aviso, só o convite do termômetro, autorizado pelo responsável. Na execução real, a primeira rodada avisou 1 e a segunda 0, e o RH recebeu um só aviso `prazo_vencendo` no sino.
 
 ## 3. Testar
 
@@ -38,7 +38,7 @@ Cada tarefa tem o critério de verificação. Os testes por HTTP rodam contra o 
   - **passa:** o Admin muda Desligamento para 24 horas, e o pedido novo usa 24 horas enquanto o antigo mantém o prazo;
   - **falha:** RH e Gestor recebem 403, e 0 ou 721 horas dão 400.
   - **Feito (20/11/2026):** Desligamento com 24 horas, o pedido novo com 1 dia útil e o antigo com o prazo anterior; RH e Gestor 403; 0, 721 e LGPD com 241 dão 400. A configuração voltou ao padrão.
-- [ ] 3.3 HTTP, situação: um pedido de teste com o prazo vencido aparece "vencido" e no topo da `central_de_tarefas`; um recém-aberto aparece "no prazo".
-  - **Pendente (20/11/2026):** a solicitação "Outra" não entra na `central_de_tarefas`; refazer com um pedido de desligamento de SLA de 1 hora útil num dia útil e conferir depois de 1 hora.
+- [x] 3.3 HTTP, situação: um pedido de teste com o prazo vencido aparece "vencido" e no topo da `central_de_tarefas`; um recém-aberto aparece "no prazo".
+  - **Feito (20/11/2026):** um pedido de desligamento de teste, recém-aberto, apareceu "no prazo"; com o prazo movido para o passado, apareceu primeiro em `fila_desligamentos_pendentes` e, na tela, vencido e com selo vermelho. A fila só tinha esse pedido; a ordem com vários pedidos está em `tools/testar_sla.py`. Pedidos de teste encerrados no fim.
 - [x] 3.4 `docs/regras-de-negocio.md` (seção nova, com a tabela do D1 e o cálculo do D2) depois da implementação. Verificar: `openspec validate sla-de-solicitacoes`.
   - **Feito (20/11/2026):** seção 25.
