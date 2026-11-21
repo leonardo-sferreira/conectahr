@@ -100,7 +100,7 @@ query minha_equipe verb=GET {
             } as $equipe_consulta
 
             var $hoje_equipe {
-              value = now|format_timestamp:"Y-m-d":"UTC"
+              value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
             }
 
             foreach ($equipe_consulta) {

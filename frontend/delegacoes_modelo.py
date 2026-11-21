@@ -1,6 +1,6 @@
-"""Apresentação do F17; vigência usa a mesma data UTC dos consumidores do backend."""
+"""Apresentação do F17; a vigência usa a data de Brasília, como os consumidores do backend (tarefa 73)."""
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from decisoes_modelo import periodo
 
@@ -9,8 +9,11 @@ ESCOPOS = {"ferias": "Férias", "correcao_ponto": "Correção de ponto", "ausenc
            "todas": "Todas as aprovações"}
 
 
-def hoje_utc() -> date:
-    return datetime.now(timezone.utc).date()
+BRASILIA = timezone(timedelta(hours=-3))
+
+
+def hoje_brasilia() -> date:
+    return datetime.now(BRASILIA).date()
 
 
 def vinculada(d: dict, usuario_id) -> bool:

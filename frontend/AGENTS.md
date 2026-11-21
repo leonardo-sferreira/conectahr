@@ -80,6 +80,15 @@ emoji.
   com `server.enableStaticServing = true` em `.streamlit/config.toml`. Não volte a carregar fonte, script ou
   imagem de serviço externo pelo navegador: isso entrega o IP de quem usa a terceiros (LGPD, tarefa 4).
   Peso novo de fonte = arquivo novo em `static/fonts` e mais um `@font-face` em `theme.py`.
+- **Contraste de 4,5:1 (WCAG AA):** texto de status usa `SUCESSO_TEXTO`, `AMBAR_TEXTO` e `ERRO_TEXTO` quando está
+  sobre um fundo claro próprio (selo, nota, etiqueta), e as variáveis `var(--crh-ok)`, `var(--crh-amb)` e
+  `var(--crh-err)` quando está solto na página. As variáveis já trocam de valor no tema escuro. `SUCESSO`,
+  `AMBAR_ESCURO` e `ERRO` ficam só para ícones, bordas e fundos. Depois de mexer em cor, rode
+  `python tools/medir_contraste.py` e confira que ele termina com 0 pares abaixo de 4,5:1. Ele mede os dois temas.
+  Fundo que vem de outra regra entra em `FUNDO_REAL`, com o motivo.
+- **"Hoje" é o dia de Brasília**, no frontend (`datetime.now(BRASILIA).date()`) e no backend
+  (`now|format_timestamp:"Y-m-d":"America/Sao_Paulo"`). Em UTC, o dia vira às 21h. Datas gravadas (`date`)
+  continuam formatadas em UTC, que é como o Xano as guarda.
 
 ## Os 6 estados de UI
 

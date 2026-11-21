@@ -68,7 +68,7 @@ query "documentos/retencao_vencida" verb=GET {
     }
 
     var $hoje_retencao {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     db.query documento {

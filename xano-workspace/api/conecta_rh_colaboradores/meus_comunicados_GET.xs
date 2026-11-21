@@ -65,7 +65,7 @@ query "meus_comunicados" verb=GET {
     } as $colaborador_autenticado
 
     var $hoje {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     // Comunicados ativos e dentro da vigencia.

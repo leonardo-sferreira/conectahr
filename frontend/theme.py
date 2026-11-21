@@ -60,6 +60,11 @@ CINZA_CLARO = "#B2B5BA"
 AMBAR_BG = "#FEF3C7"
 SUCESSO = "#16A34A"
 ERRO = "#DC2626"
+# Texto de status com contraste de 4,5:1 ou mais (WCAG AA; tarefa 61): sobre branco, marfim e os fundos claros dos
+# selos. SUCESSO, AMBAR_ESCURO e ERRO ficam para ícones, bordas e fundos.
+SUCESSO_TEXTO = "#15803D"
+AMBAR_TEXTO = "#A15C07"
+ERRO_TEXTO = "#B91C1C"
 
 _ASSETS_DIR = Path(__file__).parent / "assets"
 _LOGO_ICON_SVG_BYTES = (_ASSETS_DIR / "logo-icon.svg").read_bytes()
@@ -77,6 +82,8 @@ _BELL_ESCURO_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(
 
 _BASE_CSS = f"""
 <style>
+  /* Texto de status solto na página (tarefa 61): escuro no tema claro e claro no escuro (o tema escuro redefine). */
+  :root {{ --crh-ok: {SUCESSO_TEXTO}; --crh-amb: {AMBAR_TEXTO}; --crh-err: {ERRO_TEXTO}; }}
   /* Fontes servidas pelo próprio app (frontend/static/fonts, licença OFL), e não pelo Google Fonts:
      assim o navegador de quem usa não manda o IP ao Google (tarefa 4, LGPD). O caminho é relativo à
      página e precisa de server.enableStaticServing = true em .streamlit/config.toml. */
@@ -246,7 +253,7 @@ _BASE_CSS = f"""
     background: transparent !important;
   }}
   [data-testid="stMain"] button[kind="tertiary"] p, [data-testid="stMain"] button[kind="tertiaryFormSubmit"] p {{
-    color: {AMBAR_ESCURO} !important;
+    color: var(--crh-amb) !important;
     font-family: 'Manrope', sans-serif !important;
     font-weight: 600 !important;
     font-size: 12px !important;
@@ -284,15 +291,15 @@ _BASE_CSS = f"""
     font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13px; line-height: 1.4;
   }}
   .crh-alerta p {{ margin: 0; font: inherit; color: inherit; }}
-  .crh-alerta.erro {{ background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.35); color: {ERRO}; }}
-  .crh-alerta.sucesso {{ background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.35); color: {SUCESSO}; }}
+  .crh-alerta.erro {{ background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.35); color: {ERRO_TEXTO}; }}
+  .crh-alerta.sucesso {{ background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.35); color: {SUCESSO_TEXTO}; }}
   .crh-alerta.atencao {{ background: {AMBAR_BG}; border: 1px solid {AMBAR}; color: {GRAFITE}; }}
   .crh-aviso {{
     display: flex; gap: 10px; align-items: flex-start;
     background: {AMBAR_BG}; border: 1px solid {AMBAR}; border-radius: 10px; padding: 12px 14px;
   }}
   .crh-aviso .crh-aviso-icone {{
-    font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {AMBAR_ESCURO}; line-height: 1.3;
+    font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: var(--crh-amb); line-height: 1.3;
   }}
   .crh-aviso .crh-aviso-titulo {{
     margin: 0 0 2px 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 13px; color: {GRAFITE};
@@ -341,7 +348,7 @@ _BASE_CSS = f"""
   .crh-onb-topo {{ width: 100%; }}
   .crh-onb-topo .crh-card-titleblock {{ align-items: flex-start; text-align: left; flex: 1 1 auto; min-width: 0; }}
   .crh-onb-progresso {{
-    background: {AMBAR_BG}; color: {AMBAR_ESCURO}; border-radius: 999px; padding: 5px 10px;
+    background: {AMBAR_BG}; color: {AMBAR_TEXTO}; border-radius: 999px; padding: 5px 10px;
     font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 12px; white-space: nowrap; margin: 0; flex: none;
   }}
   .crh-onb-resumo {{
@@ -358,15 +365,15 @@ _BASE_CSS = f"""
   .crh-trilha-texto {{ display: flex; flex-direction: column; gap: 1px; padding: 8px 0; }}
   .crh-trilha-texto .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 14px; color: {GRAFITE}; }}
   .crh-trilha-texto .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 400; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
-  .crh-trilha-texto .s.ok {{ color: {SUCESSO}; }}
-  .crh-trilha-texto .s.voce {{ color: {AMBAR_ESCURO}; }}
+  .crh-trilha-texto .s.ok {{ color: var(--crh-ok); }}
+  .crh-trilha-texto .s.voce {{ color: var(--crh-amb); }}
   /* Aviso de privacidade (Figma 285:874 e 285:1073). */
   .crh-aviso-pg {{ display: flex; flex-direction: column; gap: 20px; }}
   .crh-aviso-pg .cab .t {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 30px; color: {GRAFITE}; }}
   .crh-aviso-pg .cab .s {{ margin: 6px 0 10px 0; font-family: 'Manrope', sans-serif; font-size: 14.5px; line-height: 1.5; color: {GRAFITE_SECUNDARIO}; }}
   .crh-aviso-pg .selos {{ display: flex; gap: 8px; flex-wrap: wrap; }}
   .crh-aviso-pg .selo {{ border-radius: 999px; padding: 4px 10px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; }}
-  .crh-aviso-pg .selo.a {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-aviso-pg .selo.a {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
   .crh-aviso-pg .selo.n {{ background: white; border: 1px solid {BORDA}; color: {GRAFITE}; }}
   .crh-aviso-pg .bloco {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 22px 28px; display: flex; flex-direction: column; gap: 10px; }}
   .crh-aviso-pg .bloco.tab {{ padding: 0; overflow: hidden; gap: 0; }}
@@ -490,11 +497,11 @@ _APP_CSS = f"""
   div[class*="st-key-navgrupo_"] button > div {{ justify-content: flex-start; }}
   div[class*="st-key-navgrupo_"] button p {{
     font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em;
-    color: #737A85; text-transform: uppercase; line-height: normal;
+    color: #8B919B; text-transform: uppercase; line-height: normal;
   }}
   div[class*="st-key-navgrupo_"] button::after {{
     content: ""; flex: none; width: 6px; height: 6px; margin-right: 4px;
-    border-right: 1.6px solid #737A85; border-bottom: 1.6px solid #737A85; transform: rotate(-45deg);
+    border-right: 1.6px solid #8B919B; border-bottom: 1.6px solid #8B919B; transform: rotate(-45deg);
   }}
   div[class*="st-key-grpaberto_"] div[class*="st-key-navgrupo_"] button::after {{ transform: rotate(45deg); margin-top: -4px; }}
   div[class*="st-key-navgrupo_"] button:hover {{ background: rgba(255,255,255,0.06); }}
@@ -542,8 +549,8 @@ _APP_CSS = f"""
   .crh-stat .crh-stat-valor {{
     margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 24px; color: {GRAFITE};
   }}
-  .crh-stat .crh-stat-valor.positivo {{ color: {SUCESSO}; }}
-  .crh-stat .crh-stat-valor.negativo {{ color: {ERRO}; }}
+  .crh-stat .crh-stat-valor.positivo {{ color: var(--crh-ok); }}
+  .crh-stat .crh-stat-valor.negativo {{ color: var(--crh-err); }}
 
   .crh-bloco {{ padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }}
   .crh-bloco.flex {{ flex: 1 0 0; min-width: 0; }}
@@ -574,7 +581,7 @@ _APP_CSS = f"""
     margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE};
   }}
   .crh-faq .crh-faq-link {{
-    margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 13px; color: {AMBAR_ESCURO};
+    margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 13px; color: var(--crh-amb);
   }}
 
   /* Onboarding na área logada ("Meu onboarding" 309:1048 e card do Início 309:1446): cartões
@@ -583,8 +590,8 @@ _APP_CSS = f"""
     background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 22px; gap: 14px;
   }}
   .st-key-onb_voce button[kind="primary"], .st-key-onb_inicio button[kind="primary"] {{ width: auto; padding: 0.55rem 1.1rem; }}
-  .crh-stat .crh-stat-valor.verde {{ color: {SUCESSO}; }}
-  .crh-stat .crh-stat-valor.ambar {{ color: {AMBAR_ESCURO}; }}
+  .crh-stat .crh-stat-valor.verde {{ color: var(--crh-ok); }}
+  .crh-stat .crh-stat-valor.ambar {{ color: var(--crh-amb); }}
   .crh-stat .crh-stat-valor.azul {{ color: #2663D9; }}
   .crh-card-h {{ display: flex; flex-direction: column; gap: 4px; }}
   .crh-card-h .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 17px; color: {GRAFITE}; }}
@@ -600,8 +607,8 @@ _APP_CSS = f"""
     flex-shrink: 0; border-radius: 999px; padding: 4px 10px; white-space: nowrap;
     font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 12px;
   }}
-  .crh-selo.ok {{ background: #DCFCE7; color: {SUCESSO}; }}
-  .crh-selo.amb {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-selo.ok {{ background: #DCFCE7; color: {SUCESSO_TEXTO}; }}
+  .crh-selo.amb {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
   .crh-selo.neu {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
   .crh-selo.azul {{ background: #E0EBFF; color: #2663D9; }}
   .crh-barra {{ display: flex; flex-direction: column; gap: 6px; }}
@@ -612,7 +619,7 @@ _APP_CSS = f"""
   .crh-barra .topo span:last-child {{ color: {GRAFITE_SECUNDARIO}; }}
   .crh-barra .trilho {{ height: 8px; border-radius: 4px; background: {BORDA}; overflow: hidden; }}
   .crh-barra .preenchido {{ height: 100%; border-radius: 4px; background: {AMBAR}; }}
-  .crh-selo.err {{ background: #FEE2E2; color: {ERRO}; }}
+  .crh-selo.err {{ background: #FEE2E2; color: {ERRO_TEXTO}; }}
 
   /* Menu da conta (Figma 198:158): o chip do nome abre um popover com o perfil, Configurações e Sair. */
   .st-key-crh_topbar {{ justify-content: flex-end; align-items: center; gap: 16px; }}
@@ -629,7 +636,7 @@ _APP_CSS = f"""
   [data-testid="stPopoverBody"] button[kind="tertiary"] {{ padding: 0 !important; min-height: 0 !important; background: transparent !important; }}
   /* Sino de notificações (Figma 197:77): o número de não lidas em âmbar; não lida com fundo marfim e ponto âmbar. */
   .st-key-crh_topbar .st-key-sino button {{ min-height: 40px; padding: 0 12px; }}
-  .st-key-crh_topbar .st-key-sino button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600 !important; font-size: 13px !important; }}
+  .st-key-crh_topbar .st-key-sino button p {{ color: var(--crh-amb) !important; font-weight: 600 !important; font-size: 13px !important; }}
   div[class*="st-key-notif_nl_"] {{ background: {MARFIM}; border-radius: 10px; padding: 10px 12px; }}
   div[class*="st-key-notif_ok_"] {{ padding: 10px 12px; border-top: 1px solid {BORDA}; }}
   .crh-notif {{ display: flex; gap: 10px; }}
@@ -646,7 +653,7 @@ _APP_CSS = f"""
   .crh-menu-conta .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 15px; color: {GRAFITE}; }}
   .crh-menu-conta .s {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-btn_menu_config button p {{ color: {GRAFITE} !important; font-size: 15px !important; font-weight: 500 !important; }}
-  .st-key-btn_menu_sair button p {{ color: {ERRO} !important; font-size: 15px !important; font-weight: 500 !important; }}
+  .st-key-btn_menu_sair button p {{ color: var(--crh-err) !important; font-size: 15px !important; font-weight: 500 !important; }}
   .st-key-menu_tema_linha {{ justify-content: space-between; padding: 6px 0; border-top: 1px solid {BORDA}; border-bottom: 1px solid {BORDA}; }}
   .crh-menu-tema {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 15px; color: {GRAFITE}; }}
   .st-key-menu_tema [data-testid="stButtonGroup"] {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 8px; padding: 3px; }}
@@ -719,7 +726,7 @@ _APP_CSS = f"""
   :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_linf_"] {{ background: #FFFBEB; }}
   :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_cab"] {{ background: {MARFIM}; border-bottom: 1px solid {BORDA}; padding: 10px 18px; }}
   :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) button[kind="tertiary"] p {{ font-size: 13.5px !important; }}
-  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_recusar_"] button p {{ color: {ERRO} !important; }}
+  :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_recusar_"] button p {{ color: var(--crh-err) !important; }}
   :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_arquivar_"] button p {{ color: {GRAFITE} !important; }}
   :is(.st-key-rh_tabela, .st-key-rh_tabela_comp) div[class*="st-key-rh_abrir_"] button p {{ color: {GRAFITE} !important; font-weight: 500 !important; }}
   .st-key-rh_barra {{ gap: 12px; }}
@@ -773,7 +780,7 @@ _APP_CSS = f"""
   .crh-campos-grid .r {{ margin: 0 0 2px 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-campos-grid .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 15px; color: {GRAFITE}; }}
   .crh-pf-titulo {{ display: flex; align-items: center; gap: 10px; }}
-  .crh-pf-contador {{ width: 24px; height: 24px; border-radius: 999px; background: {AMBAR_BG}; color: {AMBAR_ESCURO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }}
+  .crh-pf-contador {{ width: 24px; height: 24px; border-radius: 999px; background: {AMBAR_BG}; color: {AMBAR_TEXTO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }}
   .crh-pf-lista {{ display: flex; flex-direction: column; }}
   .crh-pf-item {{ display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid {BORDA}; }}
   .crh-pf-item:last-child {{ border-bottom: none; }}
@@ -806,13 +813,13 @@ _APP_CSS = f"""
   div[class*="st-key-ponto_box_"] .stButton {{ display: flex; justify-content: center; }}
   div[class*="st-key-ponto_box_"] button[kind="primary"] {{ width: auto; padding: 0.35rem 0.9rem; }}
   div[class*="st-key-ponto_box_"] button[kind="primary"] p {{ font-size: 12.5px !important; }}
-  div[class*="st-key-ponto_box_feito_"] button[kind="tertiary"] p {{ color: {SUCESSO} !important; font-weight: 500 !important; }}
+  div[class*="st-key-ponto_box_feito_"] button[kind="tertiary"] p {{ color: var(--crh-ok) !important; font-weight: 500 !important; }}
   .crh-ponto-rotulo {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; }}
-  div[class*="st-key-ponto_box_feito_"] .crh-ponto-rotulo, div[class*="st-key-ponto_box_feito_"] .crh-ponto-hora {{ color: {SUCESSO}; }}
+  div[class*="st-key-ponto_box_feito_"] .crh-ponto-rotulo, div[class*="st-key-ponto_box_feito_"] .crh-ponto-hora {{ color: var(--crh-ok); }}
   .crh-ponto-hora {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: {GRAFITE}; }}
   .crh-ponto-saldo {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 24px; color: {GRAFITE}; }}
-  .crh-ponto-saldo.positivo {{ color: {SUCESSO}; }}
-  .crh-ponto-saldo.negativo {{ color: {ERRO}; }}
+  .crh-ponto-saldo.positivo {{ color: var(--crh-ok); }}
+  .crh-ponto-saldo.negativo {{ color: var(--crh-err); }}
   .crh-ponto-aviso {{ margin: 0; background: {AMBAR_BG}; border-radius: 8px; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: #B45309; }}
   .st-key-ponto_topo_espelho button[kind="secondary"], .st-key-ponto_card_ausencia button[kind="secondary"] {{ background: white; border: 1px solid {BORDA}; border-radius: 10px; padding: 0.55rem 1.1rem; }}
   .st-key-ponto_topo_espelho button[kind="secondary"] p, .st-key-ponto_card_ausencia button[kind="secondary"] p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
@@ -825,9 +832,9 @@ _APP_CSS = f"""
   .crh-ponto-marca {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-ponto-trab {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .crh-ponto-status {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 12.5px; letter-spacing: 0.02em; }}
-  .crh-ponto-status.ok {{ color: {SUCESSO}; }}
-  .crh-ponto-status.amb {{ color: {AMBAR_ESCURO}; }}
-  .crh-ponto-status.err {{ color: {ERRO}; }}
+  .crh-ponto-status.ok {{ color: var(--crh-ok); }}
+  .crh-ponto-status.amb {{ color: var(--crh-amb); }}
+  .crh-ponto-status.err {{ color: var(--crh-err); }}
   .crh-ponto-status.azul {{ color: #2663D9; }}
   .crh-ponto-status.neu {{ color: {GRAFITE_SECUNDARIO}; }}
   /* Calendário de férias (Figma 466:833): domingo a sábado, feriado e facultativo em selo, férias no fundo do dia. */
@@ -843,10 +850,10 @@ _APP_CSS = f"""
   .crh-cal td.hoje .n {{ font-weight: 800; text-decoration: underline; }}
   .crh-cal .tag {{ display: block; margin-top: 4px; padding: 1px 6px; border-radius: 999px; font-size: 11px; width: fit-content; max-width: 100%;
                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
-  .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO}; }}
-  .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-cal .tag.feriado {{ background: #FEE2E2; color: {ERRO_TEXTO}; }}
+  .crh-cal .tag.facultativo {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
   .crh-cal .tag.pessoa.ok {{ background: #DCFCE7; color: #166534; }}
-  .crh-cal .tag.pessoa.amb {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
+  .crh-cal .tag.pessoa.amb {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
   .crh-cal .tag.pessoa.mais {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
   .crh-cal-equipe td {{ height: 92px; }}
   .crh-cal-equipe td.lotado {{ box-shadow: inset 0 0 0 2px {ERRO}; }}
@@ -872,7 +879,7 @@ _APP_CSS = f"""
   .crh-org-foco .d {{ margin: 2px 0 0; font: 400 13px 'Manrope', sans-serif; line-height: 1.45; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-faq_card_comunicados [data-testid="stExpander"] summary p, .st-key-faq_card_perguntas [data-testid="stExpander"] summary p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .st-key-ponto_comprovantes div[class*="st-key-ponto_cp_"] {{ border-bottom: 1px solid {BORDA}; padding: 4px 0; }}
-  .st-key-ponto_comprovantes button p, .st-key-ponto_tabela .stDownloadButton button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600 !important; font-size: 13px !important; }}
+  .st-key-ponto_comprovantes button p, .st-key-ponto_tabela .stDownloadButton button p {{ color: var(--crh-amb) !important; font-weight: 600 !important; font-size: 13px !important; }}
   .crh-espelho-cab {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 24px; margin: 0; }}
   .crh-espelho-cab .r {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11.5px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-espelho-cab .v {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE}; }}
@@ -897,7 +904,7 @@ _APP_CSS = f"""
   div[class*="st-key-pg_lin_"] button[kind="tertiary"] p {{ font-size: 13px !important; }}
   div[class*="_lista"][class*="st-key-hol"], div[class*="_lista"][class*="st-key-inf"] {{ gap: 8px; }}
   .crh-pg-nota {{ margin: 0; background: {MARFIM}; border-radius: 8px; padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
-  div[class*="st-key-ferias_lin_"] button[kind="tertiary"] p {{ color: {ERRO} !important; font-size: 13px !important; }}
+  div[class*="st-key-ferias_lin_"] button[kind="tertiary"] p {{ color: var(--crh-err) !important; font-size: 13px !important; }}
   .crh-fe-item {{ display: flex; gap: 14px; align-items: center; }}
   .crh-fe-item .p {{ width: 10px; height: 10px; border-radius: 999px; background: {CINZA_CLARO}; flex-shrink: 0; }}
   .crh-fe-item .p.ok {{ background: {SUCESSO}; }}
@@ -922,7 +929,7 @@ _APP_CSS = f"""
   .crh-carreira .n {{ margin: 0; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: {GRAFITE}; }}
   .crh-carreira .seta {{ font-size: 20px; color: {AMBAR}; }}
   .crh-carreira .prox {{ display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }}
-  .crh-carreira .comp {{ border-radius: 999px; padding: 4px 10px; background: {AMBAR_BG}; color: {AMBAR_ESCURO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; }}
+  .crh-carreira .comp {{ border-radius: 999px; padding: 4px 10px; background: {AMBAR_BG}; color: {AMBAR_TEXTO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; }}
   .crh-rec {{ padding: 8px 24px; }}
   .crh-rec .item {{ padding: 12px 0; border-bottom: 1px solid {BORDA}; display: flex; flex-direction: column; gap: 4px; }}
   .crh-rec .item:last-child {{ border-bottom: none; }}
@@ -934,35 +941,35 @@ _APP_CSS = f"""
   .crh-rotulo-data {{ margin: 0 0 -6px; font-family: 'Manrope', sans-serif; font-weight: 500; font-size: 13.5px; color: {GRAFITE}; }}
   /* Auditoria (Figma 225:6784): resultado em verde (sucesso) ou vermelho (falha). */
   .crh-aud-res {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12.5px; font-weight: 600; color: {GRAFITE_SECUNDARIO}; }}
-  .crh-aud-res.ok {{ color: {SUCESSO}; }}
-  .crh-aud-res.err {{ color: {ERRO}; }}
+  .crh-aud-res.ok {{ color: var(--crh-ok); }}
+  .crh-aud-res.err {{ color: var(--crh-err); }}
   /* Regras e Conformidade (Figma 287:884 e 288:886; change tela-de-regras). */
   div[class*="st-key-reg_card_"] {{ background: white; border: 1px solid {BORDA}; border-radius: 12px; padding: 12px 16px; margin-bottom: 6px; }}
   .crh-reg-txt {{ display: flex; flex-direction: column; gap: 3px; }}
-  .crh-reg-txt .cat {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: {AMBAR_ESCURO}; }}
+  .crh-reg-txt .cat {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; color: var(--crh-amb); }}
   .crh-reg-txt .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500; color: {GRAFITE}; }}
   .crh-reg-txt .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-reg-nota {{ margin: 4px 0 0; width: fit-content; border-radius: 6px; padding: 3px 8px; font-family: 'Manrope', sans-serif; font-size: 11.5px; background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
-  .crh-reg-nota.err {{ background: #FEE2E2; color: {ERRO}; }}
+  .crh-reg-nota.err {{ background: #FEE2E2; color: {ERRO_TEXTO}; }}
   .crh-reg-seta {{ margin: 0; text-align: center; font-size: 22px; color: {AMBAR}; }}
   .st-key-reg_sim_conflitos {{ background: white; border: 1px solid {BORDA}; border-radius: 14px; padding: 18px 22px; }}
   div[class*="st-key-reg_conf_"]:not([class*="st-key-reg_conf_abrir"]):not([class*="st-key-reg_conf_prio"]) {{ background: #FEE2E2; border-radius: 10px; padding: 10px 14px; justify-content: space-between; }}
-  .crh-reg-conf .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; font-weight: 600; color: {ERRO}; }}
-  .crh-reg-conf .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {ERRO}; }}
+  .crh-reg-conf .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; font-weight: 600; color: var(--crh-err); }}
+  .crh-reg-conf .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: var(--crh-err); }}
   .crh-reg-lista {{ margin: 0; padding-left: 18px; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-reg_rej_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
   .st-key-reg_rej_perigo button p {{ color: white !important; }}
   /* Desligamento (Figma 224:4056 e 249:3075; change fluxo-de-desligamento). */
   .crh-pd-passo {{ display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; }}
-  .crh-pd-passo .n {{ width: 22px; height: 22px; border-radius: 999px; background: {AMBAR_BG}; color: {AMBAR_ESCURO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }}
+  .crh-pd-passo .n {{ width: 22px; height: 22px; border-radius: 999px; background: {AMBAR_BG}; color: {AMBAR_TEXTO}; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }}
   .crh-pd-passo .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; font-weight: 600; color: {GRAFITE}; }}
   .crh-pd-passo .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
-  div[class*="st-key-dl_rejeitar_"] button p {{ color: {ERRO} !important; font-weight: 600; }}
-  div[class*="st-key-dl_aprovar_"] button p, div[class*="st-key-dl_assumir_"] button p, div[class*="st-key-dl_concluir_"] button p {{ color: {AMBAR_ESCURO} !important; font-weight: 600; }}
+  div[class*="st-key-dl_rejeitar_"] button p {{ color: var(--crh-err) !important; font-weight: 600; }}
+  div[class*="st-key-dl_aprovar_"] button p, div[class*="st-key-dl_assumir_"] button p, div[class*="st-key-dl_concluir_"] button p {{ color: var(--crh-amb) !important; font-weight: 600; }}
   .st-key-dl_rej_perigo button {{ background: {ERRO} !important; border-color: {ERRO} !important; }}
   .st-key-dl_rej_perigo button p {{ color: white !important; }}
   /* Pesquisa de clima (Figma 225:4668): aviso de anonimato, progresso, escala em caixas e a lista de pesquisas. */
-  .crh-pc-anonimo {{ background: #DCFCE7; color: {SUCESSO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 14px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
+  .crh-pc-anonimo {{ background: #DCFCE7; color: {SUCESSO_TEXTO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 14px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
   .crh-pc-progresso p {{ margin: 0 0 6px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-pc-progresso .barra {{ height: 6px; border-radius: 999px; background: {BORDA}; overflow: hidden; }}
   .crh-pc-progresso .barra span {{ display: block; height: 100%; background: {AMBAR}; border-radius: 999px; }}
@@ -990,7 +997,7 @@ _APP_CSS = f"""
   .crh-pcr-barra .barra span {{ display: block; height: 100%; background: {AMBAR}; border-radius: 999px; }}
   .crh-pcr-kv {{ display: flex; justify-content: space-between; gap: 12px; margin: 10px 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-pcr-kv b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
-  .crh-pcr-kv b.ambar {{ color: {AMBAR_ESCURO}; }}
+  .crh-pcr-kv b.ambar {{ color: var(--crh-amb); }}
   /* F18 (248:2766): série mensal; ausências usam as barras horizontais existentes. */
   .crh-ie-serie {{ display: flex; gap: 10px; align-items: end; margin-top: 18px; }}
   .crh-ie-mes {{ flex: 1; min-width: 0; text-align: center; font-family: 'Manrope', sans-serif; }}
@@ -1004,10 +1011,10 @@ _APP_CSS = f"""
   .crh-lgpd-resumo div {{ display: flex; justify-content: space-between; gap: 12px; margin: 6px 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; }}
   .crh-lgpd-resumo span {{ color: {GRAFITE_SECUNDARIO}; }}
   .crh-lgpd-resumo b {{ color: {GRAFITE}; font-weight: 600; text-align: right; }}
-  .crh-lgpd-resumo b.ambar {{ color: {AMBAR_ESCURO}; }}
+  .crh-lgpd-resumo b.ambar {{ color: var(--crh-amb); }}
   .crh-lgpd-detalhe {{ margin: 2px 0 12px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; white-space: pre-wrap; }}
   /* Admin — tela de integrações (Figma 249:7847): aviso em rosa do cartão Modelos. */
-  .crh-alerta-inline {{ background: #FDE2E2; color: {ERRO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 10px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
+  .crh-alerta-inline {{ background: #FDE2E2; color: {ERRO_TEXTO}; border-radius: 10px; padding: 12px 14px; margin: 4px 0 10px; font-family: 'Manrope', sans-serif; font-size: 13px; }}
   /* Canal de denúncias (Figma 540:1194): código mostrado uma vez, conversa e relato. */
   .crh-cd-codigo {{ background: {MARFIM}; border: 1px solid {BORDA}; border-radius: 12px; padding: 14px 16px; text-align: center; margin: 8px 0 10px; }}
   .crh-cd-codigo .r {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
@@ -1024,9 +1031,9 @@ _APP_CSS = f"""
   .crh-nr1-mapa td {{ padding: 7px 6px; border-top: 1px solid {BORDA}; }}
   .crh-nr1-mapa td.d {{ font-weight: 500; }}
   .crh-nr1-cel {{ display: inline-block; border-radius: 8px; padding: 4px 10px; font-size: 12.5px; font-weight: 600; }}
-  .crh-nr1-cel.ok {{ background: #DCFCE7; color: {SUCESSO}; }}
-  .crh-nr1-cel.amb {{ background: {AMBAR_BG}; color: {AMBAR_ESCURO}; }}
-  .crh-nr1-cel.err {{ background: #FEE2E2; color: {ERRO}; }}
+  .crh-nr1-cel.ok {{ background: #DCFCE7; color: {SUCESSO_TEXTO}; }}
+  .crh-nr1-cel.amb {{ background: {AMBAR_BG}; color: {AMBAR_TEXTO}; }}
+  .crh-nr1-cel.err {{ background: #FEE2E2; color: {ERRO_TEXTO}; }}
   .crh-nr1-cel.neu {{ background: {MARFIM}; color: {GRAFITE_SECUNDARIO}; }}
   /* Treinamentos (Figma 549:1321): a matriz pode ter muitas colunas e rola na horizontal. */
   .crh-tr-matriz {{ overflow-x: auto; }}
@@ -1074,13 +1081,13 @@ _APP_CSS = f"""
   .crh-nota-neutra {{ background: {MARFIM}; color: {GRAFITE}; border-radius: 10px; padding: 12px 14px; margin: 4px 0; font-family: 'Manrope', sans-serif; font-size: 13px; }}
 
   /* Aviso embaixo de um campo com o que ele não aceita (campos.py). */
-  .crh-campo-invalido {{ margin: -8px 0 4px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; color: {ERRO} !important; }}
+  .crh-campo-invalido {{ margin: -8px 0 4px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 500; color: var(--crh-err) !important; }}
   /* Configurações, Segurança e Notificações (Figma 213:142 e 213:236; change configuracoes-seguranca-notificacoes). */
-  .crh-regra.ok {{ color: {SUCESSO} !important; }}
+  .crh-regra.ok {{ color: var(--crh-ok) !important; }}
   div[class*="st-key-cfg_sessao_"] {{ border: 1px solid {BORDA}; border-radius: 12px; padding: 10px 14px; justify-content: space-between; }}
   div[class*="st-key-cfg_sessao_"] button {{ border: 1px solid {BORDA}; border-radius: 10px; background: white; }}
   .st-key-cfg_encerrar_todas button {{ border: 1px solid {ERRO} !important; background: transparent !important; border-radius: 10px; }}
-  .st-key-cfg_encerrar_todas button p {{ color: {ERRO} !important; }}
+  .st-key-cfg_encerrar_todas button p {{ color: var(--crh-err) !important; }}
   .st-key-cfg_av_cab, .st-key-cfg_sla_cab {{ background: {MARFIM}; border-radius: 10px; padding: 6px 12px; }}
   div[class*="st-key-cfg_av_"]:not(.st-key-cfg_av_cab):not(.st-key-cfg_av_desfazer):not(.st-key-cfg_av_salvar) {{ border-bottom: 1px solid {BORDA}; padding: 6px 12px; }}
   /* Ciclo de metas (change ciclo-de-metas): etapa, pergunta com as respostas e a caixa de feedback. */
@@ -1104,7 +1111,7 @@ _APP_CSS = f"""
   .st-key-central_fe_rejeitar button[kind] p, .st-key-central_cor_ok button[kind] p, .st-key-aus_rej_ok button[kind] p, .st-key-rh_recusar_ok button[kind] p, .st-key-usr_desat_ok button[kind] p, .st-key-sol_indeferir button[kind] p {{ color: white !important; }}
 
   /* Grupo do menu lateral por perfil (Design System 314:786): rótulo em caixa alta. */
-  .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #737A85; text-transform: uppercase; }}
+  .crh-nav-grupo {{ margin: 14px 0 2px 12px; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.06em; color: #8B919B; text-transform: uppercase; }}
 
   /* Modais (st.dialog) claros como no Figma (286:1062, 224:2379, 309:1591): o tema base do app é
      escuro por causa da tela Entrar, então cada parte do modal ganha a cor do protótipo. */
@@ -1180,7 +1187,7 @@ _APP_CSS = f"""
   .crh-incluso .t {{ margin: 0 0 6px 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .crh-incluso ul {{ margin: 0; padding-left: 18px; font-family: 'Manrope', sans-serif; font-size: 13.5px; line-height: 1.75; color: {GRAFITE_SECUNDARIO}; }}
   .crh-incluso .n {{ margin: 6px 0 0 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
-  .crh-nota-verde {{ background: #DCFCE7; color: {SUCESSO}; border-radius: 10px; padding: 12px 14px; margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; line-height: 1.45; }}
+  .crh-nota-verde {{ background: #DCFCE7; color: {SUCESSO_TEXTO}; border-radius: 10px; padding: 12px 14px; margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; line-height: 1.45; }}
   .crh-nota-ambar {{ background: {AMBAR_BG}; color: {GRAFITE}; border-radius: 10px; padding: 12px 14px; margin: 0; font-family: 'Manrope', sans-serif; font-size: 13.5px; }}
 </style>
 """
@@ -1204,6 +1211,7 @@ ESC_AMBAR_SUAVE = "#2A2417"
 _ESCURO_CSS = f"""
 <style>
   /* crh-tema-escuro */
+  :root {{ --crh-ok: #4ADE80; --crh-amb: {AMBAR}; --crh-err: #FCA5A5; }}
   .st-key-me_estado {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .st-key-me_busca [data-testid="stTextInputRootElement"] {{ background: {ESC_FUNDO} !important; }}
   div[class*="st-key-rh_linf_me_"] {{ background: {ESC_AMBAR_SUAVE} !important; }}

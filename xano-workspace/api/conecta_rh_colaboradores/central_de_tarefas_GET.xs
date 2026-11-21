@@ -68,7 +68,7 @@ query "central_de_tarefas" verb=GET {
     }
 
     var $hoje {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     // Colaborador vinculado a conta autenticada, se houver.
@@ -179,7 +179,7 @@ query "central_de_tarefas" verb=GET {
     }
 
     var $hoje_delegacao_fila {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     db.query delegacao_aprovacao {
@@ -395,7 +395,7 @@ query "central_de_tarefas" verb=GET {
     conditional {
       if ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
         var $limite_alerta_lgpd {
-          value = now|add_secs_to_timestamp:259200|format_timestamp:"Y-m-d":"UTC"
+          value = now|add_secs_to_timestamp:259200|format_timestamp:"Y-m-d":"America/Sao_Paulo"
         }
 
         db.query solicitacao_rh {

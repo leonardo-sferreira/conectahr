@@ -109,7 +109,7 @@ query "colaboradores/{id}/anonimizar" verb=POST {
 
     // Prazo de guarda vigente: algum documento com retencao_ate no futuro.
     var $hoje_anonimizar {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     db.query documento {

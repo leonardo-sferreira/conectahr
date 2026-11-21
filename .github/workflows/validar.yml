@@ -30,6 +30,9 @@ jobs:
       - name: Fontes servidas pelo proprio app (sem Google Fonts)
         run: python tools/checar_fontes_locais.py
 
+      - name: Contraste de texto do tema (WCAG AA, 4,5:1)
+        run: python tools/medir_contraste.py
+
       - name: Teste de fumaca do frontend
         run: |
           cp .streamlit/secrets.toml.example .streamlit/secrets.toml

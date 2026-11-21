@@ -105,7 +105,7 @@ class Base(unittest.TestCase):
         self.api = ApiFicticia()
         for p in (patch.object(api_client, "_request", side_effect=self.api.responder),
                   patch.object(api_client.requests, "request", side_effect=AssertionError("Teste sem rede")),
-                  patch("pagina_delegacoes.hoje_utc", return_value=HOJE)):
+                  patch("pagina_delegacoes.hoje_brasilia", return_value=HOJE)):
             p.start()
             self.addCleanup(p.stop)
 
@@ -132,11 +132,11 @@ class ModeloEConsultas(Base):
         self.assertEqual(modelo.situacao(d, date(2027, 1, 21))[0], "Encerrada")
         self.assertEqual(modelo.situacao(dict(d, cancelada_em=1, data_inicio=None), HOJE)[0], "Cancelada")
 
-    def test_hoje_usa_utc_mesmo_quando_brasilia_ainda_e_dia_anterior(self):
+    def test_hoje_usa_brasilia_depois_das_21h(self):
         with patch.object(modelo, "datetime") as relogio:
-            relogio.now.return_value = datetime(2026, 9, 3, 0, 30, tzinfo=timezone.utc)
-            self.assertEqual(modelo.hoje_utc(), date(2026, 9, 3))
-            relogio.now.assert_called_once_with(timezone.utc)
+            relogio.now.return_value = datetime(2026, 9, 2, 21, 30, tzinfo=modelo.BRASILIA)
+            self.assertEqual(modelo.hoje_brasilia(), date(2026, 9, 2))
+            relogio.now.assert_called_once_with(modelo.BRASILIA)
 
     def test_data_incompleta_ou_invertida_nao_inventa_estado(self):
         for extra in ({"data_inicio": None}, {"data_fim": "inválida"}, {"data_fim": "2026-01-01"}):
@@ -432,7 +432,7 @@ def previa():
     if "api_f17_ficticia" not in st.session_state:
         st.session_state.api_f17_ficticia = ApiFicticia()
     api_client._request = st.session_state.api_f17_ficticia.responder
-    pagina_delegacoes.hoje_utc = lambda: HOJE
+    pagina_delegacoes.hoje_brasilia = lambda: HOJE
     if "token" not in st.session_state:
         st.session_state.update(token="sessao-ficticia", usuario={"id": 9, "nome": "Gestor de teste", "perfil": "GESTOR"},
                                 sessao_validada=True, menu_grupos={"RH": True, "Equipe": True, "Admin": True}, tem_equipe=False, tema="claro")

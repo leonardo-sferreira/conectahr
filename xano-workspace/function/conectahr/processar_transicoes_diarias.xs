@@ -18,7 +18,7 @@ function "ConectaHR/processar_transicoes_diarias" {
 
   stack {
     var $hoje {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     var $n_desligamentos {
@@ -569,7 +569,7 @@ function "ConectaHR/processar_transicoes_diarias" {
     }
 
     var $corte_desligado {
-      value = now|add_secs_to_timestamp:(0 - $segundos_desligado)|format_timestamp:"Y-m-d":"UTC"
+      value = now|add_secs_to_timestamp:(0 - $segundos_desligado)|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     db.query colaborador {

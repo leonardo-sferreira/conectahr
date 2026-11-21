@@ -151,7 +151,7 @@ query "ferias/{id}/aprovar" verb=POST {
     conditional {
       if ($escopo_ok == false && $colaborador_escopo != null) {
         var $hoje_delegacao {
-          value = now|format_timestamp:"Y-m-d":"UTC"
+          value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
         }
 
         db.query delegacao_aprovacao {

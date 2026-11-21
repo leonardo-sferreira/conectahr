@@ -96,7 +96,7 @@ query "perguntas_clima/{id}/responder" verb=POST {
     }
 
     var $hoje {
-      value = now|format_timestamp:"Y-m-d":"UTC"
+      value = now|format_timestamp:"Y-m-d":"America/Sao_Paulo"
     }
 
     precondition ($pesquisa.data_inicio <= $hoje && $pesquisa.data_fim >= $hoje) {
