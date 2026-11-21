@@ -108,7 +108,7 @@ query solicitacoes_acesso verb=GET {
             }
 
             var.update $lista {
-              value = $lista|push:{id: $p.id, created_at: $p.created_at, usuario_id: $p.usuario_id, colaborador_id: $p.colaborador_id, nome: ($conta != null ? $conta.nome : null), email: ($conta != null ? $conta.email : null), perfil_hoje: ($conta != null ? $conta.perfil : null), perfil_atual: $p.perfil_atual, perfil_solicitado: $p.perfil_solicitado, justificativa: $p.justificativa, status: $p.status, solicitante_user_id: $p.solicitante_user_id, solicitante_nome: ($quem_pediu != null ? $quem_pediu.nome : null), decidido_por_nome: $quem_decidiu_nome, data_decisao: $p.data_decisao, motivo_decisao: $p.motivo_decisao}
+              value = $lista|push:{id: $p.id, created_at: $p.created_at, usuario_id: $p.usuario_id, colaborador_id: $p.colaborador_id, nome: ($conta != null ? $conta.nome : null), email: ($conta != null ? $conta.email : null), perfil_hoje: ($conta != null ? $conta.perfil : null), perfil_atual: $p.perfil_atual, perfil_solicitado: $p.perfil_solicitado, justificativa: $p.justificativa, prazo_sla: $p.prazo_sla, alerta_sla: $p.alerta_sla, status: $p.status, solicitante_user_id: $p.solicitante_user_id, solicitante_nome: ($quem_pediu != null ? $quem_pediu.nome : null), decidido_por_nome: $quem_decidiu_nome, data_decisao: $p.data_decisao, motivo_decisao: $p.motivo_decisao}
             }
           }
         }

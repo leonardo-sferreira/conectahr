@@ -172,8 +172,36 @@ query ausencias verb=POST {
     }
   
     // Cria a solicitacao.
+    // Prazo de atendimento (change sla-de-solicitacoes, D3): gravado na abertura; mudar o SLA depois nao o altera.
+    function.run "ConectaHR/prazo_sla" {
+      input = {tipo_solicitacao: "ausencia"}
+    } as $sla_vigente
+
+    var $sla_aberta_em {
+      value = now
+    }
+
+    function.run "ConectaHR/somar_horas_uteis" {
+      input = {inicio: $sla_aberta_em, horas: $sla_vigente.sla_horas}
+    } as $sla_prazo_calculado
+
+    function.run "ConectaHR/somar_horas_uteis" {
+      input = {inicio: $sla_aberta_em, horas: $sla_vigente.horas_alerta}
+    } as $sla_alerta_calculado
+
+    var $sla_prazo {
+      value = $sla_prazo_calculado
+    }
+
+    var $sla_alerta {
+      value = $sla_alerta_calculado
+    }
+
     db.add ausencia {
       data = {
+        prazo_sla : $sla_prazo
+        alerta_sla: $sla_alerta
+        sla_horas : $sla_vigente.sla_horas
         colaborador_id: $colaborador_autenticado.id
         tipo          : $input.tipo
         data_inicio   : $input.data_inicio
