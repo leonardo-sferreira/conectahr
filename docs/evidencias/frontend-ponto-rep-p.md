@@ -102,3 +102,42 @@ Desde 12/10/2026, `ponto/{id}/solicitar_correcao`, `ponto/solicitar_correcao_dia
 recusam o pedido (400) e indicam o caminho novo (`ponto/correcao` e `folha_ponto/tratar`). Eles gravavam o horário
 direto no registro do dia, sem passar pela ARP, o que o REP-P não permite. Até este frontend ir ao ar, o app publicado
 mostra essa mensagem a quem tentar pedir correção pela tela antiga.
+
+## AFD, AEJ e a tela do RH (tarefas 5.1 a 5.3 e parte da 8.2, 21/11/2026)
+
+### Sem rede
+
+| Teste | Resultado |
+|---|---|
+| `python tools/testar_rep_p.py`: CRC-16/KERMIT, campos, AFD e AEJ de exemplo | 30/30 |
+| `python tools/testar_pagina_rep_p.py`: tela, gravação, eventos, geração, AFD adulterado, acesso | 28/28 |
+| `testar_menu`, `testar_ponto`, `smoke_frontend` | 12/12, 41/41, ok |
+
+Prints em [`frontend-ponto-rep-p/`](frontend-ponto-rep-p/), com API simulada e dados fictícios:
+
+| Print | Figma |
+|---|---|
+| `rep-p-tela` | 467:834 (`figma-467-834-rep-p`) |
+| `rep-p-arquivos-gerados` | 467:834, lista dos arquivos gerados |
+
+O AFD baixado pelo botão da tela (29 registros) passou no `conferir_afd` sem problemas.
+
+Diferenças em relação ao Figma:
+- a disponibilidade mostra só o estado atual, porque o backend não guarda desde quando;
+- a lista de arquivos é a da sessão, e o histórico completo fica na auditoria.
+
+### Com login (Xano da equipe, 17/17)
+
+| Cenário | Esperado | Obtido |
+|---|---|---|
+| Colaborador chama `rep/afd` e `rep/aej` | 403 | 403 e 403 |
+| Gestor (conta de teste promovida pelo Admin só durante o teste) | 403 | 403 e 403; o perfil voltou a Colaborador |
+| Período com a data final antes da inicial | 400 | 400 |
+| Admin gera o AFD de 01/10 a 30/11 | Registros em ordem de NSR, gravados no período; o arquivo passa na conferência; o trailer bate com a API; o nome tem 43 caracteres | Igual (2 registros tipo 5) |
+| Admin gera o AEJ do mesmo período | Vínculos só com id, nome e CPF e só de quem tem registro; trailer 99 com as contagens | Igual (sem marcações no período) |
+| Auditoria | `rep_afd_gerado` e `rep_aej_gerado` | Os dois |
+
+Os arquivos reais ficaram só na pasta temporária, porque têm CPF.
+
+**Limite:** a ARP no ar não tem marcações (tipo 7). A cadeia de hashes com dados reais será conferida depois da
+tarefa 3.1. Os testes sem rede conferem a cadeia, o CRC e o trailer com marcações fictícias.

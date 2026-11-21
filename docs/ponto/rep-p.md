@@ -33,7 +33,7 @@ que o ponto é "certificado", "homologado" ou "em conformidade".
 | Tratamento que só acrescenta informação: inclusão ou desconsideração, com motivo (art. 82) | Tabela `tratamento_ponto`. Pedido do colaborador em `ponto/correcao` e decisão em `correcoes_ponto/{id}/aprovar`; ajuste direto do responsável em `folha_ponto/tratar`. Os endpoints antigos, que sobrescreviam o horário, foram desativados |
 | Comprovante de registro de ponto em PDF, por 48 horas, sem pedido (arts. 79 e 80) | `ponto/marcar` devolve os dados e a tela oferece o PDF na hora; `ponto/comprovantes` lista os dos últimos 7 dias; PDF em `frontend/comprovante_ponto.py` (`fpdf2`), sem assinatura |
 | Espelho de ponto com o conteúdo do art. 84 | Ponto → Mês (`frontend/pagina_ponto.py`): cabeçalho, planilha e CSV. O horário contratual é a jornada da regra do contrato, porque o cadastro não guarda os horários de entrada e saída |
-| AFD e AEJ nos leiautes de 31/07/2026 (arts. 81 e 83) | A fazer (grupo 5) |
+| AFD ("004") e AEJ ("002") nos leiautes de 31/07/2026 (arts. 81 e 83) | `rep/afd` e `rep/aej` (só RH e Admin, auditados) entregam os registros; `frontend/rep_modelo.py` monta os arquivos e confere o AFD; tela do RH "Ponto eletrônico (REP-P)" |
 
 ## O que fica fora
 
@@ -45,6 +45,8 @@ que o ponto é "certificado", "homologado" ou "em conformidade".
 - **Hora Legal Brasileira** (Anexo IX, item 2): vale o relógio do servidor do Xano, sem conferência com
   o Observatório Nacional.
 - **Marcação off-line e outros coletores** (aplicativo mobile ou desktop).
+- **Registro 04 do AEJ (horário contratual):** o cadastro não guarda os horários de entrada e saída, então o
+  AEJ sai sem esse registro e sem o `codHorContratual` da primeira entrada do dia (registro 05).
 - **Ajuste de relógio** (registro 4) e **retorno de energia** (registro 6, código 02): não existem num
   servidor em nuvem.
 
