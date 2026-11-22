@@ -1026,6 +1026,9 @@ _APP_CSS = f"""
   .st-key-cfg_card_pc button[kind^="segmented_control"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button {{ min-width: 44px; height: 41px; border-radius: 8px !important; border: 1px solid {BORDA} !important; background: #FFFFFF; color: {GRAFITE}; }}
   .st-key-cfg_card_pc button[kind="segmented_controlActive"], .st-key-cfg_card_pc [data-testid="stButtonGroup"] button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; color: {GRAFITE} !important; }}
   .crh-pc-item {{ border: 1px solid {BORDA}; border-radius: 10px; padding: 12px 15px; margin-top: 12px; }}
+  .crh-mp-item {{ margin-top: 8px; }}
+  div[class*="st-key-mp_r_"] [data-testid="stHtml"] {{ flex: 1; min-width: 0; }}
+  @media (max-width: 640px) {{ .st-key-rh_cab_mp {{ display: none !important; }} }}
   /* Rotina diária (Figma 289:900): ponto, título e detalhe, contagem à direita. */
   .crh-rd-lista {{ border: 1px solid {BORDA}; border-radius: 12px; padding: 4px 14px 14px; background: #FFFFFF; }}
   .crh-rd-item {{ display: flex; align-items: center; gap: 12px; border: 1px solid {BORDA}; border-radius: 10px; padding: 10px 14px; margin-top: 10px; }}

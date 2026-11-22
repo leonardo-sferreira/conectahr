@@ -2,8 +2,9 @@
 // dificuldades, evidencia e alteracao de prazo. Cada chamada cria um
 // evento na trilha `meta_checkin` (historico completo, nunca sobrescrito)
 // e atualiza o "ultimo check-in" em `meta_avaliacao` para consulta
-// rapida. O proprio colaborador (dono da meta) ou RH/ADMIN podem
-// registrar.
+// rapida. O proprio colaborador (dono da meta), o lider direto dele
+// (concluir-metas-pdi-equipe, D3) ou RH/ADMIN podem registrar. Sempre em nome de quem
+// registrou (registrado_por_user_id), na auditoria; o dono e avisado no sino.
 query "metas/{id}/checkin" verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -92,7 +93,24 @@ query "metas/{id}/checkin" verb=POST {
       value = ($colaborador_da_meta != null && $colaborador_da_meta.user_id == $usuario_autenticado.id)
     }
 
-    precondition ($e_o_proprio || $perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
+    db.get colaborador {
+      field_name = "user_id"
+      field_value = $usuario_autenticado.id
+    } as $colaborador_autenticado
+
+    var $id_ficha_autenticada {
+      value = ($colaborador_autenticado == null) ? 0 : $colaborador_autenticado.id
+    }
+
+    var $superior_da_meta {
+      value = ($colaborador_da_meta == null) ? null : $colaborador_da_meta.superior_colaborador_id
+    }
+
+    var $e_lider_direto {
+      value = ($superior_da_meta != null) && ($superior_da_meta == $id_ficha_autenticada) && ($colaborador_da_meta.status != "Desligado")
+    }
+
+    precondition ($e_o_proprio || $e_lider_direto || $perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
       error = "Voce nao tem permissao para registrar check-in nesta meta."
     }
@@ -136,6 +154,24 @@ query "metas/{id}/checkin" verb=POST {
             novo_prazo                            : $input.novo_prazo
           }
         } as $checkin_criado
+      }
+    }
+
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "registrar_checkin_meta"
+        recurso    : "meta_avaliacao"
+        registro_id: $meta_atual.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
+
+    conditional {
+      if ($e_o_proprio == false) {
+        function.run "ConectaHR/notificar" {
+          input = {colaborador_id: $meta_atual.colaborador_id, autor_user_id: $usuario_autenticado.id, tipo: "acompanhamento_equipe", titulo: "Check-in na sua meta", mensagem: $usuario_autenticado.nome ~ " registrou " ~ ($input.progresso_percentual|to_text) ~ "% na meta \"" ~ $meta_atual.titulo ~ "\".", recurso: "meta_avaliacao", registro_id: $meta_atual.id}
+        } as $aviso_checkin
       }
     }
   }

@@ -318,7 +318,45 @@ query "minha_trajetoria" verb=GET {
       sort = {meta_avaliacao.data_prazo: "asc"}
       return = {type: "list"}
       output = ["id", "titulo", "descricao", "indicador", "data_prazo", "progresso_percentual", "status", "data_checkin_realizado"]
-    } as $metas
+    } as $metas_abertas
+
+    // Quem registrou o ultimo check-in de cada meta: a propria pessoa ou o lider direto (concluir-metas-pdi-equipe, D3).
+    var $metas {
+      value = []
+    }
+
+    foreach ($metas_abertas) {
+      each as $meta_aberta {
+        db.query meta_checkin {
+          where = $db.meta_checkin.meta_avaliacao_id == $meta_aberta.id
+          sort = {meta_checkin.created_at: "desc"}
+          return = {type: "single"}
+          output = ["registrado_por_user_id"]
+        } as $ultimo_checkin
+
+        var $checkin_por {
+          value = null
+        }
+
+        conditional {
+          if (($ultimo_checkin != null) && ($ultimo_checkin.registrado_por_user_id != $usuario_autenticado.id)) {
+            db.get user {
+              field_name = "id"
+              field_value = $ultimo_checkin.registrado_por_user_id
+              output = ["nome"]
+            } as $autor_checkin
+
+            var.update $checkin_por {
+              value = ($autor_checkin == null) ? null : $autor_checkin.nome
+            }
+          }
+        }
+
+        var.update $metas {
+          value = $metas|push:($meta_aberta|set:"checkin_por":$checkin_por)
+        }
+      }
+    }
 
     db.query pdi {
       where = $db.pdi.colaborador_id == $colaborador_autenticado.id && $db.pdi.status != "concluido" && $db.pdi.status != "cancelado"

@@ -1,6 +1,7 @@
-// Gestor registra uma reuniao individual (1:1) com um colaborador da
-// propria equipe. Por padrao e privada (so gestor e colaborador);
-// pode ser marcada como compartilhada com RH quando necessario.
+// Gestor agenda ou registra uma reuniao individual (1:1) com um liderado direto
+// (concluir-metas-pdi-equipe, D4): data, hora, pauta (assuntos), anotacoes (acordos) e situacao
+// (agendada ou realizada). Por padrao e privada (so gestor e colaborador); pode ser
+// compartilhada com RH. Agendada avisa no sino e por e-mail; realizada, so no sino (D5).
 query reunioes_individuais verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -15,6 +16,8 @@ query reunioes_individuais verb=POST {
     date? prazo_acoes?
     date? proxima_reuniao?
     text? visibilidade? filters=trim
+    text? hora? filters=trim|max:5
+    text? situacao? filters=trim|lower
   }
 
   stack {
@@ -96,14 +99,9 @@ query reunioes_individuais verb=POST {
           error = "Nao existe um colaborador vinculado a esta conta."
         }
 
-        db.query departamento {
-          where = $db.departamento.gestor_colaborador_id == $colaborador_gestor.id
-          return = {type: "single"}
-        } as $departamento_gerenciado
-
-        precondition ($departamento_gerenciado != null && $colaborador_alvo.departamento_id == $departamento_gerenciado.id) {
+        precondition (($colaborador_alvo.superior_colaborador_id != null) && ($colaborador_alvo.superior_colaborador_id == $colaborador_gestor.id) && ($colaborador_alvo.status != "Desligado")) {
           error_type = "accessdenied"
-          error = "Voce so pode registrar reunioes com colaboradores da propria equipe."
+          error = "Voce so pode registrar reunioes com os seus liderados diretos."
         }
       }
     }
@@ -125,6 +123,24 @@ query reunioes_individuais verb=POST {
       }
     }
 
+    var $situacao_final {
+      value = (($input.situacao == null) || ($input.situacao == "")) ? "agendada" : $input.situacao
+    }
+
+    precondition (($situacao_final == "agendada") || ($situacao_final == "realizada")) {
+      error_type = "inputerror"
+      error = "Situacao invalida. Use agendada ou realizada."
+    }
+
+    var $hora_final {
+      value = (($input.hora == null) || ($input.hora == "")) ? null : $input.hora
+    }
+
+    precondition (($hora_final == null) || ((($hora_final|strlen) == 5) && (($hora_final|substr:2:1) == ":") && ((($hora_final|substr:0:2)|to_int) <= 23) && ((($hora_final|substr:3:2)|to_int) <= 59))) {
+      error_type = "inputerror"
+      error = "Hora invalida. Use HH:MM."
+    }
+
     db.add reuniao_individual {
       data = {
         colaborador_id             : $colaborador_alvo.id
@@ -137,9 +153,54 @@ query reunioes_individuais verb=POST {
         prazo_acoes                                    : $input.prazo_acoes
         proxima_reuniao                                   : $input.proxima_reuniao
         visibilidade                                         : $visibilidade_normalizada
+        hora                                                    : $hora_final
+        situacao                                                : $situacao_final
+        situacao_em                                             : "now"
         updated_at                                              : "now"
       }
     } as $reuniao_criada
+
+    db.add auditoria {
+      data = {
+        user_id      : $usuario_autenticado.id
+        acao         : "registrar_reuniao_individual"
+        recurso      : "reuniao_individual"
+        registro_id  : $reuniao_criada.id
+        justificativa: $situacao_final
+        resultado    : "sucesso"
+      }
+    } as $evento_auditoria
+
+    var $quando_texto {
+      value = ($input.data_reuniao|format_timestamp:"d/m/Y":"UTC") ~ (($hora_final == null) ? "" : (" as " ~ $hora_final))
+    }
+
+    function.run "ConectaHR/notificar" {
+      input = {colaborador_id: $colaborador_alvo.id, autor_user_id: $usuario_autenticado.id, tipo: "acompanhamento_equipe", titulo: (($situacao_final == "agendada") ? "Reuniao 1:1 agendada" : "Reuniao 1:1 registrada"), mensagem: $usuario_autenticado.nome ~ (($situacao_final == "agendada") ? " agendou uma reuniao 1:1 com voce em " : " registrou a reuniao 1:1 de ") ~ $quando_texto ~ ".", recurso: "reuniao_individual", registro_id: $reuniao_criada.id}
+    } as $aviso_reuniao
+
+    conditional {
+      if (($situacao_final == "agendada") && ($colaborador_alvo.user_id != null)) {
+        db.get user {
+          field_name = "id"
+          field_value = $colaborador_alvo.user_id
+        } as $usuario_alvo
+
+        conditional {
+          if (($usuario_alvo != null) && $usuario_alvo.ativo) {
+            db.add email_outbox {
+              data = {
+                destinatario_email: $usuario_alvo.email
+                destinatario_nome : $usuario_alvo.nome
+                assunto           : "ConectaRH - Reuniao 1:1 agendada"
+                corpo             : "Ola " ~ $usuario_alvo.nome ~ ",\n\n" ~ $usuario_autenticado.nome ~ " agendou uma reuniao 1:1 com voce em " ~ $quando_texto ~ ".\n\nPauta: " ~ $input.assuntos ~ "\n\nVeja no ConectaRH, em Trajetoria.\n\nEste e um aviso automatico."
+                chave_idempotencia: "reuniao_agendada_" ~ ($reuniao_criada.id|to_text)
+              }
+            } as $email_reuniao
+          }
+        }
+      }
+    }
   }
 
   response = {

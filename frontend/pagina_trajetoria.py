@@ -20,12 +20,12 @@ from datetime import date
 import streamlit as st
 
 from api_client import (ApiError, checkin_meta, competencias_avaliacao, contestar_avaliacao, enviar_avaliacao, minha_trajetoria, progresso_pdi,
-                        responder_avaliacao)
+                        responder_avaliacao, minhas_reunioes)
 from ciclo_metas_modelo import ciclo_em_foco, enviadas_do, etapa_editavel
 from formulario_metas_ui import trilha_etapas
 from pagina_metas_ciclo import carregar as carregar_ciclo_metas
 from theme import alerta, html_linha_onboarding, render_hero, render_topbar
-from trajetoria_modelo import (NOTAS, linhas_360, linhas_a_preencher, linhas_metas, linhas_pdi, linhas_recebidas, nivel, reconhecimentos,
+from trajetoria_modelo import (NOTAS, linhas_360, linhas_a_preencher, linhas_metas, linhas_pdi, linhas_recebidas, linhas_reunioes, nivel, reconhecimentos,
                                respostas_alteradas, titulo_360, validar_contestacao, validar_envio)
 
 CACHE = "traj_cache"
@@ -217,6 +217,24 @@ def _acao(rotulo: str, chave: str, modal: str) -> None:
             st.rerun()
 
 
+def _reunioes(token: str, colaborador_id, hoje: date) -> None:
+    """Reuniões 1:1 que a liderança agendou ou registrou com a pessoa (change concluir-metas-pdi-equipe, D4)."""
+    if not colaborador_id:
+        return
+    guardado = st.session_state.get("traj_reunioes")
+    try:
+        if guardado and guardado["token"] == token and time.time() - guardado["em"] < 60:
+            lista = guardado["lista"]
+        else:
+            lista = (minhas_reunioes(token, colaborador_id) or {}).get("reunioes") or []
+            st.session_state.traj_reunioes = {"token": token, "em": time.time(), "lista": lista}
+    except ApiError as falha:
+        st.html('<p class="crh-bloco-titulo">Reuniões 1:1</p>')
+        alerta(st.empty(), "atencao", falha.message)
+        return
+    _trilha("Reuniões 1:1", linhas_reunioes(lista, hoje), "Nenhuma reunião 1:1 registrada.")
+
+
 def _carreira(dados: dict) -> None:
     comps = "".join(f'<span class="comp">{html.escape(c.get("nome") or "")}</span>' for c in dados.get("competencias_proximo_nivel") or [])
     if dados.get("proximo_nivel"):
@@ -320,6 +338,7 @@ def pagina_trajetoria() -> None:
     _trilha("PDI — Plano de Desenvolvimento Individual", pdi, "Nenhuma ação de PDI em andamento.")
     if pdi:
         _acao("Atualizar progresso →", "traj_abrir_pdi", "pdi")
+    _reunioes(token, dados.get("colaborador_id"), hoje)
     _reconhecimentos(dados)
 
     modal = st.session_state.get("traj_modal")

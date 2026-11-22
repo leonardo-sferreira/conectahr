@@ -94,6 +94,11 @@ api_client.enviar_avaliacao = lambda token, aid, com: chamadas.append(("enviar",
 api_client.contestar_avaliacao = lambda token, aid, motivo: chamadas.append(("contestar", aid, motivo)) or _falha_ou("contestar", {"sucesso": True})
 api_client.checkin_meta = lambda token, mid, prog, com, dif, ev: chamadas.append(("checkin", mid, prog, com, dif, ev)) or {"sucesso": True}
 api_client.progresso_pdi = lambda token, pid, prog, ev: chamadas.append(("pdi", pid, prog, ev)) or {"sucesso": True}
+# Reuniões 1:1 da própria pessoa (change concluir-metas-pdi-equipe, D4).
+REUNIOES = [{"id": 1, "data_reuniao": "2099-03-04", "hora": "10:00", "assuntos": "Plano do trimestre", "situacao": "agendada"},
+            {"id": 2, "data_reuniao": "2026-01-10", "hora": None, "assuntos": "Registro antigo", "acordos": "Rever metas", "situacao": None},
+            {"id": 3, "data_reuniao": "2026-02-10", "hora": "15:00", "assuntos": "Feedback", "situacao": "cancelada", "motivo_cancelamento": "Viagem"}]
+api_client.minhas_reunioes = lambda token, cid: chamadas.append(("reunioes", cid)) or _falha_ou("reunioes", {"reunioes": copy.deepcopy(estado.get("reunioes", REUNIOES))})
 
 falhas: list[str] = []
 total = 0
@@ -166,6 +171,14 @@ conferir(lr[0]["titulo"] == "Avaliação de par" and "Ana" not in lr[0]["detalhe
 conferir(lr[1]["badge"] == "Contestação revisada" and lr[1]["detalhe"].startswith("Ana Ribeiro"), "recebida do gestor: nome e contestação revisada")
 aberta = m.linhas_recebidas({"recebidas": [dict(TRAJETORIA["recebidas"][0], contestacao_status="aberta")]})[0]
 conferir(aberta["badge"] == "Contestação em análise" and not aberta["pode_contestar"], "contestação aberta: não contesta de novo")
+lmp = m.linhas_metas([{"id": 1, "titulo": "Meta", "data_prazo": "2099-01-01", "progresso_percentual": 30, "checkin_por": "Gestor de teste"},
+                       {"id": 2, "titulo": "Outra", "data_prazo": "2099-01-01", "progresso_percentual": 10, "checkin_por": None}], date(2026, 11, 22))
+conferir(lmp[0]["detalhe"].endswith("· último check-in por Gestor de teste") and "check-in por" not in lmp[1]["detalhe"],
+         "meta: mostra quem fez o último check-in quando foi o líder (D3)")
+lr = m.linhas_reunioes(REUNIOES, date(2026, 11, 22))
+conferir([(l["id"], l["badge"]) for l in lr] == [(1, "Agendada"), (3, "Cancelada"), (2, "Realizada")]
+         and lr[0]["detalhe"] == "Quarta, 04/03/2099 às 10:00 · pauta: Plano do trimestre" and "combinado: Rever metas" in lr[2]["detalhe"]
+         and "motivo: Viagem" in lr[1]["detalhe"], "reuniões 1:1: agendadas primeiro; registro antigo vira realizada; combinado e motivo")
 rc = m.reconhecimentos(TRAJETORIA)
 conferir(rc[0]["nome"] == "Carlos Souza" and rc[1]["nome"] == "Ana Ribeiro (RH)" and rc[0]["data"] == "20/08/2026", "reconhecimentos: '(RH)' e a data")
 comps = FORMULARIO["competencias"]
@@ -187,6 +200,12 @@ conferir("Para você avaliar" in t and "Avaliar como par: Bruno Melo" in t and "
 conferir("Avaliações recebidas" in t and "Nota mantida após revisão." in t and "traj_abrir_contestar" in chaves(at), "recebidas, com a resposta do RH e 'Contestar'")
 conferir("Metas ativas" in t and "Concluir certificação AWS" in t and "PDI — Plano de Desenvolvimento Individual" in t, "metas e PDI")
 conferir("Reconhecimentos recebidos" in t and "Ana Ribeiro (RH)" in t and "Carlos Souza" in t, "reconhecimentos com quem enviou")
+conferir("Reuniões 1:1" in t and "Plano do trimestre" in t and "Agendada" in t and ("reunioes", 7) in chamadas, "reuniões 1:1 da própria pessoa, pela ficha dela")
+at = app(erro_reunioes=ApiError("Reuniões indisponíveis agora.", 503))
+t = texto(at)
+conferir(not at.exception and "Reuniões indisponíveis agora." in t and "Reconhecimentos recebidos" in t, "reuniões 1:1 com erro: aviso, e o resto da página continua")
+at = app(reunioes=[])
+conferir("Nenhuma reunião 1:1 registrada." in texto(at), "sem reuniões 1:1: mensagem")
 conferir(chamadas.count(("ler",)) == 1, "uma leitura só (minha_trajetoria)")
 at = app(dados=VAZIA)
 t = texto(at)

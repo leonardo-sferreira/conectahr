@@ -1018,6 +1018,41 @@ def checkin_meta(token: str, meta_id: int, progresso: float, comentario: str | N
                                                     "dificuldades": dificuldades or None, "evidencia": evidencia or None}, token, GRUPO_COLABORADORES)
 
 
+# Metas, PDI e reuniões 1:1 da equipe (F16; change concluir-metas-pdi-equipe, D1 a D5)
+def metas_pdi_equipe(token: str) -> dict:
+    """GET minha_equipe/metas_pdi -> {minha_ficha_id, meu_user_id, liderados, metas, pdis, reunioes, pessoas_meta, ciclos}:
+    só os liderados diretos, com título, prazo, progresso e situação (D1)."""
+    return _get("minha_equipe/metas_pdi", token, GRUPO_COLABORADORES)
+
+
+def criar_meta(token: str, dados: dict) -> dict:
+    """POST metas: colaborador_id, ciclo_avaliacao_id, titulo, descricao, indicador, peso e data_prazo. O gestor, só para os
+    liderados diretos e o próprio departamento (D2); a pessoa recebe aviso no sino e por e-mail (D5)."""
+    return _post("metas", dados, token, GRUPO_COLABORADORES)
+
+
+def criar_pdi(token: str, dados: dict) -> dict:
+    """POST pdi: colaborador_id, ciclo_avaliacao_id, titulo, descricao, acao_desenvolvimento, responsavel_user_id e data_prazo."""
+    return _post("pdi", dados, token, GRUPO_COLABORADORES)
+
+
+def registrar_reuniao(token: str, dados: dict) -> dict:
+    """POST reunioes_individuais: colaborador_id, data_reuniao, hora (HH:MM), assuntos (a pauta) e situacao ("agendada").
+    Só com liderado direto (D4); agendar avisa no sino e por e-mail (D5)."""
+    return _post("reunioes_individuais", dados, token, GRUPO_COLABORADORES)
+
+
+def situacao_reuniao(token: str, reuniao_id: int, situacao: str, acordos: str | None = None, motivo: str | None = None) -> dict:
+    """POST reunioes_individuais/{id}/situacao: "realizada" (com as anotações) ou "cancelada" (com o motivo). Só quem agendou."""
+    return _post(f"reunioes_individuais/{int(reuniao_id)}/situacao", {"situacao": situacao, "acordos": acordos or None, "motivo": motivo or None},
+                 token, GRUPO_COLABORADORES)
+
+
+def minhas_reunioes(token: str, colaborador_id: int) -> dict:
+    """GET colaboradores/{id}/reunioes_individuais -> {reunioes}: as 1:1 da própria pessoa (Trajetória)."""
+    return _get(f"colaboradores/{int(colaborador_id)}/reunioes_individuais", token, GRUPO_COLABORADORES)
+
+
 def progresso_pdi(token: str, pdi_id: int, progresso: float, evidencia: str | None) -> dict:
     """POST pdi/{id}/progresso: progresso de 0 a 100 e evidência opcional."""
     return _post(f"pdi/{int(pdi_id)}/progresso", {"progresso_percentual": float(progresso), "evidencia": evidencia or None}, token, GRUPO_COLABORADORES)

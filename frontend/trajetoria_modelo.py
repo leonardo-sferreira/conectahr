@@ -113,7 +113,8 @@ def linhas_metas(metas: list[dict], hoje: date) -> list[dict]:
         prazo = _data(m.get("data_prazo"))
         atrasada = prazo is not None and prazo < hoje
         texto_prazo = f"Prazo era {prazo:%d/%m/%Y}" if atrasada else f"Prazo {prazo:%d/%m/%Y}" if prazo else "Sem prazo"
-        linhas.append({"id": m.get("id"), "titulo": m.get("titulo") or "Meta", "detalhe": f"{texto_prazo} · {_pct(m.get('progresso_percentual'))}% concluído",
+        por = f" · último check-in por {m['checkin_por']}" if m.get("checkin_por") else ""
+        linhas.append({"id": m.get("id"), "titulo": m.get("titulo") or "Meta", "detalhe": f"{texto_prazo} · {_pct(m.get('progresso_percentual'))}% concluído{por}",
                        "badge": "Atrasada" if atrasada else "Pendente", "tom": "err" if atrasada else "amb", "progresso": _pct(m.get("progresso_percentual"))})
     return linhas
 
@@ -128,6 +129,29 @@ def linhas_pdi(pdi: list[dict], hoje: date) -> list[dict]:
         linhas.append({"id": p.get("id"), "titulo": p.get("titulo") or "Ação de desenvolvimento", "detalhe": f"{texto_prazo} · {_pct(p.get('progresso_percentual'))}% concluído",
                        "badge": "Atrasado" if atrasado else "Pendente", "tom": "err" if atrasado else "amb", "progresso": _pct(p.get("progresso_percentual"))})
     return linhas
+
+
+def linhas_reunioes(reunioes: list[dict], hoje: date) -> list[dict]:
+    """Reuniões 1:1 da própria pessoa (change concluir-metas-pdi-equipe, D4): as agendadas primeiro (a mais próxima no
+    alto), depois as anteriores (a mais recente no alto), até 10. Sem situação: registro antigo, já realizado."""
+    from metas_equipe_modelo import quando_reuniao
+    agendadas, outras = [], []
+    for r in reunioes or []:
+        situacao = r.get("situacao") or "realizada"
+        d = _data(r.get("data_reuniao"))
+        pauta = " ".join(str(r.get("assuntos") or "").split())
+        detalhe = quando_reuniao(r) + (f" · pauta: {pauta[:120]}{'…' if len(pauta) > 120 else ''}" if pauta else "")
+        if situacao == "realizada" and r.get("acordos"):
+            detalhe += f" · combinado: {' '.join(str(r['acordos']).split())[:120]}"
+        if situacao == "cancelada" and r.get("motivo_cancelamento"):
+            detalhe += f" · motivo: {' '.join(str(r['motivo_cancelamento']).split())[:120]}"
+        badge, tom = {"agendada": ("Agendada", "azul"), "cancelada": ("Cancelada", "neu")}.get(situacao, ("Realizada", "ok"))
+        linha = {"id": r.get("id"), "titulo": "Reunião 1:1 com a liderança", "detalhe": detalhe, "badge": badge, "tom": tom,
+                 "_chave": (d or date.min, r.get("hora") or "")}
+        (agendadas if situacao == "agendada" and (d is None or d >= hoje) else outras).append(linha)
+    agendadas.sort(key=lambda l: l["_chave"])
+    outras.sort(key=lambda l: l["_chave"], reverse=True)
+    return [{k: v for k, v in l.items() if k != "_chave"} for l in (agendadas + outras)[:10]]
 
 
 def reconhecimentos(dados: dict) -> list[dict]:
