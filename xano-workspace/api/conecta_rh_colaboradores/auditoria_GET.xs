@@ -72,9 +72,11 @@ query auditoria verb=GET {
       value = $usuario_autenticado.perfil|trim|to_upper
     }
 
-    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
+    // A trilha e so do Admin (22/11/2026). O RH consulta apenas as execucoes da rotina diaria, que a tela "Rotina
+    // diaria" mostra (o filtro por acao e exato).
+    precondition ($perfil_autenticado == "ADMIN" || ($perfil_autenticado == "RH" && $input.acao == "processar_rotinas_diarias")) {
       error_type = "accessdenied"
-      error = "Somente RH ou ADMIN podem consultar a trilha de auditoria."
+      error = "Somente o Admin pode consultar a trilha de auditoria."
     }
 
     var $dias {

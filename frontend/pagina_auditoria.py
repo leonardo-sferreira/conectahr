@@ -1,6 +1,6 @@
 """
-Página "Auditoria" (Figma 225:6784; tarefas 34 e 35 de concluir-frontend-streamlit). Só RH e Admin; a autorização é do
-backend (`auditoria` GET).
+Página "Auditoria" (Figma 225:6784; tarefas 34 e 35 de concluir-frontend-streamlit). Só o Admin (desde 22/11/2026, no
+grupo Admin do menu); a autorização é do backend (`auditoria` GET).
 
 Filtros do Figma (recurso, ação, resultado e usuário) e o período (últimos 7, 30 ou 90 dias, ou o último ano); a
 tabela mostra até 300 eventos, os mais recentes primeiro. "Ver" abre os detalhes do evento (registro, valores anterior
@@ -71,8 +71,8 @@ def pagina_auditoria() -> None:
     usuario = st.session_state.usuario
     render_topbar(usuario["nome"])
     render_hero("Auditoria", "Trilha completa de ações no sistema — autor, data e resultado")
-    if str(usuario.get("perfil", "")).upper() not in ("RH", "ADMIN"):
-        alerta(st.empty(), "erro", "Esta tela é só do RH e do Admin.")
+    if str(usuario.get("perfil", "")).upper() != "ADMIN":
+        alerta(st.empty(), "erro", "Esta tela é só do Admin.")
         return
 
     # Opções dos filtros: vêm da consulta sem filtro do período (recursos, ações e usuários que aparecem nele).

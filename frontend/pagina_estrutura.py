@@ -1,5 +1,6 @@
 """
-Página "Estrutura da empresa" do RH e do Admin. Abas:
+Página "Estrutura da empresa", só do Admin (desde 22/11/2026, no grupo Admin do menu; o backend recusa as escritas de
+outros perfis). Abas:
 
 - "Departamentos" (Figma 249:6993; tarefa 52 da change concluir-frontend-streamlit): todos os departamentos, com o
   gestor, quantas pessoas e a situação; "Novo departamento", "Editar" (nome, descrição e situação), "Trocar gestor" e
@@ -425,8 +426,8 @@ def pagina_estrutura() -> None:
     if aviso := st.session_state.pop("aviso_toast", None):
         st.toast(aviso)
     render_hero("Estrutura da empresa", "Departamentos, cargos e feriados usados no ponto, nas férias e no calendário")
-    if str(usuario.get("perfil", "")).upper() not in ("ADMIN", "RH"):
-        alerta(st.empty(), "erro", "Esta tela é só do RH e do Admin.")
+    if str(usuario.get("perfil", "")).upper() != "ADMIN":
+        alerta(st.empty(), "erro", "Esta tela é só do Admin.")
         return
     with st.container(key="cfg_abas", width="content"):
         if st.session_state.get("estr_aba") not in _ABAS:

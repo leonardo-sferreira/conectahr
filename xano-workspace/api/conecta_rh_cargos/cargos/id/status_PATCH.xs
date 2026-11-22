@@ -65,9 +65,10 @@ query "cargos/{id}/status" verb=PATCH {
     }
   
     // Somente ADMIN e RH podem alterar o status de cargos.
-    precondition ($perfil_autenticado == "ADMIN" || $perfil_autenticado == "RH") {
+    // Estrutura da empresa e so do Admin (pedido do dono do produto, 22/11/2026).
+    precondition ($perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Você não possui permissão para alterar o status de cargos."
+      error = "Somente o Admin pode alterar o status de cargos."
     }
   
     // Localiza o cargo selecionado.

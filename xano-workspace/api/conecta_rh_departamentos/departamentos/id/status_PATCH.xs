@@ -65,9 +65,10 @@ query "departamentos/{id}/status" verb=PATCH {
     }
   
     // Somente ADMIN e RH podem alterar o status de departamentos.
-    precondition ($perfil_autenticado == "ADMIN" || $perfil_autenticado == "RH") {
+    // Estrutura da empresa e so do Admin (pedido do dono do produto, 22/11/2026).
+    precondition ($perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Você não possui permissão para alterar o status de departamentos."
+      error = "Somente o Admin pode alterar o status de departamentos."
     }
   
     // Localiza o departamento selecionado.

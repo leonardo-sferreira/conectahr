@@ -172,9 +172,14 @@ A lógica de autorização é **duplicada por endpoint**: o mesmo bloco (recarre
 | Atualizar dados pessoais | RH |
 | Atualizar vínculo profissional | RH |
 | Ver/editar próprio perfil e dados bancários | qualquer colaborador autenticado, só o próprio registro |
-| Criar/editar cargo, alterar status | ADMIN, RH |
-| Criar/editar departamento, alterar status | ADMIN, RH |
-| Definir gestor de departamento | RH, ADMIN |
+| Criar/editar cargo, alterar status, nível do cargo | ADMIN (o RH só até 22/11/2026) |
+| Criar/editar departamento, alterar status | ADMIN (o RH só até 22/11/2026) |
+| Definir gestor de departamento | ADMIN (o RH só até 22/11/2026) |
+| Criar/editar níveis da hierarquia; cadastrar, importar e editar feriados | ADMIN (o RH só até 22/11/2026) |
+| Consultar departamentos, cargos e níveis (cadastro de colaboradores) | RH, ADMIN |
+| Trilha de auditoria (`auditoria` GET) | ADMIN; o RH só as execuções da rotina diária (`acao = processar_rotinas_diarias`), que a tela Rotina diária mostra |
+
+**Estrutura da empresa e Auditoria só do Admin (22/11/2026, pedido do dono do produto):** as duas telas saíram do grupo RH do menu e foram para o grupo Admin. O backend recusa com 403 as escritas de departamentos, cargos, níveis e feriados vindas de outro perfil. Antes, `feriados/{id}` PATCH não conferia o perfil, e qualquer pessoa logada conseguia editar um feriado; isso foi corrigido.
 | Organograma (`organograma_GET`) | qualquer usuário autenticado ativo |
 | Busca global (`colaboradores/buscar`) | qualquer usuário autenticado; GESTOR restrito ao próprio departamento gerenciado |
 
@@ -765,7 +770,7 @@ Entidade `feriado`: `data`, `nome` (máx. 200), `abrangencia` (enum `nacional`/`
 
 Autorização para gerenciar feriados: só RH/ADMIN; `abrangencia` validada contra o enum exato, com default `nacional` quando omitida (`xano-workspace/api/conecta_rh_colaboradores/feriados_POST.xs`). **Não auditado:** criação de feriado.
 
-**Importação dos nacionais (desde 12/10/2026):** `feriados/importar` POST (só RH/ADMIN, auditado com o ano e quantos entraram) chama `ConectaHR/importar_feriados_nacionais`, que busca o ano na BrasilAPI (`brasilapi.com.br/api/feriados/v1/{ano}`; a consulta leva só o ano) e grava só as datas sem feriado nacional ativo ou inativo, então repetir não duplica. Carnaval e Corpus Christi entram com `tipo = ponto_facultativo`; os demais como `feriado`, `abrangencia = nacional`. Ano entre 2000 e 2100; se a BrasilAPI não responder 200, nada é gravado (`xano-workspace/function/conectahr/importar_feriados_nacionais.xs`).
+**Importação dos nacionais (desde 12/10/2026):** `feriados/importar` POST (só o Admin desde 22/11/2026, auditado com o ano e quantos entraram) chama `ConectaHR/importar_feriados_nacionais`, que busca o ano na BrasilAPI (`brasilapi.com.br/api/feriados/v1/{ano}`; a consulta leva só o ano) e grava só as datas sem feriado nacional ativo ou inativo, então repetir não duplica. Carnaval e Corpus Christi entram com `tipo = ponto_facultativo`; os demais como `feriado`, `abrangencia = nacional`. Ano entre 2000 e 2100; se a BrasilAPI não responder 200, nada é gravado (`xano-workspace/function/conectahr/importar_feriados_nacionais.xs`).
 
 ### 12.5 Catálogos
 

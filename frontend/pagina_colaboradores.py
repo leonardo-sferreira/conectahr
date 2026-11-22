@@ -133,7 +133,7 @@ def _modal_admitir(org: dict, erro_org: str | None = None) -> None:
     if not deps:
         # Sem departamentos não dá para escolher o cargo nem admitir: diz por quê e deixa tentar de novo (o que já foi
         # digitado fica, porque os campos guardam o valor pela key).
-        alerta(st.empty(), "erro", f"{_SEM_ORGANOGRAMA}: {erro_org}" if erro_org else "Nenhum departamento ativo. Cadastre um em Estrutura da empresa.")
+        alerta(st.empty(), "erro", f"{_SEM_ORGANOGRAMA}: {erro_org}" if erro_org else "Nenhum departamento ativo. O Admin cadastra em Estrutura da empresa.")
         if erro_org and st.button("Tentar de novo", key="adm_recarregar"):
             recarregar()
     # Cada campo aceita só o seu tipo (campos.py; pedido do usuário em 20/10/2026): o que não é permitido ganha um aviso
