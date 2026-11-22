@@ -1,9 +1,8 @@
 """
 Player do vídeo de treinamento (Figma 557:1383; change treinamento-em-video), um componente v2 do Streamlit.
 
-Duas fontes, o mesmo controle:
-- Google Drive: `<video>` HTML5 com o arquivo direto da API do Drive (`drive_video.url_video`);
-- YouTube: o player oficial (IFrame Player API, no domínio youtube-nocookie.com), com o vídeo "não listado".
+Fonte: o YouTube, com o player oficial (IFrame Player API, no domínio youtube-nocookie.com) e o vídeo "não listado". O
+caminho `<video>` HTML5 com `src` ficou sem uso desde a change remover-video-drive (era o do Google Drive).
 
 O JavaScript guarda o ponto mais longe assistido sem pular: avançar além dele volta para ele, e um salto no tempo não
 conta. Velocidade até 2x. A cada 25 segundos tocando, ao pausar e ao terminar, manda {vistos, posicao} para o Python,
@@ -205,7 +204,7 @@ def _componente():
 
 def player_video(chave: str, fonte: str, video_id: str, src: str | None, duracao: int, minimo: int, vistos: int, posicao: int) -> dict | None:
     """Desenha o player e devolve o último {vistos, posicao, n} mandado pelo navegador (None se ainda não mandou).
-    `src` só para o Drive (o endereço com a chave); o YouTube usa o `video_id`."""
+    O YouTube usa o `video_id`; `src` ficou sem uso desde a change remover-video-drive."""
     resultado = _componente()(data={"chave": chave, "fonte": fonte, "video_id": video_id, "src": src, "duracao": int(duracao), "minimo": int(minimo),
                                     "vistos": int(vistos), "posicao": int(posicao), "cores": _cores()},
                               key=f"crh_vp_{chave}", on_progresso_change=lambda: None)

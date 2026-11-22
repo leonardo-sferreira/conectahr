@@ -1,7 +1,7 @@
 // Catalogo de treinamentos (change treinamentos-obrigatorios, D1): os obrigatorios por lei (NRs, a
 // orientacao anual sobre assedio da Lei 14.457/2022), de compliance e de desenvolvimento. validade_meses = 0
 // significa sem validade (vale uma vez). publico: todos ou so os departamentos de departamento_ids (",1,4,").
-// Video (change treinamento-em-video): de onde vem (video_fonte: drive ou youtube), o id do video (o nome
+// Video (change treinamento-em-video): de onde vem (video_fonte: youtube; drive so nos registros antigos, change remover-video-drive), o id do video (o nome
 // video_drive_id ficou da primeira versao, so com o Drive; vale para as duas fontes), a duracao em segundos (lida
 // do Drive ou da previa do YouTube ao salvar) e quanto a pessoa precisa assistir, em %, para concluir sozinha.
 table treinamento {

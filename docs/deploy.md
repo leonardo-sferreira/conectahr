@@ -28,18 +28,11 @@ Variáveis de ambiente do Xano (painel *Settings → Environment variables*; nun
 | `SESSAO_RETENCAO_DIAS`, `EMAIL_RETENCAO_DIAS`, `DESLIGADO_RETENCAO_DIAS` | Prazos de retenção da rotina diária | Não (180, 180 e 1825) |
 
 Segredos do Streamlit (`.streamlit/secrets.toml` na máquina ou nos *Secrets* do serviço de
-hospedagem): `xano.auth_base_url`, a URL da API do grupo de autenticação, e (opcional) `google.drive_api_key`,
-a chave de API do Google para os vídeos dos treinamentos (change `treinamento-em-video`). Sem ela, o resto funciona e
-"Meus treinamentos" mostra um aviso no lugar do vídeo. Para criar a chave:
+hospedagem): só `xano.auth_base_url`, a URL da API do grupo de autenticação.
 
-1. No Google Cloud (da conta da empresa), crie um projeto e ligue a **Google Drive API**.
-2. Em *Credenciais*, crie uma **chave de API**. Restrinja a chave à Google Drive API e, em *Restrições de aplicativo*,
-   a *Referenciadores HTTP* com o endereço do app (por exemplo `https://seu-app.streamlit.app/*`).
-3. Cole a chave nos *Secrets* da hospedagem, na seção `[google]`. Nunca no repositório.
-4. No Drive, cada vídeo fica como "qualquer pessoa com o link", em MP4 (H.264); 720p basta.
-
-Sem o Google Cloud, a outra opção é o **YouTube**: o RH sobe o vídeo como "não listado" e cola o link no mesmo
-campo. Não precisa de chave nem de configuração.
+Os vídeos dos treinamentos são do **YouTube**: o RH sobe o vídeo como "não listado" e cola o link no treinamento. Não
+precisa de chave nem de configuração. O vídeo pelo Google Drive, que pedia uma chave de API do Google (`[google]
+drive_api_key`), saiu na change `remover-video-drive` (22/11/2026).
 
 ## Publicar no Streamlit Community Cloud
 
@@ -49,15 +42,13 @@ Feito uma vez, por quem é dono do repositório no GitHub:
 2. **Repository:** `leonardo-sferreira/conectahr`. **Branch:** `master`. **Main file path:** `frontend/app.py`.
 3. Em **Advanced settings**:
    - **Python:** 3.12. O app e os testes foram conferidos nessa versão em 22/11/2026; o desenvolvimento usa 3.14.
-   - **Secrets:** cole o conteúdo do `.streamlit/secrets.toml` local, no formato do `.streamlit/secrets.toml.example`:
-     - a seção `[xano]` com `auth_base_url`, obrigatória;
-     - a seção `[google]` com `drive_api_key`, opcional.
+   - **Secrets:** cole o conteúdo do `.streamlit/secrets.toml` local, no formato do `.streamlit/secrets.toml.example`: a seção `[xano]`
+     com `auth_base_url`.
 4. **Deploy.** O serviço:
    - instala `frontend/requirements.txt`, que fica na pasta do arquivo principal;
    - lê `.streamlit/config.toml` da raiz, com o tema e o `enableStaticServing`;
    - serve `frontend/static`, com as fontes e as capas dos treinamentos.
-5. Com o endereço final (`https://….streamlit.app`), restrinja a chave do Google a ele, se houver chave (seção acima).
-6. Faça o teste de fumaça do roteiro abaixo e registre em `docs/evidencias/deploy-streamlit-cloud.md`, sem dado pessoal.
+5. Faça o teste de fumaça do roteiro abaixo e registre em `docs/evidencias/deploy-streamlit-cloud.md`, sem dado pessoal.
 
 **Como funciona depois:**
 - Cada merge em `master` republica o app sozinho.
@@ -73,7 +64,7 @@ Feito uma vez, por quem é dono do repositório no GitHub:
 | Arquivo principal | `frontend/app.py` |
 | Dependências | `frontend/requirements.txt` |
 | Configuração | `.streamlit/config.toml`: tema e `enableStaticServing`, que serve `frontend/static` |
-| Segredos (só no painel) | `[xano] auth_base_url`; `[google] drive_api_key`, opcional |
+| Segredos (só no painel) | `[xano] auth_base_url` |
 | Segredos que ficam no Xano | Brevo, Supabase e o pepper dos códigos de acesso (seção "Configuração de produção") |
 
 O Streamlit Cloud abre o app dentro da própria página: o endereço passa pelo `share.streamlit.io`, que entrega um cookie de sessão, sem pedir login. Para conferir o app de fora, use um navegador; o `curl` recebe só essa página de passagem.

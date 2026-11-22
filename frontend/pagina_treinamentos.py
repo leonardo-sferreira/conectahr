@@ -6,7 +6,7 @@ Abas:
 - Matriz: indicadores (em dia, vencendo em 30 dias, vencidos, pendentes) e pessoa × treinamento obrigatório, com o
   filtro de departamento e a busca; célula vazia = não obrigatório para o setor da pessoa.
 - Catálogo: os treinamentos com categoria, validade, carga horária e para quem; "Novo treinamento" e "Editar" (com
-  o vídeo opcional no Google Drive ou no YouTube e quanto assistir para concluir; Figma 557:1477, change
+  o vídeo opcional do YouTube e quanto assistir para concluir; Figma 557:1477, change
   treinamento-em-video). Com link do YouTube, o modal mostra a prévia, que lê a duração. "Tipo de conteúdo" (change
   cards-de-treinamentos, Figma 636:1771): vídeo, leitura (PDF: o arquivo de até 20 MB ou o link do Drive) ou apresentação
   (o link do Slides ou do Drive, ou o PDF), e a capa opcional (reduzida a 640 × 360 em WebP antes de subir);
@@ -25,7 +25,6 @@ import streamlit as st
 
 from api_client import ApiError, envio_arquivo_treinamento, registrar_conclusao_treinamento, salvar_treinamento, subir_arquivo, treinamentos
 from campos import campo
-from drive_video import ErroDrive, chave_api, duracao_video
 from theme import alerta, render_hero, render_indicadores, render_topbar
 from treinamentos_modelo import (ABAS, CATEGORIAS, FONTES_VIDEO, PERCENTUAL_PADRAO, SUGERIDOS, TIPOS_CONTEUDO, ids_departamentos, indicadores,
                                  link_leitura, link_video, matriz, publico_legivel, tratar_capa, validade_legivel, validar_capa, validar_conclusao,
@@ -96,8 +95,8 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
     # O PDF já salvo vale enquanto o tipo continua de leitura e a origem continua "arquivo".
     pdf_salvo = atual.get("conteudo_path") if (atual.get("conteudo_tipo") in ("pdf", "apresentacao")) else None
     if tipo == "video":
-        video = st.text_input("Vídeo no Google Drive ou no YouTube (link, opcional)", key="tr_form_video", max_chars=300,
-                              placeholder="https://drive.google.com/file/d/…/view ou https://youtu.be/…")
+        video = st.text_input("Vídeo no YouTube (link, opcional)", key="tr_form_video", max_chars=300,
+                              placeholder="https://youtu.be/… ou https://www.youtube.com/watch?v=…")
         achado = video_do_link(video)
         percentual = st.number_input("Assistir pelo menos (%)", min_value=50, max_value=100, step=5, key="tr_form_pct") if (video or "").strip() else PERCENTUAL_PADRAO
     else:
@@ -122,9 +121,6 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
             st.session_state[f"tr_yt_dur_{achado[1]}"] = duracao_yt
         st.html('<p class="crh-meta">Vídeo do YouTube: deixe como "não listado" (não privado). A pessoa assiste em "Meus treinamentos" '
                 'e conclui sozinha depois do mínimo.</p>')
-    elif (video or "").strip():
-        st.html('<p class="crh-meta">Com vídeo, a pessoa assiste em "Meus treinamentos" e conclui sozinha depois do mínimo. '
-                'No Drive, compartilhe o arquivo como "qualquer pessoa com o link", em MP4.</p>')
     ativo = st.toggle("Ativo", key="tr_form_ativo") if atual else True
     alerta(st.empty(), "atencao", "Obrigatório para todos aparece na matriz de cada pessoa. Com validade, o registro vence e a pessoa refaz.")
     slot = st.empty()
@@ -151,7 +147,7 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
                 except ValueError as erro_capa:
                     alerta(slot, "erro", str(erro_capa))
                     return
-            fonte, video_id = achado or ("drive", None)
+            fonte, video_id = achado or ("youtube", None)
             duracao = 0
             if video_id and video_id == atual.get("video_drive_id") and int(atual.get("video_duracao") or 0) > 0:
                 duracao = int(atual["video_duracao"])
@@ -160,24 +156,13 @@ def _modal_treinamento(atual: dict | None, deps: dict) -> None:
                 if not duracao:
                     alerta(slot, "erro", "Espere a prévia do YouTube carregar (ela lê a duração do vídeo) e salve de novo.")
                     return
-            elif video_id:
-                chave = chave_api()
-                if not chave:
-                    alerta(slot, "erro", "Falta configurar o Google Drive no app (a chave da API nos secrets). Fale com o Admin.")
-                    return
-                try:
-                    with st.spinner("Conferindo o vídeo no Google Drive..."):
-                        duracao = duracao_video(video_id, chave)
-                except ErroDrive as erro_drive:
-                    alerta(slot, "erro", str(erro_drive))
-                    return
             dados = {"nome": nome.strip(), "descricao": (descricao or "").strip() or None, "categoria": categoria, "carga_horas": int(horas),
                      "validade_meses": int(validade), "obrigatorio": bool(obrigatorio), "publico": publico if obrigatorio else "todos",
                      "departamento_ids": ids_departamentos(departamentos) if obrigatorio and publico == "departamentos" else None,
                      "video_drive_id": video_id, "video_fonte": fonte, "video_duracao": duracao, "video_percentual_minimo": int(percentual),
                      "conteudo_tipo": tipo, "conteudo_url": None, "conteudo_path": None, "capa_path": None if remover_capa else atual.get("capa_path")}
             if tipo != "video":
-                dados.update(video_drive_id=None, video_fonte="drive", video_duracao=0, video_percentual_minimo=PERCENTUAL_PADRAO)
+                dados.update(video_drive_id=None, video_fonte="youtube", video_duracao=0, video_percentual_minimo=PERCENTUAL_PADRAO)
                 dados["conteudo_url"] = link_leitura(tipo, link) if origem == "link" else None
                 dados["conteudo_path"] = pdf_salvo if origem == "arquivo" and not arquivo else None
             if atual:

@@ -39,7 +39,7 @@ Usamos serviços de terceiros, chamados **operadores**, para o sistema funcionar
 - **Xano:** onde ficam o banco de dados e os arquivos do sistema.
 - **Brevo:** envia os e-mails (recebe seu nome, e-mail e o texto da mensagem).
 - **Hospedagem do aplicativo (Streamlit):** serve as telas.
-- **Google Drive e YouTube:** entregam os vídeos dos treinamentos (recebem o endereço IP de quem assiste). Quanto você assistiu fica no nosso sistema, não no Google.
+- **YouTube, Google Drive e Google Slides:** o YouTube entrega os vídeos dos treinamentos, e o Drive e o Slides, o material de leitura quando o RH usa um link (recebem o endereço IP de quem assiste ou lê). Quanto você assistiu fica no nosso sistema, não no Google.
 
 Alguns desses serviços ficam fora do Brasil. A forma de proteger essa transferência precisa de confirmação. Os detalhes estão no [documento de operadores](operadores.md).
 
