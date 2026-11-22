@@ -39,3 +39,6 @@ docs/emails-templates.md
 Thumbs.db
 desktop.ini
 .omc/
+
+# Site da documentação, gerado por tools/gerar_site.py na publicação (GitHub Pages)
+_site/

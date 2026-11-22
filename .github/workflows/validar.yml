@@ -179,6 +179,11 @@ jobs:
       - name: Testes (testar_menu.py)
         run: python tools/testar_menu.py
 
+      - name: Documentacao (numeros em dia e site gerado)
+        run: |
+          pip install markdown==3.11.3
+          python tools/gerar_site.py --checar
+
       - name: Procurar segredos no repositorio
         run: |
           if git grep -n -E "xkeysib-[A-Za-z0-9]{20,}|SG\.[A-Za-z0-9_-]{20,}|Bearer eyJ[A-Za-z0-9_-]{20,}" -- . ':!.github'; then

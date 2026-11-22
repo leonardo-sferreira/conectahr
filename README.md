@@ -13,6 +13,8 @@ da admissão ao desligamento, com autorização por perfil, decisões auditávei
 ![Supabase](https://img.shields.io/badge/Arquivos-Supabase_Storage-3ECF8E?logo=supabase&logoColor=white)
 ![OpenSpec](https://img.shields.io/badge/Spec-OpenSpec-6E56CF)
 
+**[📘 Documentação](https://leonardo-sferreira.github.io/conectahr/)** ([manual do usuário](https://leonardo-sferreira.github.io/conectahr/usuario.html) · [técnica](https://leonardo-sferreira.github.io/conectahr/tecnica.html)) · **[App publicado](https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/)**
+
 [Funcionalidades](#funcionalidades) · [Arquitetura](#arquitetura) · [Stack](#stack) ·
 [Segurança e LGPD](#segurança-e-lgpd) · [Qualidade](#qualidade-e-testes) · [Como rodar](#como-rodar) ·
 [Roadmap](#roadmap)
@@ -39,11 +41,11 @@ instrumento coletivo ou exceção individual, sempre com o histórico de qual re
 
 | | |
 |---|---|
-| **Backend** | 59 tabelas, 32 funções e 228 endpoints em 10 grupos de API (223 autenticados, todos com a guarda de acesso conferida no CI) |
-| **Frontend** | 22 telas Streamlit, 20 módulos de regra de tela testáveis sem rede, tema claro e escuro |
-| **Especificação** | Spec principal com 70 requisitos e 217 cenários; 11 changes arquivadas e 3 em andamento no OpenSpec |
-| **Testes** | 20 suítes automatizadas (909 verificações) no pipeline, mais testes por HTTP contra o backend real, por perfil |
-| **Documentação** | Regras de negócio mapeadas do código, modelo de domínio, LGPD (RIPD, operadores, retenção) e evidências |
+| **Backend** | 80 tabelas, 48 funções e 316 endpoints em 10 grupos de API (308 autenticados, todos com a guarda de acesso conferida no CI) |
+| **Frontend** | 55 telas Streamlit, publicadas no Streamlit Community Cloud, com tema claro e escuro e tela de celular |
+| **Especificação** | Spec principal com 130 requisitos e 428 cenários; 40 changes entregues e arquivadas no OpenSpec |
+| **Testes** | 52 verificações no pipeline, entre elas as suítes de tela sem rede, mais testes por HTTP contra o backend real, por perfil |
+| **Documentação** | [Site](https://leonardo-sferreira.github.io/conectahr/) com o manual do usuário e a documentação técnica, regras de negócio mapeadas do código, LGPD e evidências |
 
 ---
 
