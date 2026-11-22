@@ -1,23 +1,24 @@
 <div align="center">
 
+<img src="frontend/assets/logo-icon.svg" alt="Logotipo do ConectaRH" width="72">
+
 # ConectaRH
 
-**Plataforma de gestão de pessoas que centraliza o ciclo de vida do colaborador**
-da admissão ao desligamento, com autorização por perfil, decisões auditáveis e LGPD desde o desenho.
+**Plataforma de gestão de pessoas que centraliza o ciclo de vida do colaborador,**
+**da admissão ao desligamento, com autorização por perfil, decisões auditáveis e LGPD desde o desenho.**
 
-[![Release](https://img.shields.io/github/v/release/leonardo-sferreira/conectahr?label=vers%C3%A3o&color=F5A623)](https://github.com/leonardo-sferreira/conectahr/releases)
 [![Validar](https://github.com/leonardo-sferreira/conectahr/actions/workflows/validar.yml/badge.svg)](https://github.com/leonardo-sferreira/conectahr/actions/workflows/validar.yml)
+[![Documentação](https://github.com/leonardo-sferreira/conectahr/actions/workflows/pages.yml/badge.svg)](https://leonardo-sferreira.github.io/conectahr/)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.64-FF4B4B?logo=streamlit&logoColor=white)
 ![Xano](https://img.shields.io/badge/Backend-Xano-1A1A1A)
 ![Supabase](https://img.shields.io/badge/Arquivos-Supabase_Storage-3ECF8E?logo=supabase&logoColor=white)
 ![OpenSpec](https://img.shields.io/badge/Spec-OpenSpec-6E56CF)
 
-**[📘 Documentação](https://leonardo-sferreira.github.io/conectahr/)** ([manual do usuário](https://leonardo-sferreira.github.io/conectahr/usuario.html) · [técnica](https://leonardo-sferreira.github.io/conectahr/tecnica.html)) · **[App publicado](https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/)**
+### [🚀 Abrir o app](https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/) · [📘 Manual do usuário](https://leonardo-sferreira.github.io/conectahr/usuario.html) · [🛠️ Documentação técnica](https://leonardo-sferreira.github.io/conectahr/tecnica.html)
 
-[Funcionalidades](#funcionalidades) · [Arquitetura](#arquitetura) · [Stack](#stack) ·
-[Segurança e LGPD](#segurança-e-lgpd) · [Qualidade](#qualidade-e-testes) · [Como rodar](#como-rodar) ·
-[Roadmap](#roadmap)
+[Sobre](#sobre-o-projeto) · [Funcionalidades](#funcionalidades) · [Telas](#telas) · [Arquitetura](#arquitetura) ·
+[Segurança e LGPD](#segurança-e-lgpd) · [Qualidade](#qualidade-e-testes) · [Como rodar](#como-rodar) · [Histórico](#histórico-do-projeto) · [Equipe](#equipe)
 
 </div>
 
@@ -25,73 +26,107 @@ da admissão ao desligamento, com autorização por perfil, decisões auditávei
 
 ## Sobre o projeto
 
-RH, gestores e colaboradores costumam depender de planilhas, e-mail e controles paralelos para
-ponto, documentos, férias, avaliações e desligamento. O **ConectaRH** reúne essas rotinas numa única
-plataforma, com quatro perfis de acesso (**Admin, RH, Gestor e Colaborador**), escopo por departamento
-e hierarquia, e auditoria de toda decisão relevante: quem fez, o quê, quando e por quê.
+RH, gestores e colaboradores costumam depender de planilhas, e-mails e controles paralelos para cuidar de:
+- ponto, férias e documentos;
+- avaliações e treinamentos;
+- desligamentos.
 
-Um dos pilares é o **motor de regras trabalhistas**: jornada, banco de horas e férias são resolvidos por
-uma matriz de contrato (CLT, estágio, aprendiz, temporário, PJ) que pode ser sobrescrita por norma legal,
-instrumento coletivo ou exceção individual, sempre com o histórico de qual regra foi aplicada.
+Isso dificulta a rastreabilidade, a auditoria e a conformidade com a legislação trabalhista e com a LGPD.
 
-> **Trabalho acadêmico**, desenvolvido em grupo. Bases legais, prazos de guarda e regras trabalhistas
-> são referências de estudo, a confirmar com o jurídico de quem for usar o sistema de verdade.
+O **ConectaRH** reúne essas rotinas numa plataforma só, com quatro perfis de acesso: **Admin, RH, Gestor e Colaborador**. O que cada pessoa vê e decide depende do perfil e da hierarquia (superior direto e departamento). Toda decisão relevante fica registrada: quem fez, o quê, quando e por quê.
+
+Um dos pilares é o **motor de regras trabalhistas**. Jornada, banco de horas e férias saem de uma matriz por tipo de contrato (CLT, estágio, aprendiz, temporário e PJ). Essa matriz pode ser sobrescrita por norma legal, instrumento coletivo ou exceção individual, sempre com o histórico de qual regra foi aplicada.
+
+> **Trabalho acadêmico**, feito em grupo. Bases legais, prazos de guarda e regras trabalhistas são referências de estudo, a confirmar com o jurídico de quem for usar o sistema de verdade.
 
 ### Em números
 
-| | |
-|---|---|
-| **Backend** | 80 tabelas, 48 funções e 316 endpoints em 10 grupos de API (308 autenticados, todos com a guarda de acesso conferida no CI) |
-| **Frontend** | 55 telas Streamlit, publicadas no Streamlit Community Cloud, com tema claro e escuro e tela de celular |
-| **Especificação** | Spec principal com 130 requisitos e 428 cenários; 40 changes entregues e arquivadas no OpenSpec |
-| **Testes** | 52 verificações no pipeline, entre elas as suítes de tela sem rede, mais testes por HTTP contra o backend real, por perfil |
-| **Documentação** | [Site](https://leonardo-sferreira.github.io/conectahr/) com o manual do usuário e a documentação técnica, regras de negócio mapeadas do código, LGPD e evidências |
+<table>
+<tr>
+<td align="center"><b>55</b><br>telas</td>
+<td align="center"><b>316</b><br>endpoints de API</td>
+<td align="center"><b>80</b><br>tabelas</td>
+<td align="center"><b>48</b><br>funções de regra</td>
+<td align="center"><b>130</b><br>requisitos na spec</td>
+<td align="center"><b>52</b><br>verificações no CI</td>
+<td align="center"><b>40</b><br>changes entregues</td>
+</tr>
+</table>
+
+O sistema está **publicado** no Streamlit Community Cloud, com o backend no Xano. Todas as changes planejadas foram **entregues, testadas e arquivadas** no OpenSpec. A documentação de usuário e técnica fica num [site próprio](https://leonardo-sferreira.github.io/conectahr/), que é atualizado sozinho a cada merge.
 
 ---
 
 ## Funcionalidades
 
-### Para todos
+### 👤 Para todas as pessoas
 
-- **Login em dois passos:** senha e código de acesso por e-mail (guardado como hash), token de 1 hora
-  ligado a uma sessão, bloqueio por tentativas, troca de senha no primeiro acesso e redefinição.
-- **Início** com indicadores, comunicados, aniversariantes e atalhos; **sino de notificações** com
-  "abrir", "marcar como lida" e "marcar todas".
-- **Meu perfil:** dados pessoais, contato, cargo, conta bancária e pedidos de alteração cadastral.
-- **Organograma público e navegável:** cartões com nome, cargo e área; clicar numa pessoa mostra quem
-  está acima (superior direto) e quem está abaixo; níveis hierárquicos definidos por cada empresa.
-- **Comunicados e FAQ**, **onboarding** do primeiro acesso com as etapas por responsável e
-  **aviso de privacidade** com e sem login.
+| Área | O que faz |
+|---|---|
+| **Entrada segura** | Senha e código de 6 dígitos por e-mail, troca de senha no primeiro acesso, "esqueci minha senha", bloqueio por tentativas e sessão de 1 hora |
+| **Início** | Pendências, banco de horas, comunicados, aniversariantes e atalhos; sino de notificações |
+| **Ponto (REP-P)** | Marcação com comprovante em PDF, espelho mensal, saldo diário com tolerância de 10 minutos, aviso de descanso de 11h e pedido de correção pela própria marcação |
+| **Férias pela CLT** | Saldo do período aquisitivo, até 3 períodos, venda de até 10 dias, regras do art. 134 conferidas antes de enviar e calendário da equipe |
+| **Documentos** | Anexo em PDF ou foto (até 10 MB) com os campos de cada tipo de documento, conferido pelo RH |
+| **Pagamento e benefícios** | Holerites e informes de rendimentos; benefícios com operadora, links e materiais |
+| **Trajetória** | Plano de carreira, avaliação 360, metas, PDI, reuniões 1:1, ciclo anual de metas e mural de reconhecimentos |
+| **Meus treinamentos** | Cards por tipo (vídeo do YouTube, PDF ou apresentação), com conclusão pelo mínimo assistido ou pela leitura confirmada |
+| **Clima e bem-estar** | Pesquisa de clima anônima e termômetro de humor |
+| **Canal de denúncias** | Anônimo ou identificado (Lei 14.457/2022), acompanhado por código, até sem login |
+| **Privacidade** | Exportar os próprios dados, fazer pedido LGPD e escolher o que os colegas veem |
+| **Organograma, comunicados e FAQ** | Navegação pela hierarquia, comunicados vigentes e perguntas frequentes |
 
-### Colaborador
+### 🧭 Gestor
 
-- **Ponto no modelo REP-P:** marcação sem limite de quantidade, comprovante em PDF a cada marcação,
-  espelho mensal em formato de planilha (art. 84 da Portaria 671/2021), saldo diário com tolerância de
-  10 minutos, horas positivas e negativas, aviso de descanso entre jornadas (11h) e pedido de ajuste
-  pela célula da marcação: incluir, corrigir o horário ou desconsiderar, sempre com motivo.
-- **Férias pela CLT:** saldo do período aquisitivo, até 3 períodos (um de 14 dias), venda de até 10 dias e as\n  regras da CLT conferidas antes de enviar, com calendário do mês (feriados nacionais pela BrasilAPI).
-- **Documentos:** anexar o arquivo (PDF ou foto do celular, até 10 MB) preenchendo só os campos de cada tipo
-  (RG com órgão emissor e UF, CNH com categoria e validade, CPF só o número…), validados e conferidos pelo RH.
-- **Pagamento:** holerites e informes de rendimentos, só para o dono.
-- **Benefícios:** cada benefício ativo com a descrição, os links da operadora e os materiais do RH.
-- **Configurações → Privacidade:** preferências, exportação dos próprios dados e pedido LGPD.
+O gestor decide e acompanha só os **liderados diretos**: quem tem ele como superior.
 
-### Gestor
+- **Central de Pendências:** decide férias (com a conferência de conflitos), ausências e correções de ponto.
+- **Minha equipe e folha de ponto da equipe:** ponto da semana, férias e pendências, com ajuste direto auditado.
+- **Metas e PDI da equipe:** nova meta, check-in em nome do líder, ações de PDI e reuniões 1:1 com data, hora e pauta, marcadas depois como realizadas ou canceladas.
+- **Avaliações da equipe:** avaliações do ciclo e contestações.
+- **Delegações:** passa a decisão de férias, correções ou tudo a outra pessoa, por um período.
+- **Indicadores e termômetro de humor da equipe:** sempre agregados, sem pessoas.
 
-- **Central de Pendências:** decide férias (com conferência de conflitos) e correções de ponto da equipe.
-- **Folha de ponto** da equipe pela hierarquia (superior direto), com ajuste direto auditado.
-- Recebe aviso de pedido novo e de descanso entre jornadas abaixo do mínimo.
+### 🗂️ RH
 
-### RH e Admin
+- **Pessoas:** colaboradores (admissão, ficha, histórico e onboarding), solicitações ao RH e desligamentos.
+- **Rotina:** ausências, conferência de documentos, lançamento de holerites e informes, e folha de ponto com exportação.
+- **Desenvolvimento:** ciclos de avaliação, treinamentos (matriz por setor, catálogo com capa e conteúdo, registro de turma e vencimentos) e pesquisas de clima.
+- **Saúde e conformidade:**
+  - riscos psicossociais (NR-1);
+  - pedidos LGPD com prazo;
+  - ponto eletrônico REP-P (AFD e AEJ);
+  - regras trabalhistas com simulação e aprovação.
+- **Operação:** rotina diária, retenção e anonimização, comunicados e FAQ.
 
-- **Colaboradores:** admissão com cargo filtrado pelo departamento, criação de acesso e vínculo de ficha.
-- **Estrutura da empresa:** feriados (com importação dos nacionais), níveis hierárquicos e **cadastro de
-  cargos** com senioridade (Júnior, Pleno, Sênior, Especialista), departamento, nível e salário base.
-- **Conferência de documentos:** os dados preenchidos ao lado do arquivo, que abre em um clique, e a matriz de
-  **documentos obrigatórios por contrato** (CLT, temporário, aprendiz, estágio e PJ) já pré-definida.
-- **Benefícios:** catálogo com descrição, links e materiais anexados; vínculo por pessoa com valor e desconto.
-- **Ausências** e **Solicitações ao RH** (com a alteração cadastral aplicada).
-- **Usuários e perfis** (Admin): criar, trocar perfil, ativar, desativar e vincular à ficha.
+### ⚙️ Admin
+
+- **Usuários e perfis:** criar contas, trocar perfil (com motivo), desbloquear, reenviar acesso e vincular à ficha.
+- **Sessões ativas:** ver e encerrar as sessões de todas as contas.
+- **Estrutura da empresa:** departamentos e gestores, feriados (com importação dos nacionais), níveis hierárquicos e cargos.
+- **Auditoria:** quem fez o quê e quando, com filtros.
+- **Indicadores gerais e integrações:** headcount, turnover, absenteísmo, eNPS e fila de e-mails.
+
+---
+
+## Telas
+
+<table>
+<tr>
+<td width="50%"><img src="docs/evidencias/deploy-streamlit-cloud/entrar-no-ar.png" alt="Tela Entrar"><br><sub><b>Entrar</b>: senha e código por e-mail (app publicado)</sub></td>
+<td width="50%"><img src="docs/evidencias/frontend-telas-restantes/11-inicio.png" alt="Início"><br><sub><b>Início</b>: pendências, banco de horas, comunicados e aniversariantes</sub></td>
+</tr>
+<tr>
+<td><img src="docs/evidencias/cards-de-treinamentos/grade-larga.png" alt="Meus treinamentos"><br><sub><b>Meus treinamentos</b>: cards por tipo, com filtros e capa</sub></td>
+<td><img src="docs/evidencias/frontend-metas-pdi-equipe/metas-equipe-claro.png" alt="Metas e PDI da equipe"><br><sub><b>Metas e PDI da equipe</b>: metas, check-in, PDI e reuniões 1:1</sub></td>
+</tr>
+<tr>
+<td><img src="docs/evidencias/frontend-ponto-rep-p/1-hoje.png" alt="Ponto"><br><sub><b>Ponto</b>: marcação no modelo REP-P, com comprovante</sub></td>
+<td><img src="docs/evidencias/frontend-tema-escuro/3-inicio.jpg" alt="Tema escuro"><br><sub><b>Tema escuro</b>, escolhido no menu da conta</sub></td>
+</tr>
+</table>
+
+Todas as telas foram desenhadas antes no [Figma](https://www.figma.com/design/fph1M5tB4rA4gqfIysSmkn), nos temas claro e escuro, e funcionam no celular (390 px) sem rolagem lateral. Os prints usam dados fictícios.
 
 ---
 
@@ -99,42 +134,36 @@ instrumento coletivo ou exceção individual, sempre com o histórico de qual re
 
 ```mermaid
 flowchart LR
-    U([Pessoa no navegador]) --> FE[Frontend<br/>Streamlit]
+    U([Pessoa no navegador]) --> FE[Frontend<br/>Streamlit Cloud]
     FE -- "HTTPS + token de sessão" --> BE[Backend<br/>Xano · XanoScript]
-    BE --> DB[(Banco relacional<br/>59 tabelas)]
+    BE --> DB[(Banco relacional<br/>80 tabelas)]
     BE -- "e-mail transacional" --> BR[Brevo]
     BE -- "feriados nacionais" --> BA[BrasilAPI]
-    BE -- "gera endereço de envio<br/>e link assinado (5 min)" --> SB[(Supabase Storage<br/>bucket privado)]
-    FE -- "PUT do arquivo<br/>(endereço de uso único)" --> SB
+    BE -- "endereço de envio e<br/>link assinado" --> SB[(Supabase Storage<br/>buckets privados)]
+    FE -- "PUT do arquivo<br/>(uso único)" --> SB
+    FE -. "vídeos, material de leitura<br/>e miniaturas (no navegador)" .-> G[YouTube · Google Drive e Slides]
 ```
 
-- **O backend decide tudo:** regras de negócio, autorização por perfil e escopo, e persistência. O
-  frontend nunca é mecanismo de segurança; o menu por perfil é só conveniência.
-- **Guarda replicada em cada endpoint:** usuário ativo, senha definitiva e sessão válida, nessa ordem e
-  antes da primeira escrita. Um verificador estático confere os 223 endpoints autenticados a cada PR.
-- **Arquivos fora do Xano:** o plano gratuito não aceita upload, então o arquivo vai do Streamlit direto
-  para um bucket privado do Supabase, por um endereço de uso único gerado pelo Xano. A chave do Supabase
-  fica só no ambiente do Xano; o arquivo abre por link assinado de 5 minutos, com auditoria.
-- **Só inclusão onde a lei pede:** marcações de ponto (ARP), tratamentos, banco de horas e histórico
-  profissional nunca são editados nem apagados; correção é um novo registro.
+- **O backend decide tudo:** regras de negócio, autorização por perfil e escopo, e persistência. O frontend nunca é mecanismo de segurança; o menu por perfil é só conveniência.
+- **Guarda em cada endpoint:** usuário ativo, senha definitiva e sessão válida, conferidas antes de qualquer outra coisa. Um verificador no CI confere os 308 endpoints autenticados a cada Pull Request.
+- **Arquivos fora do Xano:** o arquivo vai do Streamlit direto para um bucket privado do Supabase, por um endereço de uso único gerado pelo Xano. A chave do Supabase fica só no Xano, e a leitura é por link assinado de curta duração.
+- **Só inclusão onde a lei pede:** marcações de ponto, banco de horas, check-ins e histórico profissional nunca são editados nem apagados; correção é um novo registro.
 
-Detalhes em [`docs/arquitetura.md`](docs/arquitetura.md) e conceitos em [`docs/domain-model.md`](docs/domain-model.md).
+Detalhes na [documentação técnica](https://leonardo-sferreira.github.io/conectahr/tecnica.html).
 
----
+### Stack
 
-## Stack
-
-| Camada | Tecnologia | Uso no projeto |
+| Camada | Tecnologia | Uso |
 |---|---|---|
+| Frontend | [Streamlit](https://streamlit.io) 1.64 (Python 3.12) | Telas por perfil, tema próprio, fontes servidas pelo próprio app |
+| Hospedagem | [Streamlit Community Cloud](https://streamlit.io/cloud) | Republica a cada merge no `master` |
 | Backend | [Xano](https://xano.com) + XanoScript | API, banco relacional e regras, versionados em `xano-workspace/` |
-| Frontend | [Streamlit](https://streamlit.io) 1.64 (Python) | Telas por perfil, tema próprio em `theme.py`, fontes servidas pelo próprio app |
-| Arquivos | [Supabase Storage](https://supabase.com/storage) | Bucket privado `documentos` (São Paulo), links assinados |
-| E-mail | [Brevo](https://www.brevo.com) | Código de acesso, redefinição de senha e avisos (outbox com tentativas) |
-| Dados públicos | [BrasilAPI](https://brasilapi.com.br) | Importação dos feriados nacionais |
-| PDF | [fpdf2](https://py-pdf.github.io/fpdf2/) | Comprovante de registro de ponto |
-| Design | [Figma](https://www.figma.com/design/fph1M5tB4rA4gqfIysSmkn) | Design system, protótipo navegável (claro e escuro) e fluxos F01 a F39 |
+| Arquivos | [Supabase Storage](https://supabase.com/storage) | Buckets privados de documentos, fotos de perfil e treinamentos |
+| E-mail | [Brevo](https://www.brevo.com) | Código de acesso, redefinição de senha e avisos (fila com tentativas) |
+| Dados públicos | [BrasilAPI](https://brasilapi.com.br) | Feriados nacionais e CEP |
+| Design | [Figma](https://www.figma.com/design/fph1M5tB4rA4gqfIysSmkn) | Design system, protótipo navegável e fluxos, nos temas claro e escuro |
 | Especificação | [OpenSpec](https://github.com/Fission-AI/OpenSpec) | Explorar → Propor → Revisar → Aplicar → Arquivar |
-| CI | GitHub Actions | Pipeline **Validar** em todo Pull Request |
+| CI e documentação | GitHub Actions + GitHub Pages | Pipeline **Validar** em todo PR e site da documentação |
 
 ---
 
@@ -144,81 +173,66 @@ O mapa completo, com o arquivo de cada regra, está em [`docs/regras-de-negocio.
 
 | Domínio | Regras |
 |---|---|
-| **Acesso** | Ninguém decide um pedido em que é o próprio colaborador; o Gestor só vê o próprio departamento ou quem tem a ele como superior direto; sessão revogável por dispositivo |
-| **Ponto (REP-P)** | NSR sequencial e hash SHA-256 encadeado; o dia é o dia civil de Brasília; jornada aberta vira INCOMPLETO na virada, sem marcação automática; saldo com tolerância de 10 min (CLT art. 58 §1º); descanso de 11h avisado, nunca bloqueado (art. 74); o dia de hoje só é ajustável a partir de amanhã |
-| **Férias e ausências** | Saldo do período aquisitivo; antecedência de 45 dias; até 3 períodos, um de 14 dias e os outros de 5; venda de até 10 dias uma vez por período; sobra sempre utilizável; início fora da sexta, do sábado e dos dois dias antes de feriado (CLT, art. 134); conferência de conflito na equipe |
-| **Documentos** | Campos próprios de cada tipo, validados no backend (CPF igual ao da ficha, CNH com 11 dígitos, comprovante de residência dos últimos 90 dias); só PDF, JPG e PNG de até 10 MB; arquivo em bucket privado com nome aleatório; abertura só pelo dono, RH ou Admin, sempre auditada; prazo de retenção por tipo de documento |
-| **Cargos** | Nome do cargo é o título da carteira com a senioridade ("Analista de Contas a Pagar Pleno"); único; na admissão, só os cargos do departamento escolhido |
-| **Notificações** | Pedido novo avisa quem decide; decisão avisa quem pediu; mudança que afeta a pessoa avisa a pessoa |
+| **Acesso** | Ninguém decide um pedido seu; o gestor só vê os liderados (superior direto ou departamento); estrutura da empresa e auditoria só do Admin |
+| **Ponto (REP-P)** | NSR sequencial e hash SHA-256 encadeado; dia civil de Brasília; jornada aberta vira "incompleto"; tolerância de 10 min (CLT art. 58 §1º); descanso de 11h avisado |
+| **Férias** | Saldo do período aquisitivo; até 3 períodos, um de pelo menos 14 dias; venda de até 10 dias; início fora dos dias proibidos pelo art. 134 da CLT |
+| **Documentos** | Campos próprios de cada tipo, validados no backend; arquivo em bucket privado; abertura só pelo dono, o RH e o Admin, sempre auditada |
+| **Desenvolvimento** | Avaliação 360 com contestação; ciclo anual de metas em três etapas; o gestor cria metas e faz check-in só nos liderados diretos |
+| **Treinamentos** | Vídeo do YouTube conclui pelo mínimo assistido, sem contar trecho pulado; PDF e apresentação concluem depois de abrir e confirmar a leitura |
+| **Clima e denúncias** | Resposta de clima sem identidade; resultados só agregados e com número mínimo de pessoas; denúncia tratada só pela comissão de ética |
 
 ---
 
 ## Segurança e LGPD
 
-- **Autenticação:** senha com hash, código de acesso por e-mail com hash e *pepper*, token de 1 hora
-  ligado a uma sessão, revogação em massa, bloqueio após tentativas e alerta de acesso suspeito.
-- **Autorização:** guarda replicada em cada endpoint e conferida no CI; bloqueio de autoaprovação;
-  o comprovante de ausência (dado de saúde) nunca chega ao Gestor; a conta bancária só é alterada pelo titular.
-- **Auditoria:** toda escrita grava autor, ação, recurso, registro e resultado, com dado pessoal mascarado
-  (CPF, conta, salário, e-mail e telefone nunca inteiros); toda abertura de arquivo sensível é registrada.
-- **Privacidade:** exportação dos dados do titular, pedido LGPD com prazo de 15 dias, preferências de
-  exibição, regras para menores de 18 anos e anonimização de desligados respeitando os prazos de guarda.
-- **Sem rastreio de terceiros:** fontes servidas pelo próprio app (sem Google Fonts), swagger desligado.
+- **Autenticação:**
+  - senha e código de acesso guardados com hash, o código com *pepper*;
+  - token de 1 hora ligado a uma sessão revogável;
+  - bloqueio após tentativas e alerta de acesso suspeito.
+- **Autorização:** guarda replicada em cada endpoint e conferida no CI; bloqueio de autoaprovação. O atestado (dado de saúde) nunca chega ao gestor, e a conta bancária só é vista pelo titular e pelo RH.
+- **Auditoria:** toda escrita grava autor, ação, recurso, registro e resultado, com o dado pessoal mascarado; toda abertura de arquivo sensível fica registrada.
+- **Privacidade:**
+  - exportação dos dados do titular;
+  - pedido LGPD com prazo de 15 dias;
+  - preferências de exibição e regras para menores de 18 anos;
+  - anonimização de desligados, respeitando os prazos de guarda.
+- **Sem rastreio de terceiros:** fontes servidas pelo próprio app, sem Google Fonts.
 - **Repositório público sem segredos:** o pipeline procura chaves versionadas a cada PR.
 
 Documentação em [`docs/lgpd/`](docs/lgpd/): [aviso de privacidade](docs/lgpd/aviso-de-privacidade.md),
 [registro de operações](docs/lgpd/registro-de-operacoes.md), [RIPD](docs/lgpd/ripd.md),
-[operadores](docs/lgpd/operadores.md) (Xano, Brevo, Supabase, hospedagem), [retenção](docs/lgpd/retencao.md),
+[operadores](docs/lgpd/operadores.md), [retenção](docs/lgpd/retencao.md),
 [legítimo interesse](docs/lgpd/legitimo-interesse.md) e [plano de incidentes](docs/lgpd/plano-de-incidentes.md).
-
-**Encarregado pelo tratamento de dados:** a definir. **Contato:** `privacidade@conectarh.com` (provisório).
-
-### Ponto eletrônico
-
-O ponto segue os requisitos técnicos do **REP-P** (Portaria MTP nº 671/2021): ARP só de inclusão, NSR,
-hash encadeado, comprovante, espelho do art. 84 e tratamentos com motivo. Ele **não vale como REP-P para a
-fiscalização**: faltam o registro no INPI, a assinatura ICP-Brasil e o atestado técnico, e a geração do
-AFD e do AEJ ainda está em construção. Detalhes em [`docs/ponto/rep-p.md`](docs/ponto/rep-p.md).
 
 ---
 
 ## Qualidade e testes
 
-O pipeline **Validar** ([`.github/workflows/validar.yml`](.github/workflows/validar.yml)) roda em todo Pull Request:
+O pipeline **Validar** ([`.github/workflows/validar.yml`](.github/workflows/validar.yml)) roda **52 verificações** em todo Pull Request, sem rede e sem dado real:
 
-1. sintaxe de todo o Python do frontend e das ferramentas;
-2. **guarda de acesso** dos 223 endpoints autenticados do Xano (`tools/checar_endpoints.py`), incluindo a
-   proibição de editar ou apagar as tabelas só de inclusão do ponto;
-3. fontes servidas pelo próprio app, sem Google Fonts (`tools/checar_fontes_locais.py`);
-4. teste de fumaça do frontend;
-5. **20 suítes de tela, com 909 verificações**, usando o `AppTest` do Streamlit e uma API simulada, sem rede e sem dado real;
-6. busca de segredos versionados.
+1. sintaxe de todo o Python;
+2. **guarda de acesso** dos endpoints do Xano, inclusive a proibição de editar as tabelas do ponto;
+3. fontes locais e **contraste de texto** do tema (WCAG AA, 4,5:1);
+4. teste de fumaça e **as suítes de tela**, com o `AppTest` do Streamlit e uma API simulada;
+5. auditoria dos seis estados de tela (carregando, vazio, sucesso, erro, bloqueado e sem permissão) em todas as páginas;
+6. números da documentação em dia;
+7. busca de segredos.
 
-| Suíte | Verificações | Suíte | Verificações |
-|---|---:|---|---:|
-| Entrada e login (F01) | 52 | Ponto (Hoje) | 41 |
-| Onboarding | 52 | Espelho de ponto mensal | 95 |
-| Privacidade e Documentos | 108 | Folha de ponto e hierarquia | 46 |
-| Conferência de documentos | 55 | REP-P (hash e cadeia) | 7 |
-| Meu perfil | 60 | Comprovante em PDF | 18 |
-| Férias | 51 | Benefícios | 39 |
-| Pagamento | 40 | Organograma | 33 |
-| Central de Pendências e Ausências | 64 | Cargos | 16 |
-| Colaboradores e Usuários | 52 | Comunicados e FAQ | 25 |
-| Solicitações ao RH | 35 | Notificações | 20 |
+Além do pipeline:
 
-O backend é testado **por HTTP contra o Xano real**, com um caso que deve passar e um que deve falhar por
-perfil; os resultados ficam em [`docs/evidencias/`](docs/evidencias/), sem dado pessoal. O que não foi
-possível testar aparece como "não verificado", com o motivo.
+- **Testes por HTTP contra o Xano real:** um caso que passa e um que falha, por perfil, com contas de teste. A última rodada (22/11/2026) teve 86 de 86 verificações: cards de treinamentos, metas e PDI da equipe, Minha equipe e estrutura da empresa só do Admin.
+- **Conferência visual no Chrome:** 1440 e 390 px, temas claro e escuro, comparando com o Figma.
+- **Acessibilidade:** teclado em todo o app, foco visível, textos alternativos e telas sem rolagem lateral no celular.
+
+Os resultados ficam em [`docs/evidencias/`](docs/evidencias/), sem dado pessoal.
 
 ---
 
 ## Como rodar
 
-> **Primeira vez no projeto?** Siga o [guia de primeiros passos](docs/primeiros-passos.md): instalar as ferramentas,
-> baixar o repositório, rodar o sistema, rodar os testes e abrir o primeiro Pull Request.
+> **Primeira vez no projeto?** Siga o [guia de primeiros passos](docs/primeiros-passos.md): instalar as ferramentas, rodar o sistema, rodar os testes e abrir o primeiro Pull Request.
 
-### Frontend (Streamlit)
+### Frontend
 
 ```bash
 python -m venv .venv
@@ -232,10 +246,10 @@ streamlit run frontend/app.py
 ### Backend (Xano)
 
 1. Instale a [CLI do Xano](https://docs.xano.com) e autentique um perfil (aqui, `ConectaRH`).
-2. Publique `xano-workspace/` sempre com `--dry-run` antes, com os padrões entre aspas:
+2. Publique `xano-workspace/` **sempre com `--dry-run` antes**:
 
    ```bash
-   xano workspace push -p ConectaRH -i "api/conecta_rh_ponto/**/*.xs" -e "api/*/conecta_rh_*.xs" --dry-run
+   xano workspace push -p ConectaRH -i "api/conecta_rh_ponto/**/*.xs" --dry-run
    ```
 
 3. Configure as variáveis de ambiente **no painel do Xano**, nunca no repositório:
@@ -244,22 +258,18 @@ streamlit run frontend/app.py
 |---|---|
 | `BREVO_API_KEY` | Envio de e-mail |
 | `CODIGO_ACESSO_PEPPER` | Segredo do hash dos códigos de acesso |
-| `SUPABASE_URL` | Endereço do projeto do Supabase (`https://<projeto>.supabase.co`) |
-| `SUPABASE_SERVICE_KEY` | Chave `service_role` do Supabase (só no Xano) |
-| `ARQUIVOS_DOMINIOS_APROVADOS` | Hosts aceitos para arquivos (o do Supabase) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Buckets privados de arquivos (a chave fica só no Xano) |
+| `ARQUIVOS_DOMINIOS_APROVADOS` | Hosts aceitos em links de arquivo |
 
-Opcionais e detalhes em [`docs/deploy.md`](docs/deploy.md); armadilhas do XanoScript em
-[`xano-workspace/AGENTS.md`](xano-workspace/AGENTS.md).
+Opcionais e detalhes em [`docs/deploy.md`](docs/deploy.md); armadilhas do XanoScript em [`xano-workspace/AGENTS.md`](xano-workspace/AGENTS.md).
 
-### Testes
+### Testes e documentação
 
 ```bash
-python tools/checar_endpoints.py          # guarda de acesso do backend
-python tools/testar_ponto_mensal.py       # qualquer suíte de tela, sem rede
+python tools/checar_endpoints.py      # guarda de acesso do backend
+python tools/testar_treinamentos.py   # qualquer suíte de tela, sem rede
+python tools/gerar_site.py            # gera o site da documentação em _site/ (pip install markdown)
 ```
-
-O código de acesso chega por e-mail, então a demonstração completa precisa de uma caixa real. Roteiro em
-[`docs/demonstracao.md`](docs/demonstracao.md).
 
 ---
 
@@ -267,88 +277,78 @@ O código de acesso chega por e-mail, então a demonstração completa precisa d
 
 ```text
 AGENTS.md            Instruções para agentes de IA (CLAUDE.md e GEMINI.md apontam para ele)
-docs/
-  regras-de-negocio.md   Regras implementadas, com o arquivo de cada uma
-  arquitetura.md · domain-model.md · project-overview.md · deploy.md · demonstracao.md
-  ponto/ · fluxos/       REP-P e fluxos do ponto mensal
-  lgpd/                  Aviso, registro de operações, RIPD, operadores, retenção, incidentes
-  evidencias/            Resultados dos testes (sem dado pessoal)
-  figma-pendencias.md    O que está no Streamlit e ainda não no Figma
 frontend/            App Streamlit: app.py, pagina_*.py (telas), *_modelo.py (regras de tela), theme.py, api_client.py
-openspec/
-  specs/             Spec principal consolidada
-  changes/           Changes em andamento (e archive/ com o histórico)
-tools/               Verificadores e as suítes de teste
 xano-workspace/      Backend em XanoScript: table/, function/, api/ (10 grupos), task/
-.github/workflows/   Pipeline Validar
+openspec/
+  specs/             Spec principal consolidada (130 requisitos)
+  changes/archive/   Histórico das 40 changes entregues
+docs/
+  usuario/           Manual do usuário (fonte do site)
+  tecnica/           Documentação técnica (fonte do site)
+  regras-de-negocio.md · arquitetura.md · domain-model.md · deploy.md · monitoramento.md
+  lgpd/ · ponto/     LGPD e ponto REP-P
+  evidencias/        Resultados dos testes e prints (sem dado pessoal)
+site/                Estilo e script do site da documentação
+tools/               Verificadores, suítes de teste e o gerador do site
+.github/workflows/   Pipeline Validar e publicação da documentação
 ```
 
 ---
 
-## Especificação (OpenSpec)
+## Histórico do projeto
 
-A spec principal está em [`openspec/specs/conectahr/spec.md`](openspec/specs/conectahr/spec.md).
+Todo o trabalho foi especificado antes no OpenSpec. As **40 changes** abaixo estão entregues e arquivadas em [`openspec/changes/archive/`](openspec/changes/archive/).
 
-| Change | Situação | O que faz |
-|---|---|---|
-| `mapear-regras-negocio` | Arquivada | Mapeou as regras do código para a documentação |
-| `conectarh.gestao` | Arquivada | MVP de gestão de RH no backend |
-| `implementar-frontend-streamlit` | Arquivada | Fundação do frontend: navegação, tema e entrada |
-| `corrigir-brechas-e-alinhar-documentacao` | Arquivada | Auditoria de segurança e alinhamento da documentação |
-| `adequacao-lgpd` | Arquivada | Adequação à LGPD |
-| `concluir-mvp-conectarh` | Arquivada | Consolidou e concluiu as anteriores |
-| `organograma-hierarquia` | Arquivada | Organograma pelo superior direto e níveis hierárquicos da empresa |
-| `cadastro-de-cargos` | Arquivada | Cargos com senioridade e departamento |
-| `campos-por-tipo-de-documento` | Arquivada | Campos de cada tipo de documento, validados e mostrados ao RH |
-| `apresentacao-de-beneficios` | Arquivada | Benefícios com descrição, links e materiais no Supabase |
-| `documentos-obrigatorios-por-contrato` | Arquivada | 38 regras de documentos obrigatórios por contrato e cinco tipos novos |
-| `anexo-de-arquivos` | Concluída (falta o Figma) | Anexo de arquivo com Supabase Storage |
-| `ponto-rep-p-e-ferias-clt` | Em andamento | Ponto REP-P, jornada, feriados e férias pela CLT |
-| `concluir-frontend-streamlit` | Em andamento | Telas restantes, acessibilidade e deploy |
+| Período | O que foi entregue |
+|---|---|
+| **Setembro de 2026** | Mapeamento das regras de negócio a partir do código; backend do MVP |
+| **Início de outubro** | MVP de gestão no backend, fundação do frontend, auditoria de segurança, adequação à LGPD e conclusão do MVP |
+| **Meados de outubro** | Organograma e hierarquia, cadastro de cargos, campos por tipo de documento, benefícios e documentos obrigatórios por contrato |
+| **Fim de outubro** | Calendário de férias da equipe, ciclo anual de metas, configurações e notificações, fluxo de desligamento, pedido de acesso, pesquisa de clima e avaliação 360, tela de regras, trajetória, foto de perfil, menu por grupos, notificações de publicação, termômetro de humor e treinamento em vídeo |
+| **Novembro** | Anexo de arquivos no Supabase, avaliações e delegações da equipe, pendências do gestor, canal de denúncias, indicadores da equipe, integrações e e-mails, pedidos LGPD, riscos psicossociais (NR-1), SLA de solicitações, treinamentos obrigatórios, ponto REP-P e férias pela CLT |
+| **22/11/2026** | Treinamentos em cards (vídeo, PDF e apresentação), metas, PDI e reuniões 1:1 da equipe, todas as telas restantes do frontend com acessibilidade e deploy, treinamentos só com vídeo do YouTube, e o site da documentação |
+
+### Versões
+
+| Versão | Marco |
+|---|---|
+| [v0.3.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.3.0) | Frontend para os quatro perfis, ponto REP-P, documentos e benefícios |
+| [v0.2.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.2.0) | Backend, segurança, LGPD, especificações e documentação concluídos |
+| [v0.1.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.1.0) | Backend do MVP e fundação documental do OpenSpec |
 
 ---
 
-## Roadmap
-
-- **Ponto:** geração do AFD e do AEJ e a tela do RH para o REP-P.
-- **Cargos, etapa 2:** o nível do cargo substitui o L1–L5 da pessoa e o Plano de carreira passa a ser por cargo.
-- **Telas que já têm backend:** Trajetória (avaliações, metas e PDI), Auditoria, Regras, Rotina diária e
-  Retenção, Reconhecimentos, Pesquisa de clima, Indicadores, Desligamento e Delegações.
-- **Figma:** alinhar o protótipo com as telas mais recentes ([`docs/figma-pendencias.md`](docs/figma-pendencias.md)).
-- **Arquivos:** usar o mesmo envio em Pagamento e apagar o arquivo do bucket ao fim da retenção.
-
 ## Limitações conhecidas
 
-- **Plano gratuito do Xano:** 10 requisições a cada 20 segundos, sem tarefas agendadas (as rotinas são
-  acionadas por RH/Admin) e sem upload de arquivo (resolvido com o Supabase Storage).
-- **LGPD:** a instância do Xano fica nos EUA (inferido pelo IP), uma transferência internacional a tratar.
-- **Ponto:** segue o REP-P tecnicamente, sem registro no INPI nem certificação.
+- **Plano gratuito do Xano:**
+  - 10 requisições a cada 20 segundos;
+  - sem tarefas agendadas: as rotinas por data são acionadas pelo RH ou pelo Admin na "Rotina diária".
+- **LGPD:** a instância do Xano fica nos EUA, uma transferência internacional a tratar.
+- **Ponto:** segue o REP-P tecnicamente, mas sem registro no INPI nem certificação, então não vale para a fiscalização.
+- **Bases legais e prazos de guarda:** são sugestões de estudo, a confirmar com o jurídico.
+
+A lista completa, com o impacto e o caminho de cada uma, está na [documentação técnica](https://leonardo-sferreira.github.io/conectahr/tecnica.html).
 
 ---
 
 ## Como contribuir
 
-O passo a passo completo, do zero ao primeiro PR, está em [`docs/primeiros-passos.md`](docs/primeiros-passos.md).
+1. O `master` reflete sempre o estado estável; nunca há push direto nele.
+2. Uma branch por tarefa, integrada por Pull Request, com o pipeline verde e pelo menos uma revisão do grupo.
+3. Mudança funcional começa por uma change no OpenSpec; tela começa pelo Figma.
+4. Commits e PRs citam a tarefa do `tasks.md` da change.
+5. Agentes de IA seguem o [`AGENTS.md`](AGENTS.md).
 
-- `master` reflete sempre o estado estável; nunca há push direto nele.
-- Uma branch por tarefa (`feature/<tarefa-do-tasks.md>`), integrada por Pull Request com o pipeline verde
-  e pelo menos uma revisão do grupo.
-- Commits e PRs citam a tarefa do `tasks.md` da change.
-- Mudança funcional começa por uma change no OpenSpec; tela começa pelo Figma.
-- Agentes de IA seguem o [`AGENTS.md`](AGENTS.md).
+O passo a passo completo está em [`docs/primeiros-passos.md`](docs/primeiros-passos.md).
 
-## Versões
-
-| Versão | Marco |
-|---|---|
-| [v0.3.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.3.0) | Frontend com 22 telas, ponto REP-P, organograma, cargos, notificações, FAQ, anexo de arquivos no Supabase, campos por documento, benefícios e documentos obrigatórios por contrato |
-| [v0.2.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.2.0) | Backend, segurança, LGPD, especificações e documentação concluídos |
-| [v0.1.0](https://github.com/leonardo-sferreira/conectahr/releases/tag/v0.1.0) | Backend do MVP e fundação do OpenSpec |
+---
 
 ## Equipe
 
-| Integrante | Área |
-| --- | --- |
-| Leonardo dos Santos | Backend (Xano / XanoScript) |
-| Nicolas Risato | Frontend (Streamlit) |
-| Matheus | Apoio no backend e documentação |
+- Leonardo dos Santos
+- Nicolas Risato
+- Matheus
+
+<div align="center">
+<sub>ConectaRH · Trabalho acadêmico · <a href="https://leonardo-sferreira.github.io/conectahr/">Documentação</a> · <a href="https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/">App</a></sub>
+</div>
