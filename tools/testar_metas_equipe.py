@@ -1,4 +1,5 @@
-"""F16 parcial e isolamento do ciclo anual: AppTest e API sintética, sem acesso ao Xano.
+"""F16 (metas, PDI e reuniões 1:1 dos liderados diretos; decisões D1 a D5) e isolamento do ciclo anual: AppTest e API
+sintética, sem acesso ao Xano.
 
 Uso: python tools/testar_metas_equipe.py
 Prévia opcional: --servir-previa; navegador local: --navegador (Playwright/Chrome).
@@ -7,6 +8,7 @@ Os dados da prévia existem somente neste teste; nenhuma credencial real é util
 
 import copy
 import html
+from datetime import date, time, timedelta
 import logging
 import re
 import sys
@@ -23,6 +25,7 @@ logging.getLogger("streamlit").setLevel(logging.ERROR)
 from streamlit.testing.v1 import AppTest  # noqa: E402
 import api_client  # noqa: E402
 import metas_equipe_dados as dados  # noqa: E402
+import metas_equipe_modelo as mm  # noqa: E402
 from api_client import ApiError  # noqa: E402
 
 USUARIO = {"id": 3, "nome": "Gestor de teste", "perfil": "GESTOR", "colaborador_id": 7}
@@ -30,6 +33,22 @@ CICLO = {"id": 2, "ano": 2027, "etapa1_inicio": "2027-02-01", "etapa1_fim": "202
          "etapa2_inicio": "2027-06-01", "etapa2_fim": "2027-06-30", "etapa3_inicio": "2027-10-01", "etapa3_fim": "2027-10-31"}
 PESSOAS = [{"colaborador_id": 8, "nome": "Pessoa de teste", "departamento_id": 12, "departamento": "Departamento de teste",
             "formulario_id": 40, "etapa1_enviada_em": "2027-02-20T12:00:00Z", "etapa2_enviada_em": None, "etapa3_enviada_em": None}]
+HOJE = date.today()
+EQUIPE = {"minha_ficha_id": 7, "meu_user_id": 3,
+          "liderados": [{"id": 8, "nome": "Pessoa de teste", "user_id": 5}, {"id": 9, "nome": "Outra pessoa", "user_id": None}],
+          "metas": [{"id": 101, "colaborador_id": 8, "ciclo_avaliacao_id": 1, "titulo": "Concluir certificação", "data_prazo": "2099-12-31",
+                     "progresso_percentual": 60, "status": "em_andamento", "data_checkin_realizado": HOJE.isoformat()},
+                    {"id": 102, "colaborador_id": 9, "ciclo_avaliacao_id": 1, "titulo": "Reduzir tempo de resposta", "data_prazo": "2020-01-01",
+                     "progresso_percentual": 20, "status": "em_andamento", "data_checkin_realizado": None},
+                    {"id": 103, "colaborador_id": 8, "ciclo_avaliacao_id": 1, "titulo": "Meta já concluída", "data_prazo": "2099-01-01",
+                     "progresso_percentual": 100, "status": "concluida", "data_checkin_realizado": None}],
+          "pdis": [{"id": 201, "colaborador_id": 8, "titulo": "Curso de liderança", "data_prazo": "2099-06-30", "progresso_percentual": 50,
+                    "status": "em_andamento"}],
+          "reunioes": [{"id": 301, "colaborador_id": 8, "data_reuniao": "2099-03-04", "hora": "10:00", "assuntos": "Metas atrasadas", "situacao": "agendada"},
+                       {"id": 302, "colaborador_id": 9, "data_reuniao": "2026-01-10", "hora": None, "assuntos": "Registro antigo", "situacao": None}],
+          "pessoas_meta": [{"id": 10, "nome": "Pessoa do departamento", "user_id": 11}, {"id": 8, "nome": "Pessoa de teste", "user_id": 5}],
+          "ciclos": [{"id": 1, "nome": "Ciclo de teste"}]}
+ESCRITAS_F16 = ("metas", "metas/101/checkin", "metas/102/checkin", "pdi", "reunioes_individuais", "reunioes_individuais/301/situacao")
 RESPOSTAS = [{"pergunta_meta_id": 1, "pergunta_texto": "Qual sua meta anual?", "ordem": 1, "meta": "Meta anual de teste",
               "alcancado_etapa2": "", "autoavaliacao_etapa2": None, "alcancado_etapa3": "", "autoavaliacao_etapa3": None}]
 
@@ -39,6 +58,7 @@ class ApiFicticia:
         self.chamadas, self.erros = [], {}
         self.ciclos, self.pessoas = [copy.deepcopy(CICLO)], copy.deepcopy(PESSOAS)
         self.pode_feedback, self.feedbacks = True, []
+        self.equipe, self.escritas = copy.deepcopy(EQUIPE), []
 
     def responder(self, method, path, token, canonical, payload=None):
         self.chamadas.append((method, path, token))
@@ -49,7 +69,12 @@ class ApiFicticia:
         if method == "POST" and path == "formularios_meta/40/feedback":
             self.feedbacks.append({"etapa": payload["etapa"], "texto": payload["texto"], "autor_nome": "Liderança de teste"})
             return {"sucesso": True}
+        if method == "POST" and path in ESCRITAS_F16:
+            self.escritas.append((path, copy.deepcopy(payload)))
+            return {"sucesso": True}
         assert method == "GET", f"Escrita inesperada/proibida: {method} {path}"
+        if path == "minha_equipe/metas_pdi":
+            return copy.deepcopy(self.equipe)
         if path == "meu_ciclo_metas":
             return {"hoje": "2027-06-10", "ciclos": copy.deepcopy(self.ciclos), "perguntas_ativas": []}
         if path == "ciclos_metas":
@@ -141,6 +166,42 @@ class CacheESessao(unittest.TestCase):
         self.assertEqual(self.estado, {"tema": "escuro"})
 
 
+class Regras(unittest.TestCase):
+    def test_situacao_e_ultimo_checkin(self):
+        hoje = date(2026, 11, 22)
+        self.assertEqual(mm.situacao_meta({"status": "em_andamento", "data_prazo": "2026-11-21"}, hoje), ("Atrasada", "err"))
+        self.assertEqual(mm.situacao_meta({"status": "concluida", "data_prazo": "2026-01-01"}, hoje), ("Concluída", "ok"))
+        self.assertEqual(mm.situacao_meta({"status": "planejada", "data_prazo": "2026-12-01"}, hoje), ("Planejada", "neu"))
+        self.assertEqual(mm.situacao_meta({"status": "em_andamento", "data_prazo": None}, hoje), ("Em dia", "ok"))
+        self.assertEqual(mm.ultimo_checkin({"data_checkin_realizado": "2026-10-01"}, hoje), "Sem check-in há 52 dias")
+        self.assertEqual(mm.ultimo_checkin({"data_checkin_realizado": "2026-11-20T10:00:00Z"}, hoje), "Último check-in: 20/11/2026")
+        self.assertEqual(mm.ultimo_checkin({}, hoje), "Sem check-in")
+
+    def test_reunioes_e_hora(self):
+        grupo = mm.reunioes(EQUIPE, date(2026, 11, 22))
+        self.assertEqual([r["id"] for r in grupo["proximas"]], [301])
+        self.assertEqual([(r["id"], r["situacao"]) for r in grupo["historico"]], [(302, "Realizada")])
+        self.assertEqual(mm.quando_reuniao({"data_reuniao": "2026-11-26", "hora": "09:30"}), "Quinta, 26/11/2026 às 09:30")
+        self.assertTrue(mm.hora_valida("23:59"))
+        for ruim in ("24:00", "9:30", "12:60", "ab:cd", "", None):
+            self.assertFalse(mm.hora_valida(ruim))
+
+    def test_validacoes(self):
+        hoje = date(2026, 11, 22)
+        self.assertIsNone(mm.validar_meta(8, 1, "Meta válida", "Indicador", hoje, hoje))
+        self.assertIn("ciclo", mm.validar_meta(8, None, "Meta válida", "Indicador", hoje, hoje))
+        self.assertIn("passado", mm.validar_meta(8, 1, "Meta válida", "Indicador", hoje - timedelta(days=1), hoje))
+        self.assertIn("medir", mm.validar_meta(8, 1, "Meta válida", "", hoje, hoje))
+        self.assertIsNone(mm.validar_pdi(8, 1, "Curso", "Fazer o curso", None, hoje))
+        self.assertIn("hoje ou depois", mm.validar_reuniao(8, hoje - timedelta(days=1), None, "Pauta", hoje))
+        self.assertIn("Hora", mm.validar_reuniao(8, hoje, "25:00", "Pauta", hoje))
+        self.assertIsNone(mm.validar_situacao("cancelada", ""))
+        self.assertIsNotNone(mm.validar_situacao("adiada", ""))
+        self.assertEqual([p["id"] for p in mm.pessoas_para_meta(EQUIPE)], [9, 8, 10])
+        self.assertEqual((mm.fora_da_tela(EQUIPE, 10), mm.fora_da_tela(EQUIPE, 8), mm.fora_da_tela(EQUIPE, None)), ("Pessoa do departamento", None, None))
+        self.assertIsInstance(mm.hoje_brasilia(), date)
+
+
 class TelaENavegacao(unittest.TestCase):
     def setUp(self):
         self.api = ApiFicticia()
@@ -169,17 +230,19 @@ class TelaENavegacao(unittest.TestCase):
         bruto = re.sub(r"<style.*?</style>", "", bruto, flags=re.S)
         return html.unescape(re.sub(r"<[^>]+>", " ", bruto))
 
-    def test_gestor_menu_e_separacao_dos_dominios(self):
+    def test_gestor_ve_metas_pdi_e_reunioes_dos_liderados(self):
         at = self.app()
-        self.assertIn("Metas e PDI da equipe", self.texto(at))
-        self.assertIn("Ciclo anual de metas e feedback", self.texto(at))
-        self.assertIn("Meta", self.texto(at))
-        self.assertTrue(at.button(key="mp_nova").disabled)
-        self.assertTrue(at.button(key="mp_checkin").disabled)
-        self.assertTrue(at.selectbox(key="mp_pessoa").disabled)
-        self.assertIn("Metas da equipe", self.texto(at))
+        texto = self.texto(at)
+        for esperado in ("Metas e PDI da equipe", "Concluir certificação", "Reduzir tempo de resposta", "Pessoa de teste", "Outra pessoa",
+                         "Atrasada", "Em dia", "60%", "Sem check-in", "Próximas reuniões 1:1", "Metas atrasadas", "PDI da equipe",
+                         "Pessoa — Curso de liderança", "Ciclo anual de metas e feedback"):
+            self.assertIn(esperado, texto)
+        self.assertFalse(at.button(key="mp_nova").disabled)
+        chaves = {b.key for b in at.button}
+        self.assertTrue({"mp_checkin_101", "mp_checkin_102"} <= chaves)
+        self.assertNotIn("mp_checkin_103", chaves)  # meta concluída não recebe check-in
         self.assertTrue(at.button(key="me_abrir_40"))
-        self.assertNotIn("0%", self.texto(at))
+        self.assertLess(texto.index("Reduzir tempo de resposta"), texto.index("Concluir certificação"))  # atrasada primeiro
 
     def test_navegacao_pelo_menu_existente(self):
         at = self.app(pagina="inicio")
@@ -187,46 +250,152 @@ class TelaENavegacao(unittest.TestCase):
         self.assertFalse(list(at.exception))
         self.assertIn("Ciclo anual de metas e feedback", self.texto(at))
 
-    def test_abas_nao_consultam_fontes_bloqueadas(self):
+    def test_abas_e_fontes_seguras(self):
         at = self.app()
-        for aba in ("PDI", "Reuniões 1:1", "Metas"):
-            at.segmented_control(key="mp_aba").set_value(aba).run()
-            self.assertFalse(list(at.exception))
-            self.assertIn("ainda não", self.texto(at))
-        self.assertTrue(at.button(key="mp_reuniao").disabled)
-        self.assertTrue(all(m == "GET" for m, _, _ in self.api.chamadas))
-        self.assertFalse(any("plano_carreira" in p or p.startswith(("metas", "pdi", "meu_pdi", "reunioes", "minhas_metas"))
-                             for _, p, _ in self.api.chamadas))
-        self.assertNotIn("Agendada", self.texto(at))
-        self.assertNotRegex(self.texto(at), r"\b\d{2}:\d{2}\b")
+        at.segmented_control(key="mp_aba").set_value("PDI").run()
+        self.assertIn("Pessoa — Curso de liderança · até 30/06/2099", self.texto(at))
+        self.assertTrue(at.button(key="mp_pdi_nova"))
+        at.segmented_control(key="mp_aba").set_value("Reuniões 1:1").run()
+        texto = self.texto(at)
+        self.assertIn(mm.quando_reuniao(EQUIPE["reunioes"][0]), texto)
+        self.assertIn("Agendada", texto)
+        self.assertIn("Anteriores", texto)
+        self.assertIn("Realizada", texto)  # registro antigo, sem situação
+        self.assertTrue(at.button(key="mp_r_sit_301"))
+        self.assertNotIn("mp_r_sit_302", {b.key for b in at.button})
+        self.assertFalse(any("plano_carreira" in p or p.startswith(("meu_pdi", "minhas_metas")) for _, p, _ in self.api.chamadas))
+        self.assertEqual(self.api.escritas, [])
+
+    def test_filtro_de_pessoa(self):
+        at = self.app()
+        at.selectbox(key="mp_pessoa").set_value(9).run()
+        texto = self.texto(at)
+        self.assertIn("Reduzir tempo de resposta", texto)
+        self.assertNotIn("Concluir certificação", texto)
+        self.assertNotIn("Metas atrasadas", texto)  # a reunião é de outra pessoa
+
+    def test_nova_meta_valida_e_grava(self):
+        at = self.app()
+        at.button(key="mp_nova").click().run()
+        at.button(key="mp_m_meta_ok").click().run()
+        self.assertIn("Escolha a pessoa.", self.texto(at))
+        self.assertEqual(self.api.escritas, [])
+        nomes_opcoes = [o for o in at.selectbox(key="mp_m_meta_pessoa").options]
+        self.assertEqual(nomes_opcoes, ["Outra pessoa", "Pessoa de teste", "Pessoa do departamento"])  # liderados e departamento, sem repetir
+        at.selectbox(key="mp_m_meta_pessoa").set_value(10).run()
+        self.assertIn("não é liderado direto", self.texto(at))
+        at.text_area(key="mp_m_meta_titulo").input("Reduzir retrabalho no fechamento")
+        at.date_input(key="mp_m_meta_prazo").set_value(HOJE + timedelta(days=60))
+        at.text_area(key="mp_m_meta_como").input("Chamados reabertos por mês")
+        at.button(key="mp_m_meta_ok").click().run()
+        self.assertFalse(list(at.exception))
+        self.assertEqual(len(self.api.escritas), 1)
+        caminho, corpo = self.api.escritas[0]
+        self.assertEqual(caminho, "metas")
+        self.assertEqual((corpo["colaborador_id"], corpo["ciclo_avaliacao_id"], corpo["peso"], corpo["indicador"]), (10, 1, 1, "Chamados reabertos por mês"))
+        self.assertEqual(corpo["data_prazo"], (HOJE + timedelta(days=60)).isoformat())
+        self.assertNotIn("mp_modal", at.session_state)
+
+    def test_nova_meta_recusada_mostra_o_erro(self):
+        self.api.erros["metas"] = ApiError("Voce so pode criar metas para os seus liderados diretos ou para o seu departamento.", 403)
+        at = self.app()
+        at.button(key="mp_nova").click().run()
+        at.selectbox(key="mp_m_meta_pessoa").set_value(8)
+        at.text_area(key="mp_m_meta_titulo").input("Meta de teste recusada")
+        at.date_input(key="mp_m_meta_prazo").set_value(HOJE + timedelta(days=10))
+        at.text_area(key="mp_m_meta_como").input("Indicador")
+        at.button(key="mp_m_meta_ok").click().run()
+        self.assertIn("so pode criar metas", self.texto(at))
+        self.assertIn("mp_modal", at.session_state)
+
+    def test_checkin_do_lider(self):
+        at = self.app()
+        at.button(key="mp_checkin_101").click().run()
+        self.assertEqual(at.selectbox(key="mp_m_ck_pct").value, 60)
+        at.selectbox(key="mp_m_ck_pct").set_value(75)
+        at.text_area(key="mp_m_ck_texto").input("Combinado revisar na próxima 1:1")
+        at.button(key="mp_m_ck_ok").click().run()
+        self.assertEqual(self.api.escritas, [("metas/101/checkin", {"progresso_percentual": 75.0, "comentario_checkin": "Combinado revisar na próxima 1:1",
+                                                                     "dificuldades": None, "evidencia": None})])
+
+    def test_nova_acao_de_pdi_com_responsavel(self):
+        for pessoa, responsavel in ((8, 5), (9, 3), (10, 11)):  # sem conta de acesso, quem cria fica responsável; do departamento, a própria pessoa
+            with self.subTest(pessoa=pessoa):
+                self.api.escritas.clear()
+                at = self.app()
+                at.segmented_control(key="mp_aba").set_value("PDI").run()
+                at.button(key="mp_pdi_nova").click().run()
+                at.selectbox(key="mp_m_pdi_pessoa").set_value(pessoa)
+                at.text_input(key="mp_m_pdi_titulo").input("Mentoria com gestor")
+                at.text_area(key="mp_m_pdi_acao").input("Encontros quinzenais de mentoria")
+                at.button(key="mp_m_pdi_ok").click().run()
+                self.assertEqual(len(self.api.escritas), 1)
+                caminho, corpo = self.api.escritas[0]
+                self.assertEqual((caminho, corpo["colaborador_id"], corpo["responsavel_user_id"], corpo["data_prazo"]), ("pdi", pessoa, responsavel, None))
+
+    def test_agendar_reuniao(self):
+        at = self.app()
+        at.segmented_control(key="mp_aba").set_value("Reuniões 1:1").run()
+        at.button(key="mp_reuniao").click().run()
+        self.assertEqual(at.selectbox(key="mp_m_r_pessoa").options, ["Pessoa de teste", "Outra pessoa"])  # só liderados diretos
+        at.selectbox(key="mp_m_r_pessoa").set_value(8)
+        at.date_input(key="mp_m_r_data").set_value(HOJE + timedelta(days=3))
+        at.time_input(key="mp_m_r_hora").set_value(time(14, 30))
+        at.text_area(key="mp_m_r_pauta").input("Plano do trimestre")
+        at.button(key="mp_m_r_ok").click().run()
+        self.assertEqual(self.api.escritas, [("reunioes_individuais", {"colaborador_id": 8, "data_reuniao": (HOJE + timedelta(days=3)).isoformat(),
+                                                                       "hora": "14:30", "assuntos": "Plano do trimestre", "situacao": "agendada"})])
+
+    def test_cancelar_reuniao(self):
+        at = self.app()
+        at.segmented_control(key="mp_aba").set_value("Reuniões 1:1").run()
+        at.button(key="mp_r_sit_301").click().run()
+        at.radio(key="mp_m_s_situacao").set_value("cancelada").run()
+        at.text_area(key="mp_m_s_motivo").input("Conflito de agenda")
+        at.button(key="mp_m_s_ok").click().run()
+        self.assertEqual(self.api.escritas, [("reunioes_individuais/301/situacao", {"situacao": "cancelada", "acordos": None, "motivo": "Conflito de agenda"})])
+
+    def test_sem_liderados_explica(self):
+        self.api.equipe.update(liderados=[], pessoas_meta=[], metas=[], pdis=[], reunioes=[])
+        at = self.app()
+        self.assertIn("Você ainda não tem liderados diretos", self.texto(at))
+        self.assertNotIn("mp_nova", {b.key for b in at.button})
+        self.assertIn("Ciclo anual de metas e feedback", self.texto(at))
+
+    def test_sem_ciclo_em_andamento_trava_nova_meta(self):
+        self.api.equipe["ciclos"] = []
+        at = self.app()
+        self.assertTrue(at.button(key="mp_nova").disabled)
+        self.assertIn("Concluir certificação", self.texto(at))
+
+    def test_falha_do_f16_nao_derruba_o_ciclo_anual(self):
+        self.api.erros = {"minha_equipe/metas_pdi": ApiError("Consulta da equipe indisponível.", 503)}
+        at = self.app()
+        self.assertIn("Consulta da equipe indisponível.", self.texto(at))
+        self.assertIn("Ciclo anual de metas e feedback", self.texto(at))
+        self.assertTrue(at.button(key="me_abrir_40"))
 
     def test_busca_anual_independente_do_filtro_f16(self):
         at = self.app()
         at.text_input(key="me_busca").input("Sem correspondência").run()
         self.assertIn("Ninguém da sua equipe neste ciclo.", self.texto(at))
-        self.assertTrue(at.selectbox(key="mp_pessoa").disabled)
+        self.assertIn("Concluir certificação", self.texto(at))
         at.text_input(key="me_busca").input("Pessoa").run()
         self.assertIn("Pessoa de teste", self.texto(at))
 
-    def test_sem_ciclos_nao_remove_f16(self):
+    def test_sem_ciclos_anuais_nao_remove_f16(self):
         self.api.ciclos = []
         at = self.app()
         self.assertIn("O RH ainda não abriu um ciclo de metas.", self.texto(at))
-        self.assertTrue(at.button(key="mp_nova").disabled)
+        self.assertFalse(at.button(key="mp_nova").disabled)
 
-    def test_sem_pessoas_no_ciclo_nao_afirma_que_nao_existem_metas_f16(self):
-        self.api.pessoas = []
-        at = self.app()
-        self.assertIn("Ninguém da sua equipe neste ciclo.", self.texto(at))
-        self.assertIn("As metas da equipe ainda não estão disponíveis", self.texto(at))
-
-    def test_falhas_parciais_preservam_f16_e_nao_simulam_sucesso(self):
+    def test_falhas_parciais_do_ciclo_anual_preservam_f16(self):
         for path, status in (("meu_ciclo_metas", 503), ("formularios_meta?ciclo_id=2", 403), ("formularios_meta?ciclo_id=2", 429)):
             with self.subTest(path=path, status=status):
                 self.api.erros = {path: ApiError("Consulta anual indisponível.", status)}
                 at = self.app()
                 self.assertIn("Consulta anual indisponível.", self.texto(at))
-                self.assertTrue(at.button(key="mp_nova").disabled)
+                self.assertIn("Concluir certificação", self.texto(at))
 
     def test_feedback_anual_atualiza_modal_sem_virar_checkin(self):
         at = self.app()
@@ -326,8 +495,8 @@ def navegador():
         page = browser.new_page(viewport={"width": 1440, "height": 1100}, device_scale_factor=1)
         page.goto("http://127.0.0.1:8516/metas-da-equipe")
         expect(page.get_by_text("Ciclo anual de metas e feedback", exact=True)).to_be_visible()
-        expect(page.get_by_role("button", name="Nova meta", exact=True)).to_be_disabled()
-        expect(page.get_by_role("button", name="Check-in", exact=True)).to_be_disabled()
+        expect(page.get_by_role("button", name="Nova meta", exact=True)).to_be_enabled()
+        expect(page.get_by_role("button", name="Check-in", exact=True).first).to_be_enabled()
         page.evaluate("document.fonts.ready")
         page.screenshot(path=str(pasta / "metas-equipe-claro.png"), full_page=True)
         page.get_by_role("button", name="Início", exact=True).click()
@@ -352,7 +521,7 @@ def navegador():
         page.get_by_test_id("stMain").evaluate("e => e.scrollTo(0, 0)")
         page.screenshot(path=str(pasta / "metas-equipe-escuro.png"), full_page=True)
         browser.close()
-    print("OK: Streamlit/Chrome, navegação, busca, modal anual, ações bloqueadas e temas claro/escuro.")
+    print("OK: Streamlit/Chrome, navegação, busca, modal anual, ações do F16 e temas claro/escuro.")
 
 
 if __name__ == "__main__":

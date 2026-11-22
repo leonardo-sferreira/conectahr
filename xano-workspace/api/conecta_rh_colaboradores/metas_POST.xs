@@ -1,6 +1,7 @@
 // Colaborador cria uma meta anual em um ciclo. RH/ADMIN podem criar em
-// nome de qualquer colaborador; Gestor pode criar para colaboradores
-// do proprio departamento.
+// nome de qualquer colaborador; o Gestor, so para os liderados diretos e para o
+// departamento de que e gestor (concluir-metas-pdi-equipe, D2). Meta criada para
+// outra pessoa avisa no sino e por e-mail (D5) e vai para a auditoria.
 query metas verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
@@ -128,6 +129,38 @@ query metas verb=POST {
       error = "Colaborador nao encontrado."
     }
 
+    // Lideranca (decisoes D1 a D4 de concluir-metas-pdi-equipe): liderado direto e a ficha cujo superior e a ficha do
+    // autenticado; o departamento conta quando o autenticado e o gestor dele.
+    var $id_ficha_autenticada {
+      value = ($colaborador_autenticado == null) ? 0 : $colaborador_autenticado.id
+    }
+
+    var $e_liderado_direto {
+      value = ($colaborador_alvo.superior_colaborador_id != null) && ($colaborador_alvo.superior_colaborador_id == $id_ficha_autenticada) && ($colaborador_alvo.status != "Desligado")
+    }
+
+    db.get departamento {
+      field_name = "id"
+      field_value = $colaborador_alvo.departamento_id
+    } as $departamento_alvo
+
+    var $gestor_do_departamento_alvo {
+      value = (($departamento_alvo == null) || ($departamento_alvo.ativo == false)) ? 0 : $departamento_alvo.gestor_colaborador_id
+    }
+
+    var $e_do_meu_departamento {
+      value = ($gestor_do_departamento_alvo != null) && ($gestor_do_departamento_alvo == $id_ficha_autenticada) && ($id_ficha_autenticada != 0) && ($colaborador_alvo.status != "Desligado")
+    }
+
+    var $e_para_si {
+      value = ($colaborador_alvo.id == $id_ficha_autenticada)
+    }
+
+    precondition ($e_para_si || $perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN" || ($perfil_autenticado == "GESTOR" && ($e_liderado_direto || $e_do_meu_departamento))) {
+      error_type = "accessdenied"
+      error = "Voce so pode criar metas para os seus liderados diretos ou para o seu departamento."
+    }
+
     db.get ciclo_avaliacao {
       field_name = "id"
       field_value = $input.ciclo_avaliacao_id
@@ -160,6 +193,47 @@ query metas verb=POST {
         updated_at                                             : "now"
       }
     } as $meta_criada
+
+    db.add auditoria {
+      data = {
+        user_id    : $usuario_autenticado.id
+        acao       : "criar_meta"
+        recurso    : "meta_avaliacao"
+        registro_id: $meta_criada.id
+        resultado  : "sucesso"
+      }
+    } as $evento_auditoria
+
+    conditional {
+      if ($e_para_si == false) {
+        function.run "ConectaHR/notificar" {
+          input = {colaborador_id: $colaborador_alvo.id, autor_user_id: $usuario_autenticado.id, tipo: "acompanhamento_equipe", titulo: "Nova meta para voce", mensagem: $usuario_autenticado.nome ~ " criou a meta \"" ~ $input.titulo ~ "\" para voce.", recurso: "meta_avaliacao", registro_id: $meta_criada.id}
+        } as $aviso_meta
+
+        conditional {
+          if ($colaborador_alvo.user_id != null) {
+            db.get user {
+              field_name = "id"
+              field_value = $colaborador_alvo.user_id
+            } as $usuario_alvo
+
+            conditional {
+              if (($usuario_alvo != null) && $usuario_alvo.ativo) {
+                db.add email_outbox {
+                  data = {
+                    destinatario_email: $usuario_alvo.email
+                    destinatario_nome : $usuario_alvo.nome
+                    assunto           : "ConectaRH - Nova meta para voce"
+                    corpo             : "Ola " ~ $usuario_alvo.nome ~ ",\n\n" ~ $usuario_autenticado.nome ~ " criou a meta \"" ~ $input.titulo ~ "\" para voce. Veja os detalhes no ConectaRH, em Trajetoria.\n\nEste e um aviso automatico."
+                    chave_idempotencia: "meta_criada_" ~ ($meta_criada.id|to_text)
+                  }
+                } as $email_meta
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   response = {

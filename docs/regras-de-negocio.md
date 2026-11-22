@@ -673,16 +673,31 @@ Os dois GET acima não são auditados, como as demais consultas da pessoa sobre 
 - **reconhecimento**: `ativo` → (`moderar_POST`, RH/ADMIN, só se `ativo`) → `moderado` (terminal); `cancelado` existe no enum mas nunca é definido — não mapeado.
 - **pesquisa_clima**: sem enum de status, só booleano `ativo` (true na criação); `pesquisas_clima/{id}/encerrar` (RH, Admin; auditado) o desliga. A tela chama de agendada antes de `data_inicio`, aberta enquanto ativa e no prazo, e encerrada quando desligada ou vencida.
 
+### 11.3a Metas, PDI e reuniões 1:1 da equipe (change `concluir-metas-pdi-equipe`, desde 22/11/2026)
+
+Decisões D1 a D5 do dono do produto. Figma F16, seção 248:1405: os caminhos "Criar meta", "Check-in", "Reunião 1:1" e "Nova ação de PDI", nos temas claro e escuro.
+
+- **Liderado direto:** a ficha cujo `superior_colaborador_id` é a ficha do gestor.
+- **O que o gestor vê** (`minha_equipe/metas_pdi` GET, D1): só os liderados diretos. De cada meta e de cada ação de PDI, vê título, prazo, progresso e situação; nunca salário, avaliação ou dados pessoais. Vê também as 1:1 que ele registrou, os ciclos em andamento e as pessoas para quem pode criar meta.
+- **Quem cria meta e PDI** (D2): o gestor só para os liderados diretos e para o departamento de que é `gestor_colaborador_id`; o RH e o Admin, para qualquer pessoa. Fora disso, 403. Fica na auditoria (`criar_meta`, `criar_pdi`).
+- **Check-in pelo líder** (D3): o líder direto registra check-in nas metas dos liderados. O check-in fica em nome dele (`registrado_por_user_id`), na auditoria (`registrar_checkin_meta`), e o dono da meta é avisado no sino.
+- **Reuniões 1:1** (D4): `reuniao_individual` ganhou `hora` (HH:MM), `situacao` (`agendada`, `realizada` ou `cancelada`; sem situação, é registro antigo já realizado), `situacao_em` e `motivo_cancelamento`. `assuntos` é a pauta e `acordos`, as anotações.
+  - Só o gestor e os liderados diretos.
+  - Só quem agendou marca a 1:1 como realizada ou cancelada (`reunioes_individuais/{id}/situacao` POST), e só a partir de "agendada".
+  - O liderado vê as próprias 1:1 na Trajetória.
+- **Avisos** (D5): no sino, a meta criada para outra pessoa, o check-in do líder, a ação de PDI e a 1:1 agendada, realizada ou cancelada, todos com o tipo `acompanhamento_equipe` e levando à Trajetória. Por e-mail (`email_outbox`), só a meta criada pelo gestor e a 1:1 agendada ou cancelada.
+- **Na tela:** a meta nova tem peso 1, e a descrição é o próprio texto da meta. A ação de PDI fica com a própria pessoa como responsável (sem conta de acesso, quem cria fica responsável).
+
 ### 11.4 Tabela de autorização (perfil × ação)
 
 | Ação | Perfil permitido |
 |---|---|
 | Criar meta para si | Qualquer colaborador autenticado |
-| Criar meta para outro colaborador | RH, ADMIN, GESTOR |
-| Registrar check-in de meta | Dono da meta ou RH/ADMIN |
+| Criar meta para outro colaborador | RH e ADMIN; o GESTOR só para os liderados diretos e para o departamento de que é gestor (desde 22/11/2026) |
+| Registrar check-in de meta | Dono da meta, o líder direto dele (desde 22/11/2026) ou RH/ADMIN |
 | Ver trilha de check-ins | Dono, Gestor do departamento, ou RH/ADMIN |
 | Concluir meta | RH, ADMIN, ou Gestor do departamento |
-| Criar PDI | RH, ADMIN, GESTOR |
+| Criar PDI | RH e ADMIN; o gestor só para os liderados diretos e para o departamento de que é gestor (desde 22/11/2026) |
 | Atualizar progresso de PDI | Próprio colaborador, `responsavel_user_id`, ou RH/ADMIN |
 | Enviar reconhecimento | Qualquer colaborador (não a si mesmo) |
 | Moderar reconhecimento | RH, ADMIN |
@@ -935,7 +950,7 @@ Conjunto de consultas somente-leitura, construídas sobre dados já existentes (
 - **Aniversariantes do mês** (`GET colaboradores/aniversariantes`): qualquer usuário autenticado; retorna só nome e dia/mês dos colaboradores ativos — nunca o ano de nascimento, para não revelar idade.
 - **Timeline do colaborador** (`GET colaboradores/{id}/timeline`): reúne em ordem cronológica os eventos de `historico_profissional` (admissão, promoções, alterações, desligamento) e férias concluídas. Avaliações concluídas ainda não entram (dependem de dados que a timeline não consulta). Acesso: RH/ADMIN (qualquer colaborador), o próprio colaborador, ou o Gestor do departamento.
 - **Plano de carreira** (`GET colaboradores/{id}/plano_carreira`): nível atual, próximo nível, competências esperadas para o próximo nível (lacunas a desenvolver), metas ativas, PDI ativo e histórico de evolução de cargo — **nunca promove automaticamente**, é só exibição. Acesso: o próprio colaborador, RH/ADMIN, ou o Gestor da equipe.
-- **Reuniões individuais (1:1)**: entidade `reuniao_individual` — `colaborador_id`, `gestor_user_id`, `data_reuniao`, `assuntos`, `acordos?`, `acoes?`, `responsavel_acoes_user_id?`, `prazo_acoes?`, `proxima_reunião?`, `visibilidade` (enum `privado`/`compartilhado_rh`, default `privado`). Criada via `reunioes_individuais_POST`; listada por colaborador via `colaboradores/{id}/reunioes_individuais_GET` (`xano-workspace/table/reuniao_individual.xs`).
+- **Reuniões individuais (1:1)**: entidade `reuniao_individual` — `colaborador_id`, `gestor_user_id`, `data_reuniao`, `assuntos`, `acordos?`, `acoes?`, `responsavel_acoes_user_id?`, `prazo_acoes?`, `proxima_reunião?`, `visibilidade` (enum `privado`/`compartilhado_rh`, default `privado`). Criada via `reunioes_individuais_POST`; listada por colaborador via `colaboradores/{id}/reunioes_individuais_GET` (`xano-workspace/table/reuniao_individual.xs`). Desde 22/11/2026, também `hora`, `situacao`, `situacao_em` e `motivo_cancelamento`, e o gestor só registra com liderado direto (seção 11.3a).
 - **Mural de reconhecimento** (`GET mural_reconhecimento`): retorna só registros de `reconhecimento` com `visibilidade=publico` e `status=ativo` — feedback privado (gestor→colaborador) nunca aparece aqui, consistente com a regra de visibilidade automática da seção 11.5.
 
 ---

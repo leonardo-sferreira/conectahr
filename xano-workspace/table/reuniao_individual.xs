@@ -25,6 +25,15 @@ table reuniao_individual {
     enum visibilidade?=privado {
       values = ["privado", "compartilhado_rh"]
     }
+
+    // Agenda simples da 1:1 (concluir-metas-pdi-equipe, D4). Sem situacao: registro antigo, ja realizado.
+    text? hora? filters=trim|max:5
+    enum? situacao? {
+      values = ["agendada", "realizada", "cancelada"]
+    }
+
+    timestamp? situacao_em?
+    text? motivo_cancelamento? filters=trim|max:500
   }
 
   index = [

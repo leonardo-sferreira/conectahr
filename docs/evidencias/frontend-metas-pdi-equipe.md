@@ -1,4 +1,85 @@
-# Metas e PDI da equipe — F16 parcial
+# Metas e PDI da equipe — F16
+
+## Atualização de 22/11/2026: F16 completo (decisões D1 a D5)
+
+Com as decisões do dono do produto (`openspec/changes/concluir-metas-pdi-equipe/design.md`, D1 a D5), o F16 deixou de ser parcial. O histórico da versão parcial, com tudo travado, está mais abaixo.
+
+**Backend publicado no Xano.** Antes de publicar, a paridade com o Xano foi conferida; o dry-run mostrou só `ADD_FIELD` e o valor novo do enum.
+
+- **`minha_equipe/metas_pdi` GET (novo):** só os liderados diretos, com título, prazo, progresso e situação. Mais as 1:1 do gestor, os ciclos em andamento e as pessoas para quem ele pode criar meta.
+- **`metas` POST:** o gestor só cria para os liderados diretos e para o próprio departamento. Fica na auditoria, avisa no sino e manda e-mail.
+- **`pdi` POST:** a mesma regra da meta, com auditoria e aviso no sino.
+- **`metas/{id}/checkin` POST:** aceita o líder direto. Fica em nome dele e na auditoria, e o dono é avisado no sino.
+- **`reunioes_individuais` POST:**
+  - só com liderado direto;
+  - com hora e situação ("agendada" ou "realizada");
+  - fica na auditoria;
+  - avisa no sino e manda e-mail ao agendar.
+- **`reunioes_individuais/{id}/situacao` POST (novo):** marca como realizada (com anotações) ou cancelada (com motivo). Só quem agendou e só a partir de "agendada". Cancelar manda e-mail.
+- **Tabelas:**
+  - `reuniao_individual` ganhou `hora`, `situacao`, `situacao_em` e `motivo_cancelamento`;
+  - `notificacao_interna` ganhou o tipo `acompanhamento_equipe`.
+- **Testes:**
+  - as expressões novas rodaram numa função temporária, apagada depois: hora válida e inválida, data formatada, ficha ausente e gestor de departamento nulo;
+  - `checar_endpoints` passa com 308 endpoints.
+
+**Tela:**
+- `pagina_metas_equipe.py`:
+  - tabela de metas (atrasadas primeiro, a linha atrasada em âmbar, concluídas no fim);
+  - filtro de pessoa;
+  - abas PDI e Reuniões 1:1;
+  - cinco modais: Nova meta, Check-in, Nova ação de PDI, Agendar 1:1 e Realizada ou cancelada.
+- Regras puras em `metas_equipe_modelo.py`.
+- **Trajetória:** o liderado vê as próprias 1:1, com o combinado ou o motivo do cancelamento.
+- **Sino:** os avisos levam à Trajetória.
+
+**Figma:** os caminhos novos "Reunião 1:1" e "Nova ação de PDI" estão na seção F16. No escuro, a auditoria de contraste não deixou nenhum texto abaixo de 3:1.
+
+| Tema | Reunião 1:1 | Nova ação de PDI |
+|---|---|---|
+| Claro | `644:886` | `644:1522` |
+| Escuro | `644:2840` | `644:3455` |
+
+**Verificação:**
+- `tools/testar_metas_equipe.py`: 32 de 32;
+- `tools/testar_trajetoria.py`: 49 de 49;
+- Chrome em 1440 px (temas claro e escuro, os cinco modais) e em 390 px, sem rolagem lateral.
+
+| Print | Arquivo |
+|---|---|
+| Tela clara | `frontend-metas-pdi-equipe/metas-equipe-claro.png` |
+| Tela escura | `frontend-metas-pdi-equipe/metas-equipe-escuro.png` |
+| Nova meta | `frontend-metas-pdi-equipe/f16-modal-nova-meta.png` |
+| Check-in do líder | `frontend-metas-pdi-equipe/f16-modal-checkin.png` |
+| Aba Reuniões 1:1 | `frontend-metas-pdi-equipe/f16-aba-reunioes.png` |
+| Agendar 1:1 | `frontend-metas-pdi-equipe/f16-modal-agendar.png` |
+| Realizada ou cancelada | `frontend-metas-pdi-equipe/f16-modal-situacao.png` |
+| Nova ação de PDI | `frontend-metas-pdi-equipe/f16-modal-pdi.png` |
+| Celular, 390 px | `frontend-metas-pdi-equipe/f16-390.png` |
+
+**Desvios do Figma:**
+- O "Início" da meta saiu do modal, porque `meta_avaliacao` não tem esse campo.
+- O peso da meta nova é 1, igual para todas.
+- No celular, o cabeçalho da tabela some; cada linha já traz meta, pessoa, prazo, progresso e situação.
+
+**Revisão independente do diff:** nada grave; nenhuma brecha de autorização e nenhum XSS. O que ela apontou foi corrigido e publicado:
+- a Trajetória mostra quem fez o último check-in, quando foi o líder (D3);
+- o PDI de uma pessoa do departamento fica com ela como responsável;
+- o modal avisa quando a pessoa não é liderada direta e por isso não aparece na tela;
+- pessoa desligada e departamento inativo não contam como liderança;
+- o PDI exige ciclo em andamento e responsável que seja a própria pessoa ou quem cria;
+- o "hoje" da tela usa o horário de Brasília;
+- as 1:1 da Trajetória ficam guardadas por 60 segundos.
+
+O trecho novo da Trajetória rodou numa função temporária, já apagada: autor diferente, a própria pessoa e usuário inexistente.
+
+Fica registrado, sem mudança: o RH e o Admin agendam 1:1 com qualquer pessoa, como já era antes. A D4 trata do gestor.
+
+**Falta:** os testes por HTTP no Xano real, com o login de um gestor e de um liderado direto dele. Devem conferir o que passa e o que dá 403 em cada endpoint.
+
+---
+
+## Histórico: F16 parcial (21/10/2026)
 
 Verificação local em 21/10/2026, branch `feature/metas-equipe`. Dados exclusivamente sintéticos nos testes. Nenhum acesso ou alteração no Xano, credencial real, commit ou publicação.
 

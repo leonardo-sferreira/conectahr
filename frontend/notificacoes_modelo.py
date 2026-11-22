@@ -58,6 +58,10 @@ _DESTINO_RECURSO = {
     "documento": "ir_documentos",
     "pendencia_documento": "ir_documentos",
     "avaliacao": "ir_trajetoria",
+    # Meta, check-in, PDI e reunião 1:1 feitos pela liderança (change concluir-metas-pdi-equipe, D5).
+    "meta_avaliacao": "ir_trajetoria",
+    "pdi": "ir_trajetoria",
+    "reuniao_individual": "ir_trajetoria",
     "treinamento": "ir_meus_treinamentos",
     # Convite de pesquisa: a pesquisa de clima ou, no termômetro de humor, o Início (change notificacoes-de-publicacao).
     "pesquisa_clima": "ir_pesquisa_clima",
