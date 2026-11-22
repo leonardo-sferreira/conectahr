@@ -24,3 +24,27 @@ Camada de dados anual em `metas_equipe_dados.py`: caches de 20 segundos com titu
 
 ## Verificação
 AppTest com API simulada e dados exclusivamente sintéticos: navegação, regressão anual, feedback, permissões fornecidas pelo backend, falhas, identidade e limpeza. Streamlit em navegador para comparação clara/escura com estados indisponíveis. Não validar escrita no Xano nesta tarefa: testes HTTP reais do ciclo anual e seus avisos por e-mail ficam não verificados nesta execução. Não declarar F16 integral concluído.
+
+## Decisões de negócio (22/11/2026, dono do produto)
+
+Estas decisões destravam o F16 completo. Os bloqueios acima valem até cada item ser implementado com os contratos novos.
+
+- **D1. O que o gestor vê:**
+  - só os **liderados diretos** (`colaborador.superior_colaborador_id` = a ficha do gestor);
+  - de cada meta e de cada item do PDI: título, prazo, progresso e situação;
+  - nunca salário, avaliação ou dados pessoais.
+  - Um endpoint novo e mínimo substitui o uso de `plano_carreira` para isso.
+- **D2. Quem cria meta:**
+  - o gestor cria metas só para o **próprio departamento** (aquele em que é `departamento.gestor_colaborador_id`) e para os **liderados diretos**;
+  - o RH e o Admin criam para qualquer pessoa.
+  - O PDI segue a mesma regra.
+- **D3. Check-in pelo líder:**
+  - o gestor registra check-in nas metas dos **liderados diretos**;
+  - o check-in é gravado em nome dele (`registrado_por_user_id`) e na auditoria;
+  - o dono da meta vê quem registrou.
+- **D4. Reuniões 1:1:**
+  - registro simples no ConectaRH: data e hora, pauta, anotações e situação (`agendada`, `realizada` ou `cancelada`);
+  - só entre o gestor e os **liderados diretos**;
+  - o liderado recebe aviso no sino e por e-mail;
+  - sem integração com agenda externa.
+- **D5. E-mail:** só quando o gestor **cria uma meta** para a pessoa e quando **agenda ou cancela** uma 1:1. Os demais eventos (check-in, progresso do PDI, reunião realizada) avisam só no sino.
