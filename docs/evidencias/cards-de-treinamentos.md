@@ -89,8 +89,33 @@ Ficam registrados, sem efeito no uso de hoje:
 - um PATCH sem `conteudo_tipo` grava vídeo e apaga o PDF e a capa. O modal sempre manda todos os campos;
 - um salvar que falha depois do envio, ou a troca do PDF, deixa o arquivo antigo sem uso no bucket. É material sem dado pessoal.
 
-## Falta (precisa de login)
+## Testes por HTTP (22/11/2026)
 
-- **3.1:** HTTP como RH.
-- **3.2:** HTTP dos cards, com uma pessoa do público e uma de fora.
-- **3.3:** HTTP da conclusão por tipo.
+Feitos no Xano real com as contas de teste Admin, RH e Colaborador, pelo mesmo `api_client` da tela: 29 de 29 verificações. Os três treinamentos de teste foram desativados no fim; a conclusão do PDI pela conta Colaborador ficou registrada.
+
+- **3.1, RH:**
+  - **passa:**
+    - envio do PDF ao bucket, com a capa convertida para WebP;
+    - criação do treinamento de PDF (arquivo e capa), da apresentação pelo Slides e do vídeo.
+  - **falha:**
+    - 400 para um PDF com campos de vídeo, para uma apresentação com link de outro site e para um caminho com `%`;
+    - 403 para o Colaborador criar o treinamento ou pedir o envio;
+    - 403 também para o Gestor, conferido no teste de metas e PDI da equipe.
+- **3.2, cards:**
+  - **passa:**
+    - a pessoa do público vê os três tipos, cada um com o seu tipo;
+    - a capa volta assinada, na lista `{caminho, url}`, e abre em WebP;
+    - o PDF assinado abre igual ao enviado e sem forçar download;
+    - a apresentação devolve o link do Slides.
+  - **falha:** a conta fora do público recebe 404 no conteúdo e no abrir, e não vê o card.
+- **3.3, conclusão:**
+  - **passa:**
+    - o PDF conclui depois de abrir e confirmar, com validade e o instrutor "Leitura no ConectaRH";
+    - o `aberto_em` volta a vazio, para a renovação pedir a abertura de novo;
+    - o card vai para Concluídos.
+  - **falha:**
+    - 403 para concluir sem abrir;
+    - 403 para concluir aberto, mas sem a confirmação;
+    - 403 para o vídeo sem o mínimo assistido.
+
+**Observação de desempenho:** na primeira rodada, um `POST treinamentos` passou dos 10 segundos que o app espera, mas o treinamento foi gravado. Na segunda, as criações levaram 1,1 s e 0,9 s. Uma delas levou 22,7 s porque bateu no limite de chamadas do plano gratuito do Xano, esperou e tentou de novo. Se a lentidão aparecer no uso, a tela mostra "Não foi possível conectar" mesmo com o cadastro feito.

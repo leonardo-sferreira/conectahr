@@ -75,7 +75,24 @@ O trecho novo da Trajetória rodou numa função temporária, já apagada: autor
 
 Fica registrado, sem mudança: o RH e o Admin agendam 1:1 com qualquer pessoa, como já era antes. A D4 trata do gestor.
 
-**Falta:** os testes por HTTP no Xano real, com o login de um gestor e de um liderado direto dele. Devem conferir o que passa e o que dá 403 em cada endpoint.
+**Testes por HTTP (22/11/2026):** 39 de 39 verificações no Xano real, pelo mesmo `api_client` da tela.
+
+A montagem foi temporária e desfeita no fim:
+- a conta Colaborador virou Gestor;
+- a ficha do RH passou a ser liderada direta dela;
+- foi aberto um ciclo de avaliação de teste, cancelado no fim.
+
+**Montagem:** o RH não troca perfil (403).
+
+| Decisão | Passa | Recusa |
+|---|---|---|
+| **D1** (o que o gestor vê) | Só o liderado direto, com id, nome e `user_id`; metas e PDI só com os campos permitidos | Nada de quem não é liderado direto |
+| **D2** (quem cria) | Meta e PDI para o liderado | 403 para meta e PDI de quem não lidera; 403 para PDI com responsável sem relação |
+| **D3** (check-in do líder) | O liderado vê na Trajetória o progresso e quem registrou | 403 em meta de quem não lidera |
+| **D4** (reuniões 1:1) | Agendada com a hora; o liderado vê as próprias; cancelada com o motivo; realizada com as anotações | 400 para hora inválida; 403 para quem não é liderado direto; 404 para outra pessoa mudar a 1:1; 400 para mudar uma 1:1 já cancelada |
+| **D5** (avisos) | No sino do liderado: meta, check-in, PDI e as 1:1 agendada, cancelada e realizada | — |
+
+O e-mail da meta e o da 1:1 agendada e cancelada saem pela fila `email_outbox`. A entrega não foi lida pela API.
 
 ---
 

@@ -24,13 +24,13 @@ Cada tarefa tem o critério de verificação. Os testes por HTTP rodam contra o 
 
 ## 3. Testar
 
-- [ ] 3.1 HTTP, RH:
+- [x] 3.1 HTTP, RH:
   - **passa:** cria um treinamento de PDF (arquivo) e um de apresentação (link do Slides);
   - **falha:** um PDF com campos de vídeo e uma apresentação com link de outro site dão 400; o Colaborador e o Gestor recebem 403.
-- [ ] 3.2 HTTP, cards:
+- [x] 3.2 HTTP, cards:
   - **passa:** a pessoa do público vê os três tipos com a capa, e a URL do conteúdo abre;
   - **falha:** a pessoa fora do público recebe 404 no `conteudo`.
-- [ ] 3.3 HTTP, conclusão:
+- [x] 3.3 HTTP, conclusão:
   - **passa:** o PDF conclui depois de `abrir` e `confirmo_leitura`, com validade;
   - **falha:** sem `abrir`, ou sem a confirmação, dá 403; o vídeo continua recusando abaixo do mínimo.
 - [x] 3.4 `docs/regras-de-negocio.md` (seção 21) e `docs/lgpd/operadores.md` atualizados depois da implementação. Verificar: `openspec validate cards-de-treinamentos`.
@@ -49,4 +49,4 @@ Evidências em `docs/evidencias/cards-de-treinamentos.md`.
   O 403 do Colaborador fica para a 3.1.
 - **Defeito corrigido:** `meus_treinamentos` devolve `capas` como lista de `{caminho, url}`. O mapa do `assinar_treinamentos` aninha no ponto da chave.
 - **Revisão independente:** o defeito do `arquivo: true` no detalhe do PDF foi corrigido, junto com os outros achados. As pendências estão na evidência.
-- **3.1 a 3.3:** pendentes. Precisam de login (RH, uma pessoa do público e uma de fora).
+- **3.1 a 3.3 (22/11/2026):** testes por HTTP no Xano real, com as contas Admin, RH e Colaborador e mais o Gestor (a conta Colaborador promovida só durante o teste): 29 de 29 verificações, além dos dois 403 do Gestor. Detalhes na evidência.
