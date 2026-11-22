@@ -17,7 +17,7 @@
 
 ### [🚀 Abrir o app](https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/) · [📘 Manual do usuário](https://leonardo-sferreira.github.io/conectahr/usuario.html) · [🛠️ Documentação técnica](https://leonardo-sferreira.github.io/conectahr/tecnica.html)
 
-[Sobre](#sobre-o-projeto) · [Funcionalidades](#funcionalidades) · [Telas](#telas) · [Arquitetura](#arquitetura) ·
+[Sobre](#sobre-o-projeto) · [Acesso](#acesso-ao-aplicativo) · [Perfis](#perfis-de-usuários) · [Funcionalidades](#funcionalidades) · [Manual de utilização](#manual-de-utilização) · [Telas](#telas) · [Arquitetura](#arquitetura) ·
 [Segurança e LGPD](#segurança-e-lgpd) · [Qualidade](#qualidade-e-testes) · [Como rodar](#como-rodar) · [Histórico](#histórico-do-projeto) · [Equipe](#equipe)
 
 </div>
@@ -54,6 +54,78 @@ Um dos pilares é o **motor de regras trabalhistas**. Jornada, banco de horas e 
 </table>
 
 O sistema está **publicado** no Streamlit Community Cloud, com o backend no Xano. Todas as changes planejadas foram **entregues, testadas e arquivadas** no OpenSpec. A documentação de usuário e técnica fica num [site próprio](https://leonardo-sferreira.github.io/conectahr/), que é atualizado sozinho a cada merge.
+
+---
+
+## Acesso ao aplicativo
+
+| | |
+|---|---|
+| **Endereço** | <https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/> |
+| **Navegador** | Qualquer navegador atual, no computador ou no celular. Não é preciso instalar nada |
+| **Manual completo** | <https://leonardo-sferreira.github.io/conectahr/usuario.html> (o mesmo conteúdo deste README, com mais detalhes) |
+
+> O plano gratuito do Streamlit "adormece" o app depois de um tempo sem uso. Se aparecer a tela *"This app has gone to sleep"*, clique em **"Yes, get this app back up!"** e aguarde cerca de 1 minuto.
+
+### Como entrar
+
+O login tem **duas etapas**: senha e um código enviado por e-mail.
+
+1. Abra o endereço e informe o **e-mail** e a **senha** da conta.
+2. Um **código de 6 dígitos** chega no e-mail da conta, em geral em poucos segundos (confira também o spam). Digite o código e clique em **Validar código**. Ele vale por 5 minutos, e **Reenviar código** manda outro.
+3. **No primeiro acesso**, a conta tem uma senha temporária: o sistema pede para criar a senha definitiva e mostra as regras enquanto você digita.
+4. Pronto: o **Início** abre com o menu do seu perfil. A sessão vale por 1 hora.
+
+| 1. E-mail e senha | 2. Código de 6 dígitos | 3. Senha definitiva (1º acesso) |
+|---|---|---|
+| <img src="docs/evidencias/frontend-f01/1-login.jpg" alt="Tela Entrar"> | <img src="docs/evidencias/frontend-f01/2-codigo-de-acesso.jpg" alt="Código de acesso"> | <img src="docs/evidencias/frontend-f01/3-trocar-senha.jpg" alt="Trocar senha"> |
+
+**Sem login**, a tela Entrar já dá acesso ao **Aviso de privacidade** e ao **Canal de denúncias**. Também ali fica o **"Esqueci minha senha"**: um código chega por e-mail para criar uma senha nova.
+
+**Erros comuns:**
+- **Senha errada 5 vezes:** a conta fica bloqueada por 15 minutos. O Admin pode desbloquear antes.
+- **Código errado 5 vezes:** é preciso começar o login de novo.
+- **Sessão expirada:** depois de 1 hora, o sistema pede para entrar de novo.
+
+### Contas de demonstração
+
+O sistema publicado tem **uma conta de demonstração para cada perfil** (Admin, RH, Gestor e Colaborador), com dados fictícios. Como o código de acesso chega por e-mail, essas contas só entram com acesso à caixa de entrada delas. Por isso, e porque o repositório é público, **e-mails e senhas não ficam neste README**.
+
+Para avaliar o sistema com a sua própria conta:
+
+1. Peça o acesso a um integrante do grupo, informando o seu e-mail e o perfil que quer testar.
+2. O grupo cria uma ficha fictícia em **RH → Colaboradores** e a conta em **Admin → Usuários e perfis → Novo usuário**, com o seu e-mail. O e-mail de boas-vindas chega com a senha temporária.
+3. Entre pelo passo a passo acima: o código chega no **seu** e-mail.
+
+Para conhecer as telas sem login, veja os [prints](#telas) e o [manual de utilização](#manual-de-utilização) abaixo.
+
+### Dados de demonstração
+
+O sistema publicado simula uma empresa fictícia, para que nenhuma tela apareça vazia. Todos os nomes, CPFs, e-mails (`@exemplo.com.br`) e arquivos são inventados, e os arquivos levam a marca "documento fictício".
+
+| Área | O que já está cadastrado |
+|---|---|
+| **Pessoas** | 31 colaboradores em 9 departamentos, com hierarquia, gestores de departamento, aniversariantes de novembro e um desligamento em setembro |
+| **Equipe Comercial** | 7 liderados da conta de Gestor, com ponto de 3 a 19/11, metas, check-ins, PDI e reuniões 1:1 |
+| **Para decidir** | 3 pedidos de férias, 1 correção de ponto (saída esquecida em 18/11), 2 ausências e solicitações ao RH |
+| **Para conferir** | Comprovante de residência, de escolaridade e certidão de casamento enviados |
+| **Pagamento e benefícios** | Holerites de setembro e outubro de 2026, informes de 2025 e 6 benefícios (VR, VT, saúde, odonto, seguro de vida e home office) |
+| **Comunicação e desenvolvimento** | 6 comunicados vigentes, 6 treinamentos em vídeo, um ciclo de desempenho em andamento, reconhecimentos no mural e a pesquisa de clima do 2º semestre aberta |
+
+---
+
+## Perfis de usuários
+
+São quatro perfis. **O que cada pessoa vê e decide é conferido no backend**, em toda requisição. O menu por perfil é só uma conveniência: quem tenta abrir uma tela que não é do seu perfil recebe "sem permissão".
+
+| Perfil | Responsabilidade | Pode | Não pode |
+|---|---|---|---|
+| **Colaborador** | Cuidar da própria vida funcional | Marcar o ponto e pedir correção, pedir férias, registrar ausência, enviar documentos, ver holerites e benefícios, fazer treinamentos, acompanhar metas, PDI e avaliações, responder pesquisas, reconhecer colegas, fazer denúncia e pedidos LGPD | Ver dados de outras pessoas ou decidir qualquer pedido |
+| **Gestor** | Acompanhar e decidir pela sua equipe | Tudo do Colaborador e mais: decidir férias, ausências e correções de ponto dos **liderados diretos**, ajustar a folha de ponto da equipe, criar metas e PDI, fazer check-in e reuniões 1:1, avaliar a equipe, delegar decisões e ver indicadores agregados do setor | Decidir pedidos de quem não é da sua equipe, decidir um pedido próprio, ver salário, conta bancária ou atestado da equipe |
+| **RH** | Cuidar das pessoas e da conformidade | Admitir, editar fichas e desligar; conferir documentos; lançar holerites e informes; decidir ausências e solicitações; criar ciclos de avaliação, treinamentos, pesquisas e comunicados; responder pedidos LGPD; ponto REP-P; regras trabalhistas; rotina diária e anonimização | Mexer na estrutura da empresa (departamentos, cargos, níveis), nos usuários e perfis e na auditoria, que são do Admin |
+| **Admin** | Cuidar do sistema | Tudo do RH e mais: criar contas e trocar perfis (com motivo), desbloquear e encerrar sessões, manter departamentos, cargos, níveis e feriados, ver a auditoria, os indicadores gerais e as integrações | Decidir um pedido próprio. Ninguém aprova um pedido seu, nem o Admin |
+
+**Superior direto:** quem é superior direto de alguém decide os pedidos dessa pessoa como um gestor, mesmo com o perfil Colaborador. Se a pessoa não tem superior, decide o gestor do departamento. RH e Admin decidem de qualquer pessoa.
 
 ---
 
@@ -106,6 +178,137 @@ O gestor decide e acompanha só os **liderados diretos**: quem tem ele como supe
 - **Estrutura da empresa:** departamentos e gestores, feriados (com importação dos nacionais), níveis hierárquicos e cargos.
 - **Auditoria:** quem fez o quê e quando, com filtros.
 - **Indicadores gerais e integrações:** headcount, turnover, absenteísmo, eNPS e fila de e-mails.
+
+---
+
+## Manual de utilização
+
+Passo a passo das jornadas principais, organizado por perfil. Cada passo diz **o que fazer** e **o que deve acontecer**. O [manual completo no site](https://leonardo-sferreira.github.io/conectahr/usuario.html) traz todas as telas, as regras explicadas e as perguntas frequentes.
+
+### Como as jornadas se complementam
+
+```mermaid
+flowchart LR
+    A["Admin<br/>cria a conta e<br/>mantém a estrutura"] --> R["RH<br/>admite, pede documentos,<br/>lança holerite e treinamento"]
+    R --> C["Colaborador<br/>marca ponto, pede férias,<br/>envia documento, faz treinamento"]
+    C -- "pedido de férias<br/>e correção de ponto" --> G["Gestor<br/>decide na Central de Pendências<br/>e acompanha metas"]
+    C -- "documento enviado" --> R
+    G -- "decisão + aviso no sino" --> C
+    R -. "tudo fica na auditoria" .-> A
+```
+
+Um exemplo do ciclo completo: o **Admin** cria a conta, o **RH** admite a pessoa e pede os documentos, o **Colaborador** envia o documento e pede férias, o **Gestor** aprova as férias e o **RH** confere o documento. Cada pessoa recebe o aviso no sino, e cada passo fica na auditoria.
+
+Em toda tela, o **menu lateral** mostra em cima as telas de todos e, abaixo, os grupos **Equipe**, **RH** e **Admin**, conforme o perfil. O **sino** no topo mostra os avisos, e o seu nome abre o menu da conta: **Configurações**, **tema claro ou escuro** e **Sair**.
+
+### Jornada 1 · Colaborador
+
+| # | O que fazer | O que deve acontecer |
+|---|---|---|
+| 1 | Entrar e ver o **Início** | Aparecem as pendências, o saldo do banco de horas, os comunicados do RH, os aniversariantes do mês e os atalhos |
+| 2 | **Ponto → Hoje → Marcar ponto** e confirmar em **Confirmar e marcar** | A marcação aparece na linha do dia com o horário do servidor, e o **comprovante em PDF** fica disponível para baixar |
+| 3 | **Ponto → Mês**, clicar na célula de uma marcação e enviar o pedido de correção com o motivo | O pedido vai para o superior direto, e o dia mostra a correção como pendente |
+| 4 | **Férias → Solicitar férias**: escolher até 3 períodos (e, se quiser, vender até 10 dias) e **Enviar para o gestor** | A tela confere as regras da CLT antes de enviar. O pedido aparece no histórico como **Pendente**, e o gestor é avisado |
+| 5 | **Documentos → Enviar →** num documento pedido: escolher o tipo, preencher os campos e anexar PDF ou foto (até 10 MB) | O documento fica **Em análise** até o RH conferir. Se for recusado, o motivo aparece na mesma tela |
+| 6 | **Pagamento** e **Benefícios** | Os holerites do ano e os informes de rendimentos com **Baixar**; os benefícios ativos com a operadora, os links e os totais do mês |
+| 7 | **Meus treinamentos**: abrir um card e assistir ao vídeo (ou ler o PDF) e clicar em **Concluir treinamento** | O card passa para **Concluídos**. Vídeo só conclui depois do mínimo assistido, sem contar trecho pulado |
+| 8 | **Trajetória**: registrar um **check-in** numa meta, responder a avaliação e abrir o **Mural de reconhecimentos →** | O progresso da meta é atualizado; a avaliação é enviada; o reconhecimento aparece no mural para a pessoa reconhecida |
+
+<table>
+<tr>
+<td width="50%"><img src="docs/evidencias/frontend-ponto-rep-p/2-hoje-depois-de-marcar.png" alt="Ponto depois de marcar"><br><sub><b>Passo 2:</b> marcação feita, com comprovante</sub></td>
+<td width="50%"><img src="docs/evidencias/frontend-ponto-rep-p/4-pedido-inclusao.png" alt="Pedido de correção"><br><sub><b>Passo 3:</b> pedido de correção pela célula do mês</sub></td>
+</tr>
+<tr>
+<td><img src="docs/evidencias/frontend-ferias/3-solicitar-ferias.jpg" alt="Solicitar férias"><br><sub><b>Passo 4:</b> pedido de férias com a conferência da CLT</sub></td>
+<td><img src="docs/evidencias/frontend-privacidade-documentos/11-enviar-documento.jpg" alt="Enviar documento"><br><sub><b>Passo 5:</b> envio de documento com os campos do tipo</sub></td>
+</tr>
+<tr>
+<td><img src="docs/evidencias/frontend-pagamento/1-pagamento-colaborador.png" alt="Pagamento"><br><sub><b>Passo 6:</b> holerites e informes</sub></td>
+<td><img src="docs/evidencias/cards-de-treinamentos/detalhe-pdf.png" alt="Treinamento em PDF"><br><sub><b>Passo 7:</b> treinamento em PDF com a leitura confirmada</sub></td>
+</tr>
+</table>
+
+### Jornada 2 · Gestor
+
+O gestor tem tudo do colaborador e, no grupo **Equipe** do menu, as telas dos **liderados diretos**: as pessoas que têm ele como superior.
+
+| # | O que fazer | O que deve acontecer |
+|---|---|---|
+| 1 | **Central de Pendências → Férias → Decidir →** | Abre a conferência de conflitos (antecedência, período aquisitivo, sobreposição e colegas de férias), que só informa e não bloqueia |
+| 2 | **Aprovar** ou **Rejeitar** (a recusa pede justificativa) | O pedido sai da fila, o colaborador é avisado no sino, e as férias aprovadas entram no calendário da equipe |
+| 3 | **Central de Pendências → Correções** e decidir a correção de ponto | Se aprovada, a marcação incluída aparece no espelho do colaborador como **(I)**. A original nunca é apagada |
+| 4 | **Minha equipe** | O ponto da semana, as férias e as pendências de cada liderado. É só consulta |
+| 5 | **Metas da equipe → Nova meta**, depois **Check-in** e **Agendar reunião 1:1** | A pessoa recebe a meta e a reunião no sino e por e-mail, e vê tudo na Trajetória, com quem registrou o check-in |
+| 6 | **Avaliações da equipe** | Avaliar os liderados no ciclo aberto e responder às contestações antes da palavra final do RH |
+| 7 | **Delegações** e **Indicadores da equipe** | Passar as decisões a outra pessoa por um período; ver os números do setor, sempre agregados e sem nomes |
+
+> Ninguém decide um pedido próprio: se o gestor tentar, o sistema recusa e registra a tentativa na auditoria.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/evidencias/frontend-central-decisoes/2-decidir-ferias.png" alt="Decidir férias"><br><sub><b>Passos 1 e 2:</b> decidir férias com a conferência de conflitos</sub></td>
+<td width="50%"><img src="docs/evidencias/frontend-minha-equipe/minha-equipe.png" alt="Minha equipe"><br><sub><b>Passo 4:</b> Minha equipe</sub></td>
+</tr>
+<tr>
+<td><img src="docs/evidencias/frontend-metas-pdi-equipe/f16-modal-nova-meta.png" alt="Nova meta"><br><sub><b>Passo 5:</b> nova meta para um liderado</sub></td>
+<td><img src="docs/evidencias/frontend-avaliacoes-equipe/avaliacoes-equipe.png" alt="Avaliações da equipe"><br><sub><b>Passo 6:</b> avaliações da equipe</sub></td>
+</tr>
+</table>
+
+### Jornada 3 · RH
+
+| # | O que fazer | O que deve acontecer |
+|---|---|---|
+| 1 | **Colaboradores → Admitir colaborador**: dados pessoais, cargo, departamento, superior direto, contrato e salário | A ficha é criada, e os **documentos obrigatórios** do tipo de contrato viram pendências para a pessoa |
+| 2 | Na ficha, **Criar acesso** | A conta é criada com senha temporária, enviada por e-mail. No primeiro acesso, a pessoa cria a senha definitiva |
+| 3 | **Conferência de documentos**: abrir o arquivo ao lado dos dados e **Aprovar documento** ou **Recusar documento** (com motivo) | O documento muda de situação na tela do colaborador, que é avisado. Cada abertura do arquivo fica na auditoria |
+| 4 | **Lançamento de pagamentos → Lançar holerite** (mês, ano e arquivo PDF) | O holerite aparece em **Pagamento** para o colaborador, e a lista mostra quem já tem e quem falta |
+| 5 | **Ausências**: aprovar, rejeitar ou **Registrar ausência** | A ausência entra na folha de ponto e nos indicadores. O gestor nunca vê o atestado nem o motivo médico |
+| 6 | **Treinamentos → Novo treinamento** (vídeo do YouTube, PDF ou apresentação, com capa e público) | O card aparece em **Meus treinamentos** para o público escolhido, que é avisado. A **matriz** mostra quem fez o quê |
+| 7 | **Comunicados e FAQ** e **Pesquisas de clima** | O comunicado aparece no Início de quem é o público, no período escolhido. A pesquisa abre para todos, com resultados só agregados |
+| 8 | **Rotina diária** | Aplica o que depende da data (desligamentos agendados, vencimentos e limpezas) e mostra quanto foi aplicado |
+
+<table>
+<tr>
+<td width="50%"><img src="docs/evidencias/frontend-cadastro/3-admitir-colaborador.png" alt="Admitir colaborador"><br><sub><b>Passo 1:</b> admissão</sub></td>
+<td width="50%"><img src="docs/evidencias/frontend-conferencia-documentos/2-aprovar.jpg" alt="Aprovar documento"><br><sub><b>Passo 3:</b> conferência de documentos</sub></td>
+</tr>
+<tr>
+<td><img src="docs/evidencias/frontend-pagamento/4-lancar-holerite.png" alt="Lançar holerite"><br><sub><b>Passo 4:</b> lançar holerite</sub></td>
+<td><img src="docs/evidencias/cards-de-treinamentos/modal-rh-claro.png" alt="Novo treinamento"><br><sub><b>Passo 6:</b> novo treinamento</sub></td>
+</tr>
+</table>
+
+### Jornada 4 · Admin
+
+O Admin tem tudo do RH e, no grupo **Admin** do menu:
+
+| # | O que fazer | O que deve acontecer |
+|---|---|---|
+| 1 | **Usuários e perfis → Novo usuário**, vinculando à ficha | A conta é criada e a pessoa recebe a senha temporária por e-mail |
+| 2 | **Trocar perfil** (com motivo), **Desbloquear** ou **Desativar** | A mudança vale na próxima requisição da pessoa e fica na auditoria com o motivo |
+| 3 | **Estrutura da empresa**: departamentos e gestores, feriados (com a importação dos nacionais), níveis e cargos | Os departamentos e o organograma passam a refletir a estrutura; os feriados entram no ponto e no calendário de férias |
+| 4 | **Auditoria**, com filtros por recurso, ação, resultado e pessoa | Cada ação aparece com autor, data, recurso e resultado, com dados pessoais mascarados |
+| 5 | **Sessões ativas**, **Indicadores gerais** e **Integrações e e-mails** | Encerrar a sessão de alguém na hora; ver headcount, turnover, absenteísmo e eNPS; acompanhar a fila de e-mails |
+
+<table>
+<tr>
+<td width="50%"><img src="docs/evidencias/frontend-cadastro/5-usuarios-e-perfis.png" alt="Usuários e perfis"><br><sub><b>Passos 1 e 2:</b> usuários e perfis</sub></td>
+<td width="50%"><img src="docs/evidencias/frontend-indicadores-gerais/1-indicadores-gerais.png" alt="Indicadores gerais"><br><sub><b>Passo 5:</b> indicadores gerais</sub></td>
+</tr>
+</table>
+
+### Caminhos alternativos
+
+| Situação | Como o sistema reage |
+|---|---|
+| Pedido de férias fora das regras da CLT (período curto, início em dia proibido) | A tela mostra qual regra não foi atendida e não envia |
+| Esqueceu de marcar a saída | O dia fica **incompleto** e vira pendência até a correção ser pedida |
+| Documento recusado pelo RH | O motivo aparece em Documentos, e a pessoa envia de novo |
+| Pessoa tenta abrir uma tela de outro perfil | Mensagem de "sem permissão"; o backend recusa a requisição |
+| Denúncia sem se identificar | **Canal de denúncias** pela tela Entrar, sem login; o código gerado é a única forma de acompanhar |
+| Quer os próprios dados (LGPD) | **Configurações → Privacidade → Baixar meus dados**, ou fazer um pedido, respondido em até 15 dias |
 
 ---
 
