@@ -1,15 +1,15 @@
 # Deploy, flags e plano de rollback — ConectaRH
 
 **Situação:** o backend já roda no Xano (o workspace de desenvolvimento é o mesmo que serve o
-frontend). **Decisão de 22/11/2026: o frontend fica no Streamlit Community Cloud.** Ainda não foi publicado: criar o app
-pede a conta do dono do repositório (passos em "Publicar no Streamlit Community Cloud").
+frontend). **Decisão de 22/11/2026: o frontend fica no Streamlit Community Cloud.** Publicado em 22/11/2026:
+<https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/>. O teste de fumaça está em `docs/evidencias/deploy-streamlit-cloud.md`.
 
 ## Ambientes
 
 | Ambiente | Backend | Frontend |
 |---|---|---|
 | Desenvolvimento | Workspace Xano 147338 (plano gratuito) | `streamlit run frontend/app.py` na máquina de cada pessoa |
-| Demonstração | O mesmo workspace, com dados sintéticos | Streamlit Community Cloud, ligado a este repositório (branch `master`) |
+| Demonstração | O mesmo workspace, com dados sintéticos | Streamlit Community Cloud, ligado a este repositório (branch `master`): <https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/> |
 
 O plano gratuito do Xano tem um workspace só, então **demonstração e desenvolvimento dividem o banco**.
 Por isso os dados são sempre sintéticos: contas `@conectarh.test`, nomes fictícios, CPFs gerados que
@@ -63,6 +63,20 @@ Feito uma vez, por quem é dono do repositório no GitHub:
 - Cada merge em `master` republica o app sozinho.
 - Os segredos ficam só no painel. As chaves do Supabase e da Brevo continuam no Xano, nunca no Streamlit.
 - No plano gratuito, o app dorme depois de um tempo sem uso; o primeiro acesso depois disso demora alguns segundos.
+
+### Configuração de produção (registrada em 22/11/2026)
+
+| Item | Valor |
+|---|---|
+| Endereço | <https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/> |
+| Repositório e branch | `leonardo-sferreira/conectahr`, `master` (republica a cada merge) |
+| Arquivo principal | `frontend/app.py` |
+| Dependências | `frontend/requirements.txt` |
+| Configuração | `.streamlit/config.toml`: tema e `enableStaticServing`, que serve `frontend/static` |
+| Segredos (só no painel) | `[xano] auth_base_url`; `[google] drive_api_key`, opcional |
+| Segredos que ficam no Xano | Brevo, Supabase e o pepper dos códigos de acesso (seção "Configuração de produção") |
+
+O Streamlit Cloud abre o app dentro da própria página: o endereço passa pelo `share.streamlit.io`, que entrega um cookie de sessão, sem pedir login. Para conferir o app de fora, use um navegador; o `curl` recebe só essa página de passagem.
 
 ## Feature flags
 

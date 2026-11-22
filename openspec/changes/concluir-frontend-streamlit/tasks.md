@@ -1,7 +1,11 @@
 ## 1. Pendências herdadas que dependem das telas ou da hospedagem
 
-- [ ] 1 (origem: `concluir-mvp-conectarh` 1.3) [GE 7.1] Criar telas e endpoints dos fluxos por fatia vertical, aplicando estados de carregamento, erro, sucesso e acesso negado; verificar os principais caminhos por perfil.
-- [ ] 2 (origem: `concluir-mvp-conectarh` 1.4) [GE 7.4] Preparar deploy com feature flags, dados sinteticos e plano de rollback sem importar registros das imagens; verificar smoke test em ambiente controlado e registrar a configuracao de producao.
+- [x] 1 (origem: `concluir-mvp-conectarh` 1.3) [GE 7.1] Criar telas e endpoints dos fluxos por fatia vertical, aplicando estados de carregamento, erro, sucesso e acesso negado; verificar os principais caminhos por perfil.
+  - **Concluída (22/11/2026):**
+    - as telas e os endpoints de todas as fatias estão feitos, com os estados de carregamento, erro, sucesso e acesso negado (tarefa 40, `auditar_estados_ui.py`);
+    - os caminhos principais foram verificados por perfil, com testes sem rede no CI e por HTTP (tarefas 33, 57 e 66, e as changes arquivadas);
+    - o deploy foi feito (tarefa 2).
+- [x] 2 (origem: `concluir-mvp-conectarh` 1.4) [GE 7.4] Preparar deploy com feature flags, dados sinteticos e plano de rollback sem importar registros das imagens; verificar smoke test em ambiente controlado e registrar a configuracao de producao.
   - **Decisão (22/11/2026):** hospedar no Streamlit Community Cloud.
     - `docs/deploy.md` tem o passo a passo.
     - O app e os testes foram conferidos no Python 3.12, com `compileall`, `testar_treinamentos`, `testar_menu`, `testar_login_f01`, `testar_inicio`, `testar_cadastro` e `testar_ponto`.
@@ -9,6 +13,12 @@
       - criar o app em `share.streamlit.io`;
       - colar os secrets.
     - Depois disso, o teste de fumaça no ar.
+  - **Feito (22/11/2026):** publicado em <https://conectahr-wtdxtqbzz4lyrpjv8a48nt.streamlit.app/>.
+    - **Teste de fumaça:**
+      - a tela Entrar abre, com as fontes do próprio app e sem erro, conferida no Chrome de fora;
+      - o login, o Início e a saída foram conferidos pelo dono do produto.
+    - **Configuração de produção:** registrada em `docs/deploy.md`.
+    - **Evidência:** `docs/evidencias/deploy-streamlit-cloud.md`.
   - **Em aberto (2026-10-08).** Escrito `docs/deploy.md` (ambientes, configuração, flags, roteiro, rollback e dados sintéticos). Falta publicar o frontend e fazer o teste de fumaça em ambiente controlado, que dependem das telas e da hospedagem do Streamlit.
 - [x] 3 (origem: `concluir-mvp-conectarh` 1.7) [GE 7.10] Garantir acessibilidade do frontend Streamlit e versionamento `/api/v1/`; verificar teclado, contraste, labels, foco, responsividade, textos alternativos, erros compreensiveis e compatibilidade da API.
   - **Em aberto (2026-10-08).** O versionamento ficou decidido: é pelo grupo de API, sem prefixo `/api/v1/` (registrado no `design.md` do `conectarh.gestao`). Falta a acessibilidade do frontend (teclado, contraste, foco, responsividade), que depende das telas (ver as tarefas de revisão de acessibilidade da seção 2).
