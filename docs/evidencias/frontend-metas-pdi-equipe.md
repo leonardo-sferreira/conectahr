@@ -2,7 +2,7 @@
 
 ## Atualização de 22/11/2026: F16 completo (decisões D1 a D5)
 
-Com as decisões do dono do produto (`openspec/changes/concluir-metas-pdi-equipe/design.md`, D1 a D5), o F16 deixou de ser parcial. O histórico da versão parcial, com tudo travado, está mais abaixo.
+Com as decisões do dono do produto (`openspec/changes/archive/2026-11-22-concluir-metas-pdi-equipe/design.md`, D1 a D5), o F16 deixou de ser parcial. O histórico da versão parcial, com tudo travado, está mais abaixo.
 
 **Backend publicado no Xano.** Antes de publicar, a paridade com o Xano foi conferida; o dry-run mostrou só `ADD_FIELD` e o valor novo do enum.
 
