@@ -11,7 +11,7 @@
 - [x] Contratos seguros para metas/PDI da equipe e criação departamental. (Feito nas tarefas 6 e 7, em 22/11/2026.)
 - [x] Check-in autorizado para liderança, se aprovado como regra futura. (Aprovado em D3; feito na tarefa 8.)
 - [x] Contrato e desenho compatíveis para agendamento de reuniões 1:1. (D4; feito nas tarefas 9 e 10.)
-- [ ] Verificação HTTP real e notificações transacionais com contas autorizadas, sem modificar Xano nesta tarefa.
+- [x] Verificação HTTP real e notificações transacionais com contas autorizadas, sem modificar Xano nesta tarefa. (Feita em 22/11/2026; ver a tarefa 12.)
 - [x] Concluir integralmente o F16 após resolver as dependências. (Tarefa 11.)
 
 ## Depois das decisões de 22/11/2026 (design.md, D1 a D5)
@@ -30,7 +30,7 @@
   - Verificar por HTTP com um gestor e um liderado.
 - [x] 10 Figma: conferir o F16 (seção 248:1405) com as decisões, nos temas claro e escuro, e ajustar o que faltar (agendar, cancelar, check-in do líder).
 - [x] 11 Frontend: completar o F16 em "Metas da equipe", com abas, filtro de pessoa, Nova meta, Check-in, PDI e reuniões 1:1, e os seis estados. Verificar com o `tools/testar_metas_equipe.py` estendido e com o Chrome em 390 px.
-- [ ] 12 Evidência, `docs/regras-de-negocio.md` e testes HTTP: passa e falha por perfil, com o login de um gestor e de um liderado dele.
+- [x] 12 Evidência, `docs/regras-de-negocio.md` e testes HTTP: passa e falha por perfil, com o login de um gestor e de um liderado dele.
 
 ### Notas (22/11/2026)
 
@@ -39,4 +39,4 @@ A evidência está em `docs/evidencias/frontend-metas-pdi-equipe.md`, na seção
 - **6 a 9:** backend publicado no Xano. As expressões rodaram numa função temporária, e `checar_endpoints` passa com 308 endpoints. A parte "por HTTP" de cada tarefa fica para a 12.
 - **10:** caminhos novos no Figma: "Reunião 1:1" (`644:886`; escuro `644:2840`) e "Nova ação de PDI" (`644:1522`; escuro `644:3455`). No escuro, nenhum texto ficou abaixo de 3:1.
 - **11:** `tools/testar_metas_equipe.py` passa 32 de 32, e `tools/testar_trajetoria.py`, 49 de 49. A revisão independente não achou nada grave, e o que ela apontou foi corrigido (detalhes na evidência). Também conferido no Chrome em 1440 e em 390 px.
-- **12:** `docs/regras-de-negocio.md` ganhou a seção 11.3a e a tabela 11.4 foi atualizada. Falta o HTTP com o login de um gestor e de um liderado direto dele, que também fecha o item "Verificação HTTP real".
+- **12:** `docs/regras-de-negocio.md` ganhou a seção 11.3a e a tabela 11.4 foi atualizada. HTTP feito em 22/11/2026: 39 de 39 verificações, que incluem as tarefas 33 e 57 da `concluir-frontend-streamlit`. A conta Colaborador virou Gestor só durante o teste, com a ficha do RH como liderada direta, e tudo voltou ao que era.

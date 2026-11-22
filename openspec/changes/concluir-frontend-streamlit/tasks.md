@@ -116,12 +116,13 @@
   - **Feito (20/10/2026):** nó 64:42 conferido. `frontend/pagina_trajetoria.py` e `trajetoria_modelo.py`, com os modais de responder e enviar, contestar, check-in e progresso do PDI (sem nó; em `docs/figma-pendencias.md`). Change `trajetoria-do-colaborador`.
 - [x] 32 (origem: `concluir-mvp-conectarh` 2.27) [FE 11.2] Integrar com `avaliacoes`, `avaliacoes/{id}/respostas`, `avaliacoes/{id}/enviar-contestar`, `metas`, `metas/{id}/checkin`, `pdi`, `reconhecimentos` e `colaboradores/{id}/plano_carreira`.
   - **Feito (20/10/2026):** a leitura vem de `minha_trajetoria` (novo, agregado, por causa do limite de requisições) e o formulário de `avaliacoes/{id}/competencias` (novo); as escritas usam `respostas`, `enviar`, `contestar`, `metas/{id}/checkin` e `pdi/{id}/progresso`. Testes em `tools/testar_trajetoria.py` (44, no CI).
-- [ ] 33 (origem: `concluir-mvp-conectarh` 2.28) [FE 11.3] Testar a visibilidade automática de reconhecimento (público/privado por relação gestor-colaborador) e confirmar que a tela nunca oferece uma ação de "promover" automaticamente.
+- [x] 33 (origem: `concluir-mvp-conectarh` 2.28) [FE 11.3] Testar a visibilidade automática de reconhecimento (público/privado por relação gestor-colaborador) e confirmar que a tela nunca oferece uma ação de "promover" automaticamente.
   - **Parcial (20/10/2026):** a Trajetória não tem ação de promover (`tools/testar_trajetoria.py`) e mostra ao destinatário só os reconhecimentos `ativos`. A visibilidade pública/privada no mural fica com a tarefa 66.
   - **Figma (09/10/2026):** o mural, o envio e a moderação de reconhecimentos foram desenhados na seção 16 (291:908, 291:1075, 291:1239, 291:1374 e modais); ver a tarefa 66.
   - **Auditoria (21/11/2026):** continua dependendo da tarefa 66 (Reconhecimentos): não há tela nem função no `api_client.py` para mural, recebidos, envio ou moderação.
   - **21/11/2026:** o mural respeita a visibilidade automática e o "Aparecer no mural", e nenhuma tela de reconhecimento oferece promover (`tools/testar_reconhecimentos.py`). Falta o teste por HTTP, junto com a 66.
-  - **HTTP (21/11/2026):** o caso público e o "Aparecer no mural" passaram junto com a 66. Falta o caso privado por HTTP: precisa de uma conta de teste que seja gestora de outra.
+  - **HTTP (21/11/2026):** o caso público e o "Aparecer no mural" passaram junto com a 66.
+  - **HTTP do caso privado (22/11/2026):** o RH, que é o gestor do departamento da conta Colaborador, reconheceu essa conta. O reconhecimento saiu `privado`, não apareceu no mural e chegou ao destinatário. Rodou no teste de metas e PDI da equipe (`docs/evidencias/frontend-metas-pdi-equipe.md`).
 - [x] 34 (origem: `concluir-mvp-conectarh` 2.29) [FE 12.1] Buscar o node "Auditoria" no Figma e conferir antes de codar; construir o painel de consulta com os filtros disponíveis (recurso, registro, usuário, ação, resultado).
   - **Feito (20/10/2026):** nó 225:6784 conferido. `frontend/pagina_auditoria.py` e `auditoria_modelo.py`: filtros de recurso, ação, resultado e usuário (do Figma) e o período; "Ver" abre os detalhes do evento (sem nó no Figma; `docs/figma-pendencias.md`).
 - [x] 35 (origem: `concluir-mvp-conectarh` 2.30) [FE 12.2] Integrar com `GET auditoria`; testar que a tela é inacessível (via guarda de perfil) para quem não é RH/ADMIN.
@@ -198,13 +199,22 @@
 - [x] 56 (origem: `concluir-mvp-conectarh` 2.53) [CB 4.3] Tela "Calendário": conferir no Figma (desenhar antes, se faltar; ver a tabela do `design.md` do frontend arquivado) → construir → integrar com `calendario GET` → testar os 6 estados de UI e o escopo por perfil.
   - **Figma (09/10/2026):** existe: Calendário, 233:2394 (F07). Não precisa desenhar.
   - **Feito (21/11/2026):** tela "Calendário" (233:2394), que abre pelo "Calendário da equipe" de Férias, com feriados, férias aprovadas, "Mostrar férias da equipe", próximos eventos e legenda. O `calendario` GET deixou de entregar aos colegas as observações das férias. `testar_calendario.py` 20/20; HTTP: 200 para Admin e Colaborador. Evidência em `docs/evidencias/frontend-telas-restantes.md`.
-- [ ] 57 (origem: `concluir-mvp-conectarh` 2.54) [CB 4.3] Tela "Minha equipe e dashboard do gestor": construir conforme o F14, integrar com `folha_ponto/pessoas`, `folha_ponto/mes`, `ferias_equipe`, `central_de_tarefas` e `correcoes_ponto`, usando os subordinados diretos (decisão de 20/10/2026 no `design.md`), e testar os 6 estados de UI e o escopo por perfil. `minha_equipe GET` permanece inalterado.
+- [x] 57 (origem: `concluir-mvp-conectarh` 2.54) [CB 4.3] Tela "Minha equipe e dashboard do gestor": construir conforme o F14, integrar com `folha_ponto/pessoas`, `folha_ponto/mes`, `ferias_equipe`, `central_de_tarefas` e `correcoes_ponto`, usando os subordinados diretos (decisão de 20/10/2026 no `design.md`), e testar os 6 estados de UI e o escopo por perfil. `minha_equipe GET` permanece inalterado.
   - **Figma (09/10/2026):** existe: Gestor — Minha equipe, 248:409 (F14). Não precisa desenhar.
   - **Escopo autorizado em 20/10/2026:** somente subordinados diretos, usando `folha_ponto/pessoas`; ver decisão no `design.md`. Sem mudanças no Xano.
   - **Implementado (20/10/2026):** página e navegação reais; quatro indicadores; busca e filtro por situação; tabela com cargo/nível, ponto semanal, férias e pendências; destaque de ponto que pede atenção; "Ver →" para a Central; férias nos próximos 90 dias, inclusive pendentes, só dos liderados. Cache por sessão e limpeza ao sair da conta. Layout conferido com Figma 248:409, sem CSS fora do tema.
   - **Verificado localmente:** 31 testes em `tools/testar_minha_equipe.py` com API simulada (escopo, desligados, menu por perfil, dois meses, férias atuais/futuras, pendências, falhas parciais, permissões, 401/403/404/429, busca, filtro, navegação e ausência de campos sensíveis). Teste incluído no CI. Regressões: folha 46, ponto mensal 97, decisões 64, férias 93, login 52; sintaxe validada. Streamlit e Chrome com dados fictícios, busca, filtro, ida/volta da Central e comparação visual; evidência em `docs/evidencias/frontend-minha-equipe.md`.
   - **Pendente para concluir:** HTTP autenticado contra o Xano real, com casos permitidos e negados por perfil. A limitação existente de `contains` na Central pode subcontar pedidos; não foi alterada nem compensada no frontend. A ação "Ver →" abre a Central sem filtro do liderado.
   - **Auditoria (21/11/2026):** continua pendente só o HTTP autenticado por perfil.
+  - **HTTP (22/11/2026):** com a conta Colaborador promovida a Gestor e a ficha do RH como liderada direta:
+    - **passa:**
+      - `folha_ponto/pessoas` traz a própria pessoa e o liderado, sem "ver todos", e não traz o Admin;
+      - a folha do mês do liderado abre;
+      - férias da equipe e correções de ponto vêm só do escopo;
+      - a Central responde;
+      - o RH vê todos.
+    - **falha:** a folha do mês de quem não lidera dá 403.
+    - **Depois de restaurar:** a conta volta a ver só a si mesma.
 
 ## 3. Telas desenhadas em 09/10/2026 e pendências do levantamento
 
