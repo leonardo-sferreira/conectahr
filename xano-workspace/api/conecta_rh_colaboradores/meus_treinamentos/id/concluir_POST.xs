@@ -2,12 +2,16 @@
 // minimo pedido (video_percentual_minimo da duracao, contando o progresso gravado aqui, nao o que a tela diz).
 // Registra a conclusao com a data de hoje e a validade do treinamento, como o RH faria; no mesmo dia, nao repete.
 // Zera o progresso, para a renovacao pedir o video de novo. Auditado. Qualquer perfil com ficha.
+// PDF e apresentacao (change cards-de-treinamentos, D6): exigem ter aberto o conteudo (meus_treinamentos/{id}/abrir) e
+// confirmo_leitura = true; o instrutor fica "Leitura no ConectaRH", a auditoria e concluir_treinamento_leitura e o
+// aberto_em zera. Nao ha medicao da leitura real.
 query "meus_treinamentos/{id}/concluir" verb=POST {
   api_group = "ConectaRH — Colaboradores"
   auth = "user"
 
   input {
     int id
+    bool? confirmo_leitura?
   }
 
   stack {
@@ -80,7 +84,20 @@ query "meus_treinamentos/{id}/concluir" verb=POST {
       field_value = $input.id
     } as $treinamento
 
-    precondition (($treinamento != null) && ($treinamento.ativo == true) && ($treinamento.video_drive_id != null) && ($treinamento.video_duracao > 0)) {
+    precondition (($treinamento != null) && ($treinamento.ativo == true)) {
+      error_type = "notfound"
+      error = "Treinamento nao encontrado ou inativo."
+    }
+
+    var $tipo_conteudo {
+      value = ($treinamento.conteudo_tipo == null) ? "video" : $treinamento.conteudo_tipo
+    }
+
+    var $leitura {
+      value = ($tipo_conteudo == "pdf") || ($tipo_conteudo == "apresentacao")
+    }
+
+    precondition ($leitura || (($treinamento.video_drive_id != null) && ($treinamento.video_duracao > 0))) {
       error_type = "notfound"
       error = "Treinamento nao encontrado, inativo ou sem video."
     }
@@ -90,9 +107,19 @@ query "meus_treinamentos/{id}/concluir" verb=POST {
       return = {type: "single"}
     } as $progresso
 
-    precondition (($progresso != null) && (($progresso.segundos_vistos * 100) >= ($treinamento.video_percentual_minimo * $treinamento.video_duracao))) {
+    precondition ($leitura || (($progresso != null) && (($progresso.segundos_vistos * 100) >= ($treinamento.video_percentual_minimo * $treinamento.video_duracao)))) {
       error_type = "accessdenied"
       error = "Assista o video ate o minimo pedido antes de concluir."
+    }
+
+    precondition (($leitura == false) || (($progresso != null) && ($progresso.aberto_em != null))) {
+      error_type = "accessdenied"
+      error = "Abra o conteudo antes de concluir."
+    }
+
+    precondition (($leitura == false) || ($input.confirmo_leitura == true)) {
+      error_type = "accessdenied"
+      error = "Marque \"Li e compreendi o conteudo\" para concluir."
     }
 
     var $data_texto {
@@ -160,7 +187,7 @@ query "meus_treinamentos/{id}/concluir" verb=POST {
             colaborador_id        : $colaborador_autenticado.id
             concluido_em          : $hoje
             valido_ate            : $valido_ate
-            instrutor             : "Video no ConectaRH"
+            instrutor             : ($leitura ? "Leitura no ConectaRH" : "Video no ConectaRH")
             registrado_por_user_id: $usuario_autenticado.id
           }
         } as $conclusao
@@ -168,7 +195,7 @@ query "meus_treinamentos/{id}/concluir" verb=POST {
         db.add auditoria {
           data = {
             user_id    : $usuario_autenticado.id
-            acao       : "concluir_treinamento_video"
+            acao       : ($leitura ? "concluir_treinamento_leitura" : "concluir_treinamento_video")
             recurso    : "treinamento"
             registro_id: $treinamento.id
             resultado  : "sucesso"
@@ -183,6 +210,7 @@ query "meus_treinamentos/{id}/concluir" verb=POST {
       data = {
         segundos_vistos: 0
         posicao        : 0
+        aberto_em      : null
         atualizado_em  : "now"
       }
     } as $progresso_zerado

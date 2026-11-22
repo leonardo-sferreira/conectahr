@@ -430,7 +430,7 @@ def preparar_envio_arquivo(token: str, colaborador_id: int, extensao: str) -> di
     return _post("documentos/envio_arquivo", {"colaborador_id": colaborador_id, "extensao": extensao}, token, GRUPO_DOCUMENTOS)
 
 
-def subir_arquivo(upload_url: str, conteudo: bytes, tipo_conteudo: str) -> None:
+def subir_arquivo(upload_url: str, conteudo: bytes, tipo_conteudo: str, mensagem_recusa: str | None = None) -> None:
     """PUT do arquivo no endereço de envio devolvido por `preparar_envio_arquivo`. Não leva o token do ConectaRH."""
     try:
         resp = requests.put(upload_url, data=conteudo, headers={"Content-Type": tipo_conteudo}, timeout=60)
@@ -439,7 +439,7 @@ def subir_arquivo(upload_url: str, conteudo: bytes, tipo_conteudo: str) -> None:
         raise ApiError(_MENSAGEM_SEM_CONEXAO, 0) from exc
     if not resp.ok:
         _log.warning("Envio do arquivo recusado pelo armazenamento: HTTP %s", resp.status_code)
-        raise ApiError("Não foi possível enviar o arquivo. Confira se é PDF, JPG ou PNG de até 10 MB e tente de novo.", resp.status_code)
+        raise ApiError(mensagem_recusa or "Não foi possível enviar o arquivo. Confira se é PDF, JPG ou PNG de até 10 MB e tente de novo.", resp.status_code)
 
 
 def abrir_arquivo_documento(token: str, documento_id: int) -> dict:
@@ -1540,7 +1540,8 @@ def registrar_conclusao_treinamento(token: str, treinamento_id: int, colaborador
 
 
 def meus_treinamentos(token: str) -> dict:
-    """GET meus_treinamentos -> {hoje, obrigatorios, conclusoes, progressos} (a própria pessoa)."""
+    """GET meus_treinamentos -> {hoje, obrigatorios, cards, capas, conclusoes, progressos} (a própria pessoa). `capas`:
+    lista de {caminho, url} com as capas assinadas por 10 minutos."""
     return _get("meus_treinamentos", token, GRUPO_COLABORADORES)
 
 
@@ -1550,9 +1551,28 @@ def progresso_treinamento(token: str, treinamento_id: int, segundos_vistos: int,
                  token, GRUPO_COLABORADORES)
 
 
-def concluir_treinamento(token: str, treinamento_id: int) -> dict:
-    """POST meus_treinamentos/{id}/concluir -> {valido_ate}: só com o mínimo do vídeo assistido."""
-    return _post(f"meus_treinamentos/{int(treinamento_id)}/concluir", {}, token, GRUPO_COLABORADORES)
+def concluir_treinamento(token: str, treinamento_id: int, confirmo_leitura: bool = False) -> dict:
+    """POST meus_treinamentos/{id}/concluir -> {valido_ate}. Vídeo: só com o mínimo assistido. PDF e apresentação: só
+    depois de abrir o conteúdo e com `confirmo_leitura` (change cards-de-treinamentos)."""
+    corpo = {"confirmo_leitura": True} if confirmo_leitura else {}
+    return _post(f"meus_treinamentos/{int(treinamento_id)}/concluir", corpo, token, GRUPO_COLABORADORES)
+
+
+def conteudo_treinamento(token: str, treinamento_id: int) -> dict:
+    """GET meus_treinamentos/{id}/conteudo -> {tipo, arquivo, url}: o link do Drive ou do Slides, ou um endereço
+    assinado de 10 minutos para o PDF do bucket privado (change cards-de-treinamentos)."""
+    return _get(f"meus_treinamentos/{int(treinamento_id)}/conteudo", token, GRUPO_COLABORADORES)
+
+
+def abrir_treinamento(token: str, treinamento_id: int) -> dict:
+    """POST meus_treinamentos/{id}/abrir -> {aberto_em}: marca a primeira abertura do PDF ou da apresentação."""
+    return _post(f"meus_treinamentos/{int(treinamento_id)}/abrir", {}, token, GRUPO_COLABORADORES)
+
+
+def envio_arquivo_treinamento(token: str, tipo: str) -> dict:
+    """POST treinamentos/arquivos/envio -> {upload_url, caminho} (RH e Admin). `tipo`: "pdf" (o material, até 20 MB)
+    ou "capa" (WebP 640 × 360). O caminho volta no salvar como `conteudo_path` ou `capa_path`."""
+    return _post("treinamentos/arquivos/envio", {"tipo": tipo}, token, GRUPO_COLABORADORES)
 
 
 # ---------------------------------------------------------------------------

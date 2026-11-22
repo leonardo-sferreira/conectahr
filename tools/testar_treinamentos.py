@@ -5,7 +5,10 @@ conclusão mais recente, situação em dia, vencendo, vencido e pendente, matriz
 legível, validações e "Meus treinamentos") e as telas (matriz com filtro, catálogo vazio com o sugerido, novo e
 editar treinamento, registrar uma turma, vencimentos, acesso e a tela da pessoa). Vídeo (change treinamento-em-video):
 o vídeo pelo link (Google Drive ou YouTube), o mínimo assistido, a duração lida do Drive ou da prévia do YouTube ao
-salvar e "Concluir treinamento" só liberado depois do mínimo. O Google Drive também é simulado.
+salvar e "Concluir treinamento" só liberado depois do mínimo. O Google Drive também é simulado. Cards (change
+cards-de-treinamentos): situação e filtro de cada card, capa automática, corte da descrição, links de leitura, validações
+do conteúdo e da capa, a grade com os filtros, o detalhe com "Voltar" mantendo o filtro, a leitura que só conclui depois
+de abrir e confirmar, e o modal do RH com o tipo de conteúdo.
 
 Uso (na raiz do repositório):
     python tools/testar_treinamentos.py
@@ -63,6 +66,21 @@ MEUS = {"hoje": HOJE.isoformat(), "obrigatorios": [{"id": 1, "nome": "Orientaç�
         "conclusoes": [{"treinamento_id": 1, "nome": "Orientação sobre assédio e violência no trabalho", "carga_horas": 2, "concluido_em": iso(-100),
                         "valido_ate": iso(265), "instrutor": "SESMT", "certificado_url": "https://certificados.exemplo/abc"}]}
 
+CAPA = "1b4e28ba-2fa1-11d2-883f-0016d3cca427.webp"
+CARDS = [
+    {"id": 1, "nome": "Orientação sobre assédio e violência no trabalho", "descricao": "Lei 14.457/2022.", "categoria": "legal", "carga_horas": 2, "validade_meses": 12,
+     "obrigatorio": True, "conteudo_tipo": "video"},
+    {"id": 4, "nome": "Integração de segurança (NR-1)", "descricao": "Riscos do ambiente e como agir.", "categoria": "seguranca", "carga_horas": 1, "validade_meses": 0,
+     "obrigatorio": True, "conteudo_tipo": "pdf", "tem_arquivo": True},
+    {"id": 6, "nome": "LGPD no dia a dia", "descricao": "Dados pessoais com segurança.", "categoria": "compliance", "carga_horas": 2, "validade_meses": 12,
+     "obrigatorio": True, "conteudo_tipo": "apresentacao", "conteudo_url": "https://docs.google.com/presentation/d/1AbCdEfGhIjKlMn/edit", "capa_path": CAPA},
+    {"id": 5, "nome": "Excel avançado", "descricao": "", "categoria": "desenvolvimento", "carga_horas": 16, "validade_meses": 0, "obrigatorio": False,
+     "conteudo_tipo": "video", "video_drive_id": "dQw4w9WgXcQ", "video_fonte": "youtube", "video_duracao": 600},
+]
+MEUS["cards"] = CARDS
+MEUS["capas"] = [{"caminho": CAPA, "url": "https://armazenamento.exemplo/assinado/capa.webp?token=y"}]
+MEUS["progressos"] = [{"treinamento_id": 6, "aberto_em": 1700000000000}]
+
 api_client.minhas_notificacoes = lambda token: {"total_nao_lidas": 0, "notificacoes": []}
 api_client.auth_me = lambda token: {"autenticado": True}
 api_client.folha_pessoas = lambda token: {"ve_todos": True, "pessoas": []}
@@ -76,15 +94,33 @@ api_client.onboarding = lambda token, cid: (_ for _ in ()).throw(ApiError("sem o
 api_client.treinamentos = lambda token: copy.deepcopy(estado.get("dados", DADOS))
 api_client.salvar_treinamento = lambda token, dados, tid=None: chamadas.append(("salvar", tid, dados)) or {"sucesso": True}
 api_client.registrar_conclusao_treinamento = lambda token, *a: chamadas.append(("registrar", *a)) or {"registradas": 2, "puladas": 1, "valido_ate": iso(365)}
-api_client.meus_treinamentos = lambda token: copy.deepcopy(estado.get("meus", MEUS))
+def _meus_treinamentos(token):
+    chamadas.append(("meus",))
+    if estado.get("erro_meus"):
+        raise ApiError(estado["erro_meus"], 500)
+    return copy.deepcopy(estado.get("meus", MEUS))
+
+
+def _conteudo_treinamento(token, tid):
+    chamadas.append(("conteudo", tid))
+    if estado.get("erro_conteudo"):
+        raise ApiError(estado["erro_conteudo"], 404)
+    return copy.deepcopy(estado.get("conteudo", {"tipo": "pdf", "arquivo": True, "url": "https://armazenamento.exemplo/assinado/nr-1.pdf?token=x"}))
+
+
+api_client.meus_treinamentos = _meus_treinamentos
 api_client.progresso_treinamento = lambda token, *a: chamadas.append(("progresso", *a)) or {"segundos_vistos": a[1], "duracao": 1440}
-api_client.concluir_treinamento = lambda token, tid: chamadas.append(("concluir", tid)) or {"valido_ate": iso(365)}
+api_client.concluir_treinamento = lambda token, tid, confirmo_leitura=False: chamadas.append(("concluir", tid, confirmo_leitura)) or {"valido_ate": iso(365)}
+api_client.conteudo_treinamento = _conteudo_treinamento
+api_client.abrir_treinamento = lambda token, tid: chamadas.append(("abrir", tid)) or {"aberto_em": 1}
 # Google Drive simulado: a chave nos secrets e a duração do vídeo.
 drive_video.chave_api = lambda: estado.get("chave", "chave-de-teste")
 drive_video.duracao_video = lambda vid, chave: chamadas.append(("drive", vid)) or 1440
 ID_VIDEO = "1AbCdEfGhIjKlMnOpQrStUvWxYz_-123"
 ID_YT = "dQw4w9WgXcQ"
 MEUS_VIDEO = dict(MEUS, obrigatorios=[dict(MEUS["obrigatorios"][1], video_drive_id=ID_VIDEO, video_duracao=1440, video_percentual_minimo=95)],
+                  cards=[dict(CARDS[1], conteudo_tipo="video", tem_arquivo=False, video_drive_id=ID_VIDEO, video_fonte="drive", video_duracao=1440,
+                              video_percentual_minimo=95)],
                   progressos=[{"treinamento_id": 4, "segundos_vistos": 893, "posicao": 893}])
 
 falhas: list[str] = []
@@ -176,6 +212,78 @@ mv = m.meus(MEUS_VIDEO)
 conferir(mv["videos"][0]["vistos"] == 893 and mv["videos"][0]["minimo"] == 95 and "Vídeo de 24 min" in mv["videos"][0]["detalhe"]
          and mv["obrigatorios"][0]["nome"].endswith("· vídeo") and m.meus(MEUS)["videos"] == [], "vídeo: meus treinamentos com o progresso")
 
+print("\nCards (treinamentos_modelo.py; change cards-de-treinamentos)")
+lc = m.cards(MEUS)
+por_filtro = {f: [c["id"] for c in lc if c["situacao"]["filtro"] == f] for f in m.FILTROS}
+conferir(por_filtro == {"pendentes": [4, 5], "andamento": [6], "concluidos": [1]} and m.contagem(lc) == {"pendentes": 2, "andamento": 1, "concluidos": 1}
+         and m.filtro_inicial(lc) == "pendentes", "cards: filtros (pendente e opcional, leitura aberta, em dia) e o primeiro filtro com itens")
+sit = {c["id"]: c["situacao"] for c in lc}
+conferir(sit[4]["rotulo"] == "Pendente" and sit[5]["rotulo"] == "Opcional" and sit[6]["rotulo"] == "Em andamento" and sit[1]["filtro"] == "concluidos",
+         "cards: rótulos de situação")
+conferir(m.filtro_inicial([c for c in lc if c["id"] == 1]) == "concluidos" and m.filtro_inicial([]) == "pendentes", "cards: filtro inicial sem pendentes")
+venc = m.situacao_card(CARDS[0], [{"treinamento_id": 1, "valido_ate": iso(-3)}], {"segundos_vistos": 30}, HOJE)
+conferir(venc["filtro"] == "andamento" and venc["rotulo"].startswith("Vencido") and venc["tom"] == "err", "cards: vencido e começado fica em andamento com o selo de vencido")
+op = m.situacao_card(CARDS[3], [{"treinamento_id": 5, "valido_ate": None}], None, HOJE)
+conferir(op["filtro"] == "concluidos" and op["rotulo"] == "Concluído", "cards: opcional concluído")
+capas = {c["id"]: c["capa"] for c in lc}
+conferir(m.mapa_capas(MEUS["capas"]) == {CAPA: "https://armazenamento.exemplo/assinado/capa.webp?token=y"}
+         and m.mapa_capas([{"caminho": "x.webp"}, "lixo", None]) == {} and m.mapa_capas(None) == {}, "cards: capas assinadas (lista do backend) viram mapa")
+conferir(capas[6] == "https://armazenamento.exemplo/assinado/capa.webp?token=y" and capas[5] == "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" and capas[4] is None
+         and m.capa({"conteudo_tipo": "pdf", "conteudo_url": "https://drive.google.com/file/d/1AbCdEfGh/view"}, {}) == "https://drive.google.com/thumbnail?id=1AbCdEfGh&sz=w640"
+         and m.capa({"video_drive_id": ID_VIDEO}, {}) == f"https://drive.google.com/thumbnail?id={ID_VIDEO}&sz=w640"
+         and m.capa({"capa_path": CAPA, "video_drive_id": ID_YT, "video_fonte": "youtube"}, {}) == f"https://img.youtube.com/vi/{ID_YT}/hqdefault.jpg",
+         "cards: capa enviada, miniatura do YouTube, do Drive, ou nenhuma (ilustração)")
+conferir(m.capa_padrao("seguranca") == "app/static/capas/seguranca.svg" and m.capa_padrao(None) == "app/static/capas/desenvolvimento.svg"
+         and all((RAIZ / "frontend/static/capas" / f"{c}.svg").exists() for c in m.CATEGORIAS), "cards: ilustração de cada categoria existe")
+longo = "palavra " * 40
+conferir(m.resumo(longo).endswith("…") and len(m.resumo(longo)) <= 171 and m.resumo("  curta   ") == "curta" and m.resumo(None) == "", "cards: corte da descrição")
+conferir({c["id"]: c["tipo_rotulo"] for c in lc} == {1: "Vídeo", 4: "Leitura (PDF)", 6: "Apresentação", 5: "Vídeo · 10 min"}, "cards: tipo de conteúdo")
+conferir(next(c for c in lc if c["id"] == 4)["com_conteudo"] and not next(c for c in lc if c["id"] == 1)["com_conteudo"]
+         and next(c for c in lc if c["id"] == 5)["video"]["duracao"] == 600, "cards: com conteúdo (vídeo sem link não tem; PDF com arquivo tem)")
+conferir(m.link_leitura("pdf", "https://drive.google.com/file/d/1AbCdEfGhIj/view?usp=sharing") == "https://drive.google.com/file/d/1AbCdEfGhIj/view"
+         and m.link_leitura("pdf", "https://docs.google.com/presentation/d/1AbCdEfGhIjKl/edit") is None
+         and m.link_leitura("apresentacao", "https://docs.google.com/presentation/d/1AbCdEfGhIjKl/edit#slide=id.p") == "https://docs.google.com/presentation/d/1AbCdEfGhIjKl/edit"
+         and m.link_leitura("apresentacao", "https://drive.google.com/file/d/1AbCdEfGhIj/view") == "https://drive.google.com/file/d/1AbCdEfGhIj/view"
+         and m.link_leitura("apresentacao", "https://exemplo.com/presentation/d/1AbCdEfGhIjKl/edit") is None
+         and m.link_leitura("pdf", "https://drive.google.com/file/d/1Ab CdE/view") is None and m.link_leitura("pdf", "") is None,
+         "cards: links aceitos (Drive para PDF; Slides ou Drive para apresentação; outro site não)")
+conferir(m.url_embutida("https://docs.google.com/presentation/d/1AbCdEfGhIjKl/edit") == "https://docs.google.com/presentation/d/1AbCdEfGhIjKl/embed"
+         and m.url_embutida("https://drive.google.com/file/d/1AbCdEfGhIj/view") == "https://drive.google.com/file/d/1AbCdEfGhIj/preview"
+         and m.url_embutida("https://armazenamento.exemplo/x.pdf?t=1") == "https://armazenamento.exemplo/x.pdf?t=1" and m.url_embutida(None) is None,
+         "cards: endereço embutido (Slides /embed, Drive /preview, PDF assinado como está)")
+conferir(m.validar_conteudo("video", None, None, 0) is None and "Envie o arquivo PDF" in m.validar_conteudo("pdf", "", None, 0)
+         and m.validar_conteudo("pdf", "", None, 0, tem_arquivo_salvo=True) is None and "um dos dois" in m.validar_conteudo("pdf", "https://drive.google.com/file/d/x/view", "a.pdf", 10)
+         and "inválido" in m.validar_conteudo("pdf", "https://exemplo.com/a.pdf", None, 0) and "Slides" in m.validar_conteudo("apresentacao", "https://exemplo.com/a", None, 0)
+         and "20 MB" in m.validar_conteudo("pdf", None, "a.pdf", m.TAMANHO_PDF + 1) and "PDF" in m.validar_conteudo("pdf", None, "a.docx", 10)
+         and "vazio" in m.validar_conteudo("pdf", None, "a.pdf", 0) and m.validar_conteudo("pdf", None, "A.PDF", 10) is None,
+         "cards: validações do conteúdo (arquivo ou link, um dos dois, host, tamanho e extensão)")
+conferir("JPG" in m.validar_capa("capa.gif", 10) and "5 MB" in m.validar_capa("capa.png", m.TAMANHO_CAPA + 1) and m.validar_capa("capa.JPEG", 10) is None
+         and "vazio" in m.validar_capa("capa.webp", 0), "cards: validações da capa")
+import io  # noqa: E402
+
+from PIL import Image  # noqa: E402
+
+_png = io.BytesIO()
+_img = Image.new("RGB", (1200, 1200), "orange")
+_exif = Image.Exif()
+_exif[0x010F] = "Camera de teste"
+_img.save(_png, format="JPEG", exif=_exif)
+_saida = m.tratar_capa(_png.getvalue())
+_aberta = Image.open(io.BytesIO(_saida))
+conferir(_aberta.size == (640, 360) and _aberta.format == "WEBP" and not _aberta.getexif(), "cards: capa reduzida a 640 × 360 em WebP, sem metadados")
+_grande = io.BytesIO()
+Image.new("1", (9000, 6000)).save(_grande, format="PNG")
+try:
+    m.tratar_capa(_grande.getvalue())
+    conferir(False, "cards: capa com pixels demais é recusada antes de decodificar")
+except ValueError as _e:
+    conferir("grande demais" in str(_e) and len(_grande.getvalue()) < m.TAMANHO_CAPA, "cards: capa com pixels demais é recusada antes de decodificar")
+try:
+    m.tratar_capa(b"isto nao e uma imagem")
+    conferir(False, "cards: arquivo que não é imagem é recusado")
+except ValueError:
+    conferir(True, "cards: arquivo que não é imagem é recusado")
+
 print("\nTreinamentos do RH (Figma 549:1321)")
 at = app()
 t = texto(at)
@@ -242,15 +350,74 @@ conferir("Bruno Melo · Orientação sobre assédio" in texto(at) and "Carla Dia
 at = app(perfil="GESTOR")
 conferir("só do RH" in texto(at), "quem não é RH nem Admin: sem acesso")
 
-print("\nMeus treinamentos (Figma 550:1415)")
+print("\nMeus treinamentos em cards (Figma 633:1470)")
 at = app("meus-treinamentos", perfil="COLABORADOR")
 t = texto(at)
-conferir("Obrigatórios para você" in t and "Pendente" in t and "Em dia" in t and "Ver certificado" in t, "obrigatórios, situação e certificado")
-at = app("meus-treinamentos", perfil="COLABORADOR", meus={"hoje": HOJE.isoformat(), "obrigatorios": [], "conclusoes": []})
-conferir("Nenhum treinamento obrigatório para você agora." in texto(at) and "Nenhum treinamento registrado ainda." in texto(at) and not at.exception,
-         "sem obrigatórios nem histórico: mensagens, sem erro")
-conferir(not at.exception and "Você assistiu" not in texto(at) and "mt_concluir_4" not in chaves(at), "sem vídeo: sem o player")
+conferir(not at.exception and at.button_group(key="mt_filtro").options == ["Pendentes (2)", "Em andamento (1)", "Concluídos (1)"],
+         "grade: filtros com a contagem")
+conferir(at.button_group(key="mt_filtro").value == "pendentes" and {"mt_abrir_4", "mt_abrir_5"} <= chaves(at) and "mt_abrir_6" not in chaves(at)
+         and "Integração de segurança (NR-1)" in t and "Excel avançado" in t and "Leitura (PDF)" in t and "Opcional" in t, "grade: abre em Pendentes com os cards do filtro")
+htmls = " ".join(str(e.value) for e in at.get("html"))
+conferir("app/static/capas/seguranca.svg" in htmls and "img.youtube.com/vi/dQw4w9WgXcQ" in htmls and 'aria-label="Capa de Excel avançado"' in htmls
+         and "Abrir: Integração de segurança (NR-1)" in [b.label for b in at.button], "grade: capa com a ilustração por baixo, rótulo acessível e botão do card")
+conferir("Histórico" in t and "Ver certificado" in t and "SESMT" in t, "grade: histórico com o certificado")
+at.button_group(key="mt_filtro").set_value("andamento")
+at = at.run()
+conferir({"mt_abrir_6"} == {k for k in chaves(at) if str(k).startswith("mt_abrir_")} and "capa.webp" in " ".join(str(e.value) for e in at.get("html")),
+         "grade: Em andamento mostra a apresentação aberta, com a capa enviada")
+at = clicar(at, "mt_abrir_6")
+t = texto(at)
+conferir(not at.exception and "LGPD no dia a dia" in t and "Dados pessoais com segurança." in t and ("conteudo", 6) in chamadas
+         and "Arquivo no Google Drive" not in t
+         and not any(c[0] == "abrir" for c in chamadas), "detalhe: apresentação já aberta busca o conteúdo sem marcar a abertura de novo")
+conferir(any("Voltar para Em andamento" in b.label for b in at.button) and at.button(key="mt_concluir_6").disabled
+         and not at.checkbox(key="mt_li_6").disabled, "detalhe: Voltar com o filtro e Concluir travado até confirmar")
+at.checkbox(key="mt_li_6").check()
+at = at.run()
+conferir(not at.button(key="mt_concluir_6").disabled, "detalhe: confirmar libera Concluir")
+at = clicar(at, "mt_concluir_6")
+conferir(("concluir", 6, True) in chamadas and "Treinamento concluído" in aviso(at), "detalhe: conclui a leitura com a confirmação")
+at = app("meus-treinamentos", perfil="COLABORADOR")
+at.button_group(key="mt_filtro").set_value("andamento")
+at = clicar(at.run(), "mt_abrir_6")
+at = clicar(at, "mt_btn_voltar")
+conferir(at.button_group(key="mt_filtro").value == "andamento" and "mt_abrir_6" in chaves(at) and "mt_btn_voltar" not in chaves(at),
+         "Voltar: a grade volta no filtro Em andamento")
+at = clicar(app("meus-treinamentos", perfil="COLABORADOR"), "mt_abrir_4")
+conferir(("conteudo", 4) in chamadas and ("abrir", 4) in chamadas and not at.checkbox(key="mt_li_4").disabled and at.button(key="mt_concluir_4").disabled
+         and "PDF do treinamento" in texto(at) and at.get("iframe"), "detalhe: PDF do bucket (arquivo: true) marca a abertura e mostra o visualizador")
+chamadas.clear()
+at = at.run()
+# A primeira abertura descarta os dados guardados (a grade passa a "Em andamento"): a interação seguinte os busca uma vez.
+conferir(chamadas == [("meus",)], "detalhe: depois da primeira abertura, busca os dados uma vez")
+chamadas.clear()
+at = at.run()
+conferir(("abrir", 4) not in chamadas and ("conteudo", 4) not in chamadas and ("meus",) not in chamadas,
+         "detalhe: não repete a abertura, nem pede outro endereço ou os dados a cada interação")
+sem_arquivo = dict(MEUS, cards=[dict(CARDS[1], tem_arquivo=False)])
+at = clicar(app("meus-treinamentos", perfil="COLABORADOR", meus=sem_arquivo), "mt_abrir_4")
+conferir("ainda não anexou o conteúdo" in texto(at) and not any(c[0] in ("conteudo", "abrir") for c in chamadas), "detalhe: leitura sem conteúdo avisa")
+at = clicar(app("meus-treinamentos", perfil="COLABORADOR", erro_conteudo="Treinamento não encontrado."), "mt_abrir_4")
+conferir(not at.exception and "Treinamento não encontrado." in texto(at) and "mt_concluir_4" not in chaves(at), "detalhe: erro ao buscar o conteúdo, sem conclusão")
+at = clicar(app("meus-treinamentos", perfil="COLABORADOR", conteudo={"tipo": "pdf", "url": "<script>alert(1)</script>"}), "mt_abrir_4")
+conferir(not at.exception and "Não foi possível abrir o conteúdo" in texto(at) and not at.get("iframe") and ("abrir", 4) not in chamadas,
+         "detalhe: endereço que não é https não vai para o iframe nem marca a abertura")
+at = app("meus-treinamentos", perfil="COLABORADOR", meus={"hoje": HOJE.isoformat(), "obrigatorios": [], "cards": [], "conclusoes": []})
+conferir("Nenhum treinamento para você agora" in texto(at) and "Nenhum treinamento registrado ainda." in texto(at) and not at.exception,
+         "vazio: estado vazio do Figma e histórico vazio, sem erro")
+so_feitos = dict(MEUS, cards=[CARDS[0]])
+at = app("meus-treinamentos", perfil="COLABORADOR", meus=so_feitos)
+conferir(at.button_group(key="mt_filtro").value == "concluidos", "grade: sem pendentes, abre em Concluídos")
+at.button_group(key="mt_filtro").set_value("pendentes")
+at = at.run()
+conferir("Nada pendente" in texto(at), "grade: filtro sem itens mostra a mensagem")
+at = app("meus-treinamentos", perfil="COLABORADOR", erro_meus="Serviço indisponível.")
+conferir(not at.exception and "Serviço indisponível." in texto(at), "erro: a mensagem da API")
+
+print("\nVídeo no detalhe (change treinamento-em-video)")
 at = app("meus-treinamentos", perfil="COLABORADOR", meus=MEUS_VIDEO)
+conferir(at.button_group(key="mt_filtro").value == "andamento" and "Vídeo · 24 min" in texto(at), "vídeo começado fica em Em andamento")
+at = clicar(at, "mt_abrir_4")
 t = texto(at)
 conferir(not at.exception and "Integração de segurança (NR-1)" in t and "Vídeo de 24 min" in t and "Trechos pulados não contam" in t
          and at.button(key="mt_concluir_4").disabled, "vídeo: player e Concluir travado antes do mínimo (62%)")
@@ -258,14 +425,59 @@ at.session_state["mt_vistos_4"] = 1400
 at = at.run()
 conferir(not at.button(key="mt_concluir_4").disabled, "vídeo: Concluir liberado depois de 95%")
 at = clicar(at, "mt_concluir_4")
-conferir(("concluir", 4) in chamadas and "Treinamento concluído" in aviso(at), "vídeo: conclui pelo endpoint da pessoa")
-at = app("meus-treinamentos", perfil="COLABORADOR", meus=MEUS_VIDEO, chave=None)
+conferir(("concluir", 4, False) in chamadas and "Treinamento concluído" in aviso(at), "vídeo: conclui pelo endpoint da pessoa")
+at = clicar(app("meus-treinamentos", perfil="COLABORADOR", meus=MEUS_VIDEO, chave=None), "mt_abrir_4")
 conferir("falta configurar o Google Drive" in texto(at) and "mt_concluir_4" not in chaves(at), "vídeo: sem a chave da API, aviso no lugar do player")
-yt = dict(MEUS_VIDEO, obrigatorios=[dict(MEUS_VIDEO["obrigatorios"][0], video_drive_id=ID_YT, video_fonte="youtube")])
-at = app("meus-treinamentos", perfil="COLABORADOR", meus=yt, chave=None)
+yt = dict(MEUS_VIDEO, cards=[dict(MEUS_VIDEO["cards"][0], video_drive_id=ID_YT, video_fonte="youtube")])
+at = clicar(app("meus-treinamentos", perfil="COLABORADOR", meus=yt, chave=None), "mt_abrir_4")
 conferir(not at.exception and "falta configurar" not in texto(at) and at.button(key="mt_concluir_4").disabled, "vídeo: YouTube toca sem a chave do Google")
+at = app("meus-treinamentos", perfil="COLABORADOR")
+at.button_group(key="mt_filtro").set_value("concluidos")
+at = clicar(at.run(), "mt_abrir_1")
+conferir("não tem vídeo no ConectaRH" in texto(at) and "mt_concluir_1" not in chaves(at), "vídeo: treinamento sem vídeo explica que o RH registra")
 at = app("meus-treinamentos", perfil="COLABORADOR", colaborador_id=None)
 conferir("não tem ficha" in texto(at), "conta sem ficha: aviso")
+
+print("\nModal do RH: tipo de conteúdo (Figma 636:1771)")
+at = clicar(app(), "tr_novo")
+conferir(at.button_group(key="tr_form_tipo").value == "video" and "tr_form_video" in {w.key for w in at.text_input}, "modal: novo vem como vídeo")
+at.selectbox(key="tr_form_cat").set_value("compliance")
+at.text_input(key="tr_form_nome").set_value("LGPD no dia a dia")
+at.button_group(key="tr_form_tipo").set_value("apresentacao")
+at = at.run()
+conferir("tr_form_video" not in {w.key for w in at.text_input} and at.radio(key="tr_form_origem").value == "arquivo", "modal: apresentação troca os campos")
+at = clicar(at, "tr_form_ok")
+conferir("Cole o link do Google Slides" in texto(at) and not any(c[0] == "salvar" for c in chamadas), "modal: apresentação sem arquivo nem link não salva")
+at.radio(key="tr_form_origem").set_value("link")
+at = at.run()
+at.text_input(key="tr_form_link").set_value("https://exemplo.com/slides")
+at = clicar(at.run(), "tr_form_ok")
+conferir("Link inválido" in texto(at) and not any(c[0] == "salvar" for c in chamadas), "modal: link de outro site é recusado")
+at.text_input(key="tr_form_link").set_value("https://docs.google.com/presentation/d/1AbCdEfGhIjKlMn/edit?usp=sharing")
+at = clicar(at.run(), "tr_form_ok")
+salvo = next((c[2] for c in chamadas if c[0] == "salvar"), {})
+conferir(salvo.get("conteudo_tipo") == "apresentacao" and salvo.get("conteudo_url") == "https://docs.google.com/presentation/d/1AbCdEfGhIjKlMn/edit"
+         and salvo.get("conteudo_path") is None and salvo.get("video_drive_id") is None and salvo.get("capa_path") is None,
+         "modal: salva a apresentação pelo Slides, sem os campos de vídeo")
+com_pdf = dict(DADOS, treinamentos=DADOS["treinamentos"] + [{"id": 9, "nome": "NR-1", "categoria": "seguranca", "carga_horas": 1, "validade_meses": 0, "obrigatorio": True,
+                                                              "publico": "todos", "ativo": True, "conteudo_tipo": "pdf", "conteudo_path": "1b4e28ba-2fa1-11d2-883f-0016d3cca427.pdf",
+                                                              "capa_path": CAPA}])
+at = aba(app(dados=com_pdf), "Catálogo")
+conferir("Leitura (PDF)" in texto(at), "catálogo: marca o tipo de leitura")
+at = clicar(at, "tr_editar_9")
+conferir(at.button_group(key="tr_form_tipo").value == "pdf" and "continua valendo" in texto(at) and "tr_form_capa_remover" in {c.key for c in at.checkbox},
+         "modal: editar PDF mostra o arquivo atual e a opção de remover a capa")
+at.checkbox(key="tr_form_capa_remover").check()
+at = clicar(at.run(), "tr_form_ok")
+salvo = next((c[2] for c in chamadas if c[0] == "salvar"), {})
+conferir(salvo.get("conteudo_path") == "1b4e28ba-2fa1-11d2-883f-0016d3cca427.pdf" and salvo.get("capa_path") is None and salvo.get("conteudo_tipo") == "pdf"
+         and salvo.get("conteudo_url") is None, "modal: editar mantém o PDF e remove a capa")
+at = clicar(aba(app(dados=com_pdf), "Catálogo"), "tr_editar_9")
+at.button_group(key="tr_form_tipo").set_value("video")
+at = clicar(at.run(), "tr_form_ok")
+salvo = next((c[2] for c in chamadas if c[0] == "salvar"), {})
+conferir(salvo.get("conteudo_tipo") == "video" and salvo.get("conteudo_path") is None and salvo.get("conteudo_url") is None and salvo.get("capa_path") == CAPA,
+         "modal: trocar para vídeo limpa o PDF e mantém a capa")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

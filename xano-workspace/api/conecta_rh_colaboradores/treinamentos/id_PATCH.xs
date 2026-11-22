@@ -1,4 +1,4 @@
-// Edita um treinamento do catalogo, inclusive desativar (change treinamentos-obrigatorios, D2). As conclusoes ja
+// Edita um treinamento do catalogo, inclusive desativar (change treinamentos-obrigatorios, D2; tipo e capa na change cards-de-treinamentos). As conclusoes ja
 // registradas nao mudam. Auditado. So RH e Admin.
 query "treinamentos/{id}" verb=PATCH {
   api_group = "ConectaRH — Colaboradores"
@@ -18,6 +18,10 @@ query "treinamentos/{id}" verb=PATCH {
     text? video_fonte? filters=trim|lower
     int? video_duracao?
     int? video_percentual_minimo?
+    text? conteudo_tipo? filters=trim|lower
+    text? conteudo_url? filters=trim|max:500
+    text? conteudo_path? filters=trim|max:200
+    text? capa_path? filters=trim|max:200
     bool ativo
   }
 
@@ -165,6 +169,60 @@ query "treinamentos/{id}" verb=PATCH {
       error = "O minimo assistido vai de 50% a 100%."
     }
 
+    // Tipo de conteudo (change cards-de-treinamentos, D1 e D7): video, pdf ou apresentacao, com os campos coerentes.
+    var $tipo_final {
+      value = (($input.conteudo_tipo == null) || ($input.conteudo_tipo == "")) ? "video" : $input.conteudo_tipo
+    }
+
+    precondition (($tipo_final == "video") || ($tipo_final == "pdf") || ($tipo_final == "apresentacao")) {
+      error_type = "inputerror"
+      error = "Tipo de conteudo invalido. Use video, pdf ou apresentacao."
+    }
+
+    var $url_final {
+      value = (($input.conteudo_url == null) || ($input.conteudo_url == "")) ? null : $input.conteudo_url
+    }
+
+    var $path_final {
+      value = (($input.conteudo_path == null) || ($input.conteudo_path == "")) ? null : $input.conteudo_path
+    }
+
+    var $capa_final {
+      value = (($input.capa_path == null) || ($input.capa_path == "")) ? null : $input.capa_path
+    }
+
+    precondition (($tipo_final != "video") || (($url_final == null) && ($path_final == null))) {
+      error_type = "inputerror"
+      error = "Treinamento de video nao leva arquivo nem link de leitura."
+    }
+
+    precondition (($tipo_final == "video") || ($video_final == null)) {
+      error_type = "inputerror"
+      error = "Treinamento de PDF ou apresentacao nao leva os campos de video."
+    }
+
+    precondition (($tipo_final == "video") || (($url_final == null) && ($path_final != null)) || (($url_final != null) && ($path_final == null))) {
+      error_type = "inputerror"
+      error = "Envie o arquivo ou cole o link, um dos dois."
+    }
+
+    // Links aceitos: arquivo do Google Drive e, para apresentacao, tambem o Google Slides. Nada de link generico.
+    precondition (($url_final == null) || ((($url_final|strlen) <= 500) && (($url_final|contains:" ") == false) && ((($url_final|substr:0:32) == "https://drive.google.com/file/d/") || (($tipo_final == "apresentacao") && (($url_final|substr:0:39) == "https://docs.google.com/presentation/d/"))))) {
+      error_type = "inputerror"
+      error = "Link invalido. Para PDF, use um arquivo do Google Drive; para apresentacao, o Google Slides ou um arquivo do Drive."
+    }
+
+    // Caminhos no padrao do bucket: "{uuid}.pdf" e "{uuid}.webp", sem pasta.
+    precondition (($path_final == null) || ((($path_final|strlen) == 40) && (($path_final|substr:36:4) == ".pdf") && (($path_final|contains:"/") == false) && (($path_final|contains:"..") == false) && (($path_final|contains:"%") == false))) {
+      error_type = "inputerror"
+      error = "Arquivo invalido. Envie o PDF pelo botao do formulario."
+    }
+
+    precondition (($capa_final == null) || ((($capa_final|strlen) == 41) && (($capa_final|substr:36:5) == ".webp") && (($capa_final|contains:"/") == false) && (($capa_final|contains:"..") == false) && (($capa_final|contains:"%") == false))) {
+      error_type = "inputerror"
+      error = "Capa invalida. Envie a imagem pelo botao do formulario."
+    }
+
     db.edit treinamento {
       field_name = "id"
       field_value = $treinamento.id
@@ -181,6 +239,10 @@ query "treinamentos/{id}" verb=PATCH {
         video_fonte     : $fonte_final
         video_duracao   : $duracao_final
         video_percentual_minimo: $percentual_final
+        conteudo_tipo   : $tipo_final
+        conteudo_url    : $url_final
+        conteudo_path   : $path_final
+        capa_path       : $capa_final
         ativo           : $input.ativo
         updated_at      : "now"
       }

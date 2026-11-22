@@ -104,6 +104,65 @@ query "meus_treinamentos" verb=GET {
       }
     }
 
+    // Cards (change cards-de-treinamentos, D4): todos os ativos do publico da pessoa, obrigatorios e opcionais, com o
+    // tipo de conteudo. O opcional entra como convite. Capas: URLs assinadas em "capas", uma lista de {caminho, url}
+    // (o mapa do assinar_treinamentos aninha no ponto de "uuid.webp"; o get com o mesmo caminho le certo).
+    var $cards {
+      value = []
+    }
+
+    var $caminhos_capa {
+      value = []
+    }
+
+    foreach ($ativos) {
+      each as $tc {
+        var $ids_card {
+          value = ($tc.departamento_ids == null) ? "" : $tc.departamento_ids
+        }
+
+        conditional {
+          if (($tc.publico == "todos") || ($ids_card|contains:$meu_departamento)) {
+            var.update $cards {
+              value = $cards|push:{id: $tc.id, nome: $tc.nome, descricao: $tc.descricao, categoria: $tc.categoria, carga_horas: $tc.carga_horas, validade_meses: $tc.validade_meses, obrigatorio: $tc.obrigatorio, conteudo_tipo: ($tc.conteudo_tipo == null ? "video" : $tc.conteudo_tipo), video_drive_id: $tc.video_drive_id, video_fonte: $tc.video_fonte, video_duracao: $tc.video_duracao, video_percentual_minimo: $tc.video_percentual_minimo, conteudo_url: $tc.conteudo_url, tem_arquivo: ($tc.conteudo_path != null), capa_path: $tc.capa_path}
+            }
+
+            conditional {
+              if ($tc.capa_path != null) {
+                var.update $caminhos_capa {
+                  value = $caminhos_capa|push:$tc.capa_path
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function.run "ConectaHR/assinar_treinamentos" {
+      input = {caminhos: $caminhos_capa}
+    } as $assinadas
+
+    var $capas {
+      value = []
+    }
+
+    foreach ($caminhos_capa) {
+      each as $caminho_capa {
+        var $url_capa {
+          value = $assinadas|get:$caminho_capa
+        }
+
+        conditional {
+          if ($url_capa != null) {
+            var.update $capas {
+              value = $capas|push:{caminho: $caminho_capa, url: $url_capa}
+            }
+          }
+        }
+      }
+    }
+
     db.query treinamento_conclusao {
       where = $db.treinamento_conclusao.colaborador_id == $colaborador_autenticado.id
       sort = {treinamento_conclusao.concluido_em: "desc"}
@@ -131,7 +190,7 @@ query "meus_treinamentos" verb=GET {
     db.query treinamento_progresso {
       where = $db.treinamento_progresso.colaborador_id == $colaborador_autenticado.id
       return = {type: "list"}
-      output = ["treinamento_id", "segundos_vistos", "posicao"]
+      output = ["treinamento_id", "segundos_vistos", "posicao", "aberto_em"]
     } as $progressos
   }
 
@@ -139,6 +198,8 @@ query "meus_treinamentos" verb=GET {
     sucesso     : true
     hoje        : $hoje
     obrigatorios: $obrigatorios
+    cards       : $cards
+    capas       : $capas
     conclusoes  : $conclusoes
     progressos  : $progressos
   }

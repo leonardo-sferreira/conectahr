@@ -1015,6 +1015,19 @@ Change `treinamentos-obrigatorios` (desde 20/10/2026). A Lei 14.457/2022 pede or
     - **YouTube:** o modal mostra a prévia do vídeo, que lê a duração; sem a prévia carregada, não salva. O vídeo fica como "não listado" (privado não toca). Não precisa de configuração.
   - **Progresso** (`treinamento_progresso`; `meus_treinamentos/{id}/progresso` POST): conta o ponto mais longe assistido sem pular, até 2x a velocidade, nas duas fontes. Nunca diminui e não passa da duração. O primeiro registro tem no máximo 90 segundos, e cada aumento cabe em 2 × o tempo real desde o último, mais 15 segundos; fora disso, recusa.
   - **Conclusão pela pessoa** (`meus_treinamentos/{id}/concluir` POST): só com o progresso gravado no mínimo (vistos × 100 ≥ mínimo × duração). Data de hoje, validade calculada como no registro do RH, instrutor "Vídeo no ConectaRH", auditada; no mesmo dia, não repete. Depois, o progresso volta a zero, para a renovação pedir o vídeo de novo.
+- **Treinamentos em cards, por tipo de conteúdo** (change `cards-de-treinamentos`, desde 21/11/2026; Figma seção 23, 633:1470):
+  - **Tipo** (`treinamento.conteudo_tipo`): `video` (padrão, inclusive dos treinamentos antigos), `pdf` ou `apresentacao`. O backend recusa campos de leitura num vídeo e campos de vídeo numa leitura.
+  - **Conteúdo de leitura:** um dos dois, nunca os dois:
+    - o **arquivo PDF** (até 20 MB), enviado ao bucket privado `treinamentos` por um endereço de uso único (`treinamentos/arquivos/envio` POST, só RH e Admin, auditado em `gerar_envio_material_treinamento`). O caminho é `{uuid}.pdf`, sem nome de pessoa;
+    - ou o **link**, só `https://drive.google.com/file/d/…` (PDF e apresentação) ou `https://docs.google.com/presentation/d/…` (apresentação), sem espaços, até 500 caracteres.
+  - **Capa** (`capa_path`, opcional): o servidor do app reduz a imagem (JPG, PNG ou WebP, até 5 MB) para 640 × 360 em WebP, sem metadados, e envia ao mesmo bucket (`{uuid}.webp`). Sem capa, o card usa a miniatura do YouTube, a do Drive (vídeo ou link do PDF) ou a ilustração da categoria (`frontend/static/capas`). A miniatura externa fica por cima da ilustração; se não carrega, a ilustração aparece.
+  - **Cards** (`meus_treinamentos` GET, lista `cards` e `capas` assinadas por 10 minutos): os treinamentos ativos do público da pessoa, obrigatórios e opcionais (o opcional é convite, sem cobrança). Situação:
+    - **Concluídos:** obrigatório em dia, ou opcional com conclusão;
+    - **Em andamento:** vídeo com progresso, ou leitura aberta, desde a última conclusão. Se estiver vencido ou vencendo, o selo continua mostrando isso;
+    - **Pendentes:** pendente, vencido, vencendo ou opcional ainda não feito.
+    A tela abre no primeiro filtro com itens, nessa ordem. Grade de 3 colunas na tela larga, 2 na média e 1 no celular.
+  - **Detalhe:** abre na mesma página. "Voltar" mantém o filtro. Vídeo usa o player e as regras de cima. PDF e apresentação mostram o conteúdo embutido (`meus_treinamentos/{id}/conteudo` GET, só para o público do treinamento, senão 404; o PDF do bucket vem num endereço assinado de 10 minutos) e "Abrir em nova aba".
+  - **Conclusão de leitura:** mostrar o conteúdo grava a primeira abertura (`meus_treinamentos/{id}/abrir` POST, `treinamento_progresso.aberto_em`). "Concluir treinamento" exige a abertura e a marca "Li e compreendi o conteúdo" (`confirmo_leitura`); sem uma delas, 403. Grava a conclusão como no vídeo, com o instrutor "Leitura no ConectaRH" e a auditoria `concluir_treinamento_leitura`, e zera `aberto_em` para a renovação. **Não há medição da leitura real:** a confirmação é da pessoa.
 
 ## 22. Termômetro de humor
 
