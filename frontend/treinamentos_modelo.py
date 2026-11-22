@@ -6,7 +6,7 @@ O treinamento obrigatório vale para todos ou para alguns departamentos. A situa
 mais recente: em dia, vencendo (até 30 dias para vencer), vencido ou pendente (nunca registrado). Sem validade, uma
 conclusão basta.
 
-Vídeo (change treinamento-em-video): o RH cola o link do Google Drive ou do YouTube (a fonte sai do link); a pessoa
+Vídeo (change treinamento-em-video; só YouTube desde a change remover-video-drive): o RH cola o link do YouTube; a pessoa
 assiste em "Meus treinamentos" e só conclui depois de assistir o mínimo pedido (95% por padrão). Conta o ponto mais
 longe assistido sem pular.
 """
@@ -32,6 +32,7 @@ SUGERIDOS = [
 
 
 PERCENTUAL_PADRAO = 95
+# "drive" só nos treinamentos antigos: desde a change remover-video-drive o vídeo novo é só do YouTube.
 FONTES_VIDEO = {"drive": "Google Drive", "youtube": "YouTube"}
 _ID_DRIVE = re.compile(r"^[A-Za-z0-9_-]{10,100}$")
 _ID_YOUTUBE = re.compile(r"^[A-Za-z0-9_-]{11}$")
@@ -64,8 +65,12 @@ def link_video(fonte: str | None, video_id: str | None) -> str:
 
 
 def validar_video(link: str | None, percentual) -> str | None:
-    if (link or "").strip() and not video_do_link(link):
-        return "Link do vídeo inválido. Cole o link do Google Drive (drive.google.com/file/d/…) ou do YouTube (youtube.com/watch?v=… ou youtu.be/…)."
+    """Só YouTube (change remover-video-drive): o vídeo do Google Drive dependia de uma chave de API do Google."""
+    achado = video_do_link(link) if (link or "").strip() else None
+    if achado and achado[0] == "drive":
+        return "O ConectaRH não usa mais vídeos do Google Drive. Suba o vídeo no YouTube como \"não listado\" e cole o link dele."
+    if (link or "").strip() and not achado:
+        return "Link do vídeo inválido. Cole o link do YouTube (youtube.com/watch?v=… ou youtu.be/…)."
     if not 50 <= int(percentual) <= 100:
         return "O mínimo assistido vai de 50% a 100%."
     return None

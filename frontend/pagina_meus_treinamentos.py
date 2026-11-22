@@ -20,7 +20,6 @@ from datetime import date
 import streamlit as st
 
 from api_client import ApiError, abrir_treinamento, concluir_treinamento, conteudo_treinamento, meus_treinamentos, progresso_treinamento
-from drive_video import chave_api, url_video
 from theme import alerta, render_hero, render_topbar
 from treinamentos_modelo import FILTROS, cards, contagem, filtro_inicial, meus, pode_concluir, url_embutida
 from video_player import player_video
@@ -93,14 +92,12 @@ def _cartao_video(videos: list[dict], token: str) -> None:
         else:
             atual = videos[0]
         st.html(f'<p class="crh-cfg-titulo">{html.escape(atual["nome"])}</p><p class="crh-meta">{html.escape(atual["detalhe"])}</p>')
+        if atual["fonte"] != "youtube":
+            # Treinamento antigo com vídeo do Google Drive (change remover-video-drive): não toca mais.
+            alerta(st.empty(), "atencao", "Este vídeo estava no Google Drive, que o ConectaRH não usa mais. "
+                                          "Avise o RH para trocar pelo link do YouTube.")
+            return
         src = None
-        if atual["fonte"] == "drive":
-            # Só o Drive precisa da chave de API; o YouTube toca sem configuração.
-            chave = chave_api()
-            if not chave:
-                alerta(st.empty(), "atencao", "O vídeo ainda não pode tocar aqui: falta configurar o Google Drive no app. Avise o RH.")
-                return
-            src = url_video(atual["video_id"], chave)
         guardado = f"mt_vistos_{atual['id']}"
         vistos = max(atual["vistos"], st.session_state.get(guardado, 0))
         enviado = player_video(f'{atual["id"]}_{st.session_state.get("mt_rodada", 0)}', atual["fonte"], atual["video_id"], src, atual["duracao"], atual["minimo"], vistos, atual["posicao"])

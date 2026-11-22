@@ -130,7 +130,7 @@ query "treinamentos" verb=POST {
     }
 
     var $fonte_final {
-      value = (($input.video_fonte == null) || ($input.video_fonte == "")) ? "drive" : $input.video_fonte
+      value = (($input.video_fonte == null) || ($input.video_fonte == "")) ? "youtube" : $input.video_fonte
     }
 
     precondition (($fonte_final == "drive") || ($fonte_final == "youtube")) {
@@ -138,12 +138,19 @@ query "treinamentos" verb=POST {
       error = "Fonte do video invalida. Use drive ou youtube."
     }
 
-    precondition (($video_final == null) || ((($video_final|strlen) >= 10) && (($video_final|strlen) <= 100) && (($video_final|contains:"/") == false) && (($video_final|contains:"?") == false) && (($video_final|contains:"&") == false) && (($video_final|contains:" ") == false))) {
+    // Video novo so do YouTube (change remover-video-drive): o do Google Drive dependia de uma chave de API do Google.
+    // O enum ainda aceita "drive" so por causa dos registros antigos.
+    precondition (($video_final == null) || ($fonte_final == "youtube")) {
       error_type = "inputerror"
-      error = "Link do video invalido. Cole o link do Google Drive ou do YouTube."
+      error = "O ConectaRH nao usa mais videos do Google Drive. Suba o video no YouTube como nao listado e cole o link dele."
     }
 
-    precondition (($video_final == null) || ($fonte_final == "drive") || (($video_final|strlen) == 11)) {
+    precondition (($video_final == null) || ((($video_final|strlen) >= 10) && (($video_final|strlen) <= 100) && (($video_final|contains:"/") == false) && (($video_final|contains:"?") == false) && (($video_final|contains:"&") == false) && (($video_final|contains:" ") == false))) {
+      error_type = "inputerror"
+      error = "Link do video invalido. Cole o link do YouTube."
+    }
+
+    precondition (($video_final == null) || (($video_final|strlen) == 11)) {
       error_type = "inputerror"
       error = "Link do YouTube invalido."
     }
