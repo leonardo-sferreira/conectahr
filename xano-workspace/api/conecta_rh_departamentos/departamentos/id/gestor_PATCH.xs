@@ -62,9 +62,10 @@ query "departamentos/{id}/gestor" verb=PATCH {
       value = $usuario_autenticado.perfil|trim|to_upper
     }
   
-    precondition ($perfil_autenticado == "RH" || $perfil_autenticado == "ADMIN") {
+    // Estrutura da empresa e so do Admin (pedido do dono do produto, 22/11/2026).
+    precondition ($perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Somente RH ou ADMIN podem definir o gestor de um departamento."
+      error = "Somente o Admin pode definir o gestor de um departamento."
     }
   
     // Localiza o departamento.

@@ -83,7 +83,8 @@ from pagina_usuarios import pagina_usuarios
 from sessao import encerrar_com_aviso, limpar_sessao, sessao_terminou
 from theme import definir_foto_conta, definir_sino, inject_base_styles, render_nav_ativo, render_sidebar_logo
 
-# Menu principal, igual para todos os perfis, na ordem do Figma. Auditoria e Regras (só RH e Admin) ficam no grupo RH.
+# Menu principal, igual para todos os perfis, na ordem do Figma. Regras (só RH e Admin) fica no grupo RH; Auditoria e Estrutura da
+# empresa, no grupo Admin (pedido do dono do produto, 22/11/2026).
 _MENU = [
     "Início",
     "Perfil",
@@ -129,10 +130,7 @@ _MENU_RH = [
     "Rotina diária",
     # Documentos com guarda vencida e anonimização de desligados (tarefa 64 da change concluir-frontend-streamlit).
     "Retenção e anonimização",
-    # Feriados, níveis da hierarquia e cargos (change organograma-hierarquia): o RH também mantém.
-    "Estrutura da empresa",
-    # Só RH e Admin; saíram do menu principal para ele ficar igual para todos (change menu-grupos-recolhiveis).
-    "Auditoria",
+    # Só RH e Admin; saiu do menu principal para ele ficar igual para todos (change menu-grupos-recolhiveis).
     "Regras",
 ]
 # Grupo "Equipe" do menu (Figma 241:560): o Gestor vê todo; quem é superior direto sem o perfil Gestor (tarefa 83) vê só a folha.
@@ -153,6 +151,9 @@ _MENU_ADMIN = [
     "Sessões ativas",
     "Indicadores gerais",
     "Integrações e e-mails",
+    # Departamentos, feriados, níveis e cargos, e a trilha de auditoria: só o Admin (pedido do dono do produto, 22/11/2026).
+    "Estrutura da empresa",
+    "Auditoria",
 ]
 
 # O sino do topo fala com a API; o tema só o desenha (render_topbar).

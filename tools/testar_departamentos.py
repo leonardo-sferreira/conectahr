@@ -92,7 +92,7 @@ def botoes(at: AppTest) -> list[str]:
     return [b.key for b in at.button]
 
 
-def app(perfil: str = "RH", **extra) -> AppTest:
+def app(perfil: str = "ADMIN", **extra) -> AppTest:
     chamadas.clear()
     estado.clear()
     estado.update(extra)
@@ -188,7 +188,9 @@ conferir("Nenhum departamento cadastrado" in texto(at), "vazio")
 at = app(erro=ApiError("Você não possui permissão para consultar departamentos.", 403))
 conferir("não possui permissão" in texto(at), "erro da API")
 at = app(perfil="GESTOR")
-conferir("só do RH e do Admin" in texto(at) and not chamadas, "Gestor: sem acesso")
+conferir("só do Admin" in texto(at) and not chamadas, "Gestor: sem acesso")
+at = app(perfil="RH")
+conferir("só do Admin" in texto(at) and not chamadas, "RH: sem acesso; a Estrutura da empresa é só do Admin (22/11/2026)")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

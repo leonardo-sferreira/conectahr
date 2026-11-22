@@ -350,7 +350,9 @@ at.button(key="estr_importar").click()
 at = at.run()
 conferir("BrasilAPI agora" in texto(at), "falha da BrasilAPI vira alerta")
 at = estrutura("COLABORADOR")
-conferir("Esta tela é só do RH e do Admin." in texto(at) and "estr_importar" not in chaves(at), "colaborador não importa (o backend também recusa)")
+conferir("Esta tela é só do Admin." in texto(at) and "estr_importar" not in chaves(at), "colaborador não importa (o backend também recusa)")
+at = estrutura("RH")
+conferir("Esta tela é só do Admin." in texto(at) and "estr_importar" not in chaves(at), "RH não importa: a Estrutura da empresa é só do Admin (22/11/2026)")
 
 caso("Férias da equipe: calendário do gestor")
 import ferias_modelo as fm  # noqa: E402

@@ -67,9 +67,10 @@ query departamentos verb=POST {
     }
   
     // Somente ADMIN e RH podem cadastrar departamentos.
-    precondition ($perfil_autenticado == "ADMIN" || $perfil_autenticado == "RH") {
+    // Estrutura da empresa e so do Admin (pedido do dono do produto, 22/11/2026).
+    precondition ($perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Você não possui permissão para cadastrar departamentos."
+      error = "Somente o Admin pode cadastrar departamentos."
     }
   
     // Procura um departamento com o mesmo nome.

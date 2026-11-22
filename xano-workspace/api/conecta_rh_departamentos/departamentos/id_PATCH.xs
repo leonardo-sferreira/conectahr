@@ -66,9 +66,10 @@ query "departamentos/{id}" verb=PATCH {
     }
   
     // Somente ADMIN e RH podem atualizar departamentos.
-    precondition ($perfil_autenticado == "ADMIN" || $perfil_autenticado == "RH") {
+    // Estrutura da empresa e so do Admin (pedido do dono do produto, 22/11/2026).
+    precondition ($perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Você não possui permissão para atualizar departamentos."
+      error = "Somente o Admin pode atualizar departamentos."
     }
   
     // Localiza o departamento que será atualizado.

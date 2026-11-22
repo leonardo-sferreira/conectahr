@@ -187,6 +187,12 @@ at = app("rotina-diaria", perfil="GESTOR")
 conferir("só do RH e do Admin" in texto(at) and not chamadas, "Gestor: sem acesso e sem chamar a API")
 at = app("rotina-diaria", perfil="RH")
 conferir("Alterações pendentes agora" in texto(at), "RH acessa")
+at.button(key="rd_executar").click()
+at = at.run()
+at.button(key="rd_ok").click()
+at = at.run()
+conferir("Transições aplicadas" in texto(at) and "rd_auditoria" not in botoes(at) and "auditoria do sistema" in texto(at),
+         "RH executa e vê o resultado, sem o atalho para a Auditoria (só do Admin, 22/11/2026)")
 
 print("\nTela Sessões ativas")
 at = app("sessoes-ativas")

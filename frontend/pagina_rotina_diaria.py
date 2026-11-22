@@ -111,9 +111,10 @@ def pagina_rotina_diaria() -> None:
         _lista("Transições de status — o que foi aplicado", listas["transicoes"], True)
         _lista("Retenção de dados — o que foi aplicado", listas["retencao"], True)
         with st.container(key="cfg_card_rd_rodape", horizontal=True, vertical_alignment="center"):
+            admin = str(usuario.get("perfil", "")).upper() == "ADMIN"
             st.html('<p class="crh-meta" style="margin:0">Se executar de novo agora, as contagens voltam zeradas: a rotina não repete transições. '
-                    "O registro desta execução está na Auditoria.</p>")
-            if st.button("Abrir na Auditoria", key="rd_auditoria"):
+                    + ("O registro desta execução está na Auditoria.</p>" if admin else "O registro desta execução fica na auditoria do sistema.</p>"))
+            if admin and st.button("Abrir na Auditoria", key="rd_auditoria"):
                 st.session_state.ir_auditoria = True
                 st.rerun()
             if st.button("Voltar ao pendente", key="rd_voltar", type="tertiary"):

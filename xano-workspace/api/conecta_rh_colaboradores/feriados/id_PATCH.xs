@@ -1,4 +1,4 @@
-// RH/ADMIN edita um feriado ou ponto facultativo, inclusive desativar e reativar (change ponto-rep-p-e-ferias-clt,
+// O Admin edita um feriado ou ponto facultativo, inclusive desativar e reativar (change ponto-rep-p-e-ferias-clt,
 // tarefa 7.2). Nao ha exclusao. Auditado.
 query "feriados/{id}" verb=PATCH {
   api_group = "ConectaRH — Colaboradores"
@@ -66,6 +66,12 @@ query "feriados/{id}" verb=PATCH {
 
     var $perfil_autenticado {
       value = $usuario_autenticado.perfil|trim|to_upper
+    }
+
+    // So o Admin edita feriados (Estrutura da empresa; 22/11/2026). Antes nao havia conferencia de perfil.
+    precondition ($perfil_autenticado == "ADMIN") {
+      error_type = "accessdenied"
+      error = "Somente o Admin pode editar feriados."
     }
 
     db.get feriado {

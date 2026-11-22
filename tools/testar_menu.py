@@ -90,6 +90,10 @@ conferir(GRUPOS & k == {"navgrupo_Equipe"} and "nav_Minha equipe" not in k, "Ges
 at = app("RH")
 k = chaves(at)
 conferir(GRUPOS & k == {"navgrupo_RH"} and "nav_Colaboradores" not in k and "nav_Auditoria" not in k, "RH: só o grupo RH, fechado; Auditoria fora do principal")
+at = clicar(at, "navgrupo_RH")
+k = chaves(at)
+conferir("nav_Colaboradores" in k and "nav_Regras" in k and "nav_Auditoria" not in k and "nav_Estrutura da empresa" not in k,
+         "RH: o grupo RH não tem Auditoria nem Estrutura da empresa (só do Admin, 22/11/2026)")
 at = app("ADMIN")
 k = chaves(at)
 conferir(GRUPOS & k == {"navgrupo_RH", "navgrupo_Admin"} and not ({"nav_Colaboradores", "nav_Usuários e perfis", "nav_Auditoria", "nav_Regras"} & k),
@@ -98,11 +102,12 @@ conferir(GRUPOS & k == {"navgrupo_RH", "navgrupo_Admin"} and not ({"nav_Colabora
 print("\nAbrir e fechar")
 at = clicar(at, "navgrupo_RH")
 k = chaves(at)
-conferir({"nav_Colaboradores", "nav_Treinamentos", "nav_Auditoria", "nav_Regras"} <= k and "nav_Usuários e perfis" not in k,
-         "abrir RH mostra os itens, com Auditoria e Regras; Admin continua fechado")
+conferir({"nav_Colaboradores", "nav_Treinamentos", "nav_Regras"} <= k and not ({"nav_Usuários e perfis", "nav_Auditoria", "nav_Estrutura da empresa"} & k),
+         "abrir RH mostra os itens, com Regras; Admin continua fechado")
 at = clicar(at, "navgrupo_Admin")
 k = chaves(at)
-conferir({"nav_Colaboradores", "nav_Usuários e perfis"} <= k, "abrir Admin não fecha o RH (independentes)")
+conferir({"nav_Colaboradores", "nav_Usuários e perfis", "nav_Auditoria", "nav_Estrutura da empresa"} <= k,
+         "abrir Admin mostra Auditoria e Estrutura da empresa, e não fecha o RH (independentes)")
 at = clicar(at, "navgrupo_RH")
 k = chaves(at)
 conferir("nav_Colaboradores" not in k and "nav_Usuários e perfis" in k, "fechar RH esconde só os itens dele")
@@ -116,7 +121,7 @@ conferir("nav_Colaboradores" in k and "nav_Treinamentos" not in k, "em Treinamen
 at = clicar(at, "navgrupo_RH")
 conferir("nav_Colaboradores" not in chaves(at), "mesmo assim dá para fechar o grupo da tela aberta")
 at = app("ADMIN", "auditoria")
-conferir("nav_Regras" in chaves(at) and "nav_Usuários e perfis" not in chaves(at), "em Auditoria, abre o RH (onde ela está agora) e não o Admin")
+conferir("nav_Usuários e perfis" in chaves(at) and "nav_Regras" not in chaves(at), "em Auditoria, abre o Admin (onde ela está agora) e não o RH")
 
 print(f"\n{total - len(falhas)}/{total} verificações ok.")
 if falhas:

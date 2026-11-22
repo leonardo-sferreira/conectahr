@@ -96,7 +96,7 @@ def texto(at: AppTest) -> str:
     return html_lib.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", bruto)))
 
 
-def app(perfil: str = "RH", **extra) -> AppTest:
+def app(perfil: str = "ADMIN", **extra) -> AppTest:
     chamadas.clear()
     estado.clear()
     estado.update(extra)
@@ -145,7 +145,9 @@ conferir("status=Pendente" in texto(at) and "status=Aprovada" in texto(at) and "
 at = app(muitos=True)
 conferir("Mostrando os 300 eventos mais recentes" in texto(at), "no limite, avisa para filtrar")
 at = app("COLABORADOR")
-conferir("só do RH e do Admin" in texto(at) and not chamadas, "colaborador: sem consulta")
+conferir("só do Admin" in texto(at) and not chamadas, "colaborador: sem consulta")
+at = app("RH")
+conferir("só do Admin" in texto(at) and not chamadas, "RH: sem consulta; a Auditoria é só do Admin (22/11/2026)")
 at = app(erro=ApiError("Somente RH ou ADMIN podem consultar a trilha de auditoria.", 403))
 conferir("Somente RH ou ADMIN" in texto(at), "recusa do backend aparece")
 

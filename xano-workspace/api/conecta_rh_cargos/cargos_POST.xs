@@ -70,9 +70,10 @@ query cargos verb=POST {
     }
   
     // Somente ADMIN e RH podem cadastrar cargos.
-    precondition ($perfil_autenticado == "ADMIN" || $perfil_autenticado == "RH") {
+    // Estrutura da empresa e so do Admin (pedido do dono do produto, 22/11/2026).
+    precondition ($perfil_autenticado == "ADMIN") {
       error_type = "accessdenied"
-      error = "Você não possui permissão para cadastrar cargos."
+      error = "Somente o Admin pode cadastrar cargos."
     }
   
     // Procura um cargo com o mesmo nome.

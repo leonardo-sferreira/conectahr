@@ -103,7 +103,7 @@ def texto(at: AppTest) -> str:
     return html_lib.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", bruto)))
 
 
-def app(perfil: str = "RH", pagina: str = "estrutura-da-empresa", **extra) -> AppTest:
+def app(perfil: str = "ADMIN", pagina: str = "estrutura-da-empresa", **extra) -> AppTest:
     chamadas.clear()
     estado.clear()
     estado.update(extra)
@@ -175,7 +175,7 @@ at = at.run()
 conferir("Já existe um cargo" in texto(at) and "modal_estr" in at.session_state, "nome repetido: a recusa do backend aparece no modal")
 
 caso("Admissão: cargos do departamento")
-at = app(pagina="colaboradores")
+at = app("RH", pagina="colaboradores")
 at.button(key="col_admitir").click()
 at = at.run()
 conferir(at.selectbox(key="adm_cargo").placeholder == "Escolha o departamento antes", "sem departamento, pede o departamento antes")
@@ -188,7 +188,7 @@ at = at.run()
 conferir(at.selectbox(key="adm_cargo").options == ["Analista de Contas a Pagar Pleno · Analista", "Estagiário"], "Financeiro: só os do Financeiro e os sem departamento")
 
 caso("Admissão: organograma que não carregou (ex.: limite de requisições do Xano)")
-at = app(pagina="colaboradores", erro_org=ApiError("Muitas requisições. Tente de novo em instantes.", 429))
+at = app("RH", pagina="colaboradores", erro_org=ApiError("Muitas requisições. Tente de novo em instantes.", 429))
 conferir("não carregaram agora" in texto(at) and "Muitas requisições" in texto(at), "a lista avisa que departamentos e cargos não carregaram, com o motivo")
 at.button(key="col_admitir").click()
 at = at.run()
