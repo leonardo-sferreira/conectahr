@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Autorizacao por perfil e estrutura organizacional
-O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, restringindo dados conforme o escopo do usuario. O sistema SHALL permitir vincular cada colaborador a um gestor e cada gestor a uma unica area/departamento, impedindo acesso fora do escopo autorizado. O sistema SHALL permitir que RH ou Admin definam, na ficha de cada colaborador, um superior direto: outro colaborador que nao esteja desligado, nunca a propria pessoa e sem formar ciclo na cadeia. As decisoes sobre ponto, ferias e ausencias de um colaborador SHALL seguir esta hierarquia, qualquer que seja o perfil de quem decide: RH e Admin decidem todos; com superior direto definido, decide o superior; sem superior, decide o Gestor do departamento do colaborador; ninguem decide o proprio pedido.
+O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, restringindo dados conforme o escopo do usuario. O sistema SHALL permitir vincular cada colaborador a um gestor e cada gestor a uma unica area/departamento, impedindo acesso fora do escopo autorizado. O sistema SHALL permitir que RH ou Admin definam, na ficha de cada colaborador, um superior direto: outro colaborador que nao esteja desligado, nunca a propria pessoa e sem formar ciclo na cadeia. As decisoes sobre ponto, ferias e ausencias de um colaborador SHALL seguir esta hierarquia, qualquer que seja o perfil de quem decide: RH e Admin decidem todos; com superior direto definido, decide o superior; sem superior, decide o Gestor do departamento do colaborador; ninguem decide o proprio pedido. A estrutura da empresa (departamentos, gestor do departamento, cargos, niveis da hierarquia e feriados) e a trilha de auditoria SHALL ser mantidas e consultadas so pelo Admin; o RH SHALL continuar lendo departamentos e cargos para o cadastro de colaboradores e SHALL consultar na auditoria apenas as execucoes da rotina diaria.
 
 #### Scenario: Colaborador consulta os proprios dados
 - **WHEN** um Colaborador acessa um recurso pessoal
@@ -12,8 +12,12 @@ O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, 
 - **THEN** o sistema retorna somente sua equipe e permite apenas decisoes previstas para o papel
 
 #### Scenario: Acesso administrativo
-- **WHEN** Admin ou RH acessa a gestao organizacional
-- **THEN** o sistema permite as operacoes administrativas conforme suas permissoes e registra a acao
+- **WHEN** o Admin cria ou altera departamentos, gestor do departamento, cargos, niveis ou feriados, ou consulta a trilha de auditoria
+- **THEN** o sistema permite a operacao e registra a acao
+
+#### Scenario: RH na estrutura da empresa
+- **WHEN** o RH tenta criar ou alterar a estrutura da empresa, ou consultar a trilha de auditoria alem das execucoes da rotina diaria
+- **THEN** o sistema recusa com 403, e o RH continua lendo departamentos e cargos para o cadastro de colaboradores
 
 #### Scenario: Superior direto definido na ficha
 - **WHEN** RH ou Admin define o superior direto de um colaborador com outra pessoa ativa que nao esta abaixo dele na cadeia

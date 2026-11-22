@@ -63,7 +63,7 @@ O sistema SHALL permitir consultar sessoes ativas, ultimo acesso, dispositivo ou
 - **THEN** todas as sessoes do usuario sao revogadas e qualquer token emitido antes passa a ser recusado
 
 ### Requirement: Autorizacao por perfil e estrutura organizacional
-O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, restringindo dados conforme o escopo do usuario. O sistema SHALL permitir vincular cada colaborador a um gestor e cada gestor a uma unica area/departamento, impedindo acesso fora do escopo autorizado.
+O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, restringindo dados conforme o escopo do usuario. O sistema SHALL permitir vincular cada colaborador a um gestor e cada gestor a uma unica area/departamento, impedindo acesso fora do escopo autorizado. O sistema SHALL permitir que RH ou Admin definam, na ficha de cada colaborador, um superior direto: outro colaborador que nao esteja desligado, nunca a propria pessoa e sem formar ciclo na cadeia. As decisoes sobre ponto, ferias e ausencias de um colaborador SHALL seguir esta hierarquia, qualquer que seja o perfil de quem decide: RH e Admin decidem todos; com superior direto definido, decide o superior; sem superior, decide o Gestor do departamento do colaborador; ninguem decide o proprio pedido. A estrutura da empresa (departamentos, gestor do departamento, cargos, niveis da hierarquia e feriados) e a trilha de auditoria SHALL ser mantidas e consultadas so pelo Admin; o RH SHALL continuar lendo departamentos e cargos para o cadastro de colaboradores e SHALL consultar na auditoria apenas as execucoes da rotina diaria.
 
 #### Scenario: Colaborador consulta os proprios dados
 - **WHEN** um Colaborador acessa um recurso pessoal
@@ -74,8 +74,24 @@ O sistema SHALL aplicar permissoes por perfil Admin, RH, Gestor ou Colaborador, 
 - **THEN** o sistema retorna somente sua equipe e permite apenas decisoes previstas para o papel
 
 #### Scenario: Acesso administrativo
-- **WHEN** Admin ou RH acessa a gestao organizacional
-- **THEN** o sistema permite as operacoes administrativas conforme suas permissoes e registra a acao
+- **WHEN** o Admin cria ou altera departamentos, gestor do departamento, cargos, niveis ou feriados, ou consulta a trilha de auditoria
+- **THEN** o sistema permite a operacao e registra a acao
+
+#### Scenario: RH na estrutura da empresa
+- **WHEN** o RH tenta criar ou alterar a estrutura da empresa, ou consultar a trilha de auditoria alem das execucoes da rotina diaria
+- **THEN** o sistema recusa com 403, e o RH continua lendo departamentos e cargos para o cadastro de colaboradores
+
+#### Scenario: Superior direto definido na ficha
+- **WHEN** RH ou Admin define o superior direto de um colaborador com outra pessoa ativa que nao esta abaixo dele na cadeia
+- **THEN** o sistema grava o superior, registra a acao na auditoria e passa a usar esse superior nas decisoes sobre a pessoa
+
+#### Scenario: Superior que forma ciclo
+- **WHEN** RH ou Admin tenta definir como superior a propria pessoa, alguem desligado ou alguem que ja esta abaixo dela na cadeia
+- **THEN** o sistema recusa a alteracao com mensagem clara
+
+#### Scenario: Superior sem o perfil Gestor
+- **WHEN** um usuario com perfil Colaborador e superior direto de outra pessoa
+- **THEN** o sistema permite que ele decida os pedidos dessa pessoa, como faria um Gestor, sem lhe dar acesso a outros dados de gestao
 
 ### Requirement: Organograma da empresa
 O sistema SHALL apresentar o organograma a qualquer usuário autenticado, de qualquer perfil, montado pelo vínculo de superior direto (`colaborador.superior_colaborador_id`): quem não tem superior direto (ou cujo superior não está mais no organograma) fica no topo, e abaixo de cada pessoa ficam as pessoas que a têm como superior direto. O organograma SHALL incluir todo colaborador cujo status não seja `Desligado`, inclusive quem estiver de férias ou afastado. Cada pessoa SHALL aparecer com nome, cargo, nível do cargo e departamento, e nenhum outro dado (sem e-mail, CPF, salário ou dado de contato). A pessoa SHALL poder navegar: escolher alguém e ver o superior dessa pessoa e quem está abaixo dela, seguir o caminho até o topo, voltar à própria posição, buscar por nome ou cargo e filtrar por departamento. Dentro de um mesmo superior, as pessoas SHALL aparecer pela ordem do nível do cargo e depois pelo nome; cargo sem nível vem depois dos que têm nível.
@@ -366,14 +382,14 @@ O sistema SHALL permitir simular um override antes da publicação, exibindo col
 - **THEN** o sistema marca-o como `expirado` e deixa de usá-lo em novos cálculos sem alterar registros anteriores
 
 ### Requirement: Ferias e ausencias
-O sistema SHALL permitir solicitar ferias e registrar ausencias com acompanhamento de status. Ferias SHALL usar Pendente, Aprovada, Rejeitada, Cancelada ou Concluida. Ausencias SHALL usar Falta, Atestado, Afastamento, Licenca ou Outro e status Pendente, Aprovada, Rejeitada ou Registrado. RH e Admin SHALL decidir ferias de qualquer colaborador; o Gestor SHALL decidir ferias somente de colaboradores do departamento que gerencia; o substituto de uma delegacao vigente do Gestor com escopo `ferias` ou `todas` SHALL decidir dentro do mesmo escopo. Ninguem SHALL decidir as proprias ferias. Toda decisao SHALL manter justificativa e responsavel. Nas ausencias, o Gestor SHALL consultar somente tipo, periodo e status das ausencias da equipe, sem acesso ao atestado ou documento anexado.
+O sistema SHALL permitir solicitar ferias e registrar ausencias com acompanhamento de status. Ferias SHALL usar Pendente, Aprovada, Rejeitada, Cancelada ou Concluida. Ausencias SHALL usar Falta, Atestado, Afastamento, Licenca ou Outro e status Pendente, Aprovada, Rejeitada ou Registrado. As decisoes de ferias e a aprovacao ou recusa de ausencias SHALL seguir a hierarquia: RH e Admin decidem de qualquer colaborador; com superior direto definido, decide o superior; sem superior, decide o Gestor do departamento que o colaborador integra; o substituto de uma delegacao vigente do Gestor com escopo `ferias` ou `todas` SHALL decidir ferias dentro do mesmo escopo. A conferencia de conflitos de um pedido de ferias SHALL estar disponivel a quem pode decidi-lo. Registrar uma ausencia aprovada SHALL continuar restrito a RH e Admin. Ninguem SHALL decidir as proprias ferias nem as proprias ausencias. Toda decisao SHALL manter justificativa e responsavel. Nas ausencias, quem decide sem ser RH ou Admin SHALL consultar somente tipo, periodo e status, sem acesso ao atestado, documento anexado ou motivo.
 
 #### Scenario: Ferias aprovadas
-- **WHEN** RH, Admin, Gestor do departamento ou substituto com delegacao vigente aprova uma solicitacao pendente de outro colaborador
+- **WHEN** RH, Admin, o superior direto, o Gestor do departamento de colaborador sem superior ou substituto com delegacao vigente aprova uma solicitacao pendente de outro colaborador
 - **THEN** o sistema valida o periodo, registra a decisao e o responsavel e altera o status para Aprovada
 
 #### Scenario: Gestor fora do escopo
-- **WHEN** um Gestor tenta decidir ferias de colaborador de outro departamento
+- **WHEN** um Gestor tenta decidir ferias de colaborador de outro departamento, ou de colaborador que tem outro superior direto
 - **THEN** o sistema nega a decisao
 
 #### Scenario: Ausencia registrada
@@ -383,6 +399,14 @@ O sistema SHALL permitir solicitar ferias e registrar ausencias com acompanhamen
 #### Scenario: Gestor consulta ausencia da equipe
 - **WHEN** um Gestor consulta as ausencias de um colaborador da sua equipe
 - **THEN** o sistema retorna tipo, periodo e status, sem atestado, documento ou motivo clinico
+
+#### Scenario: Superior decide ausencia
+- **WHEN** o superior direto aprova ou recusa, com justificativa, a ausencia pendente de alguem da sua equipe
+- **THEN** o sistema registra a decisao e o responsavel; depois de aprovada, a ausencia segue para o RH registrar
+
+#### Scenario: Ausencia fora da hierarquia
+- **WHEN** alguem que nao e RH, Admin, o superior direto nem, sem superior, o Gestor do departamento tenta decidir uma ausencia
+- **THEN** o sistema nega a decisao
 
 ### Requirement: Delegacao, prazos e calendario
 O sistema SHALL suportar delegacao temporaria de aprovacao, com titular, substituto, vigencia, permissoes, motivo e bloqueio de autoaprovacao. Uma delegacao SHALL ser considerada vigente quando a data atual estiver entre `data_inicio` e `data_fim` e ela nao tiver sido cancelada; fora disso ela deixa de valer sem nenhuma rotina de expiracao. No MVP, a delegacao SHALL ser aplicada nas decisoes de ferias e de correcao de ponto. O sistema SHALL controlar prazos e escalonar atrasos. O calendario SHALL reunir feriados, dias nao uteis, ferias, ausencias, ciclos, vencimentos e prazos e ser considerado nos calculos aplicaveis.
@@ -539,10 +563,10 @@ O sistema SHALL oferecer checklist de admissao com dados pessoais, acesso, troca
 - **THEN** o sistema marca o onboarding como `concluido`
 
 ### Requirement: Central de tarefas e pendencias
-O sistema SHALL apresentar uma central personalizada por perfil com documentos aguardando envio ou analise, ferias e correcoes de ponto pendentes, avaliacoes nao respondidas, metas e PDIs atrasados, pendencia de senha temporaria, cadastro incompleto e jornadas do dia sem marcacao de saida.
+O sistema SHALL apresentar uma central personalizada por perfil com documentos aguardando envio ou analise, ferias, ausencias e correcoes de ponto pendentes, avaliacoes nao respondidas, metas e PDIs atrasados, pendencia de senha temporaria, cadastro incompleto e jornadas do dia sem marcacao de saida. As filas de decisao SHALL seguir a hierarquia: quem e superior direto de alguem SHALL receber as filas da sua equipe, mesmo sem o perfil Gestor. A fila de ausencias SHALL trazer somente tipo, periodo e status, sem atestado nem motivo. A fila de documentos SHALL ficar com RH e Admin.
 
 #### Scenario: Central do colaborador
-- **WHEN** um colaborador acessa sua central
+- **WHEN** um colaborador que nao e superior de ninguem acessa sua central
 - **THEN** o sistema exibe somente suas pendencias e as acoes autorizadas para resolve-las
 
 #### Scenario: Central do gestor ou RH
@@ -552,6 +576,10 @@ O sistema SHALL apresentar uma central personalizada por perfil com documentos a
 #### Scenario: Dashboard do gestor
 - **WHEN** um Gestor acessa seu dashboard
 - **THEN** o sistema exibe tamanho da equipe, ausencias, ferias proximas, avaliacoes pendentes e situacao do ponto do dia, restritos aos colaboradores da sua equipe
+
+#### Scenario: Central do superior sem perfil Gestor
+- **WHEN** um colaborador que e superior direto de outra pessoa acessa sua central
+- **THEN** o sistema exibe as filas de ferias, ausencias e correcoes de ponto da sua equipe, alem das proprias pendencias, e indica que ele e superior
 
 ### Requirement: Central de solicitacoes do colaborador
 O sistema SHALL permitir que o colaborador registre solicitacoes ao RH dos tipos `alteracao_cadastral`, `declaracao`, `documento_avulso` ou `outra`, com descricao, campo/valor pretendido quando aplicavel, e acompanhe o status `recebida`, `em_analise`, `atendida` ou `indeferida`. RH SHALL poder analisar, responder e decidir cada solicitacao, registrando justificativa. Uma solicitacao de `alteracao_cadastral` aprovada SHALL exigir que RH aplique a mudanca pelo fluxo de cadastro existente, preservando o historico profissional; a aprovacao da solicitacao nao altera o cadastro automaticamente. O sistema SHALL exibir nessa mesma central, para consulta do colaborador, o status das suas solicitacoes de ferias, ausencia e correcao de ponto, sem duplicar os fluxos ja existentes para esses tipos.
@@ -584,13 +612,11 @@ O sistema SHALL permitir que RH ou Admin publiquem comunicados internos com titu
 - **THEN** o sistema deixa de exibi-lo no dashboard sem apagar o registro
 
 ### Requirement: Base de conhecimento do RH
-O sistema SHALL manter artigos de FAQ organizados por categoria (ferias, ponto, documentos, politicas internas), mantidos por RH ou Admin, e disponiveis para consulta por todos os colaboradores autenticados. Conteudo sobre beneficios fica fora do escopo desta mudanca.
+O sistema SHALL manter artigos de FAQ organizados por categoria (ferias, ponto, documentos, politicas internas), mantidos por RH ou Admin, e disponiveis para consulta por todos os colaboradores autenticados. A FAQ nao trata de beneficios; os beneficios de cada colaborador ficam no requisito "Beneficios do colaborador".
 
 #### Scenario: Consulta de FAQ
 - **WHEN** um colaborador busca ou navega pela base de conhecimento
 - **THEN** o sistema exibe os artigos publicados, organizados por categoria
-
-**10. Auditoria, Notificações e Segurança Operacional**
 
 ### Requirement: Auditoria obrigatoria
 O sistema SHALL auditar autenticacao, logout, troca e redefinicao de senha, codigo de acesso de login, usuarios, alteracoes contratuais, dados bancarios, ponto e ajustes, decisoes, documentos, regras trabalhistas, exportacoes e alteracoes em avaliacoes concluidas, incluindo responsavel, data, justificativa e valores anterior e novo. O sistema SHALL negar por padrao, preservar historicos e nunca apagar evidencias silenciosamente.
@@ -2093,3 +2119,82 @@ O frontend SHALL vincular os caches de metas à identidade do usuário e ao toke
 #### Scenario: Encerramento da sessão
 - **WHEN** a pessoa sai ou a sessão expira
 - **THEN** caches, formulário aberto, feedback digitado e seleções de metas são removidos
+
+### Requirement: Folha de ponto da equipe e do RH
+O sistema SHALL oferecer a consulta mensal do ponto das pessoas que o usuário pode ver: RH e Admin veem todos; os demais veem a si mesmos, quem os tem como superior direto e, entre quem não tem superior, as pessoas do departamento que gerenciam. A consulta SHALL trazer, por pessoa, horas, dias com marcação, dias sem registro, faltas injustificadas e atestados do mês, com exportação em CSV para o fechamento do pagamento, e a folha mensal de cada pessoa com os pedidos de correção pendentes. A consulta não SHALL expor atestado, motivo clínico, CPF, salário ou dados bancários.
+
+#### Scenario: Gestor consulta a folha da equipe
+- **WHEN** um superior direto ou Gestor abre a folha de ponto de um mês
+- **THEN** o sistema retorna só as pessoas no seu escopo, com o resumo do mês de cada uma
+
+#### Scenario: RH fecha o mês
+- **WHEN** RH ou Admin consulta a folha de um mês encerrado
+- **THEN** o sistema retorna todas as pessoas, com filtro por departamento, e permite baixar o resumo em CSV
+
+#### Scenario: Pessoa fora do escopo
+- **WHEN** alguém pede a folha de uma pessoa que não está no seu escopo
+- **THEN** o sistema nega o acesso
+
+### Requirement: Prazo para pedir correção de ponto
+O sistema SHALL manter um prazo, em dias, para o colaborador pedir a correção de um dia de ponto, definido por RH ou Admin: de 1 a 3650 dias, ou sem limite, que é o valor inicial. Com prazo definido, o pedido de correção de um dia anterior a hoje menos o prazo (data de Brasília) SHALL ser recusado com mensagem que oriente a procurar o gestor ou o RH. O ajuste direto feito por quem decide pela hierarquia não SHALL ter prazo. A alteração do prazo SHALL ser auditada, e o prazo atual SHALL estar disponível para consulta de qualquer usuário autenticado.
+
+#### Scenario: Pedido dentro do prazo
+- **WHEN** o colaborador pede a correção de um dia que ainda está dentro do prazo
+- **THEN** o sistema aceita o pedido conforme as demais regras de correção
+
+#### Scenario: Pedido fora do prazo
+- **WHEN** o colaborador pede a correção de um dia anterior a hoje menos o prazo
+- **THEN** o sistema recusa o pedido com mensagem que orienta a falar com o gestor ou o RH, e o espelho mostra o dia sem a ação de correção
+
+#### Scenario: RH altera o prazo
+- **WHEN** RH ou Admin define o prazo em dias ou volta para sem limite
+- **THEN** o sistema grava o novo prazo, registra a alteração na auditoria e passa a aplicá-lo aos novos pedidos
+
+#### Scenario: Prazo alterado por quem não é RH
+- **WHEN** um Colaborador ou Gestor tenta alterar o prazo
+- **THEN** o sistema nega a alteração
+
+### Requirement: Benefícios do colaborador
+O sistema SHALL manter um catálogo de benefícios cadastrado por RH ou Admin (nome único, tipo, operadora e descrição), que pode ser ativado ou desativado; benefício desativado não SHALL aceitar novos vínculos, e os vínculos atuais continuam. RH ou Admin SHALL poder vincular um benefício ativo a um colaborador não desligado, com valor pago pela empresa, desconto do colaborador e vigência, sem dois vínculos vigentes do mesmo benefício para a mesma pessoa e com o fim não anterior ao início. Encerrar um vínculo SHALL preencher o fim sem apagar o histórico. O colaborador SHALL consultar somente os próprios benefícios, ativos e encerrados, com os totais do mês. Todas as escritas SHALL ser auditadas.
+
+#### Scenario: Colaborador consulta os benefícios
+- **WHEN** um colaborador abre os seus benefícios
+- **THEN** o sistema mostra só os dele, com tipo, operadora, valor da empresa, desconto e vigência, e os totais dos ativos
+
+#### Scenario: RH vincula um benefício
+- **WHEN** RH vincula um benefício ativo a um colaborador ativo, com valores e início
+- **THEN** o sistema grava o vínculo e registra a ação na auditoria
+
+#### Scenario: Vínculo repetido
+- **WHEN** RH tenta vincular um benefício que a pessoa já tem vigente
+- **THEN** o sistema recusa o vínculo com mensagem clara
+
+#### Scenario: Encerrar sem apagar
+- **WHEN** RH encerra um vínculo
+- **THEN** o sistema preenche o fim, mantém o histórico e o benefício deixa de contar nos totais do mês
+
+### Requirement: Vínculo de conta a ficha de colaborador
+O sistema SHALL permitir ligar uma conta de acesso que não tem ficha de colaborador a uma ficha que não tem conta, de colaborador não desligado, para que a pessoa use as funções de funcionário (ponto, férias, pagamento). O Admin SHALL poder vincular qualquer conta; o RH, só contas de perfil Colaborador. Ninguém SHALL vincular a própria conta. O vínculo SHALL ser auditado.
+
+#### Scenario: Conta vinculada
+- **WHEN** o Admin liga uma conta sem ficha a uma ficha sem conta, de colaborador ativo
+- **THEN** o sistema grava o vínculo, registra a ação na auditoria e a pessoa passa a ter acesso às funções de funcionário
+
+#### Scenario: Vínculo recusado
+- **WHEN** alguém tenta vincular a própria conta, uma conta que já tem ficha ou uma ficha que já tem conta
+- **THEN** o sistema recusa o vínculo com mensagem clara
+
+### Requirement: Autoedição de contato e endereço
+O colaborador SHALL poder alterar o próprio telefone, e-mail pessoal e endereço (CEP, logradouro, número, complemento, bairro, cidade e UF) sem pedido ao RH. A alteração SHALL valer na hora, valer só para o próprio cadastro (sem receber id) e ser registrada na auditoria com telefone, e-mail e endereço mascarados. O backend SHALL recusar telefone sem DDD (10 ou 11 dígitos), CEP sem 8 dígitos, UF inexistente, e-mail inválido ou de outro colaborador e endereço sem logradouro, número, bairro ou cidade. Colaborador desligado não SHALL alterar. Nome, CPF e data de nascimento SHALL continuar mudando por solicitação de alteração cadastral ao RH.
+
+#### Scenario: Colaborador muda o telefone
+- **WHEN** o colaborador salva um telefone com DDD e o restante do contato válido
+- **THEN** o sistema grava o dado no próprio cadastro, sem pedido ao RH, e registra na auditoria só os 4 últimos dígitos
+
+#### Scenario: Dado inválido
+- **WHEN** o colaborador envia um CEP com menos de 8 dígitos ou um e-mail que já é de outro colaborador
+- **THEN** o sistema recusa com mensagem clara e não altera nada
+
+#### Scenario: Nome continua pelo RH
+- **WHEN** o colaborador quer mudar nome, CPF ou data de nascimento
+- **THEN** o sistema oferece só a solicitação de alteração cadastral, que o RH confere e aplica
