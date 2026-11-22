@@ -528,7 +528,6 @@ Todo o trabalho foi especificado antes no OpenSpec. As **40 changes** abaixo est
   - sem tarefas agendadas: as rotinas por data são acionadas pelo RH ou pelo Admin na "Rotina diária".
 - **LGPD:** a instância do Xano fica nos EUA, uma transferência internacional a tratar.
 - **Ponto:** segue o REP-P tecnicamente, mas sem registro no INPI nem certificação, então não vale para a fiscalização.
-- **Bases legais e prazos de guarda:** são sugestões de estudo, a confirmar com o jurídico.
 
 A lista completa, com o impacto e o caminho de cada uma, está na [documentação técnica](https://leonardo-sferreira.github.io/conectahr/tecnica.html).
 
