@@ -1,15 +1,15 @@
 # Deploy, flags e plano de rollback — ConectaRH
 
 **Situação:** o backend já roda no Xano (o workspace de desenvolvimento é o mesmo que serve o
-frontend). O frontend Streamlit ainda não foi publicado: este documento descreve como será e como
-voltar atrás. Nada aqui foi executado em produção.
+frontend). **Decisão de 22/11/2026: o frontend fica no Streamlit Community Cloud.** Ainda não foi publicado: criar o app
+pede a conta do dono do repositório (passos em "Publicar no Streamlit Community Cloud").
 
 ## Ambientes
 
 | Ambiente | Backend | Frontend |
 |---|---|---|
 | Desenvolvimento | Workspace Xano 147338 (plano gratuito) | `streamlit run frontend/app.py` na máquina de cada pessoa |
-| Demonstração | O mesmo workspace, com dados sintéticos | Streamlit Community Cloud (sugestão), ligado a este repositório |
+| Demonstração | O mesmo workspace, com dados sintéticos | Streamlit Community Cloud, ligado a este repositório (branch `master`) |
 
 O plano gratuito do Xano tem um workspace só, então **demonstração e desenvolvimento dividem o banco**.
 Por isso os dados são sempre sintéticos: contas `@conectarh.test`, nomes fictícios, CPFs gerados que
@@ -41,6 +41,29 @@ a chave de API do Google para os vídeos dos treinamentos (change `treinamento-e
 Sem o Google Cloud, a outra opção é o **YouTube**: o RH sobe o vídeo como "não listado" e cola o link no mesmo
 campo. Não precisa de chave nem de configuração.
 
+## Publicar no Streamlit Community Cloud
+
+Feito uma vez, por quem é dono do repositório no GitHub:
+
+1. Em `share.streamlit.io`, entre com o GitHub e escolha **Create app → Deploy a public app from GitHub**.
+2. **Repository:** `leonardo-sferreira/conectahr`. **Branch:** `master`. **Main file path:** `frontend/app.py`.
+3. Em **Advanced settings**:
+   - **Python:** 3.12. O app e os testes foram conferidos nessa versão em 22/11/2026; o desenvolvimento usa 3.14.
+   - **Secrets:** cole o conteúdo do `.streamlit/secrets.toml` local, no formato do `.streamlit/secrets.toml.example`:
+     - a seção `[xano]` com `auth_base_url`, obrigatória;
+     - a seção `[google]` com `drive_api_key`, opcional.
+4. **Deploy.** O serviço:
+   - instala `frontend/requirements.txt`, que fica na pasta do arquivo principal;
+   - lê `.streamlit/config.toml` da raiz, com o tema e o `enableStaticServing`;
+   - serve `frontend/static`, com as fontes e as capas dos treinamentos.
+5. Com o endereço final (`https://….streamlit.app`), restrinja a chave do Google a ele, se houver chave (seção acima).
+6. Faça o teste de fumaça do roteiro abaixo e registre em `docs/evidencias/deploy-streamlit-cloud.md`, sem dado pessoal.
+
+**Como funciona depois:**
+- Cada merge em `master` republica o app sozinho.
+- Os segredos ficam só no painel. As chaves do Supabase e da Brevo continuam no Xano, nunca no Streamlit.
+- No plano gratuito, o app dorme depois de um tempo sem uso; o primeiro acesso depois disso demora alguns segundos.
+
 ## Feature flags
 
 O sistema não tem um mecanismo de feature flag. O equivalente hoje é:
@@ -59,7 +82,7 @@ Se for preciso uma flag real, o caminho é uma variável de ambiente lida pelo e
    `python tools/testar_onboarding.py` passam (rodam também no GitHub, no workflow `Validar`).
 2. Backend: `xano workspace push --dry-run`, conferir a lista, `push`, depois `pull` e diff
    (ver `xano-workspace/AGENTS.md`).
-3. Frontend: merge do Pull Request em `master`; o serviço de hospedagem publica a partir do `master`.
+3. Frontend: merge do Pull Request em `master`; o Streamlit Community Cloud republica a partir do `master`.
 4. **Teste de fumaça** em ambiente controlado: entrar com uma conta de teste (senha + código por
    e-mail), abrir o início e sair. Registrar o resultado em `docs/evidencias/`.
 
@@ -67,7 +90,7 @@ Se for preciso uma flag real, o caminho é uma variável de ambiente lida pelo e
 
 | O que deu errado | Como voltar |
 |---|---|
-| Frontend | Reverter o commit no `master` (`git revert`) e republicar; ou apontar a hospedagem para o commit anterior |
+| Frontend | Reverter o commit no `master` (`git revert`): o Streamlit Community Cloud republica sozinho. Se o app não sobe, o painel (*Manage app*) mostra o log e permite *Reboot* |
 | Endpoint do backend | Reverter o arquivo `.xs` no Git e fazer novo `push` do arquivo; o `pull` anterior à mudança serve de referência |
 | Mudança de schema (campo novo) | Campos novos são aditivos e opcionais: o rollback é deixar de usá-los. Remover campo só com cópia do backup (ver `docs/monitoramento.md`) |
 | Dados de teste incorretos | Não há exclusão física; corrigir por novo registro. Em último caso, restaurar o backup |

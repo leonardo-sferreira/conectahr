@@ -2,6 +2,13 @@
 
 - [ ] 1 (origem: `concluir-mvp-conectarh` 1.3) [GE 7.1] Criar telas e endpoints dos fluxos por fatia vertical, aplicando estados de carregamento, erro, sucesso e acesso negado; verificar os principais caminhos por perfil.
 - [ ] 2 (origem: `concluir-mvp-conectarh` 1.4) [GE 7.4] Preparar deploy com feature flags, dados sinteticos e plano de rollback sem importar registros das imagens; verificar smoke test em ambiente controlado e registrar a configuracao de producao.
+  - **Decisão (22/11/2026):** hospedar no Streamlit Community Cloud.
+    - `docs/deploy.md` tem o passo a passo.
+    - O app e os testes foram conferidos no Python 3.12, com `compileall`, `testar_treinamentos`, `testar_menu`, `testar_login_f01`, `testar_inicio`, `testar_cadastro` e `testar_ponto`.
+    - **Falta, com a conta do dono do repositório:**
+      - criar o app em `share.streamlit.io`;
+      - colar os secrets.
+    - Depois disso, o teste de fumaça no ar.
   - **Em aberto (2026-10-08).** Escrito `docs/deploy.md` (ambientes, configuração, flags, roteiro, rollback e dados sintéticos). Falta publicar o frontend e fazer o teste de fumaça em ambiente controlado, que dependem das telas e da hospedagem do Streamlit.
 - [x] 3 (origem: `concluir-mvp-conectarh` 1.7) [GE 7.10] Garantir acessibilidade do frontend Streamlit e versionamento `/api/v1/`; verificar teclado, contraste, labels, foco, responsividade, textos alternativos, erros compreensiveis e compatibilidade da API.
   - **Em aberto (2026-10-08).** O versionamento ficou decidido: é pelo grupo de API, sem prefixo `/api/v1/` (registrado no `design.md` do `conectarh.gestao`). Falta a acessibilidade do frontend (teclado, contraste, foco, responsividade), que depende das telas (ver as tarefas de revisão de acessibilidade da seção 2).
@@ -27,11 +34,12 @@
 
 ## 2. Telas do frontend Streamlit [FE]
 
-- [ ] 6 (origem: `concluir-mvp-conectarh` 2.1) [FE 1.5] Legibilidade da tela Entrar: deixar mais visíveis o texto de exemplo (placeholder) dos campos e a borda do card que agrupa e-mail e senha.
+- [x] 6 (origem: `concluir-mvp-conectarh` 2.1) [FE 1.5] Legibilidade da tela Entrar: deixar mais visíveis o texto de exemplo (placeholder) dos campos e a borda do card que agrupa e-mail e senha.
   - **Feito em parte (09/10/2026):** a tela Entrar passou a seguir os tokens do Figma (campo marfim com borda `#E4E3DF`, placeholder em `#4B5563` a 80%, anel de foco âmbar, alertas e aviso do protótipo; ver `docs/evidencias/frontend-login-f01.md`). Fica em aberto porque a tarefa pede alinhar com o time o resultado esperado antes de dar por fechada, já que a primeira tentativa foi revertida.
   - Primeira tentativa (2026-10-06) **revertida a pedido** em 2026-10-07: as cores `#6B7280`/`#C9C7C1` e a moldura marfim do campo não ficaram como esperado.
   - O `theme.py` voltou ao visual anterior; só o escape de HTML de `render_header`/`render_card_title` foi mantido.
   - Antes de tentar de novo, alinhar com o time o resultado esperado, de preferência com referência no Figma.
+  - **Concluída por decisão do dono do produto (22/11/2026):** a tela Entrar fica como está, sem mudar o texto de exemplo nem a borda.
 - [x] 7 (origem: `concluir-mvp-conectarh` 2.2) [FE 2.1] Migrar `frontend/app.py` para `st.Page`/`st.navigation`, mantendo o fluxo de autenticação (login/OTP/esqueci senha) como um wizard interno de estados dentro de uma única página "Entrar", conforme decidido em `design.md`; verificar que sem sessão só a página de autenticação é acessível.
   - **Feito (09/10/2026):** `app.py` usa `st.navigation`/`st.Page`, o fluxo de autenticação é um wizard de estados dentro da página "Entrar" e sem sessão só ela existe (abrir `/inicio` sem sessão mostra a tela Entrar).
 - [x] 8 (origem: `concluir-mvp-conectarh` 2.3) [FE 2.2] Implementar a função de guarda de sessão (redireciona para "Entrar" se `st.session_state.token` ausente) e o filtro de páginas por perfil (Auditoria/Regras só para RH/ADMIN); verificar com uma conta de cada perfil que a lista de páginas visível muda corretamente.
