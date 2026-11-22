@@ -234,3 +234,211 @@ def meus(dados: dict) -> dict:
                   + (f" · {c['instrutor']}" if c.get("instrutor") else ""), "certificado": c.get("certificado_url")} for c in conclusoes]
     return {"obrigatorios": sorted(obrigatorios, key=lambda o: (o["ordem"], o["nome"] or "")), "historico": historico,
             "videos": sorted(videos, key=lambda v: (v["ordem"], v["nome"]))}
+
+
+# ---------------------------------------------------------------------------
+# Cards por tipo de conteúdo (change cards-de-treinamentos; Figma 633:1470). O treinamento é vídeo, leitura (PDF) ou
+# apresentação. PDF e apresentação vêm de um link do Google Drive ou do Slides, ou de um arquivo no bucket privado
+# "treinamentos"; concluem depois de abrir o conteúdo e confirmar a leitura.
+# ---------------------------------------------------------------------------
+TIPOS_CONTEUDO = {"video": "Vídeo", "pdf": "Leitura (PDF)", "apresentacao": "Apresentação"}
+FILTROS = {"pendentes": "Pendentes", "andamento": "Em andamento", "concluidos": "Concluídos"}
+TAMANHO_PDF = 20 * 1024 * 1024
+TAMANHO_CAPA = 5 * 1024 * 1024
+CAPA_LARGURA, CAPA_ALTURA = 640, 360
+_ID_SLIDES = re.compile(r"/presentation/d/([A-Za-z0-9_-]{10,100})")
+_LIMITE_RESUMO = 170
+# Acima disto a capa nem é decodificada: um PNG pequeno pode ter muitos pixels e ocupar centenas de MB no servidor.
+CAPA_MAX_PIXELS = 40_000_000
+
+
+def link_leitura(tipo: str, link: str | None) -> str | None:
+    """O link aceito para PDF (arquivo do Google Drive) ou apresentação (Google Slides ou arquivo do Drive), já no
+    formato que o backend aceita ("https://drive.google.com/file/d/ID/view" ou "https://docs.google.com/presentation/d/ID/edit").
+    None se o link não é de nenhum dos dois."""
+    texto = (link or "").strip()
+    if not texto or " " in texto:
+        return None
+    if tipo == "apresentacao":
+        host = re.match(r"^(?:https?://)?([^/?#]+)", texto)
+        if host and host.group(1).lower().removeprefix("www.") == "docs.google.com" and (achado := _ID_SLIDES.search(texto)):
+            return f"https://docs.google.com/presentation/d/{achado.group(1)}/edit"
+    video = video_do_link(texto)
+    if video and video[0] == "drive":
+        return f"https://drive.google.com/file/d/{video[1]}/view"
+    return None
+
+
+def _id_drive(url: str | None) -> str | None:
+    achado = re.search(r"drive\.google\.com/file/d/([A-Za-z0-9_-]+)", url or "")
+    return achado.group(1) if achado else None
+
+
+def url_embutida(url: str | None) -> str | None:
+    """Endereço para mostrar dentro da página: /preview no Drive, /embed no Slides; a URL assinada do arquivo vai como está."""
+    if not url:
+        return None
+    if slides := _ID_SLIDES.search(url):
+        if "docs.google.com" in url:
+            return f"https://docs.google.com/presentation/d/{slides.group(1)}/embed"
+    if drive := _id_drive(url):
+        return f"https://drive.google.com/file/d/{drive}/preview"
+    return url
+
+
+def capa_padrao(categoria: str | None) -> str:
+    return f"app/static/capas/{categoria if categoria in CATEGORIAS else 'desenvolvimento'}.svg"
+
+
+def capa(card: dict, capas: dict | None) -> str | None:
+    """A capa do card, nesta ordem (D3): a enviada pelo RH (URL assinada), a miniatura do YouTube, a do Drive (do vídeo ou
+    do link do PDF) ou None, quando vale só a ilustração da categoria."""
+    caminho = card.get("capa_path")
+    if caminho and (capas or {}).get(caminho):
+        return capas[caminho]
+    tipo = card.get("conteudo_tipo") or "video"
+    if tipo == "video" and card.get("video_drive_id"):
+        if card.get("video_fonte") == "youtube":
+            return f"https://img.youtube.com/vi/{card['video_drive_id']}/hqdefault.jpg"
+        return f"https://drive.google.com/thumbnail?id={card['video_drive_id']}&sz=w640"
+    if (drive := _id_drive(card.get("conteudo_url"))):
+        return f"https://drive.google.com/thumbnail?id={drive}&sz=w640"
+    return None
+
+
+def resumo(texto: str | None, limite: int = _LIMITE_RESUMO) -> str:
+    """Descrição cortada para o card (a tela ainda limita a 3 linhas): no último espaço antes do limite, com "…"."""
+    texto = " ".join((texto or "").split())
+    if len(texto) <= limite:
+        return texto
+    corte = texto[:limite].rsplit(" ", 1)[0].rstrip(",.;:")
+    return corte + "…"
+
+
+def situacao_card(card: dict, conclusoes: list[dict], progresso: dict | None, hoje: date) -> dict:
+    """{chave, rotulo, tom, filtro, ordem}. Obrigatório: em dia vai para "Concluídos"; com vídeo começado ou leitura
+    aberta, "Em andamento"; senão "Pendentes" (pendente, vencido ou vencendo). Opcional: é convite, sem cobrança."""
+    ult = ultima(conclusoes, card.get("id"))
+    chave, rotulo, tom = situacao(ult, hoje)
+    tipo = card.get("conteudo_tipo") or "video"
+    prog = progresso or {}
+    andamento = int(prog.get("segundos_vistos") or 0) > 0 if tipo == "video" else bool(prog.get("aberto_em"))
+    if not card.get("obrigatorio"):
+        if ult:
+            return {"chave": "concluido", "rotulo": "Concluído", "tom": "ok", "filtro": "concluidos", "ordem": 5}
+        if andamento:
+            return {"chave": "andamento", "rotulo": "Em andamento", "tom": "azul", "filtro": "andamento", "ordem": 3}
+        return {"chave": "opcional", "rotulo": "Opcional", "tom": "azul", "filtro": "pendentes", "ordem": 4}
+    if chave == "em_dia":
+        return {"chave": chave, "rotulo": rotulo, "tom": tom, "filtro": "concluidos", "ordem": 5}
+    if andamento:
+        # Começado, mas vencido ou vencendo: fica em "Em andamento" com o selo da urgência.
+        urgente = chave in ("vencido", "vencendo")
+        return {"chave": "andamento", "rotulo": rotulo if urgente else "Em andamento", "tom": tom if urgente else "azul", "filtro": "andamento", "ordem": 3}
+    return {"chave": chave, "rotulo": rotulo, "tom": tom, "filtro": "pendentes", "ordem": {"vencido": 0, "pendente": 1, "vencendo": 2}.get(chave, 2)}
+
+
+def mapa_capas(capas) -> dict:
+    """As capas assinadas, que o backend manda como lista de {caminho, url}, viram {caminho: url}."""
+    if isinstance(capas, dict):
+        return capas
+    return {c.get("caminho"): c.get("url") for c in capas or [] if isinstance(c, dict) and c.get("caminho") and c.get("url")}
+
+
+def cards(dados: dict) -> list[dict]:
+    """Os cards de "Meus treinamentos" (D4), dos mais urgentes para os demais."""
+    hoje = _data(dados.get("hoje")) or date.today()
+    capas = mapa_capas(dados.get("capas"))
+    conclusoes = dados.get("conclusoes") or []
+    progressos = {p.get("treinamento_id"): p for p in dados.get("progressos") or []}
+    saida = []
+    for c in dados.get("cards") or []:
+        tipo = c.get("conteudo_tipo") or "video"
+        prog = progressos.get(c.get("id")) or {}
+        sit = situacao_card(c, conclusoes, prog, hoje)
+        horas = int(c.get("carga_horas") or 0)
+        tipo_rotulo = TIPOS_CONTEUDO.get(tipo, "Vídeo")
+        if tipo == "video" and int(c.get("video_duracao") or 0) > 0:
+            tipo_rotulo += f" · {duracao_legivel(c['video_duracao'])}"
+        com_video = tipo == "video" and bool(c.get("video_drive_id")) and int(c.get("video_duracao") or 0) > 0
+        saida.append({
+            "id": c.get("id"), "nome": c.get("nome") or "Treinamento", "descricao": c.get("descricao") or "", "resumo": resumo(c.get("descricao")),
+            "categoria": c.get("categoria"), "categoria_rotulo": CATEGORIAS.get(c.get("categoria"), "Treinamento"), "tipo": tipo, "tipo_rotulo": tipo_rotulo,
+            "obrigatorio": bool(c.get("obrigatorio")), "carga": f"{'Obrigatório' if c.get('obrigatorio') else 'Opcional'}" + (f" · {horas} h" if horas else ""),
+            "validade": validade_legivel(c.get("validade_meses")), "situacao": sit, "capa": capa(c, capas), "capa_padrao": capa_padrao(c.get("categoria")),
+            "conteudo_url": c.get("conteudo_url"), "tem_arquivo": bool(c.get("tem_arquivo")), "aberto": bool(prog.get("aberto_em")),
+            "com_conteudo": com_video or (tipo != "video" and (bool(c.get("tem_arquivo")) or bool(c.get("conteudo_url")))),
+            "video": {"id": c.get("id"), "nome": c.get("nome") or "", "video_id": c.get("video_drive_id"), "fonte": c.get("video_fonte") or "drive",
+                      "duracao": int(c.get("video_duracao") or 0), "minimo": int(c.get("video_percentual_minimo") or PERCENTUAL_PADRAO),
+                      "vistos": int(prog.get("segundos_vistos") or 0), "posicao": int(prog.get("posicao") or 0), "ordem": sit["ordem"],
+                      "detalhe": f"Vídeo de {duracao_legivel(c.get('video_duracao'))} · {validade_legivel(c.get('validade_meses')).lower()} · {sit['rotulo'].lower()}"}
+            if com_video else None,
+        })
+    return sorted(saida, key=lambda x: (x["situacao"]["ordem"], x["nome"].lower()))
+
+
+def contagem(lista: list[dict]) -> dict:
+    return {f: sum(1 for c in lista if c["situacao"]["filtro"] == f) for f in FILTROS}
+
+
+def filtro_inicial(lista: list[dict]) -> str:
+    """O primeiro filtro com itens, nesta ordem: Pendentes, Em andamento, Concluídos (D4)."""
+    conta = contagem(lista)
+    return next((f for f in FILTROS if conta[f]), "pendentes")
+
+
+def validar_conteudo(tipo: str, link: str | None, arquivo_nome: str | None, arquivo_tamanho: int, tem_arquivo_salvo: bool = False) -> str | None:
+    """PDF ou apresentação (D7): o arquivo PDF (até 20 MB) ou o link, um dos dois. Vídeo é validado por `validar_video`."""
+    if tipo not in ("pdf", "apresentacao"):
+        return None
+    tem_link = bool((link or "").strip())
+    tem_arquivo = bool(arquivo_nome) or tem_arquivo_salvo
+    if tem_link and arquivo_nome:
+        return "Envie o arquivo ou cole o link, um dos dois."
+    if not tem_link and not tem_arquivo:
+        return "Envie o arquivo PDF ou cole o link." if tipo == "pdf" else "Cole o link do Google Slides ou do Drive, ou envie o PDF da apresentação."
+    if tem_link and not link_leitura(tipo, link):
+        return ("Link inválido. Use um arquivo do Google Drive (drive.google.com/file/d/…)." if tipo == "pdf"
+                else "Link inválido. Use o Google Slides (docs.google.com/presentation/d/…) ou um arquivo do Google Drive.")
+    if arquivo_nome:
+        if not arquivo_nome.lower().endswith(".pdf"):
+            return "O arquivo precisa ser PDF."
+        if arquivo_tamanho > TAMANHO_PDF:
+            return "O PDF pode ter até 20 MB."
+        if arquivo_tamanho <= 0:
+            return "O arquivo está vazio."
+    return None
+
+
+def validar_capa(nome: str | None, tamanho: int) -> str | None:
+    extensao = (nome or "").rsplit(".", 1)[-1].lower() if "." in (nome or "") else ""
+    if extensao not in ("jpg", "jpeg", "png", "webp"):
+        return "A capa precisa ser JPG, PNG ou WebP."
+    if tamanho > TAMANHO_CAPA:
+        return "A imagem da capa pode ter até 5 MB."
+    if tamanho <= 0:
+        return "O arquivo da capa está vazio."
+    return None
+
+
+def tratar_capa(conteudo: bytes) -> bytes:
+    """A capa em 640 × 360 (16:9), WebP, sem metadados (D3). Levanta ValueError se o arquivo não é uma imagem."""
+    import io
+
+    from PIL import Image, ImageOps
+
+    try:
+        imagem = Image.open(io.BytesIO(conteudo))  # lê só o cabeçalho
+    except Exception as exc:  # noqa: BLE001 - qualquer falha do Pillow quer dizer "não é uma imagem válida"
+        raise ValueError("O arquivo da capa não é uma imagem válida.") from exc
+    if imagem.width * imagem.height > CAPA_MAX_PIXELS:
+        raise ValueError("A imagem da capa é grande demais. Use uma de até 8000 × 5000 pixels.")
+    try:
+        imagem.load()
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("O arquivo da capa não é uma imagem válida.") from exc
+    imagem = ImageOps.exif_transpose(imagem).convert("RGB")
+    imagem = ImageOps.fit(imagem, (CAPA_LARGURA, CAPA_ALTURA), method=Image.Resampling.LANCZOS)
+    saida = io.BytesIO()
+    imagem.save(saida, format="WEBP", quality=82)  # sem exif=: sai sem metadados
+    return saida.getvalue()

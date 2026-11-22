@@ -21,6 +21,8 @@ table treinamento_progresso {
     int segundos_vistos?=0
     int posicao?=0
     timestamp? atualizado_em?
+    // Quando a pessoa abriu o PDF ou a apresentacao (change cards-de-treinamentos, D6); zera ao concluir.
+    timestamp? aberto_em?
   }
 
   index = [

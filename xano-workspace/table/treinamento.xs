@@ -36,6 +36,16 @@ table treinamento {
 
     int video_duracao?=0
     int video_percentual_minimo?=95
+    // Tipo de conteudo (change cards-de-treinamentos, D1): video (os campos video_*), pdf ou apresentacao. Vazio = video.
+    enum conteudo_tipo?=video {
+      values = ["video", "pdf", "apresentacao"]
+    }
+
+    // PDF ou apresentacao: um link do Google Drive ou do Google Slides (conteudo_url) OU um arquivo no bucket privado
+    // treinamentos do Supabase (conteudo_path, "{uuid}.pdf"). Capa opcional no mesmo bucket ("{uuid}.webp").
+    text? conteudo_url filters=trim|max:500
+    text? conteudo_path filters=trim|max:200
+    text? capa_path filters=trim|max:200
     int criado_por_user_id {
       table = "user"
     }

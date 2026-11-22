@@ -1041,6 +1041,54 @@ _APP_CSS = f"""
   .crh-rd-item .d {{ margin: 2px 0 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-rd-titulo {{ margin: 18px 0 10px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; color: {GRAFITE}; }}
   .crh-pc-item .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: {GRAFITE}; }}
+  /* Cards de treinamento (change cards-de-treinamentos; Figma 633:1473 e 634:1600). A grade tem 3 colunas na tela larga,
+     2 na média e 1 na estreita. O card inteiro é o botão "Abrir: nome", transparente por cima do desenho. */
+  .st-key-mt_grade {{ display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }}
+  @media (max-width: 1100px) {{ .st-key-mt_grade {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }} }}
+  @media (max-width: 640px) {{ .st-key-mt_grade {{ grid-template-columns: minmax(0, 1fr); gap: 14px; }} }}
+  div[class*="st-key-mt_card_"] {{ position: relative; gap: 0; height: 100%; }}
+  div[class*="st-key-mt_card_"] .stElementContainer:has(.crh-tcard), div[class*="st-key-mt_card_"] [data-testid="stHtml"]:has(.crh-tcard) {{ flex: 1; height: 100%; }}
+  div[class*="st-key-mt_abrir_"] {{ position: absolute !important; inset: 0; width: 100% !important; margin: 0; z-index: 2; }}
+  div[class*="st-key-mt_abrir_"] .stButton, div[class*="st-key-mt_abrir_"] button {{ width: 100% !important; height: 100% !important; }}
+  div[class*="st-key-mt_abrir_"] button {{ opacity: 0; cursor: pointer; }}
+  div[class*="st-key-mt_card_"]:hover .crh-tcard {{ border-color: {AMBAR}; box-shadow: 0 6px 18px rgba(22, 24, 29, 0.10); }}
+  div[class*="st-key-mt_card_"]:has(button:focus-visible) .crh-tcard {{ outline: 2px solid var(--crh-foco); outline-offset: 2px; }}
+  .crh-tcard {{
+    height: 100%; box-sizing: border-box; display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid {BORDA};
+    border-radius: 14px; overflow: hidden; transition: border-color .15s, box-shadow .15s;
+  }}
+  .crh-tcard .capa, .crh-tdet .capa {{ position: relative; aspect-ratio: 16 / 9; background-color: {GRAFITE}; background-size: cover; background-position: center; }}
+  .crh-tcard .capa .crh-selo {{ position: absolute; top: 10px; left: 10px; }}
+  .crh-tcard .corpo {{ flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 0; }}
+  .crh-tcard .t {{
+    margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 15px; line-height: 1.35; color: {GRAFITE};
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }}
+  .crh-tcard .d {{
+    margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; line-height: 1.45; color: {GRAFITE_SECUNDARIO};
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }}
+  .crh-tcard .rodape {{
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 10px; padding: 12px 16px 14px;
+    font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO};
+  }}
+  .crh-tcard .rodape .tipo, .crh-tdet-arquivo {{ display: inline-flex; align-items: center; gap: 6px; }}
+  .crh-tvazio {{ border: 1px dashed {BORDA}; border-radius: 14px; padding: 32px 20px; text-align: center; background: #FFFFFF; }}
+  .crh-tvazio .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 15px; color: {GRAFITE}; }}
+  .crh-tvazio .d {{ margin: 6px 0 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .st-key-mt_voltar button p {{ color: var(--crh-amb) !important; font-weight: 600 !important; font-size: 14px !important; }}
+  .crh-tdet {{ display: flex; gap: 18px; align-items: flex-start; }}
+  .crh-tdet .capa {{ flex: 0 0 160px; border-radius: 10px; }}
+  .crh-tdet .txt {{ display: flex; flex-direction: column; gap: 6px; min-width: 0; }}
+  .crh-tdet .linha {{ display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }}
+  .crh-tdet .t {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 20px; color: {GRAFITE}; }}
+  .crh-tdet .m {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 13px; color: {GRAFITE_SECUNDARIO}; }}
+  .crh-tdet .d {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 14px; line-height: 1.5; color: {GRAFITE_SECUNDARIO}; }}
+  @media (max-width: 640px) {{ .crh-tdet {{ flex-direction: column; }} .crh-tdet .capa {{ flex-basis: auto; width: 100%; }} }}
+  .crh-tdet-arquivo {{ margin: 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; word-break: break-all; }}
+  .st-key-mt_leitura_topo {{ justify-content: space-between; }}
+  .st-key-mt_leitura_topo .stLinkButton a p {{ color: var(--crh-amb) !important; font-weight: 600; font-size: 13px; }}
+  .st-key-cfg_card_mt_leitura iframe {{ border: 1px solid {BORDA}; border-radius: 10px; background: #F3F3F1; }}
   .crh-pc-item .d {{ margin: 4px 0 8px; font-family: 'Manrope', sans-serif; font-size: 12.5px; color: {GRAFITE_SECUNDARIO}; }}
   .crh-pcr-lista {{ margin: 0; padding-left: 20px; font-family: 'Manrope', sans-serif; font-size: 13.5px; color: {GRAFITE}; }}
   .crh-pcr-lista li {{ margin: 6px 0; }}
@@ -1247,6 +1295,16 @@ _APP_CSS = f"""
   [data-testid="stDialog"] button[kind="secondary"] p {{ color: {GRAFITE} !important; font-family: 'Manrope', sans-serif; font-weight: 600; }}
   [data-testid="stDialog"] button[kind="primary"] {{ padding: 0.6rem 1.2rem; width: auto; }}
   [data-testid="stDialog"] [data-testid="stTooltipIcon"] svg {{ stroke: {GRAFITE_SECUNDARIO}; }}
+  /* Seletor em segmentos e envio de arquivo dentro do modal (tipo de conteúdo e capa do treinamento; Figma 636:1771). */
+  [data-testid="stDialog"] [data-testid="stButtonGroup"] button {{ background: #FFFFFF !important; border-color: {BORDA} !important; }}
+  [data-testid="stDialog"] [data-testid="stButtonGroup"] button p {{ color: {GRAFITE} !important; font-weight: 500; }}
+  [data-testid="stDialog"] [data-testid="stButtonGroup"] button[aria-checked="true"] {{ background: {AMBAR_BG} !important; border-color: {AMBAR} !important; }}
+  [data-testid="stDialog"] [data-testid="stButtonGroup"] button[aria-checked="true"] p {{ font-weight: 600; }}
+  [data-testid="stDialog"] [data-testid="stFileUploaderDropzone"] {{ background: {MARFIM} !important; border: 1px dashed {BORDA}; border-radius: 10px; }}
+  [data-testid="stDialog"] [data-testid="stFileUploaderDropzoneInstructions"] *, [data-testid="stDialog"] [data-testid="stFileUploaderFile"] * {{ color: {GRAFITE_SECUNDARIO} !important; }}
+  [data-testid="stDialog"] [data-testid="stFileUploaderDropzone"] button {{ background: #FFFFFF !important; border: 1px solid {BORDA} !important; color: {GRAFITE} !important; }}
+  [data-testid="stDialog"] [data-testid="stFileChip"] {{ background: #FFFFFF !important; border: 1px solid {BORDA}; }}
+  [data-testid="stDialog"] [data-testid="stFileChip"] *:not(button) {{ color: {GRAFITE} !important; }}
   .crh-incluso {{ background: {MARFIM}; border-radius: 12px; padding: 14px 16px; }}
   .crh-incluso .t {{ margin: 0 0 6px 0; font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
   .crh-incluso ul {{ margin: 0; padding-left: 18px; font-family: 'Manrope', sans-serif; font-size: 13.5px; line-height: 1.75; color: {GRAFITE_SECUNDARIO}; }}
@@ -1351,6 +1409,11 @@ _ESCURO_CSS = f"""
   .crh-pc-anonimo {{ background: #14301F !important; color: #86EFAC !important; }}
   .crh-pc-pergunta, .crh-pc-item .t, .crh-pcr-lista, .crh-pcr-res .t, .crh-pcr-res table, .crh-av360-tabela {{ color: {ESC_TEXTO} !important; }}
   .crh-pc-item, .crh-pcr-res td, .crh-av360-tabela td {{ border-color: {ESC_BORDA} !important; }}
+  .crh-tcard, .crh-tvazio {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  .crh-tcard .t, .crh-tvazio .t, .crh-tdet .t, .crh-tdet-arquivo {{ color: {ESC_TEXTO}; }}
+  .crh-tcard .d, .crh-tcard .rodape, .crh-tvazio .d, .crh-tdet .m, .crh-tdet .d {{ color: {ESC_TEXTO_2}; }}
+  div[class*="st-key-mt_card_"]:hover .crh-tcard {{ box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); }}
+  .st-key-cfg_card_mt_leitura iframe {{ border-color: {ESC_BORDA}; background: {ESC_NEUTRO}; }}
   .crh-rd-lista {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .crh-rd-item {{ border-color: {ESC_BORDA} !important; }}
   .crh-rd-item .t, .crh-rd-titulo {{ color: {ESC_TEXTO} !important; }}
@@ -1481,6 +1544,13 @@ _ESCURO_CSS = f"""
   [data-testid="stDialog"] .stSelectbox > div > div {{ border-color: {ESC_BORDA} !important; }}
   [data-testid="stDialog"] .stDateInput span {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] input:disabled {{ -webkit-text-fill-color: {ESC_TEXTO_2}; color: {ESC_TEXTO_2} !important; }}
+  [data-testid="stDialog"] [data-testid="stButtonGroup"] button, [data-testid="stDialog"] [data-testid="stFileUploaderDropzone"] button {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA} !important; color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] [data-testid="stButtonGroup"] button p {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] [data-testid="stButtonGroup"] button[aria-checked="true"] {{ background: {ESC_AMBAR_SUAVE} !important; border-color: {AMBAR} !important; }}
+  [data-testid="stDialog"] [data-testid="stFileUploaderDropzone"] {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA}; }}
+  [data-testid="stDialog"] [data-testid="stFileChip"] {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA}; }}
+  [data-testid="stDialog"] [data-testid="stFileChip"] *:not(button) {{ color: {ESC_TEXTO} !important; }}
+  [data-testid="stDialog"] [data-testid="stFileUploaderDropzoneInstructions"] *, [data-testid="stDialog"] [data-testid="stFileUploaderFile"] * {{ color: {ESC_TEXTO_2} !important; }}
   [data-testid="stDialog"] [data-testid="stTimeInputTimeDisplay"] {{ background: {ESC_FUNDO} !important; border-color: {ESC_BORDA}; }}
   [data-testid="stDialog"] [data-testid="stTimeInputTimeDisplay"] * {{ color: {ESC_TEXTO} !important; }}
   [data-testid="stDialog"] [role="radiogroup"] label:not(:has(input:checked)) div:has(> div:empty) {{ background: {ESC_TEXTO_2} !important; }}
