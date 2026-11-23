@@ -139,7 +139,7 @@ caso("Colaborador: apresentação dos benefícios (change apresentacao-de-benefi
 at = app()
 t = texto(at)
 conferir("Benefícios ativos" in t and "A empresa paga" not in t and "Desconto" not in t and "Encerrados" not in t, "só o indicador de benefícios ativos")
-conferir([e.label for e in at.expander] == ["Plano de saúde Unimed · Plano de saúde", "Vale-refeição · Vale-refeição"], "um item por benefício ativo, com nome e tipo (formato da FAQ)")
+conferir([e.label for e in at.expander] == ["Plano de saúde Unimed · Plano de saúde", "Vale-refeição"], "um item por benefício ativo, com nome e tipo, sem repetir o tipo igual ao nome")
 conferir("Vale-transporte" not in t and "Histórico" not in t and "R$" not in t, "sem encerrados, sem histórico e sem valores")
 conferir("Cobre consultas, exames e internação." in t and "Operadora: Unimed" in t and "Guia do plano" in t, "aberto: operadora, descrição e materiais")
 conferir(any(b.label == "Rede credenciada" and b.proto.url == "https://www.exemplo.com.br/rede" for b in at.get("link_button")), "links úteis como botões que abrem o site")

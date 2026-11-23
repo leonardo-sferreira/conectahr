@@ -104,7 +104,9 @@ def _meus(token: str) -> None:
 
 def _apresentacao(token: str, b: dict) -> None:
     """Um benefício como item que abre (formato da FAQ): operadora, descrição, links e materiais."""
-    with st.expander(f"{b['nome']} · {b['tipo']}"):
+    # O tipo só entra no título quando diz algo além do nome ("Plano de saúde · Plano de saúde" repetia).
+    repete = (b["tipo"] or "").strip().lower() == (b["nome"] or "").strip().lower()
+    with st.expander(b["nome"] if repete or not b["tipo"] else f"{b['nome']} · {b['tipo']}"):
         if b["operadora"]:
             st.html(f'<p class="crh-meta" style="margin:0">Operadora: {html.escape(b["operadora"])}</p>')
         if b["descricao"]:

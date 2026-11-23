@@ -893,6 +893,13 @@ _APP_CSS = f"""
   .crh-relogio-nota {{ margin: 0; font-family: 'Manrope', sans-serif; font-size: 12px; color: {GRAFITE_SECUNDARIO}; }}
   .st-key-ponto_card_comprovantes, .st-key-ponto_card_ausencia, .st-key-ponto_espelho_cab, .st-key-faq_card_comunicados, .st-key-faq_card_perguntas, .st-key-org_card,
   .st-key-inicio_faq {{ background: white; border: 1px solid {BORDA}; border-radius: 16px; padding: 18px 22px; gap: 10px; }}
+  /* Todo item que abre ao clicar (Benefícios, Conferência, Riscos, Usuários): o config.toml usa a base escura do Streamlit,
+     então sem esta regra o título herdava o texto quase branco sobre o fundo claro. */
+  [data-testid="stExpander"] details {{ border: 1px solid {BORDA}; border-radius: 12px; background: white; }}
+  [data-testid="stExpander"] details[open] {{ border-color: {AMBAR}; }}
+  [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  [data-testid="stExpander"] summary svg {{ color: {GRAFITE_SECUNDARIO}; fill: {GRAFITE_SECUNDARIO}; }}
+  [data-testid="stExpander"] summary:hover p, [data-testid="stExpander"] summary:hover svg {{ color: {AMBAR_TEXTO}; fill: {AMBAR_TEXTO}; }}
   /* Comunicados e FAQ (Figma 217:154): perguntas que abrem ao clicar. */
   .st-key-faq_card_comunicados [data-testid="stExpander"] details, .st-key-faq_card_perguntas [data-testid="stExpander"] details {{ border: 1px solid {BORDA}; border-radius: 12px; background: white; }}
   .st-key-faq_card_perguntas [data-testid="stExpander"] details[open] {{ border-color: {AMBAR}; }}
@@ -1485,6 +1492,11 @@ _ESCURO_CSS = f"""
   .st-key-inicio_faq {{ background: {ESC_CARTAO} !important; border-color: {ESC_BORDA} !important; }}
   .st-key-faq_card_comunicados [data-testid="stExpander"] details, .st-key-faq_card_perguntas [data-testid="stExpander"] details {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .st-key-faq_card_comunicados [data-testid="stExpander"] summary p, .st-key-faq_card_perguntas [data-testid="stExpander"] summary p {{ color: {ESC_TEXTO}; }}
+  [data-testid="stExpander"] details {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
+  [data-testid="stExpander"] details[open] {{ border-color: {AMBAR}; }}
+  [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p {{ color: {ESC_TEXTO}; }}
+  [data-testid="stExpander"] summary svg {{ color: {ESC_TEXTO_2}; fill: {ESC_TEXTO_2}; }}
+  [data-testid="stExpander"] summary:hover p, [data-testid="stExpander"] summary:hover svg {{ color: {AMBAR}; fill: {AMBAR}; }}
   .st-key-org_arvore button[kind="secondary"], .st-key-org_res_fileira button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   .st-key-org_arvore button[kind="secondary"] p, .st-key-org_res_fileira button[kind="secondary"] p {{ color: {ESC_TEXTO_2}; }}
   .st-key-org_arvore button[kind="secondary"] p strong, .st-key-org_res_fileira button[kind="secondary"] p strong {{ color: {ESC_TEXTO}; }}
