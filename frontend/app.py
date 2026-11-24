@@ -101,8 +101,6 @@ _MENU = [
     "Meus treinamentos",
     # Canal de denúncias (Lei 14.457/2022; change canal-de-denuncias): qualquer perfil, e também sem login.
     "Canal de denúncias",
-    # Vagas internas: o sistema de vagas fica em outro endereço, ainda não ligado; a opção só aparece no menu.
-    "Vagas internas",
 ]
 # Grupo "RH" do menu (Figma 418:1108 e Design System 314:786), só para RH e Admin.
 _MENU_RH = [
@@ -377,10 +375,7 @@ def _item_menu(rotulo: str) -> None:
     elif st.button(rotulo, key=f"nav_{rotulo}", type="tertiary"):
         if rotulo in _PAGINAS_DO_MENU:
             st.switch_page(_PAGINAS_DO_MENU[rotulo])
-        if rotulo == "Vagas internas":
-            st.toast("Vagas internas: em breve, as vagas abertas da empresa vão abrir aqui.")
-        else:
-            st.toast(f"A tela {rotulo} ainda está em construção.")
+        st.toast(f"A tela {rotulo} ainda está em construção.")
 
 
 def _grupo_menu(nome: str, itens: list[str]) -> None:
