@@ -898,6 +898,8 @@ _APP_CSS = f"""
   [data-testid="stExpander"] details {{ border: 1px solid {BORDA}; border-radius: 12px; background: white; }}
   [data-testid="stExpander"] details[open] {{ border-color: {AMBAR}; }}
   [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p {{ font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 14px; color: {GRAFITE}; }}
+  /* Aberto, o Streamlit pinta o cabeçalho com o fundo da base escura: o cabeçalho fica no fundo do cartão. */
+  [data-testid="stExpander"] summary, [data-testid="stExpander"] details[open] summary, [data-testid="stExpander"] summary:hover {{ background: transparent !important; border-radius: 12px; }}
   [data-testid="stExpander"] summary svg {{ color: {GRAFITE_SECUNDARIO}; fill: {GRAFITE_SECUNDARIO}; }}
   [data-testid="stExpander"] summary:hover p, [data-testid="stExpander"] summary:hover svg {{ color: {AMBAR_TEXTO}; fill: {AMBAR_TEXTO}; }}
   /* Comunicados e FAQ (Figma 217:154): perguntas que abrem ao clicar. */
@@ -1495,6 +1497,7 @@ _ESCURO_CSS = f"""
   [data-testid="stExpander"] details {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
   [data-testid="stExpander"] details[open] {{ border-color: {AMBAR}; }}
   [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p {{ color: {ESC_TEXTO}; }}
+  [data-testid="stExpander"] summary, [data-testid="stExpander"] details[open] summary, [data-testid="stExpander"] summary:hover {{ background: transparent !important; }}
   [data-testid="stExpander"] summary svg {{ color: {ESC_TEXTO_2}; fill: {ESC_TEXTO_2}; }}
   [data-testid="stExpander"] summary:hover p, [data-testid="stExpander"] summary:hover svg {{ color: {AMBAR}; fill: {AMBAR}; }}
   .st-key-org_arvore button[kind="secondary"], .st-key-org_res_fileira button[kind="secondary"] {{ background: {ESC_CARTAO}; border-color: {ESC_BORDA}; }}
